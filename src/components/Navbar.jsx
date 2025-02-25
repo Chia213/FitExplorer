@@ -8,14 +8,16 @@ function Navbar() {
 
   return (
     <header className="w-full bg-gradient-to-r from-blue-400 to-emerald-400 text-black flex justify-between items-center py-6 px-8 md:px-32 drop-shadow-md">
-      <Link to="/">
-        <img
-          src={logo}
-          alt="Logo"
-          className="w-20 hover:scale-105 transition-all"
-        />
-      </Link>
-
+      <div className="flex items-center gap-4">
+        <Link to="/">
+          <img
+            src={logo}
+            alt="Logo"
+            className="w-20 hover:scale-105 transition-all"
+          />
+        </Link>
+        <span className="text-xl font-bold">FitExplorer</span>
+      </div>
       <div className="flex items-center gap-8">
         <ul className="flex items-center gap-6 font-semibold text-base">
           <li className="flex flex-col items-center p-3 hover:bg-sky-700 hover:text-white rounded-md transition-all cursor-pointer">
