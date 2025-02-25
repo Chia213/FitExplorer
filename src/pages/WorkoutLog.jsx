@@ -13,6 +13,7 @@ function WorkoutLog() {
   const [workouts, setWorkouts] = useState([]);
   const [selectedMuscleGroup, setSelectedMuscleGroup] = useState("");
   const [selectedExercises, setSelectedExercises] = useState([]);
+  const [exerciseDetails, setExerciseDetails] = useState({});
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [bodyweight, setBodyweight] = useState("");
@@ -24,6 +25,17 @@ function WorkoutLog() {
         ? prevExercises.filter((ex) => ex !== exercise)
         : [...prevExercises, exercise]
     );
+    setExerciseDetails((prevDetails) => ({
+      ...prevDetails,
+      [exercise]: prevDetails[exercise] || { weight: "", reps: "", notes: "" },
+    }));
+  };
+
+  const handleExerciseDetailChange = (exercise, field, value) => {
+    setExerciseDetails((prevDetails) => ({
+      ...prevDetails,
+      [exercise]: { ...prevDetails[exercise], [field]: value },
+    }));
   };
 
   const addWorkout = (e) => {
@@ -37,7 +49,12 @@ function WorkoutLog() {
     ) {
       const newWorkout = {
         muscleGroup: selectedMuscleGroup,
-        exercises: selectedExercises,
+        exercises: selectedExercises.map((exercise) => ({
+          name: exercise,
+          weight: exerciseDetails[exercise]?.weight || "",
+          reps: exerciseDetails[exercise]?.reps || "",
+          notes: exerciseDetails[exercise]?.notes || "",
+        })),
         startTime: new Date(startTime).toLocaleString(),
         endTime: new Date(endTime).toLocaleString(),
         bodyweight,
@@ -46,6 +63,7 @@ function WorkoutLog() {
       setWorkouts([...workouts, newWorkout]);
       setSelectedMuscleGroup("");
       setSelectedExercises([]);
+      setExerciseDetails({});
       setStartTime("");
       setEndTime("");
       setBodyweight("");
@@ -78,13 +96,55 @@ function WorkoutLog() {
             <div className="mb-2">
               <p className="font-semibold">Select Exercises:</p>
               {muscleGroups[selectedMuscleGroup].map((exercise) => (
-                <div key={exercise} className="flex items-center gap-2">
+                <div key={exercise} className="mb-2">
                   <input
                     type="checkbox"
                     checked={selectedExercises.includes(exercise)}
                     onChange={() => handleExerciseSelection(exercise)}
                   />
-                  <label>{exercise}</label>
+                  <label className="ml-2 font-semibold">{exercise}</label>
+                  {selectedExercises.includes(exercise) && (
+                    <div className="ml-4">
+                      <input
+                        type="number"
+                        placeholder="Weight (kg)"
+                        value={exerciseDetails[exercise]?.weight || ""}
+                        onChange={(e) =>
+                          handleExerciseDetailChange(
+                            exercise,
+                            "weight",
+                            e.target.value
+                          )
+                        }
+                        className="w-full p-2 border rounded-md mt-1"
+                      />
+                      <input
+                        type="number"
+                        placeholder="Reps"
+                        value={exerciseDetails[exercise]?.reps || ""}
+                        onChange={(e) =>
+                          handleExerciseDetailChange(
+                            exercise,
+                            "reps",
+                            e.target.value
+                          )
+                        }
+                        className="w-full p-2 border rounded-md mt-1"
+                      />
+                      <textarea
+                        placeholder="Notes"
+                        value={exerciseDetails[exercise]?.notes || ""}
+                        onChange={(e) =>
+                          handleExerciseDetailChange(
+                            exercise,
+                            "notes",
+                            e.target.value
+                          )
+                        }
+                        className="w-full p-2 border rounded-md mt-1"
+                      ></textarea>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -112,12 +172,6 @@ function WorkoutLog() {
             className="w-full p-2 border rounded-md mb-2"
             required
           />
-          <textarea
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder="Notes"
-            className="w-full p-2 border rounded-md mb-2"
-          ></textarea>
           <button
             type="submit"
             className="w-full bg-blue-500 text-white p-2 mt-3 rounded-md hover:bg-blue-700"
@@ -126,18 +180,29 @@ function WorkoutLog() {
           </button>
         </form>
       </div>
-      <ul className="mt-4 w-full max-w-md">
-        {workouts.map((workout, index) => (
-          <li key={index} className="p-2 border-b">
-            <strong>Muscle Group:</strong> {workout.muscleGroup} <br />
-            <strong>Exercises:</strong> {workout.exercises.join(", ")} <br />
-            <strong>Start Time:</strong> {workout.startTime} <br />
-            <strong>End Time:</strong> {workout.endTime} <br />
-            <strong>Bodyweight:</strong> {workout.bodyweight} kg <br />
-            <strong>Notes:</strong> {workout.notes}
-          </li>
-        ))}
-      </ul>
+      {/* Display Logged Workouts */}
+      <div className="w-full max-w-md mt-6 bg-white p-6 rounded-lg shadow-md">
+        <h2 className="text-xl font-bold mb-4">Workout History</h2>
+        <ul>
+          {workouts.map((workout, index) => (
+            <li key={index} className="p-2 border-b">
+              <strong>Muscle Group:</strong> {workout.muscleGroup} <br />
+              <strong>Start Time:</strong> {workout.startTime} <br />
+              <strong>End Time:</strong> {workout.endTime} <br />
+              <strong>Bodyweight:</strong> {workout.bodyweight} kg <br />
+              <strong>Exercises:</strong>
+              <ul>
+                {workout.exercises.map((ex, i) => (
+                  <li key={i} className="ml-4">
+                    {ex.name} - {ex.weight} kg, {ex.reps} reps
+                    <br /> <em>{ex.notes}</em>
+                  </li>
+                ))}
+              </ul>
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 }
