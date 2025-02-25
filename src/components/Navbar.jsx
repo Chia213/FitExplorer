@@ -1,11 +1,42 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
-import { FaUser, FaInfoCircle, FaDumbbell } from "react-icons/fa";
+import { Link, useNavigate } from "react-router-dom";
+import { FaUser, FaInfoCircle, FaDumbbell, FaSearch } from "react-icons/fa";
 import logo from "../assets/logo.png";
 
 function Navbar() {
   const [showAuthDropdown, setShowAuthDropdown] = useState(false);
   const [showWorkoutDropdown, setShowWorkoutDropdown] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  const navigate = useNavigate();
+
+  const pages = [
+    { name: "Workout Log", path: "/workout-log" },
+    { name: "Add Exercise", path: "/add-exercise" },
+    { name: "Profile", path: "/profile" },
+    { name: "About", path: "/about" },
+    { name: "Login", path: "/login" },
+    { name: "Signup", path: "/signup" },
+  ];
+
+  const handleSearch = (e) => {
+    const query = e.target.value.toLowerCase();
+    setSearchQuery(query);
+    if (query.length > 0) {
+      const filteredResults = pages.filter((page) =>
+        page.name.toLowerCase().includes(query)
+      );
+      setSearchResults(filteredResults);
+    } else {
+      setSearchResults([]);
+    }
+  };
+
+  const handleResultClick = (path) => {
+    setSearchQuery("");
+    setSearchResults([]);
+    navigate(path);
+  };
 
   return (
     <header className="w-full bg-gradient-to-r from-blue-400 to-emerald-400 text-black flex justify-between items-center py-6 px-8 md:px-32 drop-shadow-md">
@@ -71,11 +102,27 @@ function Navbar() {
         </ul>
 
         <div className="relative hidden md:flex items-center">
+          <FaSearch className="absolute left-3 text-2xl text-gray-500" />
           <input
             type="text"
             placeholder="Search..."
+            value={searchQuery}
+            onChange={handleSearch}
             className="py-2 pl-10 pr-4 rounded-xl border-2 border-blue-300 focus:bg-slate-100 focus:outline-sky-500"
           />
+          {searchResults.length > 0 && (
+            <ul className="absolute top-12 left-0 bg-white shadow-lg rounded-md p-2 text-black w-52">
+              {searchResults.map((result) => (
+                <li
+                  key={result.path}
+                  className="p-2 hover:bg-gray-200 rounded-md cursor-pointer"
+                  onClick={() => handleResultClick(result.path)}
+                >
+                  {result.name}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </div>
     </header>
