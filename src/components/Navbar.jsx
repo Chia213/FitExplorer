@@ -4,7 +4,8 @@ import { FaUser, FaInfoCircle, FaDumbbell } from "react-icons/fa";
 import logo from "../assets/logo.png";
 
 function Navbar() {
-  const [showAuthOptions, setShowAuthOptions] = useState(false);
+  const [showAuthDropdown, setShowAuthDropdown] = useState(false);
+  const [showWorkoutDropdown, setShowWorkoutDropdown] = useState(false);
 
   return (
     <header className="w-full bg-gradient-to-r from-blue-400 to-emerald-400 text-black flex justify-between items-center py-6 px-8 md:px-32 drop-shadow-md">
@@ -21,16 +22,25 @@ function Navbar() {
 
       <div className="flex items-center gap-8">
         <ul className="flex items-center gap-6 font-semibold text-base">
-          <li className="flex flex-col items-center p-3 hover:bg-sky-700 hover:text-white rounded-md transition-all cursor-pointer">
-            <Link to="/workout-log" className="flex flex-col items-center">
+          <li
+            className="relative flex flex-col items-center p-3 hover:bg-sky-700 hover:text-white rounded-md transition-all cursor-pointer"
+            onMouseEnter={() => setShowWorkoutDropdown(true)}
+            onMouseLeave={() => setShowWorkoutDropdown(false)}
+          >
+            <div className="flex flex-col items-center">
               <FaDumbbell size={24} />
-              <span className="text-sm">Workout Log</span>
-            </Link>
-          </li>
-          <li className="flex flex-col items-center p-3 hover:bg-sky-700 hover:text-white rounded-md transition-all cursor-pointer">
-            <Link to="/add-exercise" className="flex flex-col items-center">
-              <span className="text-sm">Add Exercise</span>
-            </Link>
+              <span className="text-sm">Workouts</span>
+            </div>
+            {showWorkoutDropdown && (
+              <ul className="absolute top-12 bg-white shadow-lg rounded-md p-2 text-black w-40">
+                <li className="p-2 hover:bg-gray-200 rounded-md">
+                  <Link to="/workout-log">Workout Log</Link>
+                </li>
+                <li className="p-2 hover:bg-gray-200 rounded-md">
+                  <Link to="/add-exercise">Add Exercise</Link>
+                </li>
+              </ul>
+            )}
           </li>
           <li className="flex flex-col items-center p-3 hover:bg-sky-700 hover:text-white rounded-md transition-all cursor-pointer">
             <Link to="/about" className="flex flex-col items-center">
@@ -39,33 +49,28 @@ function Navbar() {
             </Link>
           </li>
           <li
-            className="flex flex-col items-center p-3 hover:bg-sky-700 hover:text-white rounded-md transition-all cursor-pointer"
-            onClick={() => setShowAuthOptions(!showAuthOptions)}
+            className="relative flex flex-col items-center p-3 hover:bg-sky-700 hover:text-white rounded-md transition-all cursor-pointer"
+            onMouseEnter={() => setShowAuthDropdown(true)}
+            onMouseLeave={() => setShowAuthDropdown(false)}
           >
-            <FaUser size={24} />
-            <span className="text-sm">Profile</span>
+            <div className="flex flex-col items-center">
+              <FaUser size={24} />
+              <span className="text-sm">Profile</span>
+            </div>
+            {showAuthDropdown && (
+              <ul className="absolute top-12 bg-white shadow-lg rounded-md p-2 text-black w-40">
+                <li className="p-2 hover:bg-gray-200 rounded-md">
+                  <Link to="/login">Login</Link>
+                </li>
+                <li className="p-2 hover:bg-gray-200 rounded-md">
+                  <Link to="/signup">Signup</Link>
+                </li>
+              </ul>
+            )}
           </li>
         </ul>
 
-        {showAuthOptions && (
-          <div className="flex gap-3">
-            <Link
-              to="/login"
-              className="p-3 bg-green-500 text-white rounded-md transition-all cursor-pointer"
-            >
-              Login
-            </Link>
-            <Link
-              to="/signup"
-              className="p-3 bg-blue-500 text-white rounded-md transition-all cursor-pointer"
-            >
-              Signup
-            </Link>
-          </div>
-        )}
-
         <div className="relative hidden md:flex items-center">
-          <i className="bx bx-search absolute left-3 text-2xl text-gray-500"></i>
           <input
             type="text"
             placeholder="Search..."
