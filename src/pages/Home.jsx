@@ -4,27 +4,27 @@ import muscleImage from "../assets/titan.png"; // Use the generated muscle image
 const muscles = [
   {
     name: "Chest",
-    position: { top: "28%", left: "48%", width: "12%", height: "10%" },
+    position: { top: "19%", left: "10%", width: "10%", height: "10%" },
     exercises: ["Bench Press", "Push-ups", "Chest Fly"],
   },
   {
     name: "Biceps",
-    position: { top: "40%", left: "38%", width: "8%", height: "10%" },
+    position: { top: "26%", left: "33%", width: "4%", height: "10%" },
     exercises: ["Bicep Curl", "Hammer Curl", "Chin-ups"],
   },
   {
     name: "Triceps",
-    position: { top: "40%", left: "58%", width: "8%", height: "10%" },
+    position: { top: "23%", left: "63%", width: "4%", height: "10%" },
     exercises: ["Dips", "Tricep Extensions", "Close-Grip Bench Press"],
   },
   {
     name: "Abs",
-    position: { top: "48%", left: "45%", width: "15%", height: "15%" },
+    position: { top: "30%", left: "15%", width: "11%", height: "15%" },
     exercises: ["Crunches", "Planks", "Leg Raises"],
   },
   {
     name: "Quads",
-    position: { top: "68%", left: "47%", width: "15%", height: "12%" },
+    position: { top: "73%", left: "67%", width: "8%", height: "12%" },
     exercises: ["Squats", "Lunges", "Leg Press"],
   },
 ];
