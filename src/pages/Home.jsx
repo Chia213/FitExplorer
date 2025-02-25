@@ -1,5 +1,5 @@
 import { useState } from "react";
-import muscleImage from "../assets/titan.png"; // Use the generated muscle image
+import muscleImage from "../assets/titan.png";
 
 const muscles = [
   {
@@ -36,7 +36,6 @@ function Home() {
     <div className="min-h-screen flex flex-col justify-center items-center bg-gradient-to-r from-blue-600 to-emerald-500 text-white p-6">
       <h1 className="text-3xl font-bold mb-6">Select a Muscle Group</h1>
 
-      {/* Human Body Image with Clickable Areas */}
       <div className="relative w-[1024px]">
         <img src={muscleImage} alt="Muscle Groups" className="w-full" />
 
@@ -58,7 +57,6 @@ function Home() {
         ))}
       </div>
 
-      {/* Display Exercises When a Muscle is Selected */}
       {selectedMuscle && (
         <div className="mt-6 bg-white text-black p-5 rounded-lg shadow-lg w-80 text-center">
           <h2 className="text-xl font-bold">{selectedMuscle.name} Exercises</h2>
