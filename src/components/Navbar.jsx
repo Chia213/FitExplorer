@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { FaUser, FaInfoCircle } from "react-icons/fa";
+import { FaUser, FaInfoCircle, FaDumbbell } from "react-icons/fa";
 import logo from "../assets/logo.png";
 
 function Navbar() {
@@ -21,6 +21,12 @@ function Navbar() {
 
       <div className="flex items-center gap-8">
         <ul className="flex items-center gap-6 font-semibold text-base">
+          <li className="flex flex-col items-center p-3 hover:bg-sky-700 hover:text-white rounded-md transition-all cursor-pointer">
+            <Link to="/workout-log" className="flex flex-col items-center">
+              <FaDumbbell size={24} />
+              <span className="text-sm">Workout Log</span>
+            </Link>
+          </li>
           <li className="flex flex-col items-center p-3 hover:bg-sky-700 hover:text-white rounded-md transition-all cursor-pointer">
             <Link to="/about" className="flex flex-col items-center">
               <FaInfoCircle size={24} />

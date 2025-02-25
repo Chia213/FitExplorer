@@ -1,5 +1,5 @@
 import { useState } from "react";
-import muscleImage from "../assets/human.png"; // Use the generated muscle image
+import muscleImage from "../assets/titan.png"; // Use the generated muscle image
 
 const muscles = [
   {
