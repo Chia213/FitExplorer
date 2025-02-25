@@ -28,6 +28,11 @@ function Navbar() {
             </Link>
           </li>
           <li className="flex flex-col items-center p-3 hover:bg-sky-700 hover:text-white rounded-md transition-all cursor-pointer">
+            <Link to="/add-exercise" className="flex flex-col items-center">
+              <span className="text-sm">Add Exercise</span>
+            </Link>
+          </li>
+          <li className="flex flex-col items-center p-3 hover:bg-sky-700 hover:text-white rounded-md transition-all cursor-pointer">
             <Link to="/about" className="flex flex-col items-center">
               <FaInfoCircle size={24} />
               <span className="text-sm">About</span>
