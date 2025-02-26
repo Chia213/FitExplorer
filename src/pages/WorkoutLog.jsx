@@ -1,4 +1,11 @@
 import { useState } from "react";
+import {
+  FaStopwatch,
+  FaDumbbell,
+  FaTrash,
+  FaEdit,
+  FaCheck,
+} from "react-icons/fa";
 
 const muscleGroups = {
   Back: ["Pull-ups", "Deadlifts", "Bent-over Rows"],
@@ -10,6 +17,7 @@ const muscleGroups = {
 };
 
 function WorkoutLog() {
+  // Current workout state
   const [workoutExercises, setWorkoutExercises] = useState([]);
   const [selectedMuscleGroup, setSelectedMuscleGroup] = useState("");
   const [selectedExercise, setSelectedExercise] = useState("");
@@ -23,90 +31,248 @@ function WorkoutLog() {
   const [notes, setNotes] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
-  const [restTimer, setRestTimer] = useState(null);
-  const [history, setHistory] = useState([]);
-  const [showExerciseSelection, setShowExerciseSelection] = useState(false);
-  const [timerOptions] = useState([15, 30, 45, 60]);
 
+  // Rest timer state
+  const [restTimer, setRestTimer] = useState(null);
+  const [timerRunning, setTimerRunning] = useState(false);
+  const [timerInterval, setTimerInterval] = useState(null);
+  const [timerOptions] = useState([30, 60, 90, 120]);
+
+  // Workout history
+  const [history, setHistory] = useState([]);
+
+  // UI state
+  const [activeTab, setActiveTab] = useState("current"); // "current" or "history"
+  const [editingExerciseIndex, setEditingExerciseIndex] = useState(null);
+  const [errors, setErrors] = useState({});
+
+  // Start the rest timer
   const startRestTimer = (time) => {
+    if (timerRunning) {
+      clearInterval(timerInterval);
+    }
+
     setRestTimer(time);
-    setTimeout(() => setRestTimer(null), time * 1000);
+    setTimerRunning(true);
+
+    const interval = setInterval(() => {
+      setRestTimer((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          setTimerRunning(false);
+          return null;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    setTimerInterval(interval);
   };
 
+  // Stop the rest timer
+  const stopRestTimer = () => {
+    if (timerInterval) {
+      clearInterval(timerInterval);
+      setTimerRunning(false);
+      setRestTimer(null);
+    }
+  };
+
+  // Validate the exercise details
+  const validateExerciseDetails = () => {
+    const newErrors = {};
+
+    if (!selectedExercise) {
+      newErrors.exercise = "Please select an exercise";
+    }
+    if (!exerciseDetails.weight) {
+      newErrors.weight = "Weight is required";
+    }
+    if (!exerciseDetails.reps) {
+      newErrors.reps = "Reps are required";
+    }
+    if (!exerciseDetails.sets) {
+      newErrors.sets = "Sets are required";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  // Add an exercise to the workout
   const handleAddExercise = () => {
-    if (selectedExercise) {
-      setWorkoutExercises((prev) => [
-        ...prev,
-        { name: selectedExercise, ...exerciseDetails },
-      ]);
+    if (validateExerciseDetails()) {
+      if (editingExerciseIndex !== null) {
+        // Update existing exercise
+        const updatedExercises = [...workoutExercises];
+        updatedExercises[editingExerciseIndex] = {
+          name: selectedExercise,
+          muscleGroup: selectedMuscleGroup,
+          ...exerciseDetails,
+        };
+        setWorkoutExercises(updatedExercises);
+        setEditingExerciseIndex(null);
+      } else {
+        // Add new exercise
+        setWorkoutExercises((prev) => [
+          ...prev,
+          {
+            name: selectedExercise,
+            muscleGroup: selectedMuscleGroup,
+            ...exerciseDetails,
+          },
+        ]);
+      }
+
+      // Reset form
       setSelectedExercise("");
       setExerciseDetails({ weight: "", reps: "", sets: "", notes: "" });
     }
   };
 
-  const finishWorkout = () => {
-    if (workoutExercises.length === 0 || !bodyweight.trim()) {
-      alert(
-        "Please add at least one exercise and enter bodyweight before finishing the workout."
-      );
-      return;
+  // Edit an existing exercise
+  const editExercise = (index) => {
+    const exercise = workoutExercises[index];
+    setSelectedMuscleGroup(exercise.muscleGroup);
+    setSelectedExercise(exercise.name);
+    setExerciseDetails({
+      weight: exercise.weight,
+      reps: exercise.reps,
+      sets: exercise.sets,
+      notes: exercise.notes || "",
+    });
+    setEditingExerciseIndex(index);
+  };
+
+  // Remove an exercise from the workout
+  const removeExercise = (index) => {
+    setWorkoutExercises((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  // Validate the entire workout
+  const validateWorkout = () => {
+    const newErrors = {};
+
+    if (workoutExercises.length === 0) {
+      newErrors.exercises = "Please add at least one exercise";
+    }
+    if (!bodyweight) {
+      newErrors.bodyweight = "Please enter your bodyweight";
+    }
+    if (!startTime) {
+      newErrors.startTime = "Please set the start time";
     }
 
-    const newWorkoutSession = {
-      name: "My Workout",
-      startTime: startTime ? new Date(startTime).toLocaleString() : "Not Set",
-      endTime: endTime ? new Date(endTime).toLocaleString() : "Not Set",
-      bodyweight,
-      notes,
-      exercises: workoutExercises,
-    };
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
-    setHistory((prev) => [newWorkoutSession, ...prev]);
-    setWorkoutExercises([]);
-    setSelectedMuscleGroup("");
-    setSelectedExercise("");
-    setExerciseDetails({ weight: "", reps: "", sets: "", notes: "" });
-    setBodyweight("");
-    setNotes("");
-    setStartTime("");
-    setEndTime("");
-    setShowExerciseSelection(false);
-    setRestTimer(null);
+  // Finish the workout and add it to history
+  const finishWorkout = () => {
+    if (validateWorkout()) {
+      const newWorkoutSession = {
+        id: Date.now(), // Unique ID for the workout
+        name: "Workout " + (history.length + 1),
+        date: new Date().toLocaleDateString(),
+        startTime: startTime ? new Date(startTime).toLocaleString() : "Not Set",
+        endTime: endTime ? new Date(endTime).toLocaleString() : "Not Set",
+        bodyweight,
+        notes,
+        exercises: workoutExercises,
+      };
+
+      setHistory((prev) => [newWorkoutSession, ...prev]);
+
+      // Reset all form fields
+      setWorkoutExercises([]);
+      setSelectedMuscleGroup("");
+      setSelectedExercise("");
+      setExerciseDetails({ weight: "", reps: "", sets: "", notes: "" });
+      setBodyweight("");
+      setNotes("");
+      setStartTime("");
+      setEndTime("");
+      setRestTimer(null);
+      stopRestTimer();
+
+      // Switch to history tab to show the new workout
+      setActiveTab("history");
+    }
   };
 
   return (
     <div className="min-h-screen flex flex-col items-center p-6 bg-gray-100">
       <h1 className="text-3xl font-bold mb-6">Workout Log</h1>
-      <div className="w-full max-w-md bg-white p-6 rounded-lg shadow-md">
-        {!showExerciseSelection ? (
-          <button
-            onClick={() => setShowExerciseSelection(true)}
-            className="w-full bg-green-500 text-white p-2 mt-3 rounded-md hover:bg-green-700"
-          >
-            Add Exercises
-          </button>
-        ) : (
-          <>
-            <p className="font-semibold">Select Muscle Group:</p>
-            <select
-              value={selectedMuscleGroup}
-              onChange={(e) => setSelectedMuscleGroup(e.target.value)}
-              className="w-full p-2 border rounded-md mt-2"
-            >
-              <option value="">-- Select Muscle Group --</option>
-              {Object.keys(muscleGroups).map((group) => (
-                <option key={group} value={group}>
-                  {group}
-                </option>
-              ))}
-            </select>
+
+      {/* Tab Navigation */}
+      <div className="flex w-full max-w-4xl mb-6">
+        <button
+          onClick={() => setActiveTab("current")}
+          className={`flex-1 py-2 px-4 ${
+            activeTab === "current"
+              ? "bg-blue-500 text-white"
+              : "bg-gray-300 text-gray-700"
+          } rounded-l-md font-medium transition-colors`}
+        >
+          Current Workout
+        </button>
+        <button
+          onClick={() => setActiveTab("history")}
+          className={`flex-1 py-2 px-4 ${
+            activeTab === "history"
+              ? "bg-blue-500 text-white"
+              : "bg-gray-300 text-gray-700"
+          } rounded-r-md font-medium transition-colors`}
+        >
+          Workout History
+        </button>
+      </div>
+
+      {activeTab === "current" ? (
+        <div className="w-full max-w-4xl flex flex-col md:flex-row gap-6">
+          {/* Exercise Selection Form */}
+          <div className="w-full md:w-1/2 bg-white p-6 rounded-lg shadow-md">
+            <h2 className="text-2xl font-bold mb-4">Add Exercise</h2>
+
+            <div className="mb-4">
+              <label className="block text-gray-700 font-medium mb-2">
+                Muscle Group
+              </label>
+              <select
+                value={selectedMuscleGroup}
+                onChange={(e) => {
+                  setSelectedMuscleGroup(e.target.value);
+                  setSelectedExercise("");
+                }}
+                className={`w-full p-2 border rounded-md ${
+                  errors.muscleGroup ? "border-red-500" : ""
+                }`}
+              >
+                <option value="">-- Select Muscle Group --</option>
+                {Object.keys(muscleGroups).map((group) => (
+                  <option key={group} value={group}>
+                    {group}
+                  </option>
+                ))}
+              </select>
+              {errors.muscleGroup && (
+                <p className="text-red-500 text-sm mt-1">
+                  {errors.muscleGroup}
+                </p>
+              )}
+            </div>
+
             {selectedMuscleGroup && (
-              <>
-                <p className="font-semibold mt-3">Select Exercise:</p>
+              <div className="mb-4">
+                <label className="block text-gray-700 font-medium mb-2">
+                  Exercise
+                </label>
                 <select
                   value={selectedExercise}
                   onChange={(e) => setSelectedExercise(e.target.value)}
-                  className="w-full p-2 border rounded-md mt-2"
+                  className={`w-full p-2 border rounded-md ${
+                    errors.exercise ? "border-red-500" : ""
+                  }`}
                 >
                   <option value="">-- Select Exercise --</option>
                   {muscleGroups[selectedMuscleGroup].map((exercise) => (
@@ -115,11 +281,21 @@ function WorkoutLog() {
                     </option>
                   ))}
                 </select>
-                {selectedExercise && (
-                  <>
+                {errors.exercise && (
+                  <p className="text-red-500 text-sm mt-1">{errors.exercise}</p>
+                )}
+              </div>
+            )}
+
+            {selectedExercise && (
+              <>
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label className="block text-gray-700 font-medium mb-2">
+                      Weight (kg)
+                    </label>
                     <input
                       type="number"
-                      placeholder="Weight (kg)"
                       value={exerciseDetails.weight}
                       onChange={(e) =>
                         setExerciseDetails({
@@ -127,11 +303,23 @@ function WorkoutLog() {
                           weight: e.target.value,
                         })
                       }
-                      className="w-full p-2 border rounded-md mt-2"
+                      placeholder="Enter weight"
+                      className={`w-full p-2 border rounded-md ${
+                        errors.weight ? "border-red-500" : ""
+                      }`}
                     />
+                    {errors.weight && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.weight}
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-gray-700 font-medium mb-2">
+                      Reps
+                    </label>
                     <input
                       type="number"
-                      placeholder="Reps"
                       value={exerciseDetails.reps}
                       onChange={(e) =>
                         setExerciseDetails({
@@ -139,90 +327,289 @@ function WorkoutLog() {
                           reps: e.target.value,
                         })
                       }
-                      className="w-full p-2 border rounded-md mt-2"
+                      placeholder="Enter reps"
+                      className={`w-full p-2 border rounded-md ${
+                        errors.reps ? "border-red-500" : ""
+                      }`}
                     />
-                    <input
-                      type="number"
-                      placeholder="Sets"
-                      value={exerciseDetails.sets}
-                      onChange={(e) =>
-                        setExerciseDetails({
-                          ...exerciseDetails,
-                          sets: e.target.value,
-                        })
-                      }
-                      className="w-full p-2 border rounded-md mt-2"
-                    />
-                    <textarea
-                      placeholder="Notes"
-                      value={exerciseDetails.notes}
-                      onChange={(e) =>
-                        setExerciseDetails({
-                          ...exerciseDetails,
-                          notes: e.target.value,
-                        })
-                      }
-                      className="w-full p-2 border rounded-md mt-2"
-                    ></textarea>
-                    <button
-                      onClick={handleAddExercise}
-                      className="w-full bg-blue-500 text-white p-2 mt-3 rounded-md hover:bg-blue-700"
-                    >
-                      Add Exercise
-                    </button>
-                  </>
-                )}
+                    {errors.reps && (
+                      <p className="text-red-500 text-sm mt-1">{errors.reps}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="mb-4">
+                  <label className="block text-gray-700 font-medium mb-2">
+                    Sets
+                  </label>
+                  <input
+                    type="number"
+                    value={exerciseDetails.sets}
+                    onChange={(e) =>
+                      setExerciseDetails({
+                        ...exerciseDetails,
+                        sets: e.target.value,
+                      })
+                    }
+                    placeholder="Enter sets"
+                    className={`w-full p-2 border rounded-md ${
+                      errors.sets ? "border-red-500" : ""
+                    }`}
+                  />
+                  {errors.sets && (
+                    <p className="text-red-500 text-sm mt-1">{errors.sets}</p>
+                  )}
+                </div>
+
+                <div className="mb-4">
+                  <label className="block text-gray-700 font-medium mb-2">
+                    Notes (optional)
+                  </label>
+                  <textarea
+                    value={exerciseDetails.notes}
+                    onChange={(e) =>
+                      setExerciseDetails({
+                        ...exerciseDetails,
+                        notes: e.target.value,
+                      })
+                    }
+                    placeholder="Any additional notes"
+                    className="w-full p-2 border rounded-md h-20"
+                  ></textarea>
+                </div>
+
+                <button
+                  onClick={handleAddExercise}
+                  className="w-full bg-blue-500 text-white p-3 rounded-md hover:bg-blue-600 transition-colors flex items-center justify-center gap-2"
+                >
+                  <FaDumbbell />
+                  {editingExerciseIndex !== null
+                    ? "Update Exercise"
+                    : "Add Exercise"}
+                </button>
               </>
             )}
-            <p className="font-semibold mt-3">
-              Rest Timer: {restTimer ? `${restTimer}s` : "Not started"}
-            </p>
-            <div className="flex gap-2">
-              {timerOptions.map((time) => (
-                <button
-                  key={time}
-                  onClick={() => startRestTimer(time)}
-                  className="p-2 bg-gray-300 rounded-md hover:bg-gray-400"
-                >
-                  {time}s
-                </button>
-              ))}
+
+            {/* Rest Timer Section */}
+            <div className="mt-6 p-4 bg-gray-100 rounded-md">
+              <h3 className="font-bold text-lg mb-2 flex items-center gap-2">
+                <FaStopwatch />
+                Rest Timer
+              </h3>
+
+              {restTimer ? (
+                <div className="text-center">
+                  <div className="text-3xl font-bold mb-2">{restTimer}s</div>
+                  <button
+                    onClick={stopRestTimer}
+                    className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors"
+                  >
+                    Stop Timer
+                  </button>
+                </div>
+              ) : (
+                <div>
+                  <p className="mb-2">Select timer duration:</p>
+                  <div className="flex gap-2 flex-wrap">
+                    {timerOptions.map((time) => (
+                      <button
+                        key={time}
+                        onClick={() => startRestTimer(time)}
+                        className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+                      >
+                        {time}s
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
-            <input
-              type="datetime-local"
-              value={startTime}
-              onChange={(e) => setStartTime(e.target.value)}
-              className="w-full p-2 border rounded-md mb-2"
-            />
-            <input
-              type="datetime-local"
-              value={endTime}
-              onChange={(e) => setEndTime(e.target.value)}
-              className="w-full p-2 border rounded-md mb-2"
-            />
-            <input
-              type="number"
-              value={bodyweight}
-              onChange={(e) => setBodyweight(e.target.value)}
-              placeholder="Bodyweight (kg)"
-              className="w-full p-2 border rounded-md mb-2"
-              required
-            />
-            <textarea
-              placeholder="Notes"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              className="w-full p-2 border rounded-md mt-2"
-            ></textarea>
+          </div>
+
+          {/* Current Workout Summary */}
+          <div className="w-full md:w-1/2 bg-white p-6 rounded-lg shadow-md">
+            <h2 className="text-2xl font-bold mb-4">Current Workout</h2>
+
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              <div>
+                <label className="block text-gray-700 font-medium mb-2">
+                  Start Time
+                </label>
+                <input
+                  type="datetime-local"
+                  value={startTime}
+                  onChange={(e) => setStartTime(e.target.value)}
+                  className={`w-full p-2 border rounded-md ${
+                    errors.startTime ? "border-red-500" : ""
+                  }`}
+                />
+                {errors.startTime && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {errors.startTime}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-gray-700 font-medium mb-2">
+                  End Time
+                </label>
+                <input
+                  type="datetime-local"
+                  value={endTime}
+                  onChange={(e) => setEndTime(e.target.value)}
+                  className="w-full p-2 border rounded-md"
+                />
+              </div>
+            </div>
+
+            <div className="mb-6">
+              <label className="block text-gray-700 font-medium mb-2">
+                Bodyweight (kg)
+              </label>
+              <input
+                type="number"
+                value={bodyweight}
+                onChange={(e) => setBodyweight(e.target.value)}
+                placeholder="Enter your bodyweight"
+                className={`w-full p-2 border rounded-md ${
+                  errors.bodyweight ? "border-red-500" : ""
+                }`}
+              />
+              {errors.bodyweight && (
+                <p className="text-red-500 text-sm mt-1">{errors.bodyweight}</p>
+              )}
+            </div>
+
+            <div className="mb-6">
+              <label className="block text-gray-700 font-medium mb-2">
+                Workout Notes (optional)
+              </label>
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="How was your workout?"
+                className="w-full p-2 border rounded-md h-20"
+              ></textarea>
+            </div>
+
+            {/* Exercise List */}
+            <div className="mb-6">
+              <h3 className="font-bold text-lg mb-2">Exercises</h3>
+              {workoutExercises.length === 0 ? (
+                <p className="text-gray-500 italic">No exercises added yet</p>
+              ) : (
+                <ul className="divide-y">
+                  {workoutExercises.map((exercise, index) => (
+                    <li key={index} className="py-3">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h4 className="font-bold">{exercise.name}</h4>
+                          <p className="text-sm text-gray-600">
+                            {exercise.muscleGroup}
+                          </p>
+                          <p>
+                            {exercise.sets} sets × {exercise.reps} reps ×{" "}
+                            {exercise.weight} kg
+                          </p>
+                          {exercise.notes && (
+                            <p className="text-sm text-gray-500 mt-1">
+                              {exercise.notes}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => editExercise(index)}
+                            className="p-2 text-blue-500 hover:bg-blue-100 rounded-full transition-colors"
+                          >
+                            <FaEdit />
+                          </button>
+                          <button
+                            onClick={() => removeExercise(index)}
+                            className="p-2 text-red-500 hover:bg-red-100 rounded-full transition-colors"
+                          >
+                            <FaTrash />
+                          </button>
+                        </div>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {errors.exercises && (
+                <p className="text-red-500 text-sm mt-1">{errors.exercises}</p>
+              )}
+            </div>
+
             <button
               onClick={finishWorkout}
-              className="w-full bg-blue-500 text-white p-2 mt-3 rounded-md hover:bg-blue-700"
+              className="w-full bg-green-500 text-white p-3 rounded-md hover:bg-green-600 transition-colors flex items-center justify-center gap-2"
             >
+              <FaCheck />
               Finish Workout
             </button>
-          </>
-        )}
-      </div>
+          </div>
+        </div>
+      ) : (
+        /* Workout History Section */
+        <div className="w-full max-w-4xl bg-white p-6 rounded-lg shadow-md">
+          <h2 className="text-2xl font-bold mb-4">Workout History</h2>
+
+          {history.length === 0 ? (
+            <p className="text-gray-500 italic">No completed workouts yet</p>
+          ) : (
+            <div className="divide-y">
+              {history.map((workout) => (
+                <div key={workout.id} className="py-4">
+                  <div className="flex justify-between items-center mb-2">
+                    <h3 className="text-xl font-bold">{workout.name}</h3>
+                    <span className="text-gray-600">{workout.date}</span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 mb-2 text-sm">
+                    <div>
+                      <span className="font-medium">Start:</span>{" "}
+                      {workout.startTime}
+                    </div>
+                    <div>
+                      <span className="font-medium">End:</span>{" "}
+                      {workout.endTime}
+                    </div>
+                    <div>
+                      <span className="font-medium">Bodyweight:</span>{" "}
+                      {workout.bodyweight} kg
+                    </div>
+                  </div>
+
+                  {workout.notes && (
+                    <div className="mb-2 text-gray-700">
+                      <span className="font-medium">Notes:</span>{" "}
+                      {workout.notes}
+                    </div>
+                  )}
+
+                  <h4 className="font-bold mt-3 mb-2">Exercises:</h4>
+                  <ul className="pl-5 space-y-2">
+                    {workout.exercises.map((exercise, idx) => (
+                      <li key={idx} className="list-disc">
+                        <span className="font-medium">{exercise.name}</span> (
+                        {exercise.muscleGroup}): {exercise.sets} sets ×{" "}
+                        {exercise.reps} reps × {exercise.weight} kg
+                        {exercise.notes && (
+                          <span className="block text-sm text-gray-500">
+                            {exercise.notes}
+                          </span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
