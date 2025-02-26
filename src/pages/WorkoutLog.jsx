@@ -17,7 +17,6 @@ const muscleGroups = {
 };
 
 function WorkoutLog() {
-  // Current workout state
   const [workoutExercises, setWorkoutExercises] = useState([]);
   const [selectedMuscleGroup, setSelectedMuscleGroup] = useState("");
   const [selectedExercise, setSelectedExercise] = useState("");
@@ -32,21 +31,17 @@ function WorkoutLog() {
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
 
-  // Rest timer state
   const [restTimer, setRestTimer] = useState(null);
   const [timerRunning, setTimerRunning] = useState(false);
   const [timerInterval, setTimerInterval] = useState(null);
   const [timerOptions] = useState([30, 60, 90, 120]);
 
-  // Workout history
   const [history, setHistory] = useState([]);
 
-  // UI state
   const [activeTab, setActiveTab] = useState("current"); // "current" or "history"
   const [editingExerciseIndex, setEditingExerciseIndex] = useState(null);
   const [errors, setErrors] = useState({});
 
-  // Start the rest timer
   const startRestTimer = (time) => {
     if (timerRunning) {
       clearInterval(timerInterval);
@@ -69,7 +64,6 @@ function WorkoutLog() {
     setTimerInterval(interval);
   };
 
-  // Stop the rest timer
   const stopRestTimer = () => {
     if (timerInterval) {
       clearInterval(timerInterval);
@@ -78,7 +72,6 @@ function WorkoutLog() {
     }
   };
 
-  // Validate the exercise details
   const validateExerciseDetails = () => {
     const newErrors = {};
 
@@ -99,11 +92,9 @@ function WorkoutLog() {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Add an exercise to the workout
   const handleAddExercise = () => {
     if (validateExerciseDetails()) {
       if (editingExerciseIndex !== null) {
-        // Update existing exercise
         const updatedExercises = [...workoutExercises];
         updatedExercises[editingExerciseIndex] = {
           name: selectedExercise,
@@ -113,7 +104,6 @@ function WorkoutLog() {
         setWorkoutExercises(updatedExercises);
         setEditingExerciseIndex(null);
       } else {
-        // Add new exercise
         setWorkoutExercises((prev) => [
           ...prev,
           {
@@ -124,13 +114,11 @@ function WorkoutLog() {
         ]);
       }
 
-      // Reset form
       setSelectedExercise("");
       setExerciseDetails({ weight: "", reps: "", sets: "", notes: "" });
     }
   };
 
-  // Edit an existing exercise
   const editExercise = (index) => {
     const exercise = workoutExercises[index];
     setSelectedMuscleGroup(exercise.muscleGroup);
@@ -144,12 +132,10 @@ function WorkoutLog() {
     setEditingExerciseIndex(index);
   };
 
-  // Remove an exercise from the workout
   const removeExercise = (index) => {
     setWorkoutExercises((prev) => prev.filter((_, i) => i !== index));
   };
 
-  // Validate the entire workout
   const validateWorkout = () => {
     const newErrors = {};
 
@@ -167,11 +153,10 @@ function WorkoutLog() {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Finish the workout and add it to history
   const finishWorkout = () => {
     if (validateWorkout()) {
       const newWorkoutSession = {
-        id: Date.now(), // Unique ID for the workout
+        id: Date.now(),
         name: "Workout " + (history.length + 1),
         date: new Date().toLocaleDateString(),
         startTime: startTime ? new Date(startTime).toLocaleString() : "Not Set",
@@ -183,7 +168,6 @@ function WorkoutLog() {
 
       setHistory((prev) => [newWorkoutSession, ...prev]);
 
-      // Reset all form fields
       setWorkoutExercises([]);
       setSelectedMuscleGroup("");
       setSelectedExercise("");
@@ -195,7 +179,6 @@ function WorkoutLog() {
       setRestTimer(null);
       stopRestTimer();
 
-      // Switch to history tab to show the new workout
       setActiveTab("history");
     }
   };
@@ -204,7 +187,6 @@ function WorkoutLog() {
     <div className="min-h-screen flex flex-col items-center p-6 bg-gray-100">
       <h1 className="text-3xl font-bold mb-6">Workout Log</h1>
 
-      {/* Tab Navigation */}
       <div className="flex w-full max-w-4xl mb-6">
         <button
           onClick={() => setActiveTab("current")}
@@ -230,7 +212,6 @@ function WorkoutLog() {
 
       {activeTab === "current" ? (
         <div className="w-full max-w-4xl flex flex-col md:flex-row gap-6">
-          {/* Exercise Selection Form */}
           <div className="w-full md:w-1/2 bg-white p-6 rounded-lg shadow-md">
             <h2 className="text-2xl font-bold mb-4">Add Exercise</h2>
 
@@ -390,7 +371,6 @@ function WorkoutLog() {
               </>
             )}
 
-            {/* Rest Timer Section */}
             <div className="mt-6 p-4 bg-gray-100 rounded-md">
               <h3 className="font-bold text-lg mb-2 flex items-center gap-2">
                 <FaStopwatch />
@@ -426,7 +406,6 @@ function WorkoutLog() {
             </div>
           </div>
 
-          {/* Current Workout Summary */}
           <div className="w-full md:w-1/2 bg-white p-6 rounded-lg shadow-md">
             <h2 className="text-2xl font-bold mb-4">Current Workout</h2>
 
@@ -493,7 +472,6 @@ function WorkoutLog() {
               ></textarea>
             </div>
 
-            {/* Exercise List */}
             <div className="mb-6">
               <h3 className="font-bold text-lg mb-2">Exercises</h3>
               {workoutExercises.length === 0 ? (
@@ -552,7 +530,6 @@ function WorkoutLog() {
           </div>
         </div>
       ) : (
-        /* Workout History Section */
         <div className="w-full max-w-4xl bg-white p-6 rounded-lg shadow-md">
           <h2 className="text-2xl font-bold mb-4">Workout History</h2>
 

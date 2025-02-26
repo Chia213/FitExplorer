@@ -5,23 +5,21 @@ import {
   FaInfoCircle,
   FaDumbbell,
   FaSearch,
-  FaMoon,
-  FaSun,
   FaBars,
   FaTimes,
 } from "react-icons/fa";
 import logo from "../assets/logo.png";
+import ThemeToggle from "./ThemeToggle";
+import { useTheme } from "../hooks/useTheme";
 
 function Navbar() {
   const [showAuthDropdown, setShowAuthDropdown] = useState(false);
   const [showWorkoutDropdown, setShowWorkoutDropdown] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
-  const [darkMode, setDarkMode] = useState(
-    localStorage.getItem("darkMode") === "true"
-  );
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  const { theme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -38,26 +36,6 @@ function Navbar() {
     { name: "Login", path: "/login" },
     { name: "Signup", path: "/signup" },
   ];
-
-  const toggleDarkMode = () => {
-    const newDarkMode = !darkMode;
-    setDarkMode(newDarkMode);
-    localStorage.setItem("darkMode", String(newDarkMode));
-
-    if (newDarkMode) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  };
-
-  useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  }, [darkMode]);
 
   const handleSearch = (e) => {
     const query = e.target.value.toLowerCase();
@@ -114,14 +92,13 @@ function Navbar() {
   return (
     <header
       className={`w-full ${
-        darkMode
+        theme === "dark"
           ? "bg-gray-900 text-white"
           : "bg-gradient-to-r from-blue-400 to-emerald-400 text-black"
       } shadow-md z-50 sticky top-0`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-3 md:py-4 relative">
-          {/* Logo */}
           <div className="flex items-center">
             <Link to="/" className="flex items-center gap-2">
               <img
@@ -239,15 +216,7 @@ function Navbar() {
                 )}
               </div>
 
-              <button
-                onClick={toggleDarkMode}
-                className="p-3 rounded-md hover:bg-gray-600/20 transition-colors ml-2"
-                aria-label={
-                  darkMode ? "Switch to light mode" : "Switch to dark mode"
-                }
-              >
-                {darkMode ? <FaSun size={20} /> : <FaMoon size={20} />}
-              </button>
+              <ThemeToggle className="ml-2" />
             </nav>
           </div>
         </div>
@@ -340,14 +309,9 @@ function Navbar() {
 
             <div className="border-t dark:border-gray-700 pt-2 mt-2 flex justify-between items-center px-3 py-2">
               <span className="text-gray-700 dark:text-gray-300">
-                {darkMode ? "Dark Mode" : "Light Mode"}
+                {theme === "dark" ? "Dark Mode" : "Light Mode"}
               </span>
-              <button
-                onClick={toggleDarkMode}
-                className="p-2 rounded-md bg-gray-200 dark:bg-gray-700"
-              >
-                {darkMode ? <FaSun size={18} /> : <FaMoon size={18} />}
-              </button>
+              <ThemeToggle />
             </div>
           </nav>
         </div>
