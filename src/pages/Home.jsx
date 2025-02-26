@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTheme } from "../hooks/useTheme";
 import muscleImage from "../assets/titan.png";
 
 const muscles = [
@@ -30,10 +31,11 @@ const muscles = [
 ];
 
 function Home() {
+  const { theme } = useTheme();
   const [selectedMuscle, setSelectedMuscle] = useState(null);
 
   return (
-    <div className="min-h-screen flex flex-col justify-center items-center bg-gradient-to-r from-blue-600 to-emerald-500 text-white p-6">
+    <div className="min-h-screen flex flex-col justify-center items-center p-6">
       <h1 className="text-3xl font-bold mb-6">Select a Muscle Group</h1>
 
       <div className="relative w-[1024px]">
