@@ -38,7 +38,7 @@ function WorkoutLog() {
 
   const [history, setHistory] = useState([]);
 
-  const [activeTab, setActiveTab] = useState("current"); // "current" or "history"
+  const [activeTab, setActiveTab] = useState("current");
   const [editingExerciseIndex, setEditingExerciseIndex] = useState(null);
   const [errors, setErrors] = useState({});
 
