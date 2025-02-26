@@ -99,32 +99,32 @@ function Navbar() {
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-3 md:py-4 relative">
-          <div className="flex items-center">
+          <div className="flex items-center space-x-4">
             <Link to="/" className="flex items-center gap-2">
               <img
                 src={logo}
                 alt="FitExplorer Logo"
-                className="w-12 md:w-16 hover:scale-105 transition-all"
+                className="w-12 md:w-16 hover:scale-105 transition-all dark:invert"
               />
-              <span className="text-lg md:text-xl font-bold hidden sm:block">
+              <span className="text-lg md:text-xl font-bold hidden sm:block dark:text-white">
                 FitExplorer
               </span>
             </Link>
-          </div>
 
-          <div className="md:hidden flex items-center">
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 rounded-md hover:bg-gray-600/20"
-              aria-label="Toggle menu"
-            >
-              {mobileMenuOpen ? <FaTimes size={24} /> : <FaBars size={24} />}
-            </button>
+            <div className="md:hidden flex items-center">
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="p-2 rounded-md hover:bg-gray-600/20 dark:hover:bg-gray-600/40"
+                aria-label="Toggle menu"
+              >
+                {mobileMenuOpen ? <FaTimes size={24} /> : <FaBars size={24} />}
+              </button>
+            </div>
           </div>
 
           <div className="hidden md:flex items-center gap-4">
             <div className="relative" ref={searchRef}>
-              <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" />
+              <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400" />
               <input
                 type="text"
                 placeholder="Search..."
@@ -226,7 +226,7 @@ function Navbar() {
         <div className="md:hidden bg-white dark:bg-gray-800 shadow-lg">
           <div className="px-4 py-3 border-b dark:border-gray-700">
             <div className="relative">
-              <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" />
+              <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400" />
               <input
                 type="text"
                 placeholder="Search..."

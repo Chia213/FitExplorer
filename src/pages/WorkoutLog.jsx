@@ -184,8 +184,8 @@ function WorkoutLog() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center p-6 bg-gray-100">
-      <h1 className="text-3xl font-bold mb-6">Workout Log</h1>
+    <div className="min-h-screen flex flex-col items-center p-6 bg-gray-100 dark:bg-gray-900">
+      <h1 className="text-3xl font-bold mb-6 text-gray-800 dark:text-gray-100">Workout Log</h1>
 
       <div className="flex w-full max-w-4xl mb-6">
         <button
@@ -193,7 +193,7 @@ function WorkoutLog() {
           className={`flex-1 py-2 px-4 ${
             activeTab === "current"
               ? "bg-blue-500 text-white"
-              : "bg-gray-300 text-gray-700"
+              : "bg-gray-300 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
           } rounded-l-md font-medium transition-colors`}
         >
           Current Workout
@@ -203,7 +203,7 @@ function WorkoutLog() {
           className={`flex-1 py-2 px-4 ${
             activeTab === "history"
               ? "bg-blue-500 text-white"
-              : "bg-gray-300 text-gray-700"
+              : "bg-gray-300 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
           } rounded-r-md font-medium transition-colors`}
         >
           Workout History
@@ -212,11 +212,11 @@ function WorkoutLog() {
 
       {activeTab === "current" ? (
         <div className="w-full max-w-4xl flex flex-col md:flex-row gap-6">
-          <div className="w-full md:w-1/2 bg-white p-6 rounded-lg shadow-md">
-            <h2 className="text-2xl font-bold mb-4">Add Exercise</h2>
+          <div className="w-full md:w-1/2 bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
+            <h2 className="text-2xl font-bold mb-4 text-gray-800 dark:text-gray-100">Add Exercise</h2>
 
             <div className="mb-4">
-              <label className="block text-gray-700 font-medium mb-2">
+              <label className="block text-gray-700 dark:text-gray-300 font-medium mb-2">
                 Muscle Group
               </label>
               <select
@@ -225,8 +225,8 @@ function WorkoutLog() {
                   setSelectedMuscleGroup(e.target.value);
                   setSelectedExercise("");
                 }}
-                className={`w-full p-2 border rounded-md ${
-                  errors.muscleGroup ? "border-red-500" : ""
+                className={`w-full p-2 border rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 ${
+                  errors.muscleGroup ? "border-red-500" : "border-gray-300 dark:border-gray-600"
                 }`}
               >
                 <option value="">-- Select Muscle Group --</option>
@@ -245,14 +245,14 @@ function WorkoutLog() {
 
             {selectedMuscleGroup && (
               <div className="mb-4">
-                <label className="block text-gray-700 font-medium mb-2">
+                <label className="block text-gray-700 dark:text-gray-300 font-medium mb-2">
                   Exercise
                 </label>
                 <select
                   value={selectedExercise}
                   onChange={(e) => setSelectedExercise(e.target.value)}
-                  className={`w-full p-2 border rounded-md ${
-                    errors.exercise ? "border-red-500" : ""
+                  className={`w-full p-2 border rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 ${
+                    errors.exercise ? "border-red-500" : "border-gray-300 dark:border-gray-600"
                   }`}
                 >
                   <option value="">-- Select Exercise --</option>
@@ -272,7 +272,7 @@ function WorkoutLog() {
               <>
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <div>
-                    <label className="block text-gray-700 font-medium mb-2">
+                    <label className="block text-gray-700 dark:text-gray-300 font-medium mb-2">
                       Weight (kg)
                     </label>
                     <input
@@ -285,8 +285,8 @@ function WorkoutLog() {
                         })
                       }
                       placeholder="Enter weight"
-                      className={`w-full p-2 border rounded-md ${
-                        errors.weight ? "border-red-500" : ""
+                      className={`w-full p-2 border rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 ${
+                        errors.weight ? "border-red-500" : "border-gray-300 dark:border-gray-600"
                       }`}
                     />
                     {errors.weight && (
@@ -296,7 +296,7 @@ function WorkoutLog() {
                     )}
                   </div>
                   <div>
-                    <label className="block text-gray-700 font-medium mb-2">
+                    <label className="block text-gray-700 dark:text-gray-300 font-medium mb-2">
                       Reps
                     </label>
                     <input
@@ -309,8 +309,8 @@ function WorkoutLog() {
                         })
                       }
                       placeholder="Enter reps"
-                      className={`w-full p-2 border rounded-md ${
-                        errors.reps ? "border-red-500" : ""
+                      className={`w-full p-2 border rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 ${
+                        errors.reps ? "border-red-500" : "border-gray-300 dark:border-gray-600"
                       }`}
                     />
                     {errors.reps && (
@@ -320,7 +320,7 @@ function WorkoutLog() {
                 </div>
 
                 <div className="mb-4">
-                  <label className="block text-gray-700 font-medium mb-2">
+                  <label className="block text-gray-700 dark:text-gray-300 font-medium mb-2">
                     Sets
                   </label>
                   <input
@@ -333,8 +333,8 @@ function WorkoutLog() {
                       })
                     }
                     placeholder="Enter sets"
-                    className={`w-full p-2 border rounded-md ${
-                      errors.sets ? "border-red-500" : ""
+                    className={`w-full p-2 border rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 ${
+                      errors.sets ? "border-red-500" : "border-gray-300 dark:border-gray-600"
                     }`}
                   />
                   {errors.sets && (
@@ -343,7 +343,7 @@ function WorkoutLog() {
                 </div>
 
                 <div className="mb-4">
-                  <label className="block text-gray-700 font-medium mb-2">
+                  <label className="block text-gray-700 dark:text-gray-300 font-medium mb-2">
                     Notes (optional)
                   </label>
                   <textarea
@@ -355,13 +355,13 @@ function WorkoutLog() {
                       })
                     }
                     placeholder="Any additional notes"
-                    className="w-full p-2 border rounded-md h-20"
+                    className="w-full p-2 border rounded-md h-20 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600"
                   ></textarea>
                 </div>
 
                 <button
                   onClick={handleAddExercise}
-                  className="w-full bg-blue-500 text-white p-3 rounded-md hover:bg-blue-600 transition-colors flex items-center justify-center gap-2"
+                  className="w-full bg-blue-500 text-white p-3 rounded-md hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
                 >
                   <FaDumbbell />
                   {editingExerciseIndex !== null
@@ -371,31 +371,31 @@ function WorkoutLog() {
               </>
             )}
 
-            <div className="mt-6 p-4 bg-gray-100 rounded-md">
-              <h3 className="font-bold text-lg mb-2 flex items-center gap-2">
+            <div className="mt-6 p-4 bg-gray-100 dark:bg-gray-700 rounded-md">
+              <h3 className="font-bold text-lg mb-2 flex items-center gap-2 text-gray-800 dark:text-gray-100">
                 <FaStopwatch />
                 Rest Timer
               </h3>
 
               {restTimer ? (
                 <div className="text-center">
-                  <div className="text-3xl font-bold mb-2">{restTimer}s</div>
+                  <div className="text-3xl font-bold mb-2 text-gray-900 dark:text-gray-100">{restTimer}s</div>
                   <button
-                    onClick={stopRestTimer}
-                    className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors"
+                    onClick={                    stopRestTimer}
+                    className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700 transition-colors"
                   >
                     Stop Timer
                   </button>
                 </div>
               ) : (
                 <div>
-                  <p className="mb-2">Select timer duration:</p>
+                  <p className="mb-2 text-gray-700 dark:text-gray-300">Select timer duration:</p>
                   <div className="flex gap-2 flex-wrap">
                     {timerOptions.map((time) => (
                       <button
                         key={time}
                         onClick={() => startRestTimer(time)}
-                        className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+                        className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 transition-colors"
                       >
                         {time}s
                       </button>
@@ -406,20 +406,20 @@ function WorkoutLog() {
             </div>
           </div>
 
-          <div className="w-full md:w-1/2 bg-white p-6 rounded-lg shadow-md">
-            <h2 className="text-2xl font-bold mb-4">Current Workout</h2>
+          <div className="w-full md:w-1/2 bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
+            <h2 className="text-2xl font-bold mb-4 text-gray-800 dark:text-gray-100">Current Workout</h2>
 
             <div className="grid grid-cols-2 gap-4 mb-6">
               <div>
-                <label className="block text-gray-700 font-medium mb-2">
+                <label className="block text-gray-700 dark:text-gray-300 font-medium mb-2">
                   Start Time
                 </label>
                 <input
                   type="datetime-local"
                   value={startTime}
                   onChange={(e) => setStartTime(e.target.value)}
-                  className={`w-full p-2 border rounded-md ${
-                    errors.startTime ? "border-red-500" : ""
+                  className={`w-full p-2 border rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 ${
+                    errors.startTime ? "border-red-500" : "border-gray-300 dark:border-gray-600"
                   }`}
                 />
                 {errors.startTime && (
@@ -430,20 +430,20 @@ function WorkoutLog() {
               </div>
 
               <div>
-                <label className="block text-gray-700 font-medium mb-2">
+                <label className="block text-gray-700 dark:text-gray-300 font-medium mb-2">
                   End Time
                 </label>
                 <input
                   type="datetime-local"
                   value={endTime}
                   onChange={(e) => setEndTime(e.target.value)}
-                  className="w-full p-2 border rounded-md"
+                  className="w-full p-2 border rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600"
                 />
               </div>
             </div>
 
             <div className="mb-6">
-              <label className="block text-gray-700 font-medium mb-2">
+              <label className="block text-gray-700 dark:text-gray-300 font-medium mb-2">
                 Bodyweight (kg)
               </label>
               <input
@@ -451,8 +451,8 @@ function WorkoutLog() {
                 value={bodyweight}
                 onChange={(e) => setBodyweight(e.target.value)}
                 placeholder="Enter your bodyweight"
-                className={`w-full p-2 border rounded-md ${
-                  errors.bodyweight ? "border-red-500" : ""
+                className={`w-full p-2 border rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 ${
+                  errors.bodyweight ? "border-red-500" : "border-gray-300 dark:border-gray-600"
                 }`}
               />
               {errors.bodyweight && (
@@ -461,37 +461,37 @@ function WorkoutLog() {
             </div>
 
             <div className="mb-6">
-              <label className="block text-gray-700 font-medium mb-2">
+              <label className="block text-gray-700 dark:text-gray-300 font-medium mb-2">
                 Workout Notes (optional)
               </label>
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="How was your workout?"
-                className="w-full p-2 border rounded-md h-20"
+                className="w-full p-2 border rounded-md h-20 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600"
               ></textarea>
             </div>
 
             <div className="mb-6">
-              <h3 className="font-bold text-lg mb-2">Exercises</h3>
+              <h3 className="font-bold text-lg mb-2 text-gray-800 dark:text-gray-100">Exercises</h3>
               {workoutExercises.length === 0 ? (
-                <p className="text-gray-500 italic">No exercises added yet</p>
+                <p className="text-gray-500 dark:text-gray-400 italic">No exercises added yet</p>
               ) : (
-                <ul className="divide-y">
+                <ul className="divide-y dark:divide-gray-700">
                   {workoutExercises.map((exercise, index) => (
                     <li key={index} className="py-3">
                       <div className="flex justify-between items-start">
                         <div>
-                          <h4 className="font-bold">{exercise.name}</h4>
-                          <p className="text-sm text-gray-600">
+                          <h4 className="font-bold text-gray-800 dark:text-gray-100">{exercise.name}</h4>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">
                             {exercise.muscleGroup}
                           </p>
-                          <p>
+                          <p className="text-gray-700 dark:text-gray-300">
                             {exercise.sets} sets × {exercise.reps} reps ×{" "}
                             {exercise.weight} kg
                           </p>
                           {exercise.notes && (
-                            <p className="text-sm text-gray-500 mt-1">
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                               {exercise.notes}
                             </p>
                           )}
@@ -499,13 +499,13 @@ function WorkoutLog() {
                         <div className="flex space-x-2">
                           <button
                             onClick={() => editExercise(index)}
-                            className="p-2 text-blue-500 hover:bg-blue-100 rounded-full transition-colors"
+                            className="p-2 text-blue-500 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900 rounded-full transition-colors"
                           >
                             <FaEdit />
                           </button>
                           <button
                             onClick={() => removeExercise(index)}
-                            className="p-2 text-red-500 hover:bg-red-100 rounded-full transition-colors"
+                            className="p-2 text-red-500 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900 rounded-full transition-colors"
                           >
                             <FaTrash />
                           </button>
@@ -522,7 +522,7 @@ function WorkoutLog() {
 
             <button
               onClick={finishWorkout}
-              className="w-full bg-green-500 text-white p-3 rounded-md hover:bg-green-600 transition-colors flex items-center justify-center gap-2"
+              className="w-full bg-green-500 text-white p-3 rounded-md hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
             >
               <FaCheck />
               Finish Workout
@@ -530,21 +530,21 @@ function WorkoutLog() {
           </div>
         </div>
       ) : (
-        <div className="w-full max-w-4xl bg-white p-6 rounded-lg shadow-md">
-          <h2 className="text-2xl font-bold mb-4">Workout History</h2>
+        <div className="w-full max-w-4xl bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
+          <h2 className="text-2xl font-bold mb-4 text-gray-800 dark:text-gray-100">Workout History</h2>
 
           {history.length === 0 ? (
-            <p className="text-gray-500 italic">No completed workouts yet</p>
+            <p className="text-gray-500 dark:text-gray-400 italic">No completed workouts yet</p>
           ) : (
-            <div className="divide-y">
+            <div className="divide-y dark:divide-gray-700">
               {history.map((workout) => (
                 <div key={workout.id} className="py-4">
                   <div className="flex justify-between items-center mb-2">
-                    <h3 className="text-xl font-bold">{workout.name}</h3>
-                    <span className="text-gray-600">{workout.date}</span>
+                    <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">{workout.name}</h3>
+                    <span className="text-gray-600 dark:text-gray-400">{workout.date}</span>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4 mb-2 text-sm">
+                  <div className="grid grid-cols-2 gap-4 mb-2 text-sm text-gray-700 dark:text-gray-300">
                     <div>
                       <span className="font-medium">Start:</span>{" "}
                       {workout.startTime}
@@ -560,21 +560,21 @@ function WorkoutLog() {
                   </div>
 
                   {workout.notes && (
-                    <div className="mb-2 text-gray-700">
+                    <div className="mb-2 text-gray-700 dark:text-gray-300">
                       <span className="font-medium">Notes:</span>{" "}
                       {workout.notes}
                     </div>
                   )}
 
-                  <h4 className="font-bold mt-3 mb-2">Exercises:</h4>
-                  <ul className="pl-5 space-y-2">
+                  <h4 className="font-bold mt-3 mb-2 text-gray-800 dark:text-gray-100">Exercises:</h4>
+                  <ul className="pl-5 space-y-2 text-gray-700 dark:text-gray-300">
                     {workout.exercises.map((exercise, idx) => (
                       <li key={idx} className="list-disc">
                         <span className="font-medium">{exercise.name}</span> (
                         {exercise.muscleGroup}): {exercise.sets} sets ×{" "}
                         {exercise.reps} reps × {exercise.weight} kg
                         {exercise.notes && (
-                          <span className="block text-sm text-gray-500">
+                          <span className="block text-sm text-gray-500 dark:text-gray-400">
                             {exercise.notes}
                           </span>
                         )}
