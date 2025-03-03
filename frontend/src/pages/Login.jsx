@@ -1,22 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 
 function Login() {
   const [formData, setFormData] = useState({
-    email: '',
-    password: ''
+    email: "",
+    password: "",
   });
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prevState => ({
+    setFormData((prevState) => ({
       ...prevState,
-      [name]: value
+      [name]: value,
     }));
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log('Login Data:', formData);
+    console.log("Login Data:", formData);
   };
 
   return (
@@ -75,8 +75,8 @@ function Login() {
 
           <p className="text-sm text-gray-500 dark:text-gray-400 text-center">
             Don't have an account?{" "}
-            <a 
-              href="/signup" 
+            <a
+              href="/signup"
               className="text-blue-500 dark:text-blue-400 hover:underline"
             >
               Sign up
