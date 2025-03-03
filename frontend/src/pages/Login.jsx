@@ -27,7 +27,8 @@ function Login() {
 
       if (response.access_token) {
         localStorage.setItem("token", response.access_token);
-        navigate("/profile");
+
+        navigate("/");
       } else {
         setError("Invalid credentials");
       }
