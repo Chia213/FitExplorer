@@ -1,10 +1,14 @@
 import React, { useState } from "react";
+import { loginUser } from "../api/auth";
+import { useNavigate } from "react-router-dom";
 
 function Login() {
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
+  const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -14,9 +18,22 @@ function Login() {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Login Data:", formData);
+    setError(null);
+
+    try {
+      const response = await loginUser(formData.email, formData.password);
+
+      if (response.access_token) {
+        localStorage.setItem("token", response.access_token);
+        navigate("/profile");
+      } else {
+        setError("Invalid credentials");
+      }
+    } catch (err) {
+      setError("Something went wrong. Try again.");
+    }
   };
 
   return (
@@ -25,6 +42,8 @@ function Login() {
         <h1 className="text-3xl font-bold text-center text-gray-800 dark:text-gray-100 mb-6">
           Login
         </h1>
+
+        {error && <p className="text-red-500 text-center mb-4">{error}</p>}
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>
