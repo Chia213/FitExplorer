@@ -21,6 +21,7 @@ function Navbar() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [username, setUsername] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   const { theme } = useTheme();
@@ -32,7 +33,14 @@ function Navbar() {
   const searchRef = useRef(null);
 
   useEffect(() => {
-    setIsAuthenticated(!!localStorage.getItem("token"));
+    const token = localStorage.getItem("token");
+    if (token) {
+      const decodedToken = JSON.parse(atob(token.split(".")[1]));
+      setUsername(decodedToken.sub);
+      setIsAuthenticated(true);
+    } else {
+      setIsAuthenticated(false);
+    }
   }, [location]);
 
   const handleSearch = (e) => {
@@ -55,6 +63,7 @@ function Navbar() {
   const handleLogout = () => {
     localStorage.removeItem("token");
     setIsAuthenticated(false);
+    setUsername(null);
     navigate("/login");
   };
 
