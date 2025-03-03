@@ -1,11 +1,15 @@
 import React, { useState } from "react";
+import { registerUser } from "../api/auth";
+import { useNavigate } from "react-router-dom";
 
 function Signup() {
   const [formData, setFormData] = useState({
-    username: "",
     email: "",
     password: "",
   });
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -15,9 +19,23 @@ function Signup() {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Signup Data:", formData);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const response = await registerUser(formData.email, formData.password);
+
+      if (response.message === "User registered successfully") {
+        setSuccess("Account created! Redirecting to login...");
+        setTimeout(() => navigate("/login"), 2000);
+      } else {
+        setError(response.detail || "Failed to register.");
+      }
+    } catch (err) {
+      setError("Something went wrong. Try again.");
+    }
   };
 
   return (
@@ -30,25 +48,12 @@ function Signup() {
           Create your account
         </p>
 
-        <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-          <div>
-            <label className="block text-gray-700 dark:text-gray-300 font-medium">
-              Username
-            </label>
-            <input
-              type="text"
-              name="username"
-              value={formData.username}
-              onChange={handleChange}
-              placeholder="Enter username"
-              required
-              className="w-full px-4 py-2 mt-2 border border-gray-300 dark:border-gray-600 rounded-lg 
-                         bg-white dark:bg-gray-700 
-                         text-gray-900 dark:text-gray-100
-                         focus:outline-none focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-500"
-            />
-          </div>
+        {error && <p className="text-red-500 text-center mt-2">{error}</p>}
+        {success && (
+          <p className="text-green-500 text-center mt-2">{success}</p>
+        )}
 
+        <form onSubmit={handleSubmit} className="mt-6 space-y-4">
           <div>
             <label className="block text-gray-700 dark:text-gray-300 font-medium">
               Email
