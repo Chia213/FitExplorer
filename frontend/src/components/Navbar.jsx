@@ -201,7 +201,9 @@ function Navbar() {
                   className="flex flex-col items-center p-3 hover:bg-sky-700/20 dark:hover:bg-sky-700/40 rounded-md transition-all"
                 >
                   <FaUser size={20} />
-                  <span className="text-sm mt-1">Account</span>
+                  <span className="text-sm mt-1">
+                    {isAuthenticated ? username : "Account"}
+                  </span>
                 </button>
 
                 {showDropdown.auth && (

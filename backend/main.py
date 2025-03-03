@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from database import engine, Base, get_db
 from auth import router as auth_router
 from dependencies import get_current_user
-from models import Workout
+from models import Workout, User
 from schemas import WorkoutCreate
 
 Base.metadata.create_all(bind=engine)
@@ -47,3 +47,8 @@ def add_workout(workout: WorkoutCreate, user: dict = Depends(get_current_user), 
     db.commit()
     db.refresh(new_workout)
     return new_workout
+
+
+@app.get("/profile")
+def profile(user: User = Depends(get_current_user)):
+    return {"username": user.username, "email": user.email}

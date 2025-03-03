@@ -15,7 +15,7 @@ function Profile() {
       return;
     }
 
-    fetch("http://localhost:8000/protected-route", {
+    fetch("http://localhost:8000/profile", {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -47,7 +47,7 @@ function Profile() {
       {error ? (
         <h1 className="text-2xl font-bold text-red-500">{error}</h1>
       ) : (
-        <h1 className="text-2xl font-bold">Welcome, {user?.email}!</h1>
+        <h1 className="text-2xl font-bold">Welcome, {user?.username}!</h1>
       )}
     </div>
   );
