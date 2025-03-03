@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
-from datetime import timedelta, datetime
+from datetime import timedelta, datetime, timezone
 import jwt
 from database import get_db
 from models import User
@@ -14,7 +14,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 def create_access_token(data: dict, expires_delta: timedelta):
     to_encode = data.copy()
-    expire = datetime.utcnow() + expires_delta
+    expire = datetime.now(timezone.utc) + expires_delta
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm="HS256")
 
@@ -32,7 +32,7 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
     return {"message": "User registered successfully"}
 
 
-@router.post("/login", response_model=Token)
+@router.post("/token", response_model=Token)
 def login(user: UserLogin, db: Session = Depends(get_db)):
     db_user = db.query(User).filter(User.email == user.email).first()
     if not db_user or not pwd_context.verify(user.password, db_user.hashed_password):
