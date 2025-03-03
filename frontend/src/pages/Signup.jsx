@@ -4,8 +4,10 @@ import { useNavigate } from "react-router-dom";
 
 function Signup() {
   const [formData, setFormData] = useState({
+    username: "",
     email: "",
     password: "",
+    confirmPassword: "",
   });
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
@@ -24,8 +26,17 @@ function Signup() {
     setError(null);
     setSuccess(null);
 
+    if (formData.password !== formData.confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+
     try {
-      const response = await registerUser(formData.email, formData.password);
+      const response = await registerUser(
+        formData.email,
+        formData.password,
+        formData.username
+      );
 
       if (response.message === "User registered successfully") {
         setSuccess("Account created! Redirecting to login...");
@@ -56,6 +67,24 @@ function Signup() {
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
           <div>
             <label className="block text-gray-700 dark:text-gray-300 font-medium">
+              Username
+            </label>
+            <input
+              type="text"
+              name="username"
+              value={formData.username}
+              onChange={handleChange}
+              placeholder="Enter username"
+              required
+              className="w-full px-4 py-2 mt-2 border border-gray-300 dark:border-gray-600 rounded-lg 
+                         bg-white dark:bg-gray-700 
+                         text-gray-900 dark:text-gray-100
+                         focus:outline-none focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-gray-700 dark:text-gray-300 font-medium">
               Email
             </label>
             <input
@@ -82,6 +111,24 @@ function Signup() {
               value={formData.password}
               onChange={handleChange}
               placeholder="Enter password"
+              required
+              className="w-full px-4 py-2 mt-2 border border-gray-300 dark:border-gray-600 rounded-lg 
+                         bg-white dark:bg-gray-700 
+                         text-gray-900 dark:text-gray-100
+                         focus:outline-none focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-gray-700 dark:text-gray-300 font-medium">
+              Confirm Password
+            </label>
+            <input
+              type="password"
+              name="confirmPassword"
+              value={formData.confirmPassword}
+              onChange={handleChange}
+              placeholder="Confirm your password"
               required
               className="w-full px-4 py-2 mt-2 border border-gray-300 dark:border-gray-600 rounded-lg 
                          bg-white dark:bg-gray-700 
