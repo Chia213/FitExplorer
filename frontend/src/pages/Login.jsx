@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { loginUser } from "../api/auth";
 import { useNavigate } from "react-router-dom";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 
 function Login() {
   const [formData, setFormData] = useState({
@@ -8,6 +9,7 @@ function Login() {
     password: "",
   });
   const [error, setError] = useState(null);
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -27,14 +29,17 @@ function Login() {
 
       if (response.access_token) {
         localStorage.setItem("token", response.access_token);
-
-        navigate("/");
+        navigate("/workout-log");
       } else {
         setError("Invalid credentials");
       }
     } catch (err) {
       setError("Something went wrong. Try again.");
     }
+  };
+
+  const togglePasswordVisibility = () => {
+    setShowPassword((prev) => !prev);
   };
 
   return (
@@ -65,13 +70,12 @@ function Login() {
             />
           </div>
 
-          <div>
+          <div className="relative">
             <label className="block text-gray-700 dark:text-gray-300 font-medium">
               Password
             </label>
             <input
-              type="password"
-              name="password"
+              type={showPassword ? "text" : "password"}
               value={formData.password}
               onChange={handleChange}
               placeholder="Enter your password"
@@ -81,6 +85,13 @@ function Login() {
                          text-gray-900 dark:text-gray-100
                          focus:outline-none focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-500"
             />
+            <button
+              type="button"
+              onClick={togglePasswordVisibility}
+              className="absolute top-1/2 right-3 transform -translate-y-1/2 text-gray-500 dark:text-gray-400"
+            >
+              {showPassword ? <FaEyeSlash size={20} /> : <FaEye size={20} />}
+            </button>
           </div>
 
           <button
