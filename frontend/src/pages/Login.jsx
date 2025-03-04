@@ -29,7 +29,7 @@ function Login() {
 
       if (response.access_token) {
         localStorage.setItem("token", response.access_token);
-        navigate("/workout-log");
+        navigate("/");
       } else {
         setError("Invalid credentials");
       }
@@ -76,6 +76,7 @@ function Login() {
             </label>
             <input
               type={showPassword ? "text" : "password"}
+              name="password"
               value={formData.password}
               onChange={handleChange}
               placeholder="Enter your password"
