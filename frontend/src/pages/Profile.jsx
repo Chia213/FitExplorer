@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTheme } from "../hooks/useTheme";
 
 function Profile() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
+  const { theme } = useTheme();
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -43,11 +45,21 @@ function Profile() {
     );
 
   return (
-    <div className="flex flex-col items-center justify-center h-screen p-6 bg-gray-100">
+    <div
+      className={`flex flex-col items-center justify-center h-screen p-6 ${
+        theme === "dark"
+          ? "bg-gray-900 text-white"
+          : "bg-gray-100 text-gray-900"
+      }`}
+    >
       {error ? (
         <h1 className="text-2xl font-bold text-red-500">{error}</h1>
       ) : user ? (
-        <div className="bg-white shadow-lg rounded-lg p-6 w-96">
+        <div
+          className={`bg-white dark:bg-gray-800 shadow-lg rounded-lg p-6 w-96 ${
+            theme === "dark" ? "text-white" : "text-gray-900"
+          }`}
+        >
           <h1 className="text-3xl font-bold mb-4 text-center">
             Welcome, {user?.username}!
           </h1>

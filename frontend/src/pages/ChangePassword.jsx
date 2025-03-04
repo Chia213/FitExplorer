@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTheme } from "../hooks/useTheme";
 
 function ChangePassword() {
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [message, setMessage] = useState(null);
   const navigate = useNavigate();
+  const { theme } = useTheme();
 
   const handlePasswordChange = async (e) => {
     e.preventDefault();
@@ -30,8 +32,18 @@ function ChangePassword() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center h-screen bg-gray-100">
-      <div className="bg-white shadow-lg rounded-lg p-6 w-96">
+    <div
+      className={`flex flex-col items-center justify-center h-screen ${
+        theme === "dark"
+          ? "bg-gray-900 text-white"
+          : "bg-gray-100 text-gray-900"
+      }`}
+    >
+      <div
+        className={`bg-white dark:bg-gray-800 shadow-lg rounded-lg p-6 w-96 ${
+          theme === "dark" ? "text-white" : "text-gray-900"
+        }`}
+      >
         <h1 className="text-2xl font-bold mb-4 text-center">Change Password</h1>
         {message && <p className="text-center text-red-500">{message}</p>}
         <form onSubmit={handlePasswordChange} className="flex flex-col">
