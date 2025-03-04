@@ -143,6 +143,7 @@ function Signup() {
             </label>
             <input
               type={showConfirmPassword ? "text" : "password"}
+              name="confirmPassword"
               value={formData.confirmPassword}
               onChange={handleChange}
               placeholder="Confirm your password"

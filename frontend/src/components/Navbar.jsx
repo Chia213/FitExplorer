@@ -35,8 +35,8 @@ function Navbar() {
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (token) {
-      const decodedToken = JSON.parse(atob(token.split(".")[1])); // Decode the token
-      setUsername(decodedToken.sub); // Assuming 'sub' contains the username or email
+      const decodedToken = JSON.parse(atob(token.split(".")[1]));
+      setUsername(decodedToken.sub);
       setIsAuthenticated(true);
     } else {
       setIsAuthenticated(false);
@@ -60,12 +60,11 @@ function Navbar() {
     navigate(path);
   };
 
-  // Handle Logout function: remove token, set unauthenticated state, and redirect
   const handleLogout = () => {
-    localStorage.removeItem("token"); // Remove token from localStorage
-    setIsAuthenticated(false); // Set authentication to false
-    setUsername(null); // Clear the username
-    navigate("/login"); // Redirect to the login page after logout
+    localStorage.removeItem("token");
+    setIsAuthenticated(false);
+    setUsername(null);
+    navigate("/login");
   };
 
   useEffect(() => {
