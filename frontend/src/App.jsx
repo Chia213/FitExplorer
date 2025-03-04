@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { GoogleOAuthProvider } from "@react-oauth/google";
 import Navbar from "./components/Navbar";
 import Layout from "./components/Layout";
 import Home from "./pages/Home";
@@ -8,26 +9,30 @@ import AddExercise from "./pages/AddExercise";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Profile from "./pages/Profile";
+import ChangePassword from "./pages/ChangePassword";
 import { ThemeProvider } from "./hooks/useTheme";
 
 function App() {
   return (
-    <ThemeProvider>
-      <Router>
-        <Navbar />
-        <Layout>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/workout-log" element={<WorkoutLog />} />
-            <Route path="/add-exercise" element={<AddExercise />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
-            <Route path="/profile" element={<Profile />} />
-          </Routes>
-        </Layout>
-      </Router>
-    </ThemeProvider>
+    <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
+      <ThemeProvider>
+        <Router>
+          <Navbar />
+          <Layout>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/workout-log" element={<WorkoutLog />} />
+              <Route path="/add-exercise" element={<AddExercise />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/signup" element={<Signup />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/change-password" element={<ChangePassword />} />
+            </Routes>
+          </Layout>
+        </Router>
+      </ThemeProvider>
+    </GoogleOAuthProvider>
   );
 }
 

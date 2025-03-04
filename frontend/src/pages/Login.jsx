@@ -1,7 +1,8 @@
 import React, { useState } from "react";
-import { loginUser } from "../api/auth";
+import { GoogleLogin } from "@react-oauth/google";
 import { useNavigate } from "react-router-dom";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
+import { loginUser } from "../api/auth";
 
 function Login() {
   const [formData, setFormData] = useState({
@@ -29,7 +30,7 @@ function Login() {
 
       if (response.access_token) {
         localStorage.setItem("token", response.access_token);
-        navigate("/");
+        navigate("/profile");
       } else {
         setError("Invalid credentials");
       }
@@ -40,6 +41,26 @@ function Login() {
 
   const togglePasswordVisibility = () => {
     setShowPassword((prev) => !prev);
+  };
+
+  const handleGoogleLogin = async (response) => {
+    const token = response.credential;
+    try {
+      const res = await fetch("http://localhost:8000/auth/callback", {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (res.ok) {
+        navigate("/profile");
+      } else {
+        setError("Google login failed.");
+      }
+    } catch (error) {
+      setError("Something went wrong.");
+    }
   };
 
   return (
@@ -115,6 +136,13 @@ function Login() {
             </a>
           </p>
         </form>
+
+        <div className="mt-6">
+          <GoogleLogin
+            onSuccess={handleGoogleLogin}
+            onError={() => setError("Google login failed.")}
+          />
+        </div>
       </div>
     </div>
   );
