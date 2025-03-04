@@ -176,7 +176,7 @@ function Navbar() {
                       to="/add-exercise"
                       className="block p-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                     >
-                      Add Exercise
+                      Workout History
                     </Link>
                   </div>
                 )}

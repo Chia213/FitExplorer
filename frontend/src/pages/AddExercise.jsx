@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FaArrowLeft, FaPlus, FaSearch } from "react-icons/fa";
 
 function AddExercise({ onClose, onSelectExercise }) {
-  const exercisesData = {
+  const defaultExercisesData = {
     Abs: ["Crunches", "Leg Raises", "Plank"],
     Back: ["Pull-ups", "Deadlifts", "Bent-over Rows"],
     Biceps: ["Bicep Curls", "Hammer Curls", "Concentration Curls"],
@@ -19,6 +19,23 @@ function AddExercise({ onClose, onSelectExercise }) {
   const [weight, setWeight] = useState("");
   const [reps, setReps] = useState("");
   const [sets, setSets] = useState("");
+  const [customExercise, setCustomExercise] = useState("");
+  const [exercises, setExercises] = useState(defaultExercisesData);
+
+  // Load exercises from localStorage when the component is mounted
+  useEffect(() => {
+    const savedExercises = JSON.parse(localStorage.getItem("exercises"));
+    if (savedExercises) {
+      setExercises(savedExercises);
+    }
+  }, []);
+
+  // Save exercises to localStorage whenever they change
+  useEffect(() => {
+    if (exercises !== defaultExercisesData) {
+      localStorage.setItem("exercises", JSON.stringify(exercises));
+    }
+  }, [exercises]);
 
   const handleAddExercise = () => {
     if (!selectedExercise || !weight || !reps || !sets) return;
@@ -27,15 +44,30 @@ function AddExercise({ onClose, onSelectExercise }) {
     onClose();
   };
 
+  const handleAddCustomExercise = () => {
+    if (customExercise.trim()) {
+      // Add the custom exercise to the selected category
+      setExercises((prevExercises) => {
+        const updatedExercises = { ...prevExercises };
+        updatedExercises[selectedCategory] = [
+          ...updatedExercises[selectedCategory],
+          customExercise,
+        ];
+        return updatedExercises;
+      });
+      setCustomExercise(""); // Reset the input field for custom exercise
+    }
+  };
+
   const filteredExercises =
     selectedCategory && searchTerm
-      ? exercisesData[selectedCategory].filter((exercise) =>
+      ? exercises[selectedCategory].filter((exercise) =>
           exercise.toLowerCase().includes(searchTerm.toLowerCase())
         )
-      : exercisesData[selectedCategory] || [];
+      : exercises[selectedCategory] || [];
 
   return (
-    <div className="absolute top-0 left-0 w-full h-full bg-white p-6 flex flex-col dark:bg-gray-900">
+    <div className="absolute top-20 left-0 w-full min-h-screen bg-white p-6 flex flex-col dark:bg-gray-900 overflow-auto">
       <div className="flex justify-between items-center mb-4">
         {selectedCategory && !selectedExercise ? (
           <button
@@ -62,7 +94,7 @@ function AddExercise({ onClose, onSelectExercise }) {
 
       {!selectedCategory ? (
         <div className="space-y-2">
-          {Object.keys(exercisesData).map((group) => (
+          {Object.keys(defaultExercisesData).map((group) => (
             <button
               key={group}
               onClick={() => setSelectedCategory(group)}
@@ -101,11 +133,27 @@ function AddExercise({ onClose, onSelectExercise }) {
               </p>
             )}
           </div>
+
+          <div className="mt-4">
+            <input
+              type="text"
+              value={customExercise}
+              onChange={(e) => setCustomExercise(e.target.value)}
+              placeholder="Add custom exercise"
+              className="w-full p-2 bg-white text-gray-900 rounded-md dark:bg-gray-700 dark:text-white"
+            />
+            <button
+              onClick={handleAddCustomExercise}
+              className="w-full p-3 mt-2 rounded-md text-white font-medium bg-teal-500 hover:bg-teal-600 z-50"
+            >
+              Add Custom Exercise
+            </button>
+          </div>
         </div>
       ) : (
         <div className="flex flex-col gap-4">
           <h3 className="text-gray-900 dark:text-white">{selectedExercise}</h3>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 gap-4">
             <div className="space-y-2">
               <label className="text-gray-400 text-xs">Weight (kg)</label>
               <input

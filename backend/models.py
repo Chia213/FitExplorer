@@ -13,6 +13,8 @@ class User(Base):
     username = Column(String, unique=True, nullable=False)
     workouts = relationship("Workout", back_populates="user")
 
+    custom_exercises = relationship("CustomExercise", back_populates="user")
+
 
 class Workout(Base):
     __tablename__ = "workouts"
@@ -26,3 +28,14 @@ class Workout(Base):
     notes = Column(String, nullable=True)
     user_id = Column(Integer, ForeignKey("users.id"))
     user = relationship("User", back_populates="workouts")
+
+
+class CustomExercise(Base):
+    __tablename__ = "custom_exercises"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, index=True)
+    category = Column(String, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+
+    user = relationship("User", back_populates="custom_exercises")

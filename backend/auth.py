@@ -1,3 +1,5 @@
+from google.oauth2 import id_token
+from google.auth.transport.requests import Request
 import os
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -63,7 +65,7 @@ async def google_login():
                                  "openid", "profile", "email"])
     authorization_url, state = google_oauth.authorization_url(
         "https://accounts.google.com/o/oauth2/auth")
-    return {"authorization_url": authorization_url}
+    return Response(status_code=303, headers={"Location": authorization_url})
 
 
 @router.get("/auth/callback")
@@ -76,25 +78,37 @@ async def google_callback(code: str, db: Session = Depends(get_db)):
         client_secret=GOOGLE_CLIENT_SECRET,
     )
 
-    user_info = google_oauth.get(
-        "https://www.googleapis.com/oauth2/v1/userinfo").json()
+    token = google_oauth.token['access_token']
+    try:
+        id_info = id_token.verify_oauth2_token(
+            token, Request(), GOOGLE_CLIENT_ID)
 
-    existing_user = db.query(User).filter(
-        User.email == user_info["email"]).first()
-    if not existing_user:
-        new_user = User(
-            email=user_info["email"],
-            username=user_info["name"],
-            hashed_password="google_oauth",
+        user_info = {
+            'email': id_info.get('email'),
+            'name': id_info.get('name'),
+        }
+
+        existing_user = db.query(User).filter(
+            User.email == user_info["email"]).first()
+        if not existing_user:
+            new_user = User(
+                email=user_info["email"],
+                username=user_info["name"],
+                hashed_password="google_oauth",
+            )
+            db.add(new_user)
+            db.commit()
+            db.refresh(new_user)
+            user = new_user
+        else:
+            user = existing_user
+
+        access_token = create_access_token(
+            {"sub": user.username}, timedelta(
+                minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         )
-        db.add(new_user)
-        db.commit()
-        db.refresh(new_user)
-        user = new_user
-    else:
-        user = existing_user
 
-    access_token = create_access_token(
-        {"sub": user.username}, timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
+        return {"access_token": access_token, "token_type": "bearer"}
 
-    return {"access_token": access_token, "token_type": "bearer"}
+    except ValueError:
+        raise HTTPException(status_code=401, detail="Invalid token")

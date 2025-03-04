@@ -229,6 +229,40 @@ function WorkoutLog() {
               <FaTrash />
             </button>
           </div>
+
+          {exercise.sets.map((set, setIndex) => (
+            <div
+              key={setIndex}
+              className="flex justify-between items-center mt-4"
+            >
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleMoveSet(exerciseIndex, setIndex, "up")}
+                  className="text-teal-500 hover:text-teal-400"
+                >
+                  <FaArrowUp />
+                </button>
+                <button
+                  onClick={() => handleMoveSet(exerciseIndex, setIndex, "down")}
+                  className="text-teal-500 hover:text-teal-400"
+                >
+                  <FaArrowDown />
+                </button>
+              </div>
+              <button
+                onClick={() => handleDeleteSet(exerciseIndex, setIndex)}
+                className="text-red-500 hover:text-red-400"
+              >
+                <FaTrash />
+              </button>
+            </div>
+          ))}
+          <button
+            onClick={() => handleAddSet(exerciseIndex)}
+            className="w-full text-teal-500 hover:text-teal-400 mt-2"
+          >
+            <FaPlus /> Add Set
+          </button>
         </div>
       ))}
 

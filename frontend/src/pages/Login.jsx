@@ -30,7 +30,7 @@ function Login() {
 
       if (response.access_token) {
         localStorage.setItem("token", response.access_token);
-        navigate("/profile");
+        navigate("/");
       } else {
         setError("Invalid credentials");
       }
@@ -45,6 +45,7 @@ function Login() {
 
   const handleGoogleLogin = async (response) => {
     const token = response.credential;
+
     try {
       const res = await fetch("http://localhost:8000/auth/callback", {
         method: "GET",
@@ -54,6 +55,8 @@ function Login() {
       });
 
       if (res.ok) {
+        const data = await res.json();
+        localStorage.setItem("token", data.access_token);
         navigate("/profile");
       } else {
         setError("Google login failed.");
