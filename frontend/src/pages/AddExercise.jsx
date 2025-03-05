@@ -16,9 +16,6 @@ function AddExercise({ onClose, onSelectExercise }) {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedExercise, setSelectedExercise] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [weight, setWeight] = useState("");
-  const [reps, setReps] = useState("");
-  const [sets, setSets] = useState("");
   const [customExercise, setCustomExercise] = useState("");
   const [exercises, setExercises] = useState(defaultExercisesData);
 
@@ -37,10 +34,16 @@ function AddExercise({ onClose, onSelectExercise }) {
     }
   }, [exercises]);
 
-  const handleAddExercise = () => {
-    if (!selectedExercise || !weight || !reps || !sets) return;
+  const [initialSets, setInitialSets] = useState(1);
 
-    onSelectExercise({ name: selectedExercise, weight, reps, sets });
+  const handleAddExercise = () => {
+    if (!selectedExercise) return;
+
+    // Pass the exercise name and the number of sets to create
+    onSelectExercise({
+      name: selectedExercise,
+      initialSets: parseInt(initialSets) || 1,
+    });
     onClose();
   };
 
@@ -55,6 +58,8 @@ function AddExercise({ onClose, onSelectExercise }) {
         ];
         return updatedExercises;
       });
+      // Automatically select this custom exercise
+      setSelectedExercise(customExercise);
       setCustomExercise(""); // Reset the input field for custom exercise
     }
   };
@@ -67,137 +72,145 @@ function AddExercise({ onClose, onSelectExercise }) {
       : exercises[selectedCategory] || [];
 
   return (
-    <div className="absolute top-20 left-0 w-full min-h-screen bg-white p-6 flex flex-col dark:bg-gray-900 overflow-auto">
-      <div className="flex justify-between items-center mb-4">
-        {selectedCategory && !selectedExercise ? (
-          <button
-            onClick={() => {
-              setSelectedCategory(null);
-              setSearchTerm("");
-            }}
-            className="text-teal-500 hover:text-teal-400 flex items-center gap-2"
-          >
-            <FaArrowLeft /> Back
-          </button>
-        ) : (
-          <button
-            onClick={onClose}
-            className="text-teal-500 hover:text-teal-400"
-          >
-            Cancel
-          </button>
-        )}
-        <h2 className="text-gray-900 dark:text-white font-semibold">
-          {selectedCategory ? selectedCategory : "Select Exercise"}
-        </h2>
-      </div>
-
-      {!selectedCategory ? (
-        <div className="space-y-2">
-          {Object.keys(defaultExercisesData).map((group) => (
-            <button
-              key={group}
-              onClick={() => setSelectedCategory(group)}
-              className="block w-full py-3 text-left text-gray-900 dark:text-gray-300 border-b border-gray-300 dark:border-gray-700 hover:text-black dark:hover:text-white"
-            >
-              {group}
-            </button>
-          ))}
-        </div>
-      ) : !selectedExercise ? (
-        <div>
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Search exercises..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full p-3 bg-white text-gray-900 rounded-md pl-10 dark:bg-gray-700 dark:text-white"
-            />
-            <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-          </div>
-          <div className="space-y-2 mt-3">
-            {filteredExercises.length > 0 ? (
-              filteredExercises.map((exercise) => (
-                <button
-                  key={exercise}
-                  onClick={() => setSelectedExercise(exercise)}
-                  className="block w-full py-3 text-left text-gray-900 dark:text-gray-300 border-b border-gray-300 dark:border-gray-700 hover:text-black dark:hover:text-white"
-                >
-                  {exercise}
-                </button>
-              ))
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white dark:bg-gray-800 w-full max-w-md mx-auto rounded-lg shadow-lg overflow-hidden">
+        <div className="p-6">
+          <div className="flex justify-between items-center mb-4">
+            {selectedCategory && !selectedExercise ? (
+              <button
+                onClick={() => {
+                  setSelectedCategory(null);
+                  setSearchTerm("");
+                }}
+                className="text-teal-500 hover:text-teal-400 flex items-center gap-2"
+              >
+                <FaArrowLeft /> Back
+              </button>
+            ) : selectedExercise ? (
+              <button
+                onClick={() => {
+                  setSelectedExercise(null);
+                }}
+                className="text-teal-500 hover:text-teal-400 flex items-center gap-2"
+              >
+                <FaArrowLeft /> Back
+              </button>
             ) : (
-              <p className="text-gray-500 dark:text-gray-400 mt-2">
-                No results found
-              </p>
+              <button
+                onClick={onClose}
+                className="text-teal-500 hover:text-teal-400"
+              >
+                Cancel
+              </button>
             )}
+            <h2 className="text-gray-900 dark:text-white font-semibold">
+              {selectedExercise
+                ? selectedExercise
+                : selectedCategory
+                ? selectedCategory
+                : "Select Exercise Category"}
+            </h2>
+            <div className="w-16"></div> {/* Spacer for alignment */}
           </div>
 
-          <div className="mt-4">
-            <input
-              type="text"
-              value={customExercise}
-              onChange={(e) => setCustomExercise(e.target.value)}
-              placeholder="Add custom exercise"
-              className="w-full p-2 bg-white text-gray-900 rounded-md dark:bg-gray-700 dark:text-white"
-            />
-            <button
-              onClick={handleAddCustomExercise}
-              className="w-full p-3 mt-2 rounded-md text-white font-medium bg-teal-500 hover:bg-teal-600 z-50"
-            >
-              Add Custom Exercise
-            </button>
-          </div>
+          {!selectedCategory ? (
+            <div className="space-y-2 max-h-96 overflow-y-auto">
+              {Object.keys(exercises).map((group) => (
+                <button
+                  key={group}
+                  onClick={() => setSelectedCategory(group)}
+                  className="block w-full py-3 text-left px-3 text-gray-900 dark:text-gray-300 border-b border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-black dark:hover:text-white rounded"
+                >
+                  {group}
+                </button>
+              ))}
+            </div>
+          ) : !selectedExercise ? (
+            <div>
+              <div className="relative mb-4">
+                <input
+                  type="text"
+                  placeholder="Search exercises..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full p-3 bg-white text-gray-900 rounded-md pl-10 dark:bg-gray-700 dark:text-white border border-gray-300 dark:border-gray-600"
+                />
+                <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              </div>
+              <div className="space-y-1 mt-3 max-h-64 overflow-y-auto">
+                {filteredExercises.length > 0 ? (
+                  filteredExercises.map((exercise) => (
+                    <button
+                      key={exercise}
+                      onClick={() => setSelectedExercise(exercise)}
+                      className="block w-full py-3 text-left px-3 text-gray-900 dark:text-gray-300 border-b border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-black dark:hover:text-white rounded"
+                    >
+                      {exercise}
+                    </button>
+                  ))
+                ) : (
+                  <p className="text-gray-500 dark:text-gray-400 mt-2 text-center">
+                    No results found
+                  </p>
+                )}
+              </div>
+
+              <div className="mt-4 pt-3 border-t border-gray-300 dark:border-gray-700">
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                  Can't find your exercise? Add a custom one:
+                </p>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={customExercise}
+                    onChange={(e) => setCustomExercise(e.target.value)}
+                    placeholder="Add custom exercise"
+                    className="flex-1 p-2 bg-white text-gray-900 rounded-md dark:bg-gray-700 dark:text-white border border-gray-300 dark:border-gray-600"
+                  />
+                  <button
+                    onClick={handleAddCustomExercise}
+                    disabled={!customExercise.trim()}
+                    className={`p-2 rounded-md text-white ${
+                      !customExercise.trim()
+                        ? "bg-gray-400 cursor-not-allowed"
+                        : "bg-teal-500 hover:bg-teal-600"
+                    }`}
+                  >
+                    <FaPlus />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-4">
+              <p className="text-gray-600 dark:text-gray-400 text-sm">
+                How many sets would you like to add for this exercise?
+              </p>
+
+              <div className="space-y-2">
+                <label className="text-gray-700 dark:text-gray-300 text-sm">
+                  Number of Sets
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max="10"
+                  value={initialSets}
+                  onChange={(e) => setInitialSets(e.target.value)}
+                  className="w-full p-2 bg-white text-gray-900 rounded-md text-center dark:bg-gray-700 dark:text-white border border-gray-300 dark:border-gray-600"
+                />
+              </div>
+
+              <button
+                onClick={handleAddExercise}
+                className="w-full p-3 rounded-md text-white font-medium flex items-center justify-center gap-2 bg-teal-500 hover:bg-teal-600"
+              >
+                <FaPlus /> Add Exercise
+              </button>
+            </div>
+          )}
         </div>
-      ) : (
-        <div className="flex flex-col gap-4">
-          <h3 className="text-gray-900 dark:text-white">{selectedExercise}</h3>
-          <div className="grid grid-cols-1 gap-4">
-            <div className="space-y-2">
-              <label className="text-gray-400 text-xs">Weight (kg)</label>
-              <input
-                type="number"
-                value={weight}
-                onChange={(e) => setWeight(e.target.value)}
-                className="w-full p-2 bg-white text-gray-900 rounded-md text-center dark:bg-gray-700 dark:text-white"
-                placeholder="Kg"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-gray-400 text-xs">Reps</label>
-              <input
-                type="number"
-                value={reps}
-                onChange={(e) => setReps(e.target.value)}
-                className="w-full p-2 bg-white text-gray-900 rounded-md text-center dark:bg-gray-700 dark:text-white"
-                placeholder="Reps"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-gray-400 text-xs">Sets</label>
-              <input
-                type="number"
-                value={sets}
-                onChange={(e) => setSets(e.target.value)}
-                className="w-full p-2 bg-white text-gray-900 rounded-md text-center dark:bg-gray-700 dark:text-white"
-                placeholder="Sets"
-              />
-            </div>
-          </div>
-          <button
-            onClick={handleAddExercise}
-            disabled={!weight || !reps || !sets}
-            className={`w-full p-3 rounded-md text-white font-medium flex items-center justify-center gap-2 ${
-              !weight || !reps || !sets
-                ? "bg-gray-400 cursor-not-allowed"
-                : "bg-teal-500 hover:bg-teal-600"
-            }`}
-          >
-            <FaPlus /> Add Exercise
-          </button>
-        </div>
-      )}
+      </div>
     </div>
   );
 }

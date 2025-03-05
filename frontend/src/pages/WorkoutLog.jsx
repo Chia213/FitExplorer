@@ -6,6 +6,8 @@ import {
   FaArrowUp,
   FaArrowDown,
   FaListAlt,
+  FaChevronUp,
+  FaChevronDown,
 } from "react-icons/fa";
 import AddExercise from "./AddExercise";
 
@@ -21,8 +23,37 @@ function WorkoutLog() {
   const [notes, setNotes] = useState("");
   const [workoutExercises, setWorkoutExercises] = useState([]);
   const [showExerciseSelection, setShowExerciseSelection] = useState(false);
+  const [collapsedExercises, setCollapsedExercises] = useState({});
   const [workoutHistory, setWorkoutHistory] = useState([]);
   const navigate = useNavigate();
+
+  const toggleExerciseCollapse = (exerciseIndex) => {
+    setCollapsedExercises((prev) => ({
+      ...prev,
+      [exerciseIndex]: !prev[exerciseIndex],
+    }));
+  };
+
+  const handleMoveExercise = (exerciseIndex, direction) => {
+    if (
+      (direction === "up" && exerciseIndex === 0) ||
+      (direction === "down" && exerciseIndex === workoutExercises.length - 1)
+    ) {
+      return; // Don't move if at the edges
+    }
+
+    const newExercises = [...workoutExercises];
+    const targetIndex =
+      direction === "up" ? exerciseIndex - 1 : exerciseIndex + 1;
+
+    // Swap the exercises
+    [newExercises[exerciseIndex], newExercises[targetIndex]] = [
+      newExercises[targetIndex],
+      newExercises[exerciseIndex],
+    ];
+
+    setWorkoutExercises(newExercises);
+  };
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -108,9 +139,19 @@ function WorkoutLog() {
   };
 
   const handleAddExercise = (exercise) => {
+    // Create the specified number of empty sets or default to 1
+    const initialSets = exercise.initialSets || 1;
+    const emptySets = Array(initialSets)
+      .fill()
+      .map(() => ({
+        weight: "",
+        reps: "",
+        notes: "",
+      }));
+
     setWorkoutExercises([
       ...workoutExercises,
-      { ...exercise, sets: [{ weight: "", reps: "", notes: "" }] },
+      { ...exercise, sets: emptySets },
     ]);
     setShowExerciseSelection(false);
   };
@@ -159,23 +200,6 @@ function WorkoutLog() {
             }
           : exercise
       )
-    );
-  };
-
-  const handleMoveSet = (exerciseIndex, setIndex, direction) => {
-    setWorkoutExercises((prev) =>
-      prev.map((exercise, eIndex) => {
-        if (eIndex === exerciseIndex) {
-          const newSets = [...exercise.sets];
-          const setToMove = newSets.splice(setIndex, 1)[0];
-          if (direction === "up" && setIndex > 0)
-            newSets.splice(setIndex - 1, 0, setToMove);
-          if (direction === "down" && setIndex < newSets.length)
-            newSets.splice(setIndex + 1, 0, setToMove);
-          return { ...exercise, sets: newSets };
-        }
-        return exercise;
-      })
     );
   };
 
@@ -253,118 +277,143 @@ function WorkoutLog() {
             <h3 className="text-black dark:text-white font-semibold">
               {exercise.name}
             </h3>
-            <button
-              onClick={() => handleDeleteExercise(exerciseIndex)}
-              className="text-red-400 hover:text-red-300"
-            >
-              <FaTrash />
-            </button>
+            <div className="flex items-center space-x-3">
+              {/* Exercise movement controls */}
+              <div className="flex space-x-1">
+                <button
+                  onClick={() => handleMoveExercise(exerciseIndex, "up")}
+                  disabled={exerciseIndex === 0}
+                  className={`text-teal-500 hover:text-teal-400 ${
+                    exerciseIndex === 0 ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
+                >
+                  <FaArrowUp />
+                </button>
+                <button
+                  onClick={() => handleMoveExercise(exerciseIndex, "down")}
+                  disabled={exerciseIndex === workoutExercises.length - 1}
+                  className={`text-teal-500 hover:text-teal-400 ${
+                    exerciseIndex === workoutExercises.length - 1
+                      ? "opacity-50 cursor-not-allowed"
+                      : ""
+                  }`}
+                >
+                  <FaArrowDown />
+                </button>
+              </div>
+
+              {/* Collapse toggle button */}
+              <button
+                onClick={() => toggleExerciseCollapse(exerciseIndex)}
+                className="text-gray-500 hover:text-gray-400"
+              >
+                {collapsedExercises[exerciseIndex] ? (
+                  <FaChevronDown />
+                ) : (
+                  <FaChevronUp />
+                )}
+              </button>
+
+              {/* Delete exercise button */}
+              <button
+                onClick={() => handleDeleteExercise(exerciseIndex)}
+                className="text-red-400 hover:text-red-300"
+              >
+                <FaTrash />
+              </button>
+            </div>
           </div>
 
-          {exercise.sets.map((set, setIndex) => (
-            <div
-              key={setIndex}
-              className="mt-4 border-t border-gray-200 dark:border-gray-600 pt-3"
-            >
-              <div className="flex justify-between items-center mb-2">
-                <span className="font-medium text-gray-700 dark:text-gray-300">
-                  Set {setIndex + 1}
-                </span>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => handleMoveSet(exerciseIndex, setIndex, "up")}
-                    className="text-teal-500 hover:text-teal-400"
-                    disabled={setIndex === 0}
-                  >
-                    <FaArrowUp />
-                  </button>
-                  <button
-                    onClick={() =>
-                      handleMoveSet(exerciseIndex, setIndex, "down")
-                    }
-                    className="text-teal-500 hover:text-teal-400"
-                    disabled={setIndex === exercise.sets.length - 1}
-                  >
-                    <FaArrowDown />
-                  </button>
-                  <button
-                    onClick={() => handleDeleteSet(exerciseIndex, setIndex)}
-                    className="text-red-500 hover:text-red-400"
-                    disabled={exercise.sets.length === 1}
-                  >
-                    <FaTrash />
-                  </button>
-                </div>
-              </div>
+          {!collapsedExercises[exerciseIndex] && (
+            <>
+              {exercise.sets.map((set, setIndex) => (
+                <div
+                  key={setIndex}
+                  className="mt-4 border-t border-gray-200 dark:border-gray-600 pt-3"
+                >
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="font-medium text-gray-700 dark:text-gray-300">
+                      Set {setIndex + 1}
+                    </span>
+                    <button
+                      onClick={() => handleDeleteSet(exerciseIndex, setIndex)}
+                      className="text-red-500 hover:text-red-400"
+                      disabled={exercise.sets.length === 1}
+                    >
+                      <FaTrash />
+                    </button>
+                  </div>
 
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="text-sm text-gray-600 dark:text-gray-400">
-                    Weight (kg)
-                  </label>
-                  <input
-                    type="number"
-                    value={set.weight}
-                    onChange={(e) =>
-                      handleEditSet(
-                        exerciseIndex,
-                        setIndex,
-                        "weight",
-                        e.target.value
-                      )
-                    }
-                    className="bg-gray-200 dark:bg-gray-600 p-2 rounded-lg w-full"
-                    placeholder="Weight"
-                  />
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-sm text-gray-600 dark:text-gray-400">
+                        Weight (kg)
+                      </label>
+                      <input
+                        type="number"
+                        value={set.weight}
+                        onChange={(e) =>
+                          handleEditSet(
+                            exerciseIndex,
+                            setIndex,
+                            "weight",
+                            e.target.value
+                          )
+                        }
+                        className="bg-gray-200 dark:bg-gray-600 p-2 rounded-lg w-full"
+                        placeholder="Weight"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm text-gray-600 dark:text-gray-400">
+                        Reps
+                      </label>
+                      <input
+                        type="number"
+                        value={set.reps}
+                        onChange={(e) =>
+                          handleEditSet(
+                            exerciseIndex,
+                            setIndex,
+                            "reps",
+                            e.target.value
+                          )
+                        }
+                        className="bg-gray-200 dark:bg-gray-600 p-2 rounded-lg w-full"
+                        placeholder="Reps"
+                      />
+                    </div>
+                  </div>
+                  <div className="mt-2">
+                    <label className="text-sm text-gray-600 dark:text-gray-400">
+                      Notes
+                    </label>
+                    <input
+                      type="text"
+                      value={set.notes}
+                      onChange={(e) =>
+                        handleEditSet(
+                          exerciseIndex,
+                          setIndex,
+                          "notes",
+                          e.target.value
+                        )
+                      }
+                      className="bg-gray-200 dark:bg-gray-600 p-2 rounded-lg w-full"
+                      placeholder="Notes (optional)"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <label className="text-sm text-gray-600 dark:text-gray-400">
-                    Reps
-                  </label>
-                  <input
-                    type="number"
-                    value={set.reps}
-                    onChange={(e) =>
-                      handleEditSet(
-                        exerciseIndex,
-                        setIndex,
-                        "reps",
-                        e.target.value
-                      )
-                    }
-                    className="bg-gray-200 dark:bg-gray-600 p-2 rounded-lg w-full"
-                    placeholder="Reps"
-                  />
-                </div>
-              </div>
-              <div className="mt-2">
-                <label className="text-sm text-gray-600 dark:text-gray-400">
-                  Notes
-                </label>
-                <input
-                  type="text"
-                  value={set.notes}
-                  onChange={(e) =>
-                    handleEditSet(
-                      exerciseIndex,
-                      setIndex,
-                      "notes",
-                      e.target.value
-                    )
-                  }
-                  className="bg-gray-200 dark:bg-gray-600 p-2 rounded-lg w-full"
-                  placeholder="Notes (optional)"
-                />
-              </div>
-            </div>
-          ))}
+              ))}
 
-          <button
-            onClick={() => handleAddSet(exerciseIndex)}
-            className="w-full text-teal-500 hover:text-teal-400 mt-4 flex items-center justify-center"
-          >
-            <FaPlus className="mr-2" /> Add Set
-          </button>
+              <button
+                onClick={() => handleAddSet(exerciseIndex)}
+                className="w-full text-teal-500 hover:text-teal-400 mt-4 flex items-center justify-center"
+              >
+                <FaPlus className="mr-2" /> Add Set
+              </button>
+            </>
+          )}
         </div>
       ))}
 
