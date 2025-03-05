@@ -129,7 +129,7 @@ function WorkoutHistory() {
             Workout History
           </h1>
           <button
-            onClick={() => navigate("/workout")}
+            onClick={() => navigate("/workout-log")}
             className="flex items-center text-teal-500 hover:text-teal-400"
           >
             <FaArrowLeft className="mr-2" /> Back to Workout
@@ -293,12 +293,28 @@ function WorkoutHistory() {
                                 <thead>
                                   <tr className="border-b border-gray-200 dark:border-gray-600">
                                     <th className="text-left py-2 pr-4">Set</th>
-                                    <th className="text-left py-2 pr-4">
-                                      Weight (kg)
-                                    </th>
-                                    <th className="text-left py-2 pr-4">
-                                      Reps
-                                    </th>
+                                    {exercise.isCardio ? (
+                                      <>
+                                        <th className="text-left py-2 pr-4">
+                                          Distance
+                                        </th>
+                                        <th className="text-left py-2 pr-4">
+                                          Duration
+                                        </th>
+                                        <th className="text-left py-2 pr-4">
+                                          Intensity
+                                        </th>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <th className="text-left py-2 pr-4">
+                                          Weight (kg)
+                                        </th>
+                                        <th className="text-left py-2 pr-4">
+                                          Reps
+                                        </th>
+                                      </>
+                                    )}
                                     <th className="text-left py-2">Notes</th>
                                   </tr>
                                 </thead>
@@ -311,10 +327,32 @@ function WorkoutHistory() {
                                       <td className="py-2 pr-4">
                                         {sIndex + 1}
                                       </td>
-                                      <td className="py-2 pr-4">
-                                        {set.weight}
-                                      </td>
-                                      <td className="py-2 pr-4">{set.reps}</td>
+                                      {exercise.isCardio ? (
+                                        <>
+                                          <td className="py-2 pr-4">
+                                            {set.distance
+                                              ? `${set.distance} km`
+                                              : "-"}
+                                          </td>
+                                          <td className="py-2 pr-4">
+                                            {set.duration
+                                              ? `${set.duration} min`
+                                              : "-"}
+                                          </td>
+                                          <td className="py-2 pr-4">
+                                            {set.intensity || "-"}
+                                          </td>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <td className="py-2 pr-4">
+                                            {set.weight}
+                                          </td>
+                                          <td className="py-2 pr-4">
+                                            {set.reps}
+                                          </td>
+                                        </>
+                                      )}
                                       <td className="py-2 text-gray-600 dark:text-gray-400">
                                         {set.notes || "-"}
                                       </td>

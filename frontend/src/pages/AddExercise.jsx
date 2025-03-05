@@ -48,10 +48,15 @@ function AddExercise({ onClose, onSelectExercise }) {
   const handleAddExercise = () => {
     if (!selectedExercise) return;
 
-    // Pass the exercise name and the number of sets to create
+    // Determine if this is a cardio exercise
+    const isCardio = selectedCategory === "Cardio";
+
+    // Pass the exercise name and the number of sets to create, plus the exercise type
     onSelectExercise({
       name: selectedExercise,
       initialSets: parseInt(initialSets) || 1,
+      category: selectedCategory,
+      isCardio,
     });
     onClose();
   };

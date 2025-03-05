@@ -88,13 +88,30 @@ function WorkoutLog() {
       return;
     }
 
-    // Validate that all sets have weights and reps
-    const invalidExercises = workoutExercises.filter((exercise) =>
-      exercise.sets.some((set) => !set.weight || !set.reps)
-    );
+    // Validate that all sets have required fields filled
+    let hasInvalidExercises = false;
 
-    if (invalidExercises.length > 0) {
-      alert("Please fill in weight and reps for all sets.");
+    workoutExercises.forEach((exercise) => {
+      if (exercise.isCardio) {
+        // For cardio exercises, check if distance or duration is filled
+        if (exercise.sets.some((set) => !set.distance && !set.duration)) {
+          alert(
+            `Please fill in either distance or duration for all sets in ${exercise.name}.`
+          );
+          hasInvalidExercises = true;
+        }
+      } else {
+        // For weight training, check if weight and reps are filled
+        if (exercise.sets.some((set) => !set.weight || !set.reps)) {
+          alert(
+            `Please fill in weight and reps for all sets in ${exercise.name}.`
+          );
+          hasInvalidExercises = true;
+        }
+      }
+    });
+
+    if (hasInvalidExercises) {
       return;
     }
 
@@ -139,20 +156,44 @@ function WorkoutLog() {
   };
 
   const handleAddExercise = (exercise) => {
-    // Create the specified number of empty sets or default to 1
+    // Create appropriate template based on exercise type
     const initialSets = exercise.initialSets || 1;
-    const emptySets = Array(initialSets)
-      .fill()
-      .map(() => ({
-        weight: "",
-        reps: "",
-        notes: "",
-      }));
 
-    setWorkoutExercises([
-      ...workoutExercises,
-      { ...exercise, sets: emptySets },
-    ]);
+    // Different template for cardio exercises
+    if (exercise.isCardio) {
+      const emptyCardioSets = Array(initialSets)
+        .fill()
+        .map(() => ({
+          distance: "",
+          duration: "",
+          intensity: "",
+          notes: "",
+        }));
+
+      setWorkoutExercises([
+        ...workoutExercises,
+        {
+          ...exercise,
+          sets: emptyCardioSets,
+          isCardio: true,
+        },
+      ]);
+    } else {
+      // Regular weight training template
+      const emptySets = Array(initialSets)
+        .fill()
+        .map(() => ({
+          weight: "",
+          reps: "",
+          notes: "",
+        }));
+
+      setWorkoutExercises([
+        ...workoutExercises,
+        { ...exercise, sets: emptySets },
+      ]);
+    }
+
     setShowExerciseSelection(false);
   };
 
@@ -344,65 +385,155 @@ function WorkoutLog() {
                     </button>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="text-sm text-gray-600 dark:text-gray-400">
-                        Weight (kg)
-                      </label>
-                      <input
-                        type="number"
-                        value={set.weight}
-                        onChange={(e) =>
-                          handleEditSet(
-                            exerciseIndex,
-                            setIndex,
-                            "weight",
-                            e.target.value
-                          )
-                        }
-                        className="bg-gray-200 dark:bg-gray-600 p-2 rounded-lg w-full"
-                        placeholder="Weight"
-                      />
+                  {exercise.isCardio ? (
+                    // Cardio exercise fields
+                    <div className="space-y-2">
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="text-sm text-gray-600 dark:text-gray-400">
+                            Distance (km)
+                          </label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={set.distance}
+                            onChange={(e) =>
+                              handleEditSet(
+                                exerciseIndex,
+                                setIndex,
+                                "distance",
+                                e.target.value
+                              )
+                            }
+                            className="bg-gray-200 dark:bg-gray-600 p-2 rounded-lg w-full"
+                            placeholder="Distance"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm text-gray-600 dark:text-gray-400">
+                            Duration (min)
+                          </label>
+                          <input
+                            type="number"
+                            value={set.duration}
+                            onChange={(e) =>
+                              handleEditSet(
+                                exerciseIndex,
+                                setIndex,
+                                "duration",
+                                e.target.value
+                              )
+                            }
+                            className="bg-gray-200 dark:bg-gray-600 p-2 rounded-lg w-full"
+                            placeholder="Minutes"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-sm text-gray-600 dark:text-gray-400">
+                          Intensity (1-10)
+                        </label>
+                        <input
+                          type="number"
+                          min="1"
+                          max="10"
+                          value={set.intensity}
+                          onChange={(e) =>
+                            handleEditSet(
+                              exerciseIndex,
+                              setIndex,
+                              "intensity",
+                              e.target.value
+                            )
+                          }
+                          className="bg-gray-200 dark:bg-gray-600 p-2 rounded-lg w-full"
+                          placeholder="Intensity"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm text-gray-600 dark:text-gray-400">
+                          Notes
+                        </label>
+                        <input
+                          type="text"
+                          value={set.notes}
+                          onChange={(e) =>
+                            handleEditSet(
+                              exerciseIndex,
+                              setIndex,
+                              "notes",
+                              e.target.value
+                            )
+                          }
+                          className="bg-gray-200 dark:bg-gray-600 p-2 rounded-lg w-full"
+                          placeholder="Notes (optional)"
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <label className="text-sm text-gray-600 dark:text-gray-400">
-                        Reps
-                      </label>
-                      <input
-                        type="number"
-                        value={set.reps}
-                        onChange={(e) =>
-                          handleEditSet(
-                            exerciseIndex,
-                            setIndex,
-                            "reps",
-                            e.target.value
-                          )
-                        }
-                        className="bg-gray-200 dark:bg-gray-600 p-2 rounded-lg w-full"
-                        placeholder="Reps"
-                      />
-                    </div>
-                  </div>
-                  <div className="mt-2">
-                    <label className="text-sm text-gray-600 dark:text-gray-400">
-                      Notes
-                    </label>
-                    <input
-                      type="text"
-                      value={set.notes}
-                      onChange={(e) =>
-                        handleEditSet(
-                          exerciseIndex,
-                          setIndex,
-                          "notes",
-                          e.target.value
-                        )
-                      }
-                      className="bg-gray-200 dark:bg-gray-600 p-2 rounded-lg w-full"
-                      placeholder="Notes (optional)"
-                    />
-                  </div>
+                  ) : (
+                    // Weight training exercise fields
+                    <>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="text-sm text-gray-600 dark:text-gray-400">
+                            Weight (kg)
+                          </label>
+                          <input
+                            type="number"
+                            value={set.weight}
+                            onChange={(e) =>
+                              handleEditSet(
+                                exerciseIndex,
+                                setIndex,
+                                "weight",
+                                e.target.value
+                              )
+                            }
+                            className="bg-gray-200 dark:bg-gray-600 p-2 rounded-lg w-full"
+                            placeholder="Weight"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm text-gray-600 dark:text-gray-400">
+                            Reps
+                          </label>
+                          <input
+                            type="number"
+                            value={set.reps}
+                            onChange={(e) =>
+                              handleEditSet(
+                                exerciseIndex,
+                                setIndex,
+                                "reps",
+                                e.target.value
+                              )
+                            }
+                            className="bg-gray-200 dark:bg-gray-600 p-2 rounded-lg w-full"
+                            placeholder="Reps"
+                          />
+                        </div>
+                      </div>
+                      <div className="mt-2">
+                        <label className="text-sm text-gray-600 dark:text-gray-400">
+                          Notes
+                        </label>
+                        <input
+                          type="text"
+                          value={set.notes}
+                          onChange={(e) =>
+                            handleEditSet(
+                              exerciseIndex,
+                              setIndex,
+                              "notes",
+                              e.target.value
+                            )
+                          }
+                          className="bg-gray-200 dark:bg-gray-600 p-2 rounded-lg w-full"
+                          placeholder="Notes (optional)"
+                        />
+                      </div>
+                    </>
+                  )}
                 </div>
               ))}
 
