@@ -1,24 +1,23 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "../hooks/useTheme";
-import { FaEdit, FaTrash, FaSave, FaTimes } from "react-icons/fa";
+import { FaEdit, FaTrash, FaSave, FaTimes, FaCamera } from "react-icons/fa";
 
 function Profile() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [editedUsername, setEditedUsername] = useState("");
   const [workoutStats, setWorkoutStats] = useState(null);
-  const [editedUser, setEditedUser] = useState({
-    username: "",
-    email: "",
-  });
+  const [profilePicture, setProfilePicture] = useState(null);
   const [preferences, setPreferences] = useState({
     weightUnit: "kg",
     goalWeight: null,
     emailNotifications: false,
   });
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  const fileInputRef = useRef(null);
 
   const navigate = useNavigate();
   const { theme } = useTheme();
@@ -31,39 +30,30 @@ function Profile() {
       return;
     }
 
-    // Fetch user profile
-    fetch("http://localhost:8000/profile", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error("Unauthorized");
-        return res.json();
-      })
-      .then((data) => {
-        setUser(data);
-        setEditedUser({
-          username: data.username,
-          email: data.email,
-        });
+    Promise.all([
+      fetch("http://localhost:8000/profile", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }),
+      fetch("http://localhost:8000/workout-stats", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }),
+    ])
+      .then(async ([profileRes, statsRes]) => {
+        if (!profileRes.ok) throw new Error("Unauthorized");
+        const userData = await profileRes.json();
+        setUser(userData);
+        setEditedUsername(userData.username);
+        setProfilePicture(userData.profile_picture);
         setLoading(false);
 
-        // Fetch workout statistics
-        return fetch("http://localhost:8000/workout-stats", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-      })
-      .then((statsRes) => {
         if (statsRes.ok) {
-          return statsRes.json();
+          const statsData = await statsRes.json();
+          setWorkoutStats(statsData);
         }
-        return null;
-      })
-      .then((statsData) => {
-        setWorkoutStats(statsData);
       })
       .catch((err) => {
         console.error("Profile fetch error:", err);
@@ -82,12 +72,15 @@ function Profile() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(editedUser),
+        body: JSON.stringify({ username: editedUsername }),
       });
 
       if (response.ok) {
         const updatedUser = await response.json();
-        setUser(updatedUser);
+        setUser((prevUser) => ({
+          ...prevUser,
+          username: updatedUser.username,
+        }));
         setIsEditing(false);
       } else {
         const errorData = await response.json();
@@ -95,6 +88,103 @@ function Profile() {
       }
     } catch (err) {
       console.error("Profile update error:", err);
+      setError("Something went wrong. Please try again.");
+    }
+  };
+
+  const handleProfilePictureChange = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const validTypes = ["image/jpeg", "image/png", "image/gif"];
+    const maxSize = 5 * 1024 * 1024;
+
+    if (!validTypes.includes(file.type)) {
+      setError("Invalid file type. Please upload JPEG, PNG, or GIF.");
+      return;
+    }
+
+    if (file.size > maxSize) {
+      setError("File is too large. Maximum size is 5MB.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("profile_picture", file);
+
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(
+        "http://localhost:8000/upload-profile-picture",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+        }
+      );
+
+      if (response.ok) {
+        const result = await response.json();
+        setProfilePicture(result.profile_picture);
+        setError(null);
+      } else {
+        const errorData = await response.json();
+        setError(errorData.detail || "Failed to upload profile picture");
+      }
+    } catch (err) {
+      console.error("Profile picture upload error:", err);
+      setError("Something went wrong. Please try again.");
+    }
+  };
+
+  const handleRemoveProfilePicture = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(
+        "http://localhost:8000/remove-profile-picture",
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.ok) {
+        setProfilePicture(null);
+        setError(null);
+      } else {
+        const errorData = await response.json();
+        setError(errorData.detail || "Failed to remove profile picture");
+      }
+    } catch (err) {
+      console.error("Profile picture removal error:", err);
+      setError("Something went wrong. Please try again.");
+    }
+  };
+
+  const handlePreferenceUpdate = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch("http://localhost:8000/update-preferences", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(preferences),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        setError(errorData.detail || "Failed to update preferences");
+      } else {
+        alert("Preferences updated successfully!");
+      }
+    } catch (err) {
+      console.error("Preferences update error:", err);
       setError("Something went wrong. Please try again.");
     }
   };
@@ -122,34 +212,13 @@ function Profile() {
     }
   };
 
-  const handlePreferenceUpdate = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      const response = await fetch("http://localhost:8000/update-preferences", {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(preferences),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        setError(errorData.detail || "Failed to update preferences");
-      }
-    } catch (err) {
-      console.error("Preferences update error:", err);
-      setError("Something went wrong. Please try again.");
-    }
-  };
-
-  if (loading)
+  if (loading) {
     return (
       <div className="flex items-center justify-center h-screen text-lg">
         Loading...
       </div>
     );
+  }
 
   return (
     <div
@@ -169,7 +238,51 @@ function Profile() {
             theme === "dark" ? "text-white" : "text-gray-900"
           }`}
         >
-          {/* Profile Information Section */}
+          <div className="flex flex-col items-center mb-6">
+            <div className="relative">
+              <div
+                className="w-32 h-32 rounded-full bg-gray-200 dark:bg-gray-700 
+                           flex items-center justify-center overflow-hidden"
+              >
+                {profilePicture ? (
+                  <img
+                    src={profilePicture}
+                    alt="Profile"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <FaCamera className="text-4xl text-gray-500" />
+                )}
+              </div>
+
+              <div className="absolute bottom-0 right-0">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleProfilePictureChange}
+                  accept="image/jpeg,image/png,image/gif"
+                  className="hidden"
+                />
+                <button
+                  onClick={() => fileInputRef.current.click()}
+                  className="bg-blue-500 text-white p-2 rounded-full shadow-lg"
+                  title="Upload Profile Picture"
+                >
+                  <FaCamera />
+                </button>
+                {profilePicture && (
+                  <button
+                    onClick={handleRemoveProfilePicture}
+                    className="bg-red-500 text-white p-2 rounded-full shadow-lg ml-2"
+                    title="Remove Profile Picture"
+                  >
+                    <FaTrash />
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
           <div className="mb-6">
             <div className="flex justify-between items-center mb-4">
               <h1 className="text-3xl font-bold">Profile</h1>
@@ -178,7 +291,7 @@ function Profile() {
                   onClick={() => setIsEditing(true)}
                   className="text-blue-500 hover:text-blue-600 flex items-center"
                 >
-                  <FaEdit className="mr-2" /> Edit
+                  <FaEdit className="mr-2" /> Edit Username
                 </button>
               ) : (
                 <div className="flex space-x-2">
@@ -191,10 +304,7 @@ function Profile() {
                   <button
                     onClick={() => {
                       setIsEditing(false);
-                      setEditedUser({
-                        username: user.username,
-                        email: user.email,
-                      });
+                      setEditedUsername(user.username);
                     }}
                     className="text-red-500 hover:text-red-600 flex items-center"
                   >
@@ -211,8 +321,10 @@ function Profile() {
                   {user.username}
                 </p>
                 <p>
-                  <span className="font-semibold">Email:</span>{" "}
-                  {user.email || "N/A"}
+                  <span className="font-semibold">Email:</span> {user.email}
+                  <span className="text-sm text-gray-500 ml-2">
+                    (Cannot be changed)
+                  </span>
                 </p>
               </div>
             ) : (
@@ -223,10 +335,8 @@ function Profile() {
                   </label>
                   <input
                     type="text"
-                    value={editedUser.username}
-                    onChange={(e) =>
-                      setEditedUser({ ...editedUser, username: e.target.value })
-                    }
+                    value={editedUsername}
+                    onChange={(e) => setEditedUsername(e.target.value)}
                     className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600"
                   />
                 </div>
@@ -236,18 +346,18 @@ function Profile() {
                   </label>
                   <input
                     type="email"
-                    value={editedUser.email}
-                    onChange={(e) =>
-                      setEditedUser({ ...editedUser, email: e.target.value })
-                    }
-                    className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600"
+                    value={user.email}
+                    disabled
+                    className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 bg-gray-200 cursor-not-allowed"
                   />
+                  <p className="text-sm text-gray-500 mt-1">
+                    Email cannot be changed
+                  </p>
                 </div>
               </div>
             )}
           </div>
 
-          {/* Workout Statistics Section */}
           {workoutStats && (
             <div className="mb-6 p-4 bg-gray-100 dark:bg-gray-700 rounded-lg">
               <h2 className="text-xl font-semibold mb-4">Workout Statistics</h2>
@@ -276,7 +386,6 @@ function Profile() {
             </div>
           )}
 
-          {/* User Preferences Section */}
           <div className="mb-6">
             <h2 className="text-xl font-semibold mb-4">Preferences</h2>
             <div className="space-y-4">
@@ -321,7 +430,6 @@ function Profile() {
             </div>
           </div>
 
-          {/* Account Actions */}
           <div className="space-y-4">
             <button
               onClick={() => navigate("/change-password")}
@@ -348,7 +456,6 @@ function Profile() {
             </button>
           </div>
 
-          {/* Account Deletion Confirmation Modal */}
           {showDeleteConfirmation && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
               <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl max-w-md w-full">
