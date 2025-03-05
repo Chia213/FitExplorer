@@ -11,6 +11,18 @@ import {
 
 const API_BASE_URL = "http://localhost:8000";
 
+// Helper function to convert intensity numbers back to names
+const getIntensityName = (intensityValue) => {
+  const intensityMap = {
+    0: "",
+    1: "Low",
+    2: "Medium",
+    3: "High",
+    4: "Very High",
+  };
+  return intensityMap[intensityValue] || "";
+};
+
 function WorkoutHistory() {
   const [workoutHistory, setWorkoutHistory] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -68,6 +80,13 @@ function WorkoutHistory() {
           ) {
             exercise.is_cardio = exercise.isCardio;
             delete exercise.isCardio;
+          }
+
+          if (
+            exercise.is_cardio === undefined &&
+            exercise.category === "Cardio"
+          ) {
+            exercise.is_cardio = true;
           }
           return exercise;
         });
@@ -387,7 +406,8 @@ function WorkoutHistory() {
                             className="bg-gray-50 dark:bg-gray-700 p-4 rounded"
                           >
                             <h4 className="font-medium text-gray-800 dark:text-gray-200 mb-2">
-                              {exercise.name}
+                              {exercise.name}{" "}
+                              {exercise.is_cardio ? "(Cardio)" : ""}
                             </h4>
 
                             <div className="overflow-x-auto">
@@ -444,7 +464,11 @@ function WorkoutHistory() {
                                                 : "-"}
                                             </td>
                                             <td className="py-2 pr-4">
-                                              {set.intensity || "-"}
+                                              {set.intensity
+                                                ? getIntensityName(
+                                                    set.intensity
+                                                  )
+                                                : "-"}
                                             </td>
                                           </>
                                         ) : (

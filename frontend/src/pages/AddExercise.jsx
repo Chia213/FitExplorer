@@ -30,7 +30,6 @@ function AddExercise({ onClose, onSelectExercise }) {
   const [editingExercise, setEditingExercise] = useState(null);
   const [editExerciseName, setEditExerciseName] = useState("");
 
-  // Load exercises from localStorage when the component is mounted
   useEffect(() => {
     const savedExercises = JSON.parse(localStorage.getItem("exercises"));
     if (savedExercises) {
@@ -38,7 +37,6 @@ function AddExercise({ onClose, onSelectExercise }) {
     }
   }, []);
 
-  // Save exercises to localStorage whenever they change
   useEffect(() => {
     if (JSON.stringify(exercises) !== JSON.stringify(defaultExercisesData)) {
       localStorage.setItem("exercises", JSON.stringify(exercises));
@@ -48,10 +46,8 @@ function AddExercise({ onClose, onSelectExercise }) {
   const handleAddExercise = () => {
     if (!selectedExercise) return;
 
-    // Determine if this is a cardio exercise
     const isCardio = selectedCategory === "Cardio";
 
-    // Pass the exercise name and the number of sets to create, plus the exercise type
     onSelectExercise({
       name: selectedExercise,
       initialSets: parseInt(initialSets) || 1,
@@ -63,7 +59,6 @@ function AddExercise({ onClose, onSelectExercise }) {
 
   const handleAddCustomExercise = () => {
     if (customExercise.trim()) {
-      // Add the custom exercise to the selected category
       setExercises((prevExercises) => {
         const updatedExercises = { ...prevExercises };
         updatedExercises[selectedCategory] = [
@@ -71,14 +66,13 @@ function AddExercise({ onClose, onSelectExercise }) {
           customExercise,
         ];
 
-        // Save to localStorage immediately
         localStorage.setItem("exercises", JSON.stringify(updatedExercises));
 
         return updatedExercises;
       });
-      // Automatically select this custom exercise
+
       setSelectedExercise(customExercise);
-      setCustomExercise(""); // Reset the input field for custom exercise
+      setCustomExercise("");
     }
   };
 
@@ -91,18 +85,15 @@ function AddExercise({ onClose, onSelectExercise }) {
       setExercises((prevExercises) => {
         const updatedExercises = { ...prevExercises };
 
-        // Remove the exercise from the category
         updatedExercises[selectedCategory] = updatedExercises[
           selectedCategory
         ].filter((name) => name !== exerciseName);
 
-        // Save to localStorage immediately
         localStorage.setItem("exercises", JSON.stringify(updatedExercises));
 
         return updatedExercises;
       });
 
-      // If we were editing or had selected this exercise, reset those states
       if (editingExercise === exerciseName) {
         setEditingExercise(null);
       }
@@ -122,18 +113,15 @@ function AddExercise({ onClose, onSelectExercise }) {
       setExercises((prevExercises) => {
         const updatedExercises = { ...prevExercises };
 
-        // Replace the exercise in the category
         updatedExercises[selectedCategory] = updatedExercises[
           selectedCategory
         ].map((name) => (name === editingExercise ? editExerciseName : name));
 
-        // Save to localStorage immediately
         localStorage.setItem("exercises", JSON.stringify(updatedExercises));
 
         return updatedExercises;
       });
 
-      // If this exercise was selected, update the selection
       if (selectedExercise === editingExercise) {
         setSelectedExercise(editExerciseName);
       }
@@ -192,7 +180,7 @@ function AddExercise({ onClose, onSelectExercise }) {
                 ? selectedCategory
                 : "Select Exercise Category"}
             </h2>
-            <div className="w-16"></div> {/* Spacer for alignment */}
+            <div className="w-16"></div>
           </div>
 
           {!selectedCategory ? (
