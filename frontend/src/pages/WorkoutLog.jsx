@@ -13,6 +13,17 @@ import AddExercise from "./AddExercise";
 
 const API_BASE_URL = "http://localhost:8000";
 
+const getIntensityValue = (intensityString) => {
+  const intensityMap = {
+    "": 0,
+    Low: 1,
+    Medium: 2,
+    High: 3,
+    "Very High": 4,
+  };
+  return intensityMap[intensityString] || 0;
+};
+
 function WorkoutLog() {
   const [workoutName, setWorkoutName] = useState("");
   const [startTime, setStartTime] = useState(
@@ -108,16 +119,20 @@ function WorkoutLog() {
 
     workoutExercises.forEach((exercise) => {
       if (exercise.isCardio) {
-        if (exercise.sets.some((set) => !set.distance && !set.duration)) {
+        if (
+          exercise.sets.some(
+            (set) => !set.distance || !set.duration || !set.intensity
+          )
+        ) {
           alert(
-            `Please fill in either distance or duration for all sets in ${exercise.name}.`
+            `Please fill in Distance, Duration and Intensity ${exercise.name}.`
           );
           hasInvalidExercises = true;
         }
       } else {
         if (exercise.sets.some((set) => !set.weight || !set.reps)) {
           alert(
-            `Please fill in weight and reps for all sets in ${exercise.name}.`
+            `Please fill in Distance, Duration and Intensity to save exercise ${exercise.name}.`
           );
           hasInvalidExercises = true;
         }
@@ -139,7 +154,7 @@ function WorkoutLog() {
           return {
             distance: set.distance ? parseFloat(set.distance) : null,
             duration: set.duration ? parseFloat(set.duration) : null,
-            intensity: set.intensity || "",
+            intensity: getIntensityValue(set.intensity),
             notes: set.notes || "",
           };
         } else {
@@ -178,7 +193,15 @@ function WorkoutLog() {
         body: JSON.stringify(newWorkout),
       });
 
-      if (!response.ok) throw new Error("Failed to save workout");
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Server rejected workout with error:", errorText);
+        try {
+          const errorJson = JSON.parse(errorText);
+          console.error("Detailed validation errors:", errorJson);
+        } catch (e) {}
+        throw new Error("Failed to save workout");
+      }
 
       const savedWorkout = await response.json();
       console.log("Server response:", savedWorkout);

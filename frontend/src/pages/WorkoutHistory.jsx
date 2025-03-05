@@ -61,9 +61,7 @@ function WorkoutHistory() {
           workout.exercises = [];
         }
 
-        // Process exercises to ensure is_cardio flag is set properly
         workout.exercises = workout.exercises.map((exercise) => {
-          // Convert possible camelCase isCardio to snake_case is_cardio
           if (
             exercise.isCardio !== undefined &&
             exercise.is_cardio === undefined
