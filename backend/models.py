@@ -16,6 +16,7 @@ class User(Base):
     workouts = relationship("Workout", back_populates="user")
     preferences = relationship(
         "UserPreferences", back_populates="user", uselist=False, cascade="all, delete-orphan")
+    custom_exercises = relationship("CustomExercise", back_populates="user")
 
 
 class UserPreferences(Base):
