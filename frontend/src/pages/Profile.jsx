@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { useTheme } from "../hooks/useTheme";
 import { FaEdit, FaTrash, FaSave, FaTimes, FaCamera } from "react-icons/fa";
 
+const backendURL = "http://localhost:8000";
+
 function Profile() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -114,21 +116,16 @@ function Profile() {
 
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch(
-        "http://127.0.0.1:8000/upload-profile-picture",
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          body: formData,
-        }
-      );
+      const response = await fetch(`${backendURL}/upload-profile-picture`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
 
       const result = await response.json();
 
       if (response.ok) {
-        setProfilePicture(result.file_path);
+        setProfilePicture(`${backendURL}/${result.file_path}`);
         setError(null);
       } else {
         setError(result.detail || "Failed to upload profile picture");

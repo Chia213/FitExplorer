@@ -277,3 +277,27 @@ async def upload_profile_picture(
     db.commit()
 
     return {"message": "Profile picture uploaded", "file_path": file_path}
+
+
+@app.delete("/remove-profile-picture")
+def remove_profile_picture(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if not user.profile_picture:
+        raise HTTPException(
+            status_code=400, detail="No profile picture to remove")
+
+    try:
+        file_path = os.path.join(".", user.profile_picture.lstrip("/"))
+        if os.path.exists(file_path):
+            os.remove(file_path)
+
+        user.profile_picture = None
+        db.commit()
+
+        return {"message": "Profile picture removed successfully"}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=500, detail=f"Error removing profile picture: {str(e)}")
