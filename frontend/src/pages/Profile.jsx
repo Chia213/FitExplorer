@@ -33,23 +33,28 @@ function Profile() {
     }
 
     Promise.all([
-      fetch("http://localhost:8000/profile", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+      fetch(`${backendURL}/profile`, {
+        headers: { Authorization: `Bearer ${token}` },
       }),
-      fetch("http://localhost:8000/workout-stats", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+      fetch(`${backendURL}/workout-stats`, {
+        headers: { Authorization: `Bearer ${token}` },
       }),
     ])
       .then(async ([profileRes, statsRes]) => {
         if (!profileRes.ok) throw new Error("Unauthorized");
         const userData = await profileRes.json();
+
         setUser(userData);
         setEditedUsername(userData.username);
-        setProfilePicture(userData.profile_picture);
+
+        if (userData.profile_picture) {
+          setProfilePicture(
+            `${backendURL}/${
+              userData.profile_picture
+            }?t=${new Date().getTime()}`
+          );
+        }
+
         setLoading(false);
 
         if (statsRes.ok) {

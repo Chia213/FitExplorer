@@ -1,3 +1,6 @@
 venv/
 .env
 env/
+uploads/
+uploads/profile_pictures/
+
