@@ -39,14 +39,13 @@ function WorkoutLog() {
       (direction === "up" && exerciseIndex === 0) ||
       (direction === "down" && exerciseIndex === workoutExercises.length - 1)
     ) {
-      return; // Don't move if at the edges
+      return;
     }
 
     const newExercises = [...workoutExercises];
     const targetIndex =
       direction === "up" ? exerciseIndex - 1 : exerciseIndex + 1;
 
-    // Swap the exercises
     [newExercises[exerciseIndex], newExercises[targetIndex]] = [
       newExercises[targetIndex],
       newExercises[exerciseIndex],
@@ -61,13 +60,12 @@ function WorkoutLog() {
       navigate("/login");
       return;
     }
+    console.log("Auth token:", token);
     fetchWorkoutHistory(token);
   }, [navigate]);
 
-  // Auto-fill bodyweight from recent workout once workout history loads
   useEffect(() => {
     if (workoutHistory.length > 0 && !bodyweight) {
-      // Find the most recent workout with a bodyweight value
       const recentWorkoutWithBodyweight = workoutHistory.find(
         (workout) => workout.bodyweight && workout.bodyweight !== null
       );
@@ -88,7 +86,7 @@ function WorkoutLog() {
       });
       if (!response.ok) throw new Error("Failed to fetch workouts");
       const data = await response.json();
-      console.log("Fetched workout history:", data); // Debug log
+      console.log("Fetched workout history:", data);
       setWorkoutHistory(data);
     } catch (error) {
       console.error("Error fetching workouts:", error);
@@ -106,12 +104,10 @@ function WorkoutLog() {
       return;
     }
 
-    // Validate that all sets have required fields filled
     let hasInvalidExercises = false;
 
     workoutExercises.forEach((exercise) => {
       if (exercise.isCardio) {
-        // For cardio exercises, check if distance or duration is filled
         if (exercise.sets.some((set) => !set.distance && !set.duration)) {
           alert(
             `Please fill in either distance or duration for all sets in ${exercise.name}.`
@@ -119,7 +115,6 @@ function WorkoutLog() {
           hasInvalidExercises = true;
         }
       } else {
-        // For weight training, check if weight and reps are filled
         if (exercise.sets.some((set) => !set.weight || !set.reps)) {
           alert(
             `Please fill in weight and reps for all sets in ${exercise.name}.`
@@ -135,13 +130,11 @@ function WorkoutLog() {
 
     const token = localStorage.getItem("token");
 
-    // Create a clean version of exercises to ensure all properties are properly set
     const cleanedExercises = workoutExercises.map((exercise) => ({
       name: exercise.name,
       category: exercise.category || "Uncategorized",
       isCardio: exercise.isCardio || false,
       sets: exercise.sets.map((set) => {
-        // Ensure we're saving all set data with proper types
         if (exercise.isCardio) {
           return {
             distance: set.distance || "",
@@ -163,13 +156,13 @@ function WorkoutLog() {
       name: workoutName || `Workout ${new Date().toLocaleDateString()}`,
       date: new Date().toISOString(),
       start_time: startTime || new Date().toISOString(),
-      end_time: endTime || new Date().toISOString(), // Use current time if not provided
+      end_time: endTime || new Date().toISOString(),
       bodyweight: bodyweight || null,
       notes,
       exercises: cleanedExercises,
     };
 
-    console.log("Saving workout:", JSON.stringify(newWorkout, null, 2)); // Debug log
+    console.log("Saving workout:", JSON.stringify(newWorkout, null, 2));
 
     try {
       const response = await fetch(`${API_BASE_URL}/workouts`, {
@@ -183,11 +176,9 @@ function WorkoutLog() {
 
       if (!response.ok) throw new Error("Failed to save workout");
 
-      // Parse the saved workout from the response
       const savedWorkout = await response.json();
-      console.log("Server response:", savedWorkout); // Debug log
+      console.log("Server response:", savedWorkout);
 
-      // Make sure the exercises array is properly included in our UI state
       const workoutWithExercises = {
         ...savedWorkout,
         exercises: savedWorkout.exercises || cleanedExercises,
@@ -210,10 +201,8 @@ function WorkoutLog() {
   };
 
   const handleAddExercise = (exercise) => {
-    // Create appropriate template based on exercise type
     const initialSets = exercise.initialSets || 1;
 
-    // Different template for cardio exercises
     if (exercise.isCardio) {
       const emptyCardioSets = Array(initialSets)
         .fill()
@@ -233,7 +222,6 @@ function WorkoutLog() {
         },
       ]);
     } else {
-      // Regular weight training template
       const emptySets = Array(initialSets)
         .fill()
         .map(() => ({
@@ -256,7 +244,6 @@ function WorkoutLog() {
       workoutExercises.filter((_, index) => index !== exerciseIndex)
     );
 
-    // Also remove from collapsed state
     setCollapsedExercises((prev) => {
       const updated = { ...prev };
       delete updated[exerciseIndex];
@@ -268,7 +255,6 @@ function WorkoutLog() {
     setWorkoutExercises((prev) =>
       prev.map((exercise, index) => {
         if (index === exerciseIndex) {
-          // Create an appropriate empty set based on exercise type
           const newSet = exercise.isCardio
             ? { distance: "", duration: "", intensity: "", notes: "" }
             : { weight: "", reps: "", notes: "" };
@@ -386,7 +372,6 @@ function WorkoutLog() {
               {exercise.name}
             </h3>
             <div className="flex items-center space-x-3">
-              {/* Exercise movement controls */}
               <div className="flex space-x-1">
                 <button
                   onClick={() => handleMoveExercise(exerciseIndex, "up")}
@@ -410,7 +395,6 @@ function WorkoutLog() {
                 </button>
               </div>
 
-              {/* Collapse toggle button */}
               <button
                 onClick={() => toggleExerciseCollapse(exerciseIndex)}
                 className="text-gray-500 hover:text-gray-400"
@@ -422,7 +406,6 @@ function WorkoutLog() {
                 )}
               </button>
 
-              {/* Delete exercise button */}
               <button
                 onClick={() => handleDeleteExercise(exerciseIndex)}
                 className="text-red-400 hover:text-red-300"
@@ -453,7 +436,6 @@ function WorkoutLog() {
                   </div>
 
                   {exercise.isCardio ? (
-                    // Cardio exercise fields
                     <div className="space-y-2">
                       <div className="grid grid-cols-2 gap-2">
                         <div>
@@ -538,7 +520,6 @@ function WorkoutLog() {
                       </div>
                     </div>
                   ) : (
-                    // Weight training exercise fields
                     <>
                       <div className="grid grid-cols-2 gap-2">
                         <div>

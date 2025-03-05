@@ -36,6 +36,7 @@ function Login() {
       }
     } catch (err) {
       setError("Something went wrong. Try again.");
+      console.error("Login error:", err);
     }
   };
 
@@ -59,9 +60,12 @@ function Login() {
         localStorage.setItem("token", data.access_token);
         navigate("/profile");
       } else {
+        const errorData = await res.text();
+        console.error("Google login failed:", res.status, errorData);
         setError("Google login failed.");
       }
     } catch (error) {
+      console.error("Authentication error:", error);
       setError("Something went wrong.");
     }
   };
