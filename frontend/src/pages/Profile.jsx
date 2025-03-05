@@ -369,10 +369,6 @@ function Profile() {
                   <p>{workoutStats.totalWorkouts || 0}</p>
                 </div>
                 <div>
-                  <p className="font-medium">Total Volume</p>
-                  <p>{workoutStats.totalVolume || 0} kg</p>
-                </div>
-                <div>
                   <p className="font-medium">Favorite Exercise</p>
                   <p>{workoutStats.favoriteExercise || "N/A"}</p>
                 </div>

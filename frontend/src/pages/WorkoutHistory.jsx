@@ -40,17 +40,14 @@ function WorkoutHistory() {
       if (!response.ok) throw new Error("Failed to fetch workouts");
 
       const data = await response.json();
-      console.log("Fetched workout data:", data); // Debug log
+      console.log("Fetched workout data:", data);
 
-      // Process workouts to ensure exercises are properly formatted
       const processedWorkouts = data.map((workout) => {
-        // Check if exercises exists
         if (!workout.exercises) {
           workout.exercises = [];
           return workout;
         }
 
-        // Check if exercises is a string (common API issue)
         if (typeof workout.exercises === "string") {
           try {
             workout.exercises = JSON.parse(workout.exercises);
@@ -60,7 +57,6 @@ function WorkoutHistory() {
           }
         }
 
-        // Ensure exercises is an array
         if (!Array.isArray(workout.exercises)) {
           workout.exercises = [];
         }
@@ -109,7 +105,6 @@ function WorkoutHistory() {
     const end = new Date(endTime);
     const durationMs = end - start;
 
-    // Convert to minutes
     const minutes = Math.floor(durationMs / 60000);
 
     if (minutes < 60) {
@@ -127,14 +122,11 @@ function WorkoutHistory() {
     let totalVolume = 0;
 
     workout.exercises.forEach((exercise) => {
-      // Skip cardio exercises for volume calculation
       if (exercise.isCardio) return;
 
-      // Ensure sets is an array
       if (!exercise.sets || !Array.isArray(exercise.sets)) return;
 
       exercise.sets.forEach((set) => {
-        // Only count sets with both weight and reps
         if (set.weight && set.reps) {
           totalVolume += parseFloat(set.weight) * parseFloat(set.reps);
         }
@@ -341,15 +333,6 @@ function WorkoutHistory() {
                           workout.end_time
                         )}
                       </div>
-                      {calculateTotalVolume(workout) > 0 && (
-                        <div
-                          className="flex items-center"
-                          title="Total volume (weight × reps)"
-                        >
-                          <span className="font-medium">Volume: </span>&nbsp;
-                          {calculateTotalVolume(workout)} kg
-                        </div>
-                      )}
                       {calculateTotalDistance(workout) > 0 && (
                         <div className="flex items-center">
                           <span className="font-medium">Distance: </span>&nbsp;
