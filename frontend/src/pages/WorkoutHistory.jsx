@@ -61,6 +61,19 @@ function WorkoutHistory() {
           workout.exercises = [];
         }
 
+        // Process exercises to ensure is_cardio flag is set properly
+        workout.exercises = workout.exercises.map((exercise) => {
+          // Convert possible camelCase isCardio to snake_case is_cardio
+          if (
+            exercise.isCardio !== undefined &&
+            exercise.is_cardio === undefined
+          ) {
+            exercise.is_cardio = exercise.isCardio;
+            delete exercise.isCardio;
+          }
+          return exercise;
+        });
+
         return workout;
       });
 
@@ -116,33 +129,13 @@ function WorkoutHistory() {
     }
   };
 
-  const calculateTotalVolume = (workout) => {
-    if (!workout.exercises || !Array.isArray(workout.exercises)) return 0;
-
-    let totalVolume = 0;
-
-    workout.exercises.forEach((exercise) => {
-      if (exercise.isCardio) return;
-
-      if (!exercise.sets || !Array.isArray(exercise.sets)) return;
-
-      exercise.sets.forEach((set) => {
-        if (set.weight && set.reps) {
-          totalVolume += parseFloat(set.weight) * parseFloat(set.reps);
-        }
-      });
-    });
-
-    return totalVolume.toFixed(1);
-  };
-
   const calculateTotalDistance = (workout) => {
     if (!workout.exercises || !Array.isArray(workout.exercises)) return 0;
 
     let totalDistance = 0;
 
     workout.exercises.forEach((exercise) => {
-      if (!exercise.isCardio) return;
+      if (!exercise.is_cardio) return;
 
       if (!exercise.sets || !Array.isArray(exercise.sets)) return;
 
@@ -162,7 +155,7 @@ function WorkoutHistory() {
     let totalDuration = 0;
 
     workout.exercises.forEach((exercise) => {
-      if (!exercise.isCardio) return;
+      if (!exercise.is_cardio) return;
 
       if (!exercise.sets || !Array.isArray(exercise.sets)) return;
 
@@ -240,7 +233,6 @@ function WorkoutHistory() {
           </div>
         )}
 
-        {/* Filters */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -369,15 +361,17 @@ function WorkoutHistory() {
                     <div className="text-sm text-gray-600 dark:text-gray-400 mb-4">
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <span className="font-medium">Started:</span>{" "}
+                          <span className="font-medium">Started Workout:</span>{" "}
                           {formatTime(workout.start_time)}
                         </div>
+                        <div></div>
                         <div>
-                          <span className="font-medium">Ended:</span>{" "}
+                          <span className="font-medium">Ended Workout:</span>{" "}
                           {workout.end_time
                             ? formatTime(workout.end_time)
                             : "N/A"}
                         </div>
+                        <div></div>
                       </div>
                     </div>
 
@@ -403,7 +397,7 @@ function WorkoutHistory() {
                                 <thead>
                                   <tr className="border-b border-gray-200 dark:border-gray-600">
                                     <th className="text-left py-2 pr-4">Set</th>
-                                    {exercise.isCardio ? (
+                                    {exercise.is_cardio ? (
                                       <>
                                         <th className="text-left py-2 pr-4">
                                           Distance
@@ -439,7 +433,7 @@ function WorkoutHistory() {
                                         <td className="py-2 pr-4">
                                           {sIndex + 1}
                                         </td>
-                                        {exercise.isCardio ? (
+                                        {exercise.is_cardio ? (
                                           <>
                                             <td className="py-2 pr-4">
                                               {set.distance

@@ -133,12 +133,12 @@ function WorkoutLog() {
     const cleanedExercises = workoutExercises.map((exercise) => ({
       name: exercise.name,
       category: exercise.category || "Uncategorized",
-      isCardio: exercise.isCardio || false,
+      is_cardio: exercise.isCardio || false,
       sets: exercise.sets.map((set) => {
         if (exercise.isCardio) {
           return {
-            distance: set.distance || "",
-            duration: set.duration || "",
+            distance: set.distance ? parseFloat(set.distance) : null,
+            duration: set.duration ? parseFloat(set.duration) : null,
             intensity: set.intensity || "",
             notes: set.notes || "",
           };
@@ -155,9 +155,13 @@ function WorkoutLog() {
     const newWorkout = {
       name: workoutName || `Workout ${new Date().toLocaleDateString()}`,
       date: new Date().toISOString(),
-      start_time: startTime || new Date().toISOString(),
-      end_time: endTime || new Date().toISOString(),
-      bodyweight: bodyweight || null,
+      start_time: startTime
+        ? new Date(startTime).toISOString()
+        : new Date().toISOString(),
+      end_time: endTime
+        ? new Date(endTime).toISOString()
+        : new Date().toISOString(),
+      bodyweight: bodyweight ? parseFloat(bodyweight) : null,
       notes,
       exercises: cleanedExercises,
     };
@@ -480,12 +484,9 @@ function WorkoutLog() {
                       </div>
                       <div>
                         <label className="text-sm text-gray-600 dark:text-gray-400">
-                          Intensity (1-10)
+                          Intensity
                         </label>
-                        <input
-                          type="number"
-                          min="1"
-                          max="10"
+                        <select
                           value={set.intensity}
                           onChange={(e) =>
                             handleEditSet(
@@ -496,8 +497,13 @@ function WorkoutLog() {
                             )
                           }
                           className="bg-gray-200 dark:bg-gray-600 p-2 rounded-lg w-full"
-                          placeholder="Intensity"
-                        />
+                        >
+                          <option value="">Select Intensity</option>
+                          <option value="Low">Low</option>
+                          <option value="Medium">Medium</option>
+                          <option value="High">High</option>
+                          <option value="Very High">Very High</option>
+                        </select>
                       </div>
                       <div>
                         <label className="text-sm text-gray-600 dark:text-gray-400">
