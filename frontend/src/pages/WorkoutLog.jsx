@@ -64,6 +64,23 @@ function WorkoutLog() {
     fetchWorkoutHistory(token);
   }, [navigate]);
 
+  // Auto-fill bodyweight from recent workout once workout history loads
+  useEffect(() => {
+    if (workoutHistory.length > 0 && !bodyweight) {
+      // Find the most recent workout with a bodyweight value
+      const recentWorkoutWithBodyweight = workoutHistory.find(
+        (workout) => workout.bodyweight && workout.bodyweight !== null
+      );
+
+      if (
+        recentWorkoutWithBodyweight &&
+        recentWorkoutWithBodyweight.bodyweight
+      ) {
+        setBodyweight(recentWorkoutWithBodyweight.bodyweight.toString());
+      }
+    }
+  }, [workoutHistory, bodyweight]);
+
   async function fetchWorkoutHistory(token) {
     try {
       const response = await fetch(`${API_BASE_URL}/workouts`, {
@@ -71,6 +88,7 @@ function WorkoutLog() {
       });
       if (!response.ok) throw new Error("Failed to fetch workouts");
       const data = await response.json();
+      console.log("Fetched workout history:", data); // Debug log
       setWorkoutHistory(data);
     } catch (error) {
       console.error("Error fetching workouts:", error);
@@ -116,6 +134,31 @@ function WorkoutLog() {
     }
 
     const token = localStorage.getItem("token");
+
+    // Create a clean version of exercises to ensure all properties are properly set
+    const cleanedExercises = workoutExercises.map((exercise) => ({
+      name: exercise.name,
+      category: exercise.category || "Uncategorized",
+      isCardio: exercise.isCardio || false,
+      sets: exercise.sets.map((set) => {
+        // Ensure we're saving all set data with proper types
+        if (exercise.isCardio) {
+          return {
+            distance: set.distance || "",
+            duration: set.duration || "",
+            intensity: set.intensity || "",
+            notes: set.notes || "",
+          };
+        } else {
+          return {
+            weight: set.weight || "",
+            reps: set.reps || "",
+            notes: set.notes || "",
+          };
+        }
+      }),
+    }));
+
     const newWorkout = {
       name: workoutName || `Workout ${new Date().toLocaleDateString()}`,
       date: new Date().toISOString(),
@@ -123,8 +166,10 @@ function WorkoutLog() {
       end_time: endTime || new Date().toISOString(), // Use current time if not provided
       bodyweight: bodyweight || null,
       notes,
-      exercises: workoutExercises,
+      exercises: cleanedExercises,
     };
+
+    console.log("Saving workout:", JSON.stringify(newWorkout, null, 2)); // Debug log
 
     try {
       const response = await fetch(`${API_BASE_URL}/workouts`, {
@@ -138,8 +183,17 @@ function WorkoutLog() {
 
       if (!response.ok) throw new Error("Failed to save workout");
 
+      // Parse the saved workout from the response
       const savedWorkout = await response.json();
-      setWorkoutHistory((prev) => [savedWorkout, ...prev]);
+      console.log("Server response:", savedWorkout); // Debug log
+
+      // Make sure the exercises array is properly included in our UI state
+      const workoutWithExercises = {
+        ...savedWorkout,
+        exercises: savedWorkout.exercises || cleanedExercises,
+      };
+
+      setWorkoutHistory((prev) => [workoutWithExercises, ...prev]);
 
       setWorkoutExercises([]);
       setWorkoutName("");
@@ -190,7 +244,7 @@ function WorkoutLog() {
 
       setWorkoutExercises([
         ...workoutExercises,
-        { ...exercise, sets: emptySets },
+        { ...exercise, sets: emptySets, isCardio: false },
       ]);
     }
 
@@ -201,18 +255,31 @@ function WorkoutLog() {
     setWorkoutExercises(
       workoutExercises.filter((_, index) => index !== exerciseIndex)
     );
+
+    // Also remove from collapsed state
+    setCollapsedExercises((prev) => {
+      const updated = { ...prev };
+      delete updated[exerciseIndex];
+      return updated;
+    });
   };
 
   const handleAddSet = (exerciseIndex) => {
     setWorkoutExercises((prev) =>
-      prev.map((exercise, index) =>
-        index === exerciseIndex
-          ? {
-              ...exercise,
-              sets: [...exercise.sets, { weight: "", reps: "", notes: "" }],
-            }
-          : exercise
-      )
+      prev.map((exercise, index) => {
+        if (index === exerciseIndex) {
+          // Create an appropriate empty set based on exercise type
+          const newSet = exercise.isCardio
+            ? { distance: "", duration: "", intensity: "", notes: "" }
+            : { weight: "", reps: "", notes: "" };
+
+          return {
+            ...exercise,
+            sets: [...exercise.sets, newSet],
+          };
+        }
+        return exercise;
+      })
     );
   };
 

@@ -31,7 +31,7 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         raise HTTPException(
             status_code=401, detail="Token expired"
         )
-    except jwt.JWTError:
+    except jwt.PyJWTError:
         raise HTTPException(
             status_code=401, detail="Invalid token"
         )

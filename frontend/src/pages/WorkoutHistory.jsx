@@ -40,7 +40,35 @@ function WorkoutHistory() {
       if (!response.ok) throw new Error("Failed to fetch workouts");
 
       const data = await response.json();
-      setWorkoutHistory(data);
+      console.log("Fetched workout data:", data); // Debug log
+
+      // Process workouts to ensure exercises are properly formatted
+      const processedWorkouts = data.map((workout) => {
+        // Check if exercises exists
+        if (!workout.exercises) {
+          workout.exercises = [];
+          return workout;
+        }
+
+        // Check if exercises is a string (common API issue)
+        if (typeof workout.exercises === "string") {
+          try {
+            workout.exercises = JSON.parse(workout.exercises);
+          } catch (e) {
+            console.error("Error parsing exercises JSON:", e);
+            workout.exercises = [];
+          }
+        }
+
+        // Ensure exercises is an array
+        if (!Array.isArray(workout.exercises)) {
+          workout.exercises = [];
+        }
+
+        return workout;
+      });
+
+      setWorkoutHistory(processedWorkouts);
       setError(null);
     } catch (error) {
       console.error("Error fetching workouts:", error);
@@ -58,6 +86,7 @@ function WorkoutHistory() {
   };
 
   const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
     const date = new Date(dateString);
     return date.toLocaleDateString(undefined, {
       weekday: "short",
@@ -68,6 +97,7 @@ function WorkoutHistory() {
   };
 
   const formatTime = (dateString) => {
+    if (!dateString) return "N/A";
     const date = new Date(dateString);
     return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
@@ -91,12 +121,79 @@ function WorkoutHistory() {
     }
   };
 
+  const calculateTotalVolume = (workout) => {
+    if (!workout.exercises || !Array.isArray(workout.exercises)) return 0;
+
+    let totalVolume = 0;
+
+    workout.exercises.forEach((exercise) => {
+      // Skip cardio exercises for volume calculation
+      if (exercise.isCardio) return;
+
+      // Ensure sets is an array
+      if (!exercise.sets || !Array.isArray(exercise.sets)) return;
+
+      exercise.sets.forEach((set) => {
+        // Only count sets with both weight and reps
+        if (set.weight && set.reps) {
+          totalVolume += parseFloat(set.weight) * parseFloat(set.reps);
+        }
+      });
+    });
+
+    return totalVolume.toFixed(1);
+  };
+
+  const calculateTotalDistance = (workout) => {
+    if (!workout.exercises || !Array.isArray(workout.exercises)) return 0;
+
+    let totalDistance = 0;
+
+    workout.exercises.forEach((exercise) => {
+      if (!exercise.isCardio) return;
+
+      if (!exercise.sets || !Array.isArray(exercise.sets)) return;
+
+      exercise.sets.forEach((set) => {
+        if (set.distance) {
+          totalDistance += parseFloat(set.distance);
+        }
+      });
+    });
+
+    return totalDistance > 0 ? totalDistance.toFixed(2) : 0;
+  };
+
+  const calculateTotalDuration = (workout) => {
+    if (!workout.exercises || !Array.isArray(workout.exercises)) return 0;
+
+    let totalDuration = 0;
+
+    workout.exercises.forEach((exercise) => {
+      if (!exercise.isCardio) return;
+
+      if (!exercise.sets || !Array.isArray(exercise.sets)) return;
+
+      exercise.sets.forEach((set) => {
+        if (set.duration) {
+          totalDuration += parseFloat(set.duration);
+        }
+      });
+    });
+
+    return totalDuration > 0 ? totalDuration : 0;
+  };
+
   const getAllExerciseNames = () => {
     const names = new Set();
     workoutHistory.forEach((workout) => {
-      workout.exercises?.forEach((exercise) => {
-        names.add(exercise.name);
-      });
+      if (workout.exercises && Array.isArray(workout.exercises)) {
+        workout.exercises.forEach((exercise) => {
+          if (exercise && exercise.name) {
+            names.add(exercise.name);
+          }
+        });
+      }
     });
     return Array.from(names).sort();
   };
@@ -112,10 +209,19 @@ function WorkoutHistory() {
       matchesDate = workoutDate === filterDate;
     }
 
-    if (filterExercise) {
-      matchesExercise = workout.exercises?.some((exercise) =>
-        exercise.name.toLowerCase().includes(filterExercise.toLowerCase())
+    if (
+      filterExercise &&
+      workout.exercises &&
+      Array.isArray(workout.exercises)
+    ) {
+      matchesExercise = workout.exercises.some(
+        (exercise) =>
+          exercise &&
+          exercise.name &&
+          exercise.name.toLowerCase().includes(filterExercise.toLowerCase())
       );
+    } else if (filterExercise) {
+      matchesExercise = false;
     }
 
     return matchesDate && matchesExercise;
@@ -217,24 +323,43 @@ function WorkoutHistory() {
                     <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
                       {workout.name}
                     </h2>
-                    <div className="flex flex-wrap mt-2 text-sm text-gray-600 dark:text-gray-400">
-                      <div className="flex items-center mr-4 mb-1">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-2 text-sm text-gray-600 dark:text-gray-400">
+                      <div className="flex items-center">
                         <FaCalendarAlt className="mr-1" />
                         {formatDate(workout.date || workout.start_time)}
                       </div>
                       {workout.bodyweight && (
-                        <div className="flex items-center mr-4 mb-1">
+                        <div className="flex items-center">
                           <FaWeight className="mr-1" />
                           {workout.bodyweight} kg
                         </div>
                       )}
-                      {workout.start_time && workout.end_time && (
-                        <div className="flex items-center mb-1">
-                          <FaClock className="mr-1" />
-                          {calculateDuration(
-                            workout.start_time,
-                            workout.end_time
-                          )}
+                      <div className="flex items-center">
+                        <FaClock className="mr-1" />
+                        {calculateDuration(
+                          workout.start_time,
+                          workout.end_time
+                        )}
+                      </div>
+                      {calculateTotalVolume(workout) > 0 && (
+                        <div
+                          className="flex items-center"
+                          title="Total volume (weight × reps)"
+                        >
+                          <span className="font-medium">Volume: </span>&nbsp;
+                          {calculateTotalVolume(workout)} kg
+                        </div>
+                      )}
+                      {calculateTotalDistance(workout) > 0 && (
+                        <div className="flex items-center">
+                          <span className="font-medium">Distance: </span>&nbsp;
+                          {calculateTotalDistance(workout)} km
+                        </div>
+                      )}
+                      {calculateTotalDuration(workout) > 0 && (
+                        <div className="flex items-center">
+                          <span className="font-medium">Cardio: </span>&nbsp;
+                          {calculateTotalDuration(workout)} min
                         </div>
                       )}
                     </div>
@@ -277,7 +402,9 @@ function WorkoutHistory() {
                       Exercises
                     </h3>
 
-                    {workout.exercises?.length > 0 ? (
+                    {workout.exercises &&
+                    Array.isArray(workout.exercises) &&
+                    workout.exercises.length > 0 ? (
                       <div className="space-y-6">
                         {workout.exercises.map((exercise, eIndex) => (
                           <div
@@ -319,45 +446,57 @@ function WorkoutHistory() {
                                   </tr>
                                 </thead>
                                 <tbody>
-                                  {exercise.sets?.map((set, sIndex) => (
-                                    <tr
-                                      key={sIndex}
-                                      className="border-b border-gray-200 dark:border-gray-600"
-                                    >
-                                      <td className="py-2 pr-4">
-                                        {sIndex + 1}
-                                      </td>
-                                      {exercise.isCardio ? (
-                                        <>
-                                          <td className="py-2 pr-4">
-                                            {set.distance
-                                              ? `${set.distance} km`
-                                              : "-"}
-                                          </td>
-                                          <td className="py-2 pr-4">
-                                            {set.duration
-                                              ? `${set.duration} min`
-                                              : "-"}
-                                          </td>
-                                          <td className="py-2 pr-4">
-                                            {set.intensity || "-"}
-                                          </td>
-                                        </>
-                                      ) : (
-                                        <>
-                                          <td className="py-2 pr-4">
-                                            {set.weight}
-                                          </td>
-                                          <td className="py-2 pr-4">
-                                            {set.reps}
-                                          </td>
-                                        </>
-                                      )}
-                                      <td className="py-2 text-gray-600 dark:text-gray-400">
-                                        {set.notes || "-"}
+                                  {exercise.sets &&
+                                  Array.isArray(exercise.sets) ? (
+                                    exercise.sets.map((set, sIndex) => (
+                                      <tr
+                                        key={sIndex}
+                                        className="border-b border-gray-200 dark:border-gray-600"
+                                      >
+                                        <td className="py-2 pr-4">
+                                          {sIndex + 1}
+                                        </td>
+                                        {exercise.isCardio ? (
+                                          <>
+                                            <td className="py-2 pr-4">
+                                              {set.distance
+                                                ? `${set.distance} km`
+                                                : "-"}
+                                            </td>
+                                            <td className="py-2 pr-4">
+                                              {set.duration
+                                                ? `${set.duration} min`
+                                                : "-"}
+                                            </td>
+                                            <td className="py-2 pr-4">
+                                              {set.intensity || "-"}
+                                            </td>
+                                          </>
+                                        ) : (
+                                          <>
+                                            <td className="py-2 pr-4">
+                                              {set.weight || "-"}
+                                            </td>
+                                            <td className="py-2 pr-4">
+                                              {set.reps || "-"}
+                                            </td>
+                                          </>
+                                        )}
+                                        <td className="py-2 text-gray-600 dark:text-gray-400">
+                                          {set.notes || "-"}
+                                        </td>
+                                      </tr>
+                                    ))
+                                  ) : (
+                                    <tr>
+                                      <td
+                                        colSpan="4"
+                                        className="py-2 text-center text-gray-500"
+                                      >
+                                        No sets recorded for this exercise.
                                       </td>
                                     </tr>
-                                  ))}
+                                  )}
                                 </tbody>
                               </table>
                             </div>
