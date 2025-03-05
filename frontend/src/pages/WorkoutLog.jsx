@@ -1,6 +1,12 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { FaTrash, FaPlus, FaArrowUp, FaArrowDown } from "react-icons/fa";
+import {
+  FaTrash,
+  FaPlus,
+  FaArrowUp,
+  FaArrowDown,
+  FaListAlt,
+} from "react-icons/fa";
 import AddExercise from "./AddExercise";
 
 const API_BASE_URL = "http://localhost:8000";
@@ -41,8 +47,23 @@ function WorkoutLog() {
   }
 
   const handleFinishWorkout = async () => {
+    if (!workoutName.trim()) {
+      alert("Please enter a workout name.");
+      return;
+    }
+
     if (!workoutExercises.length) {
       alert("Please add at least one exercise before finishing the workout.");
+      return;
+    }
+
+    // Validate that all sets have weights and reps
+    const invalidExercises = workoutExercises.filter((exercise) =>
+      exercise.sets.some((set) => !set.weight || !set.reps)
+    );
+
+    if (invalidExercises.length > 0) {
+      alert("Please fill in weight and reps for all sets.");
       return;
     }
 
@@ -51,8 +72,8 @@ function WorkoutLog() {
       name: workoutName || `Workout ${new Date().toLocaleDateString()}`,
       date: new Date().toISOString(),
       start_time: startTime || new Date().toISOString(),
-      end_time: endTime || null,
-      bodyweight,
+      end_time: endTime || new Date().toISOString(), // Use current time if not provided
+      bodyweight: bodyweight || null,
       notes,
       exercises: workoutExercises,
     };
@@ -78,8 +99,11 @@ function WorkoutLog() {
       setNotes("");
       setStartTime(new Date().toISOString().slice(0, 16));
       setEndTime("");
+
+      alert("Workout saved successfully!");
     } catch (error) {
       console.error("Error saving workout:", error);
+      alert("Error saving workout. Please try again.");
     }
   };
 
@@ -157,14 +181,21 @@ function WorkoutLog() {
 
   return (
     <div className="min-h-screen flex flex-col items-center p-6 bg-gray-100 dark:bg-gray-900">
-      <div className="w-full max-w-lg p-4">
+      <div className="w-full max-w-lg p-4 flex justify-between items-center">
         <input
           type="text"
           value={workoutName}
           onChange={(e) => setWorkoutName(e.target.value)}
           placeholder="Enter Workout Name"
-          className="bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-semibold text-lg px-3 py-2 rounded-lg w-full"
+          className="bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-semibold text-lg px-3 py-2 rounded-lg flex-grow mr-2"
         />
+        <button
+          onClick={() => navigate("/workout-history")}
+          className="bg-teal-500 text-white p-2 rounded-lg hover:bg-teal-400"
+          title="View Workout History"
+        >
+          <FaListAlt className="text-xl" />
+        </button>
       </div>
 
       <div className="w-full max-w-lg bg-white dark:bg-gray-800 p-4 rounded-lg mt-4 space-y-4">
@@ -208,7 +239,7 @@ function WorkoutLog() {
 
       <button
         onClick={() => setShowExerciseSelection(true)}
-        className="w-full max-w-lg text-teal-500 hover:text-teal-400 font-semibold text-lg p-4 mt-6 bg-white dark:bg-gray-700 rounded-lg"
+        className="w-full max-w-lg text-white font-semibold text-lg p-4 mt-6 bg-teal-500 hover:bg-teal-400 rounded-lg"
       >
         Add Exercise
       </button>
@@ -233,42 +264,114 @@ function WorkoutLog() {
           {exercise.sets.map((set, setIndex) => (
             <div
               key={setIndex}
-              className="flex justify-between items-center mt-4"
+              className="mt-4 border-t border-gray-200 dark:border-gray-600 pt-3"
             >
-              <div className="flex gap-2">
-                <button
-                  onClick={() => handleMoveSet(exerciseIndex, setIndex, "up")}
-                  className="text-teal-500 hover:text-teal-400"
-                >
-                  <FaArrowUp />
-                </button>
-                <button
-                  onClick={() => handleMoveSet(exerciseIndex, setIndex, "down")}
-                  className="text-teal-500 hover:text-teal-400"
-                >
-                  <FaArrowDown />
-                </button>
+              <div className="flex justify-between items-center mb-2">
+                <span className="font-medium text-gray-700 dark:text-gray-300">
+                  Set {setIndex + 1}
+                </span>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleMoveSet(exerciseIndex, setIndex, "up")}
+                    className="text-teal-500 hover:text-teal-400"
+                    disabled={setIndex === 0}
+                  >
+                    <FaArrowUp />
+                  </button>
+                  <button
+                    onClick={() =>
+                      handleMoveSet(exerciseIndex, setIndex, "down")
+                    }
+                    className="text-teal-500 hover:text-teal-400"
+                    disabled={setIndex === exercise.sets.length - 1}
+                  >
+                    <FaArrowDown />
+                  </button>
+                  <button
+                    onClick={() => handleDeleteSet(exerciseIndex, setIndex)}
+                    className="text-red-500 hover:text-red-400"
+                    disabled={exercise.sets.length === 1}
+                  >
+                    <FaTrash />
+                  </button>
+                </div>
               </div>
-              <button
-                onClick={() => handleDeleteSet(exerciseIndex, setIndex)}
-                className="text-red-500 hover:text-red-400"
-              >
-                <FaTrash />
-              </button>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-sm text-gray-600 dark:text-gray-400">
+                    Weight (kg)
+                  </label>
+                  <input
+                    type="number"
+                    value={set.weight}
+                    onChange={(e) =>
+                      handleEditSet(
+                        exerciseIndex,
+                        setIndex,
+                        "weight",
+                        e.target.value
+                      )
+                    }
+                    className="bg-gray-200 dark:bg-gray-600 p-2 rounded-lg w-full"
+                    placeholder="Weight"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm text-gray-600 dark:text-gray-400">
+                    Reps
+                  </label>
+                  <input
+                    type="number"
+                    value={set.reps}
+                    onChange={(e) =>
+                      handleEditSet(
+                        exerciseIndex,
+                        setIndex,
+                        "reps",
+                        e.target.value
+                      )
+                    }
+                    className="bg-gray-200 dark:bg-gray-600 p-2 rounded-lg w-full"
+                    placeholder="Reps"
+                  />
+                </div>
+              </div>
+              <div className="mt-2">
+                <label className="text-sm text-gray-600 dark:text-gray-400">
+                  Notes
+                </label>
+                <input
+                  type="text"
+                  value={set.notes}
+                  onChange={(e) =>
+                    handleEditSet(
+                      exerciseIndex,
+                      setIndex,
+                      "notes",
+                      e.target.value
+                    )
+                  }
+                  className="bg-gray-200 dark:bg-gray-600 p-2 rounded-lg w-full"
+                  placeholder="Notes (optional)"
+                />
+              </div>
             </div>
           ))}
+
           <button
             onClick={() => handleAddSet(exerciseIndex)}
-            className="w-full text-teal-500 hover:text-teal-400 mt-2"
+            className="w-full text-teal-500 hover:text-teal-400 mt-4 flex items-center justify-center"
           >
-            <FaPlus /> Add Set
+            <FaPlus className="mr-2" /> Add Set
           </button>
         </div>
       ))}
 
       <button
         onClick={handleFinishWorkout}
-        className="w-full max-w-lg text-teal-500 hover:text-teal-400 font-semibold text-lg p-4 mt-6 bg-white dark:bg-gray-700 rounded-lg"
+        className="w-full max-w-lg text-white font-semibold text-lg p-4 mt-6 bg-teal-500 hover:bg-teal-400 rounded-lg"
+        disabled={workoutExercises.length === 0}
       >
         Finish Workout
       </button>

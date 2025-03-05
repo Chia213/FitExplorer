@@ -173,7 +173,7 @@ function Navbar() {
                       Workout Log
                     </Link>
                     <Link
-                      to="/add-exercise"
+                      to="/workout-history"
                       className="block p-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                     >
                       Workout History
