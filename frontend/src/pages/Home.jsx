@@ -115,7 +115,7 @@ function Home() {
   const [selectedMuscle, setSelectedMuscle] = useState(null);
   const [hoveredMuscle, setHoveredMuscle] = useState(null);
   const [selectedDotIndex, setSelectedDotIndex] = useState(null);
-  const [selectedMuscleIndex, setSelectedMuscleIndex] = useState(null);
+  const [activeMuscleIndex, setActiveMuscleIndex] = useState(null);
 
   const allMuscles = [...frontMuscles, ...backMuscles];
 
@@ -123,43 +123,69 @@ function Home() {
     if (
       selectedMuscle &&
       selectedMuscle.name === muscle.name &&
-      selectedMuscleIndex === muscleIndex &&
+      activeMuscleIndex === muscleIndex &&
       selectedDotIndex === posIndex
     ) {
-      // If clicking the same dot, close the popup
       setSelectedMuscle(null);
       setSelectedDotIndex(null);
-      setSelectedMuscleIndex(null);
+      setActiveMuscleIndex(null);
     } else {
-      // Otherwise, show the popup for this dot
       setSelectedMuscle(muscle);
       setSelectedDotIndex(posIndex);
-      setSelectedMuscleIndex(muscleIndex);
+      setActiveMuscleIndex(muscleIndex);
     }
   };
 
-  // Function to determine popup position based on dot location
+  const handleImageClick = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+
+    let closestMuscle = null;
+    let closestIndex = null;
+    let minDistance = Infinity;
+
+    allMuscles.forEach((muscle, muscleIndex) => {
+      muscle.positions.forEach((position) => {
+        const posLeft = parseInt(position.left);
+        const posTop = parseInt(position.top);
+
+        const distance = Math.sqrt(
+          Math.pow(x - posLeft, 2) + Math.pow(y - posTop, 2)
+        );
+
+        if (distance < minDistance && distance < 15) {
+          minDistance = distance;
+          closestMuscle = muscle;
+          closestIndex = muscleIndex;
+        }
+      });
+    });
+
+    if (closestMuscle) {
+      setSelectedMuscle(null);
+      setSelectedDotIndex(null);
+      setActiveMuscleIndex(closestIndex);
+      setHoveredMuscle(closestMuscle.name);
+    }
+  };
+
   const getPopupPosition = (position) => {
     const left = parseInt(position.left);
 
-    // For dots on the left side of the body (front view)
     if (left < 40) {
       return {
         left: "100%",
         top: "0",
         marginLeft: "10px",
       };
-    }
-    // For dots on the right side (back view)
-    else if (left > 60) {
+    } else if (left > 60) {
       return {
         right: "100%",
         top: "0",
         marginRight: "10px",
       };
-    }
-    // For centered dots
-    else {
+    } else {
       return {
         left: "50%",
         top: "100%",
@@ -175,114 +201,167 @@ function Home() {
         Interactive Muscle Guide
       </h1>
       <p className="text-center mb-4 max-w-lg">
-        Click on any muscle dot to see recommended exercises
+        Click on any muscle area to explore exercises
       </p>
 
       <div className="relative w-full max-w-4xl">
         <img
           src="/src/assets/titan.png"
           alt="Muscle Groups - Front and Back View"
-          className="w-full"
+          className="w-full cursor-pointer"
+          onClick={handleImageClick}
+          onMouseMove={(e) => {
+            if (activeMuscleIndex === null) {
+              const rect = e.currentTarget.getBoundingClientRect();
+              const x = ((e.clientX - rect.left) / rect.width) * 100;
+              const y = ((e.clientY - rect.top) / rect.height) * 100;
+
+              let closestMuscle = null;
+              let minDistance = Infinity;
+
+              allMuscles.forEach((muscle) => {
+                muscle.positions.forEach((position) => {
+                  const posLeft = parseInt(position.left);
+                  const posTop = parseInt(position.top);
+
+                  const distance = Math.sqrt(
+                    Math.pow(x - posLeft, 2) + Math.pow(y - posTop, 2)
+                  );
+
+                  if (distance < minDistance && distance < 10) {
+                    minDistance = distance;
+                    closestMuscle = muscle;
+                  }
+                });
+              });
+
+              setHoveredMuscle(closestMuscle ? closestMuscle.name : null);
+            }
+          }}
+          onMouseLeave={() => {
+            if (activeMuscleIndex === null) {
+              setHoveredMuscle(null);
+            }
+          }}
         />
 
-        {allMuscles.map((muscle, muscleIndex) => (
-          <div key={muscleIndex}>
-            {muscle.positions.map((position, posIndex) => (
-              <div
-                key={`${muscleIndex}-${posIndex}`}
-                style={{
-                  position: "absolute",
-                  top: position.top,
-                  left: position.left,
-                }}
-                className="group"
-              >
-                {/* Dot */}
-                <div
-                  className="cursor-pointer relative z-10"
-                  onClick={() => handleDotClick(muscle, muscleIndex, posIndex)}
-                  onMouseEnter={() => setHoveredMuscle(muscle.name)}
-                  onMouseLeave={() => setHoveredMuscle(null)}
-                  aria-label={`${muscle.name} muscle group`}
-                  style={{
-                    width: "20px",
-                    height: "20px",
-                    backgroundColor:
-                      selectedMuscle && selectedMuscle.name === muscle.name
-                        ? "#ff6600" // Orange for selected
-                        : hoveredMuscle === muscle.name
-                        ? "#ff0000" // Red for hovered
-                        : "#cc0000", // Dark red for normal
-                    borderRadius: "50%",
-                    border: "2px solid white",
-                    boxShadow: "0 0 4px rgba(0,0,0,0.4)",
-                    transition: "all 0.2s ease",
-                    transform:
-                      selectedMuscle && selectedMuscle.name === muscle.name
-                        ? "scale(1.3)"
-                        : hoveredMuscle === muscle.name
-                        ? "scale(1.2)"
-                        : "scale(1)",
-                  }}
-                ></div>
+        {hoveredMuscle && activeMuscleIndex === null && (
+          <div
+            className="absolute bg-black bg-opacity-80 text-white px-2 py-1 rounded text-sm whitespace-nowrap
+                      transition-opacity duration-200 z-20 pointer-events-none"
+            style={{
+              top: "10px",
+              left: "50%",
+              transform: "translateX(-50%)",
+            }}
+          >
+            {hoveredMuscle}
+          </div>
+        )}
 
-                {/* Muscle name label (appears on hover) */}
+        {activeMuscleIndex !== null && (
+          <div key={`dots-${activeMuscleIndex}`}>
+            {allMuscles[activeMuscleIndex].positions.map(
+              (position, posIndex) => (
                 <div
-                  className={`absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-full 
-                              bg-black bg-opacity-80 text-white px-2 py-1 rounded text-sm whitespace-nowrap
-                              transition-opacity duration-200 z-20 ${
-                                hoveredMuscle === muscle.name ||
-                                (selectedMuscle &&
-                                  selectedMuscle.name === muscle.name)
-                                  ? "opacity-100"
-                                  : "opacity-0"
-                              }`}
+                  key={`${activeMuscleIndex}-${posIndex}`}
                   style={{
-                    marginTop: "-8px",
+                    position: "absolute",
+                    top: position.top,
+                    left: position.left,
+                    transition: "opacity 0.3s ease, transform 0.2s ease",
                   }}
+                  className="group"
                 >
-                  {muscle.name}
-                </div>
+                  <div
+                    className="cursor-pointer relative z-10"
+                    onClick={() =>
+                      handleDotClick(
+                        allMuscles[activeMuscleIndex],
+                        activeMuscleIndex,
+                        posIndex
+                      )
+                    }
+                    onMouseEnter={() =>
+                      setHoveredMuscle(allMuscles[activeMuscleIndex].name)
+                    }
+                    onMouseLeave={() => setHoveredMuscle(null)}
+                    aria-label={`${allMuscles[activeMuscleIndex].name} muscle group`}
+                    style={{
+                      width: "20px",
+                      height: "20px",
+                      backgroundColor:
+                        selectedMuscle && selectedDotIndex === posIndex
+                          ? "#ff6600"
+                          : hoveredMuscle === allMuscles[activeMuscleIndex].name
+                          ? "#ff0000"
+                          : "#cc0000",
+                      borderRadius: "50%",
+                      border: "2px solid white",
+                      boxShadow: "0 0 4px rgba(0,0,0,0.4)",
+                      transition: "all 0.2s ease",
+                      transform:
+                        selectedMuscle && selectedDotIndex === posIndex
+                          ? "scale(1.3)"
+                          : hoveredMuscle === allMuscles[activeMuscleIndex].name
+                          ? "scale(1.2)"
+                          : "scale(1)",
+                    }}
+                  ></div>
 
-                {/* Popup exercises window */}
-                {selectedMuscle &&
-                  selectedMuscle.name === muscle.name &&
-                  selectedMuscleIndex === muscleIndex &&
-                  selectedDotIndex === posIndex && (
+                  {selectedMuscle && selectedDotIndex === posIndex && (
                     <div
                       className="absolute bg-white dark:bg-gray-800 text-black dark:text-white p-3 rounded-lg shadow-lg z-30 min-w-48"
                       style={getPopupPosition(position)}
                     >
                       <div className="relative">
                         <h3 className="text-lg font-bold mb-2 pr-6">
-                          {muscle.name} Exercises
+                          {allMuscles[activeMuscleIndex].name} Exercises
                         </h3>
                         <button
                           onClick={() => {
                             setSelectedMuscle(null);
                             setSelectedDotIndex(null);
-                            setSelectedMuscleIndex(null);
+                            setActiveMuscleIndex(null);
+                            setHoveredMuscle(null);
                           }}
                           className="absolute top-0 right-0 w-6 h-6 flex items-center justify-center bg-red-500 text-white rounded-full hover:bg-red-700"
                         >
                           ×
                         </button>
                         <ul className="space-y-1 text-sm">
-                          {muscle.exercises.map((exercise, idx) => (
-                            <li key={idx} className="flex items-center">
-                              <span className="mr-1 text-green-500">✓</span>{" "}
-                              {exercise}
-                            </li>
-                          ))}
+                          {allMuscles[activeMuscleIndex].exercises.map(
+                            (exercise, idx) => (
+                              <li key={idx} className="flex items-center">
+                                <span className="mr-1 text-green-500">✓</span>{" "}
+                                {exercise}
+                              </li>
+                            )
+                          )}
                         </ul>
                       </div>
                     </div>
                   )}
-              </div>
-            ))}
+                </div>
+              )
+            )}
           </div>
-        ))}
+        )}
       </div>
+
+      {activeMuscleIndex !== null && (
+        <button
+          onClick={() => {
+            setSelectedMuscle(null);
+            setSelectedDotIndex(null);
+            setActiveMuscleIndex(null);
+            setHoveredMuscle(null);
+          }}
+          className="mt-4 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-700 transition-colors"
+        >
+          Reset View
+        </button>
+      )}
     </div>
   );
 }
