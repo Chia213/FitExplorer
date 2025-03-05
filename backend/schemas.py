@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from datetime import datetime
 from typing import Optional, List
 
@@ -76,3 +76,77 @@ class WorkoutResponse(WorkoutBase):
 
     class Config:
         orm_mode = True
+
+
+class ProfileUpdateRequest(BaseModel):
+    username: Optional[str] = Field(
+        None,
+        min_length=3,
+        max_length=50,
+        description="Username must be between 3 and 50 characters"
+    )
+
+
+class UserPreferencesUpdate(BaseModel):
+    weight_unit: Optional[str] = Field(
+        None,
+        pattern="^(kg|lbs)$",
+        description="Weight unit must be either 'kg' or 'lbs'"
+    )
+    goal_weight: Optional[float] = Field(
+        None,
+        gt=0,
+        description="Goal weight must be a positive number"
+    )
+    email_notifications: Optional[bool] = None
+
+
+class WorkoutStatsResponse(BaseModel):
+    total_workouts: int = Field(ge=0, description="Total number of workouts")
+    total_volume: float = Field(ge=0, description="Total workout volume")
+    favorite_exercise: Optional[str] = None
+    last_workout: Optional[datetime] = None
+    total_cardio_duration: Optional[float] = Field(
+        None,
+        ge=0,
+        description="Total cardio duration in minutes"
+    )
+    weight_progression: Optional[List[dict]] = Field(
+        None,
+        description="Historical bodyweight data"
+    )
+
+
+class UserProfileResponse(BaseModel):
+    username: str
+    email: str
+    profile_picture: Optional[str] = None
+    preferences: Optional[dict] = {
+        "weight_unit": str,
+        "goal_weight": Optional[float],
+        "email_notifications": bool
+    }
+
+    class Config:
+        orm_mode = True
+
+
+class ProfilePictureUpload(BaseModel):
+    profile_picture: str
+
+
+class ValidationErrorResponse(BaseModel):
+    detail: List[dict]
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "detail": [
+                    {
+                        "loc": ["body", "username"],
+                        "msg": "Username must be between 3 and 50 characters",
+                        "type": "value_error.any_str.min_length"
+                    }
+                ]
+            }
+        }
