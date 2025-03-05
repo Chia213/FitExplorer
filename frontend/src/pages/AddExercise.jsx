@@ -1,5 +1,13 @@
 import { useState, useEffect } from "react";
-import { FaArrowLeft, FaPlus, FaSearch } from "react-icons/fa";
+import {
+  FaArrowLeft,
+  FaPlus,
+  FaSearch,
+  FaTrash,
+  FaEdit,
+  FaCheck,
+  FaTimes,
+} from "react-icons/fa";
 
 function AddExercise({ onClose, onSelectExercise }) {
   const defaultExercisesData = {
@@ -18,6 +26,9 @@ function AddExercise({ onClose, onSelectExercise }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [customExercise, setCustomExercise] = useState("");
   const [exercises, setExercises] = useState(defaultExercisesData);
+  const [initialSets, setInitialSets] = useState(1);
+  const [editingExercise, setEditingExercise] = useState(null);
+  const [editExerciseName, setEditExerciseName] = useState("");
 
   // Load exercises from localStorage when the component is mounted
   useEffect(() => {
@@ -29,12 +40,10 @@ function AddExercise({ onClose, onSelectExercise }) {
 
   // Save exercises to localStorage whenever they change
   useEffect(() => {
-    if (exercises !== defaultExercisesData) {
+    if (JSON.stringify(exercises) !== JSON.stringify(defaultExercisesData)) {
       localStorage.setItem("exercises", JSON.stringify(exercises));
     }
   }, [exercises]);
-
-  const [initialSets, setInitialSets] = useState(1);
 
   const handleAddExercise = () => {
     if (!selectedExercise) return;
@@ -56,12 +65,80 @@ function AddExercise({ onClose, onSelectExercise }) {
           ...updatedExercises[selectedCategory],
           customExercise,
         ];
+
+        // Save to localStorage immediately
+        localStorage.setItem("exercises", JSON.stringify(updatedExercises));
+
         return updatedExercises;
       });
       // Automatically select this custom exercise
       setSelectedExercise(customExercise);
       setCustomExercise(""); // Reset the input field for custom exercise
     }
+  };
+
+  const handleRemoveExercise = (exerciseName) => {
+    if (
+      window.confirm(
+        `Are you sure you want to remove "${exerciseName}" from your exercise catalog?`
+      )
+    ) {
+      setExercises((prevExercises) => {
+        const updatedExercises = { ...prevExercises };
+
+        // Remove the exercise from the category
+        updatedExercises[selectedCategory] = updatedExercises[
+          selectedCategory
+        ].filter((name) => name !== exerciseName);
+
+        // Save to localStorage immediately
+        localStorage.setItem("exercises", JSON.stringify(updatedExercises));
+
+        return updatedExercises;
+      });
+
+      // If we were editing or had selected this exercise, reset those states
+      if (editingExercise === exerciseName) {
+        setEditingExercise(null);
+      }
+      if (selectedExercise === exerciseName) {
+        setSelectedExercise(null);
+      }
+    }
+  };
+
+  const startEditExercise = (exerciseName) => {
+    setEditingExercise(exerciseName);
+    setEditExerciseName(exerciseName);
+  };
+
+  const saveExerciseEdit = () => {
+    if (editExerciseName.trim() && editingExercise !== editExerciseName) {
+      setExercises((prevExercises) => {
+        const updatedExercises = { ...prevExercises };
+
+        // Replace the exercise in the category
+        updatedExercises[selectedCategory] = updatedExercises[
+          selectedCategory
+        ].map((name) => (name === editingExercise ? editExerciseName : name));
+
+        // Save to localStorage immediately
+        localStorage.setItem("exercises", JSON.stringify(updatedExercises));
+
+        return updatedExercises;
+      });
+
+      // If this exercise was selected, update the selection
+      if (selectedExercise === editingExercise) {
+        setSelectedExercise(editExerciseName);
+      }
+    }
+
+    setEditingExercise(null);
+  };
+
+  const cancelExerciseEdit = () => {
+    setEditingExercise(null);
   };
 
   const filteredExercises =
@@ -140,13 +217,65 @@ function AddExercise({ onClose, onSelectExercise }) {
               <div className="space-y-1 mt-3 max-h-64 overflow-y-auto">
                 {filteredExercises.length > 0 ? (
                   filteredExercises.map((exercise) => (
-                    <button
+                    <div
                       key={exercise}
-                      onClick={() => setSelectedExercise(exercise)}
-                      className="block w-full py-3 text-left px-3 text-gray-900 dark:text-gray-300 border-b border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-black dark:hover:text-white rounded"
+                      className="flex items-center justify-between border-b border-gray-300 dark:border-gray-700 py-2"
                     >
-                      {exercise}
-                    </button>
+                      {editingExercise === exercise ? (
+                        <div className="flex items-center w-full">
+                          <input
+                            type="text"
+                            value={editExerciseName}
+                            onChange={(e) =>
+                              setEditExerciseName(e.target.value)
+                            }
+                            className="flex-1 p-2 bg-white text-gray-900 rounded-md dark:bg-gray-700 dark:text-white border border-gray-300 dark:border-gray-600"
+                            autoFocus
+                          />
+                          <div className="flex ml-2">
+                            <button
+                              onClick={saveExerciseEdit}
+                              className="p-2 text-green-500 hover:text-green-400"
+                              title="Save"
+                            >
+                              <FaCheck />
+                            </button>
+                            <button
+                              onClick={cancelExerciseEdit}
+                              className="p-2 text-red-500 hover:text-red-400"
+                              title="Cancel"
+                            >
+                              <FaTimes />
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => setSelectedExercise(exercise)}
+                            className="block flex-grow py-2 text-left px-3 text-gray-900 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-black dark:hover:text-white rounded"
+                          >
+                            {exercise}
+                          </button>
+                          <div className="flex">
+                            <button
+                              onClick={() => startEditExercise(exercise)}
+                              className="p-2 text-blue-500 hover:text-blue-400"
+                              title="Edit exercise"
+                            >
+                              <FaEdit />
+                            </button>
+                            <button
+                              onClick={() => handleRemoveExercise(exercise)}
+                              className="p-2 text-red-500 hover:text-red-400"
+                              title="Remove exercise"
+                            >
+                              <FaTrash />
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
                   ))
                 ) : (
                   <p className="text-gray-500 dark:text-gray-400 mt-2 text-center">
