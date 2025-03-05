@@ -255,11 +255,18 @@ def get_workout_stats(
 
 
 @app.post("/upload-profile-picture")
-async def upload_profile_picture(file: UploadFile = File(...), user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    UPLOAD_DIRECTORY = "uploads/profile_pictures"
-    os.makedirs(UPLOAD_DIRECTORY, exist_ok=True)
+async def upload_profile_picture(
+    file: UploadFile = File(...),  #
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if not file:
+        raise HTTPException(status_code=400, detail="No file uploaded")
 
     file_extension = file.filename.split(".")[-1]
+    if file_extension.lower() not in ["jpg", "jpeg", "png", "gif"]:
+        raise HTTPException(status_code=400, detail="Invalid file type")
+
     file_name = f"{uuid.uuid4()}.{file_extension}"
     file_path = os.path.join(UPLOAD_DIRECTORY, file_name)
 

@@ -110,12 +110,12 @@ function Profile() {
     }
 
     const formData = new FormData();
-    formData.append("profile_picture", file);
+    formData.append("file", file);
 
     try {
       const token = localStorage.getItem("token");
       const response = await fetch(
-        "http://localhost:8000/upload-profile-picture",
+        "http://127.0.0.1:8000/upload-profile-picture",
         {
           method: "POST",
           headers: {
@@ -125,13 +125,13 @@ function Profile() {
         }
       );
 
+      const result = await response.json();
+
       if (response.ok) {
-        const result = await response.json();
         setProfilePicture(result.file_path);
         setError(null);
       } else {
-        const errorData = await response.json();
-        setError(errorData.detail || "Failed to upload profile picture");
+        setError(result.detail || "Failed to upload profile picture");
       }
     } catch (err) {
       console.error("Profile picture upload error:", err);
