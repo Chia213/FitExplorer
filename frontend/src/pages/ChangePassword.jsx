@@ -13,21 +13,35 @@ function ChangePassword() {
     e.preventDefault();
     const token = localStorage.getItem("token");
 
-    const response = await fetch("http://localhost:8000/change-password", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ oldPassword, newPassword }),
-    });
+    if (!oldPassword || !newPassword) {
+      setMessage("Both fields are required.");
+      return;
+    }
 
-    const data = await response.json();
-    if (response.ok) {
-      setMessage("Password updated successfully!");
-      setTimeout(() => navigate("/profile"), 2000);
-    } else {
-      setMessage(data.error || "Failed to update password");
+    try {
+      const response = await fetch("http://localhost:8000/change-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          old_password: oldPassword, // ✅ Corrected API keys
+          new_password: newPassword,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setMessage("✅ Password updated successfully!");
+        setTimeout(() => navigate("/profile"), 2000);
+      } else {
+        setMessage(data.detail || "❌ Failed to update password");
+      }
+    } catch (error) {
+      console.error("Error updating password:", error);
+      setMessage("❌ Something went wrong. Please try again.");
     }
   };
 
@@ -45,7 +59,11 @@ function ChangePassword() {
         }`}
       >
         <h1 className="text-2xl font-bold mb-4 text-center">Change Password</h1>
-        {message && <p className="text-center text-red-500">{message}</p>}
+        {message && (
+          <p className="text-center text-red-500 bg-gray-100 p-2 rounded">
+            {message}
+          </p>
+        )}
         <form onSubmit={handlePasswordChange} className="flex flex-col">
           <label className="font-semibold">Old Password:</label>
           <input

@@ -1,5 +1,5 @@
-import os
 import uuid
+import os
 from fastapi import FastAPI, Depends, HTTPException, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -69,38 +69,35 @@ def add_workout(workout: WorkoutCreate, user: dict = Depends(get_current_user), 
     db.commit()
     db.refresh(new_workout)
 
-    if hasattr(workout, 'exercises') and workout.exercises:
+    if workout.exercises:
         for exercise_data in workout.exercises:
             new_exercise = Exercise(
                 name=exercise_data.name,
-                category=getattr(exercise_data, 'category', None),
-                is_cardio=getattr(exercise_data, 'isCardio', False),
+                category=exercise_data.category,
+                is_cardio=exercise_data.isCardio,
                 workout_id=new_workout.id
             )
             db.add(new_exercise)
             db.commit()
             db.refresh(new_exercise)
 
-            if hasattr(exercise_data, 'sets') and exercise_data.sets:
-                for set_data in exercise_data.sets:
-                    new_set = Set(
-                        weight=getattr(set_data, 'weight', None),
-                        reps=getattr(set_data, 'reps', None),
-                        distance=getattr(set_data, 'distance', None),
-                        duration=getattr(set_data, 'duration', None),
-                        intensity=getattr(set_data, 'intensity', None),
-                        notes=getattr(set_data, 'notes', None),
-                        exercise_id=new_exercise.id
-                    )
-                    db.add(new_set)
-                db.commit()
+            for set_data in exercise_data.sets:
+                new_set = Set(
+                    weight=set_data.weight,
+                    reps=set_data.reps,
+                    distance=set_data.distance,
+                    duration=set_data.duration,
+                    intensity=set_data.intensity,
+                    notes=set_data.notes,
+                    exercise_id=new_exercise.id
+                )
+                db.add(new_set)
+            db.commit()
 
-    complete_workout = db.query(Workout)\
+    return db.query(Workout)\
         .options(joinedload(Workout.exercises).joinedload(Exercise.sets))\
         .filter(Workout.id == new_workout.id)\
         .first()
-
-    return complete_workout
 
 
 @app.get("/profile")
@@ -146,6 +143,7 @@ def update_preferences(
     if not user_preferences:
         user_preferences = UserPreferences(user_id=user.id)
         db.add(user_preferences)
+        db.commit()
 
     for key, value in preferences_data.dict(exclude_unset=True).items():
         setattr(user_preferences, key, value)
@@ -168,10 +166,10 @@ def change_password(
 ):
     user_data = db.query(User).filter(User.id == user.id).first()
 
-    if not user_data or not verify_password(request.old_password, user_data.password):
+    if not user_data or not verify_password(request.old_password, user_data.hashed_password):
         raise HTTPException(status_code=400, detail="Incorrect old password")
 
-    user_data.password = hash_password(request.new_password)
+    user_data.hashed_password = hash_password(request.new_password)
     db.commit()
 
     return {"message": "Password changed successfully"}
@@ -183,25 +181,41 @@ def delete_account(
     db: Session = Depends(get_db)
 ):
     try:
-        db.query(Set).filter(Set.exercise.has(workout=Workout(
-            user_id=user.id))).delete(synchronize_session=False)
-        db.query(Exercise).filter(Exercise.workout.has(
-            user_id=user.id)).delete(synchronize_session=False)
+        user_data = db.query(User).filter(User.id == user.id).first()
+        if not user_data:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        db.query(Set).filter(Set.exercise_id.in_(
+            db.query(Exercise.id).filter(Exercise.workout_id.in_(
+                db.query(Workout.id).filter(Workout.user_id == user.id)
+            ))
+        )).delete(synchronize_session=False)
+
+        db.query(Exercise).filter(Exercise.workout_id.in_(
+            db.query(Workout.id).filter(Workout.user_id == user.id)
+        )).delete(synchronize_session=False)
+
         db.query(Workout).filter(Workout.user_id ==
                                  user.id).delete(synchronize_session=False)
+        db.query(UserPreferences).filter(UserPreferences.user_id ==
+                                         user.id).delete(synchronize_session=False)
 
         if user.profile_picture:
-            file_path = os.path.join(".", user.profile_picture.lstrip("/"))
-            if os.path.exists(file_path):
-                os.remove(file_path)
+            try:
+                file_path = os.path.join(".", user.profile_picture.lstrip("/"))
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+            except Exception as e:
+                print(f"Failed to delete profile picture: {str(e)}")
 
         db.delete(user)
         db.commit()
 
         return {"message": "Account deleted successfully"}
-    except Exception:
+    except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail="Error deleting account")
+        raise HTTPException(
+            status_code=500, detail=f"Error deleting account: {str(e)}")
 
 
 @app.get("/workout-stats")
@@ -238,3 +252,21 @@ def get_workout_stats(
         favorite_exercise=favorite_exercise,
         last_workout=last_workout.date if last_workout else None
     )
+
+
+@app.post("/upload-profile-picture")
+async def upload_profile_picture(file: UploadFile = File(...), user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    UPLOAD_DIRECTORY = "uploads/profile_pictures"
+    os.makedirs(UPLOAD_DIRECTORY, exist_ok=True)
+
+    file_extension = file.filename.split(".")[-1]
+    file_name = f"{uuid.uuid4()}.{file_extension}"
+    file_path = os.path.join(UPLOAD_DIRECTORY, file_name)
+
+    with open(file_path, "wb") as buffer:
+        buffer.write(await file.read())
+
+    user.profile_picture = file_path
+    db.commit()
+
+    return {"message": "Profile picture uploaded", "file_path": file_path}

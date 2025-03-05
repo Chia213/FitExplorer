@@ -127,7 +127,7 @@ function Profile() {
 
       if (response.ok) {
         const result = await response.json();
-        setProfilePicture(result.profile_picture);
+        setProfilePicture(result.file_path);
         setError(null);
       } else {
         const errorData = await response.json();
