@@ -240,19 +240,31 @@ def update_preferences(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    user_preferences = db.query(
+        UserPreferencesUpdate).filter_by(user_id=user.id).first()
 
-    updated_prefs = {}
+    if not user_preferences:
 
-    if preferences_data.weight_unit:
-        updated_prefs['weight_unit'] = preferences_data.weight_unit
+        user_preferences = UserPreferencesUpdate(user_id=user.id)
+        db.add(user_preferences)
+
+    if preferences_data.weight_unit is not None:
+        user_preferences.weight_unit = preferences_data.weight_unit
 
     if preferences_data.goal_weight is not None:
-        updated_prefs['goal_weight'] = preferences_data.goal_weight
+        user_preferences.goal_weight = preferences_data.goal_weight
 
     if preferences_data.email_notifications is not None:
-        updated_prefs['email_notifications'] = preferences_data.email_notifications
+        user_preferences.email_notifications = preferences_data.email_notifications
 
-    return updated_prefs
+    db.commit()
+    db.refresh(user_preferences)
+
+    return {
+        "weight_unit": user_preferences.weight_unit,
+        "goal_weight": user_preferences.goal_weight,
+        "email_notifications": user_preferences.email_notifications
+    }
 
 
 @app.delete("/delete-account")

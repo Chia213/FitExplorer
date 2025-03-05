@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Float, Boolean, JSON
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Float, Boolean
 from sqlalchemy.orm import relationship
 from database import Base
 from datetime import datetime
@@ -11,9 +11,23 @@ class User(Base):
     email = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
     username = Column(String, unique=True, nullable=False)
-    workouts = relationship("Workout", back_populates="user")
+    profile_picture = Column(String, nullable=True)
 
-    custom_exercises = relationship("CustomExercise", back_populates="user")
+    workouts = relationship("Workout", back_populates="user")
+    preferences = relationship(
+        "UserPreferences", back_populates="user", uselist=False, cascade="all, delete-orphan")
+
+
+class UserPreferences(Base):
+    __tablename__ = "user_preferences"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), unique=True)
+    weight_unit = Column(String, default="kg")
+    goal_weight = Column(Float, nullable=True)
+    email_notifications = Column(Boolean, default=False)
+
+    user = relationship("User", back_populates="preferences")
 
 
 class Workout(Base):
