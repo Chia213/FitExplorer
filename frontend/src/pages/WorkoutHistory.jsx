@@ -7,11 +7,11 @@ import {
   FaChevronDown,
   FaChevronUp,
   FaArrowLeft,
+  FaSave,
 } from "react-icons/fa";
 
 const API_BASE_URL = "http://localhost:8000";
 
-// Helper function to convert intensity numbers back to names
 const getIntensityName = (intensityValue) => {
   const intensityMap = {
     0: "",
@@ -23,6 +23,59 @@ const getIntensityName = (intensityValue) => {
   return intensityMap[intensityValue] || "";
 };
 
+const saveRoutineToAPI = async (routineData, token) => {
+  if (!routineData || !routineData.name || !routineData.exercises) {
+    throw new Error("Invalid routine data");
+  }
+
+  if (!token) {
+    throw new Error("Authentication token is required");
+  }
+
+  const cleanedExercises = routineData.exercises
+    .filter((exercise) => exercise && exercise.name)
+    .map((exercise) => ({
+      name: exercise.name,
+      category: exercise.category || "Uncategorized",
+      is_cardio: Boolean(exercise.is_cardio),
+      initial_sets: Number(exercise.initial_sets || 1),
+    }));
+
+  if (cleanedExercises.length === 0) {
+    throw new Error("Routine must contain at least one exercise");
+  }
+
+  const routinePayload = {
+    name: routineData.name.trim(),
+    exercises: cleanedExercises,
+  };
+
+  console.log("Saving routine:", JSON.stringify(routinePayload, null, 2));
+
+  const response = await fetch(`${API_BASE_URL}/routines`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(routinePayload),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error("Server response:", errorText);
+
+    try {
+      const errorJson = JSON.parse(errorText);
+      console.error("Detailed error:", errorJson);
+    } catch (e) {}
+
+    throw new Error(`Server error: ${response.status}`);
+  }
+
+  return await response.json();
+};
+
 function WorkoutHistory() {
   const [workoutHistory, setWorkoutHistory] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -30,6 +83,10 @@ function WorkoutHistory() {
   const [expandedWorkouts, setExpandedWorkouts] = useState({});
   const [filterDate, setFilterDate] = useState("");
   const [filterExercise, setFilterExercise] = useState("");
+  const [showSaveRoutineModal, setShowSaveRoutineModal] = useState(false);
+  const [routineName, setRoutineName] = useState("");
+  const [selectedWorkout, setSelectedWorkout] = useState(null);
+  const [savingRoutine, setSavingRoutine] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -103,6 +160,76 @@ function WorkoutHistory() {
       setLoading(false);
     }
   }
+
+  const handleSaveAsRoutine = (workout) => {
+    if (!workout || !workout.exercises || workout.exercises.length === 0) {
+      alert("Cannot save a workout without exercises as a routine.");
+      return;
+    }
+
+    setSelectedWorkout(workout);
+    setRoutineName(workout.name || "");
+    setShowSaveRoutineModal(true);
+  };
+
+  const handleSaveRoutine = async () => {
+    if (!routineName.trim()) {
+      alert("Please enter a routine name.");
+      return;
+    }
+
+    if (
+      !selectedWorkout ||
+      !selectedWorkout.exercises ||
+      selectedWorkout.exercises.length === 0
+    ) {
+      alert("Cannot save an empty workout as a routine.");
+      return;
+    }
+
+    setSavingRoutine(true);
+
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        alert("You need to be logged in to save routines.");
+        navigate("/login");
+        return;
+      }
+
+      const routineExercises = selectedWorkout.exercises
+        .filter((exercise) => exercise && exercise.name)
+        .map((exercise) => ({
+          name: exercise.name,
+          category: exercise.category || "Uncategorized",
+          is_cardio: Boolean(exercise.is_cardio),
+          initial_sets:
+            exercise.sets && Array.isArray(exercise.sets)
+              ? exercise.sets.length
+              : 1,
+        }));
+
+      if (routineExercises.length === 0) {
+        throw new Error("No valid exercises found in this workout");
+      }
+
+      const routineData = {
+        name: routineName,
+        exercises: routineExercises,
+      };
+
+      const savedRoutine = await saveRoutineToAPI(routineData, token);
+      console.log("Routine saved successfully:", savedRoutine);
+
+      alert("Routine saved successfully!");
+      setShowSaveRoutineModal(false);
+    } catch (error) {
+      console.error("Error saving routine:", error);
+      alert(`Error saving routine: ${error.message}. Please try again.`);
+    } finally {
+      setSavingRoutine(false);
+    }
+  };
 
   const toggleWorkoutExpand = (workoutId) => {
     setExpandedWorkouts((prev) => ({
@@ -392,6 +519,19 @@ function WorkoutHistory() {
                       </div>
                     </div>
 
+                    <div className="flex justify-end mb-4">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSaveAsRoutine(workout);
+                        }}
+                        className="flex items-center space-x-2 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg"
+                      >
+                        <FaSave className="mr-2" />
+                        <span>Save as Routine</span>
+                      </button>
+                    </div>
+
                     <h3 className="font-medium text-lg text-gray-800 dark:text-gray-200 mb-3">
                       Exercises
                     </h3>
@@ -464,7 +604,7 @@ function WorkoutHistory() {
                                                 : "-"}
                                             </td>
                                             <td className="py-2 pr-4">
-                                              {set.intensity
+                                              {set.intensity !== undefined
                                                 ? getIntensityName(
                                                     set.intensity
                                                   )
@@ -514,6 +654,57 @@ function WorkoutHistory() {
           </div>
         )}
       </div>
+
+      {showSaveRoutineModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
+            <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">
+              Save as Routine
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
+              Save this workout as a reusable routine template. You can access
+              and start this routine from the Routines page.
+            </p>
+
+            <div className="mb-4">
+              <label className="block text-gray-700 dark:text-gray-300 mb-2">
+                Routine Name
+              </label>
+              <input
+                type="text"
+                value={routineName}
+                onChange={(e) => setRoutineName(e.target.value)}
+                className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
+                placeholder="Enter routine name"
+              />
+            </div>
+
+            <div className="flex space-x-3">
+              <button
+                onClick={handleSaveRoutine}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg flex items-center justify-center"
+                disabled={savingRoutine}
+              >
+                {savingRoutine ? (
+                  <>
+                    <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-2"></div>
+                    Saving...
+                  </>
+                ) : (
+                  "Save Routine"
+                )}
+              </button>
+              <button
+                onClick={() => setShowSaveRoutineModal(false)}
+                className="flex-1 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-white py-2 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500"
+                disabled={savingRoutine}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

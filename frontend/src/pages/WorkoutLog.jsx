@@ -253,7 +253,6 @@ function WorkoutLog() {
 
     const token = localStorage.getItem("token");
 
-    // Create exercise templates for the routine (without the actual set data)
     const routineExercises = workoutExercises.map((exercise) => ({
       name: exercise.name,
       category: exercise.category || "Uncategorized",
