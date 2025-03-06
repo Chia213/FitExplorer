@@ -275,7 +275,7 @@ function Profile() {
                 {profilePicture && (
                   <button
                     onClick={handleRemoveProfilePicture}
-                    className="bg-red-500 text-white p-2 rounded-full shadow-lg ml-2"
+                    className="bg-red-500 text-white p-2 rounded-full shadow-lg -mr-14"
                     title="Remove Profile Picture"
                   >
                     <FaTrash />
@@ -324,9 +324,7 @@ function Profile() {
                 </p>
                 <p>
                   <span className="font-semibold">Email:</span> {user.email}
-                  <span className="text-sm text-gray-500 ml-2">
-                    (Cannot be changed)
-                  </span>
+                  <span className="text-sm text-gray-500 ml-2"></span>
                 </p>
               </div>
             ) : (
