@@ -236,6 +236,11 @@ function WorkoutLog() {
       return;
     }
 
+    if (!workoutHistory.find((workout) => workout.name === workoutName)) {
+      alert("You need to finish the workout before saving it as a routine.");
+      return;
+    }
+
     if (!workoutExercises.length) {
       alert("Please add at least one exercise before saving as a routine.");
       return;
