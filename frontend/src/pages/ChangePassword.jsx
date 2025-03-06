@@ -26,7 +26,7 @@ function ChangePassword() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          old_password: oldPassword, // ✅ Corrected API keys
+          old_password: oldPassword,
           new_password: newPassword,
         }),
       });
@@ -34,14 +34,14 @@ function ChangePassword() {
       const data = await response.json();
 
       if (response.ok) {
-        setMessage("✅ Password updated successfully!");
+        setMessage("Password updated successfully!");
         setTimeout(() => navigate("/profile"), 2000);
       } else {
-        setMessage(data.detail || "❌ Failed to update password");
+        setMessage(data.detail || "Failed to update password");
       }
     } catch (error) {
       console.error("Error updating password:", error);
-      setMessage("❌ Something went wrong. Please try again.");
+      setMessage("Something went wrong. Please try again.");
     }
   };
 
