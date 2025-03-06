@@ -8,10 +8,21 @@ import {
   FaBars,
   FaTimes,
   FaSignOutAlt,
+  FaRandom, // Added for workout generator icon
 } from "react-icons/fa";
 import logo from "../assets/logo.png";
 import ThemeToggle from "./ThemeToggle";
 import { useTheme } from "../hooks/useTheme";
+
+// Pages array for search functionality
+const pages = [
+  { name: "Home", path: "/" },
+  { name: "About", path: "/about" },
+  { name: "Workout Log", path: "/workout-log" },
+  { name: "Workout History", path: "/workout-history" },
+  { name: "Workout Generator", path: "/workout-generator" }, // Added this line
+  { name: "Profile", path: "/profile" },
+];
 
 function Navbar() {
   const [showDropdown, setShowDropdown] = useState({
@@ -178,6 +189,13 @@ function Navbar() {
                     >
                       Workout History
                     </Link>
+                    <Link
+                      to="/workout-generator"
+                      className="block p-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center"
+                    >
+                      <FaRandom className="mr-2 text-green-500" /> Workout
+                      Generator
+                    </Link>
                   </div>
                 )}
               </div>
@@ -248,6 +266,125 @@ function Navbar() {
           </div>
         </div>
       </div>
+
+      {/* Mobile menu */}
+      {mobileMenuOpen && (
+        <div className="md:hidden bg-white dark:bg-gray-800 shadow-lg rounded-b-lg overflow-hidden">
+          <div className="p-4">
+            <div className="mb-4">
+              <input
+                type="text"
+                placeholder="Search..."
+                value={searchQuery}
+                onChange={handleSearch}
+                className="w-full p-2 border rounded-md bg-white dark:bg-gray-700 dark:text-white"
+              />
+              {searchResults.length > 0 && (
+                <div className="mt-2 bg-white dark:bg-gray-800 shadow-inner rounded-md overflow-hidden">
+                  {searchResults.map((result) => (
+                    <button
+                      key={result.path}
+                      onClick={() => handleResultClick(result.path)}
+                      className="block w-full text-left p-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      {result.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <nav className="space-y-2">
+              <div className="mb-2">
+                <button
+                  className="flex items-center w-full p-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 text-left"
+                  onClick={() =>
+                    setShowDropdown({
+                      ...showDropdown,
+                      workout: !showDropdown.workout,
+                    })
+                  }
+                >
+                  <FaDumbbell className="mr-3" size={18} />
+                  <span>Workouts</span>
+                </button>
+
+                {showDropdown.workout && (
+                  <div className="ml-6 mt-1 space-y-1 border-l-2 border-gray-300 dark:border-gray-600 pl-4">
+                    <Link
+                      to="/workout-log"
+                      className="block p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                    >
+                      Workout Log
+                    </Link>
+                    <Link
+                      to="/workout-history"
+                      className="block p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                    >
+                      Workout History
+                    </Link>
+                    <Link
+                      to="/workout-generator"
+                      className="block p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded flex items-center"
+                    >
+                      <FaRandom className="mr-2 text-green-500" /> Workout
+                      Generator
+                    </Link>
+                  </div>
+                )}
+              </div>
+
+              <Link
+                to="/about"
+                className="flex items-center p-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
+              >
+                <FaInfoCircle className="mr-3" size={18} />
+                <span>About</span>
+              </Link>
+
+              {isAuthenticated ? (
+                <>
+                  <Link
+                    to="/profile"
+                    className="flex items-center p-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
+                  >
+                    <FaUser className="mr-3" size={18} />
+                    <span>Profile ({username})</span>
+                  </Link>
+                  <button
+                    onClick={handleLogout}
+                    className="flex items-center w-full p-3 rounded-md hover:bg-red-500 hover:text-white text-left"
+                  >
+                    <FaSignOutAlt className="mr-3" size={18} />
+                    <span>Logout</span>
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link
+                    to="/login"
+                    className="flex items-center p-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
+                  >
+                    <FaUser className="mr-3" size={18} />
+                    <span>Login</span>
+                  </Link>
+                  <Link
+                    to="/signup"
+                    className="flex items-center p-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
+                  >
+                    <FaUser className="mr-3" size={18} />
+                    <span>Signup</span>
+                  </Link>
+                </>
+              )}
+
+              <div className="p-3">
+                <ThemeToggle />
+              </div>
+            </nav>
+          </div>
+        </div>
+      )}
     </header>
   );
 }
