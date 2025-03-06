@@ -5,18 +5,19 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func, desc
-from PIL import Image
 from database import engine, Base, get_db
 from auth import router as auth_router
 from dependencies import get_current_user
-from models import Workout, User, Exercise, Set, UserPreferences
+from models import Workout, User, Exercise, Set, UserPreferences, Routine, CustomExercise
 from schemas import (
     WorkoutCreate,
     WorkoutResponse,
     ProfileUpdateRequest,
     UserPreferencesUpdate,
     WorkoutStatsResponse,
-    ChangePasswordRequest
+    ChangePasswordRequest,
+    RoutineCreate,
+    RoutineResponse
 )
 from security import hash_password, verify_password
 
@@ -301,3 +302,31 @@ def remove_profile_picture(
         db.rollback()
         raise HTTPException(
             status_code=500, detail=f"Error removing profile picture: {str(e)}")
+
+
+@app.post("/routines", response_model=RoutineResponse)
+def create_routine(
+    routine: RoutineCreate,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    new_routine = Routine(
+        name=routine.name,
+        user_id=user.id
+    )
+    db.add(new_routine)
+    db.commit()
+    db.refresh(new_routine)
+
+    if routine.exercises:
+        for exercise_data in routine.exercises:
+            new_exercise = CustomExercise(
+                name=exercise_data.name,
+                category=exercise_data.category or "Uncategorized",
+                user_id=user.id
+            )
+            db.add(new_exercise)
+
+        db.commit()
+
+    return new_routine

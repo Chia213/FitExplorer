@@ -36,7 +36,7 @@ class SetResponse(SetBase):
     id: Optional[int] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class ExerciseBase(BaseModel):
@@ -54,7 +54,7 @@ class ExerciseResponse(ExerciseBase):
     sets: List[SetResponse] = []
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class WorkoutBase(BaseModel):
@@ -75,7 +75,7 @@ class WorkoutResponse(WorkoutBase):
     exercises: List[ExerciseResponse] = []
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class ProfileUpdateRequest(BaseModel):
@@ -128,7 +128,7 @@ class UserProfileResponse(BaseModel):
     }
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class ProfilePictureUpload(BaseModel):
@@ -139,7 +139,7 @@ class ValidationErrorResponse(BaseModel):
     detail: List[dict]
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "detail": [
                     {
@@ -155,3 +155,23 @@ class ValidationErrorResponse(BaseModel):
 class ChangePasswordRequest(BaseModel):
     old_password: str
     new_password: str
+
+
+class RoutineExerciseCreate(BaseModel):
+    name: str
+    category: Optional[str] = "Uncategorized"
+    is_cardio: Optional[bool] = False
+    initial_sets: Optional[int] = 1
+
+
+class RoutineCreate(BaseModel):
+    name: str
+    exercises: List[RoutineExerciseCreate] = []
+
+
+class RoutineResponse(BaseModel):
+    id: int
+    name: str
+
+    class Config:
+        from_attributes = True
