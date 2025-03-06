@@ -8,19 +8,18 @@ import {
   FaBars,
   FaTimes,
   FaSignOutAlt,
-  FaRandom, // Added for workout generator icon
+  FaRandom,
 } from "react-icons/fa";
 import logo from "../assets/logo.png";
 import ThemeToggle from "./ThemeToggle";
 import { useTheme } from "../hooks/useTheme";
 
-// Pages array for search functionality
 const pages = [
   { name: "Home", path: "/" },
   { name: "About", path: "/about" },
   { name: "Workout Log", path: "/workout-log" },
   { name: "Workout History", path: "/workout-history" },
-  { name: "Workout Generator", path: "/workout-generator" }, // Added this line
+  { name: "Workout Generator", path: "/workout-generator" },
   { name: "Profile", path: "/profile" },
 ];
 
@@ -196,6 +195,13 @@ function Navbar() {
                       <FaRandom className="mr-2 text-green-500" /> Workout
                       Generator
                     </Link>
+                    <Link
+                      to="/routines"
+                      className="flex flex-col items-center p-3 hover:bg-sky-700/20 dark:hover:bg-sky-700/40 rounded-md transition-all"
+                    >
+                      <FaDumbbell size={20} />
+                      <span className="text-sm mt-1">Routines</span>
+                    </Link>
                   </div>
                 )}
               </div>
@@ -267,7 +273,6 @@ function Navbar() {
         </div>
       </div>
 
-      {/* Mobile menu */}
       {mobileMenuOpen && (
         <div className="md:hidden bg-white dark:bg-gray-800 shadow-lg rounded-b-lg overflow-hidden">
           <div className="p-4">

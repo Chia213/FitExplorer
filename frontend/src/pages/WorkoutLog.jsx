@@ -8,6 +8,7 @@ import {
   FaListAlt,
   FaChevronUp,
   FaChevronDown,
+  FaSave,
 } from "react-icons/fa";
 import AddExercise from "./AddExercise";
 
@@ -35,6 +36,8 @@ function WorkoutLog() {
   const [workoutExercises, setWorkoutExercises] = useState([]);
   const [showExerciseSelection, setShowExerciseSelection] = useState(false);
   const [collapsedExercises, setCollapsedExercises] = useState({});
+  const [showSaveRoutineModal, setShowSaveRoutineModal] = useState(false);
+  const [routineName, setRoutineName] = useState("");
   const [workoutHistory, setWorkoutHistory] = useState([]);
   const navigate = useNavigate();
 
@@ -224,6 +227,64 @@ function WorkoutLog() {
     } catch (error) {
       console.error("Error saving workout:", error);
       alert("Error saving workout. Please try again.");
+    }
+  };
+
+  const handleSaveAsRoutine = () => {
+    if (!workoutName.trim()) {
+      alert("Please enter a workout name before saving as a routine.");
+      return;
+    }
+
+    if (!workoutExercises.length) {
+      alert("Please add at least one exercise before saving as a routine.");
+      return;
+    }
+
+    setRoutineName(workoutName);
+    setShowSaveRoutineModal(true);
+  };
+
+  const handleSaveRoutine = async () => {
+    if (!routineName.trim()) {
+      alert("Please enter a routine name.");
+      return;
+    }
+
+    const token = localStorage.getItem("token");
+
+    // Create exercise templates for the routine (without the actual set data)
+    const routineExercises = workoutExercises.map((exercise) => ({
+      name: exercise.name,
+      category: exercise.category || "Uncategorized",
+      is_cardio: exercise.isCardio || false,
+      initial_sets: exercise.sets.length,
+    }));
+
+    const newRoutine = {
+      name: routineName,
+      exercises: routineExercises,
+    };
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/routines`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(newRoutine),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to save routine");
+      }
+
+      alert("Routine saved successfully!");
+      setShowSaveRoutineModal(false);
+    } catch (error) {
+      console.error("Error saving routine:", error);
+      alert("Error saving routine. Please try again.");
     }
   };
 
@@ -625,19 +686,70 @@ function WorkoutLog() {
         </div>
       ))}
 
-      <button
-        onClick={handleFinishWorkout}
-        className="w-full max-w-lg text-white font-semibold text-lg p-4 mt-6 bg-teal-500 hover:bg-teal-400 rounded-lg"
-        disabled={workoutExercises.length === 0}
-      >
-        Finish Workout
-      </button>
+      <div className="w-full max-w-lg flex space-x-4 mt-6">
+        <button
+          onClick={handleFinishWorkout}
+          className="flex-1 text-white font-semibold text-lg p-4 bg-teal-500 hover:bg-teal-400 rounded-lg"
+          disabled={workoutExercises.length === 0}
+        >
+          Finish Workout
+        </button>
+
+        <button
+          onClick={handleSaveAsRoutine}
+          className="flex-1 text-white font-semibold text-lg p-4 bg-blue-500 hover:bg-blue-400 rounded-lg flex items-center justify-center"
+        >
+          <FaSave className="mr-2" /> Save as Routine
+        </button>
+      </div>
 
       {showExerciseSelection && (
         <AddExercise
           onClose={() => setShowExerciseSelection(false)}
           onSelectExercise={handleAddExercise}
         />
+      )}
+
+      {showSaveRoutineModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
+            <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">
+              Save as Routine
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
+              Save this workout as a reusable routine template. You can access
+              and start this routine from the Routines page.
+            </p>
+
+            <div className="mb-4">
+              <label className="block text-gray-700 dark:text-gray-300 mb-2">
+                Routine Name
+              </label>
+              <input
+                type="text"
+                value={routineName}
+                onChange={(e) => setRoutineName(e.target.value)}
+                className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
+                placeholder="Enter routine name"
+              />
+            </div>
+
+            <div className="flex space-x-3">
+              <button
+                onClick={handleSaveRoutine}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg"
+              >
+                Save Routine
+              </button>
+              <button
+                onClick={() => setShowSaveRoutineModal(false)}
+                className="flex-1 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-white py-2 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
