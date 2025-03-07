@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Float, Boolean
 from sqlalchemy.orm import relationship
 from database import Base
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 class User(Base):
@@ -13,10 +13,10 @@ class User(Base):
     username = Column(String, unique=True, nullable=False)
     profile_picture = Column(String, nullable=True)
 
-    workouts = relationship("Workout", back_populates="user")
-    preferences = relationship(
-        "UserPreferences", back_populates="user", uselist=False, cascade="all, delete-orphan")
-    custom_exercises = relationship("CustomExercise", back_populates="user")
+    workouts = relationship("Workout", back_populates="user", cascade="all, delete-orphan")
+    preferences = relationship("UserPreferences", back_populates="user", uselist=False, cascade="all, delete-orphan")
+    custom_exercises = relationship("CustomExercise", back_populates="user", cascade="all, delete-orphan")
+    routines = relationship("Routine", back_populates="user", cascade="all, delete-orphan")
 
 
 class UserPreferences(Base):
@@ -36,17 +36,17 @@ class Workout(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
-    date = Column(DateTime, default=datetime.utcnow)
+    date = Column(DateTime, default=datetime.now(timezone.utc))
     start_time = Column(DateTime, nullable=True)
     end_time = Column(DateTime, nullable=True)
     bodyweight = Column(Integer, nullable=True)
     notes = Column(String, nullable=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    
     user = relationship("User", back_populates="workouts")
-
     exercises = relationship(
         "Exercise", back_populates="workout", cascade="all, delete-orphan")
-
+    routines = relationship("Routine", back_populates="workout", cascade="all, delete-orphan")
 
 class Exercise(Base):
     __tablename__ = "exercises"
@@ -55,7 +55,7 @@ class Exercise(Base):
     name = Column(String, nullable=False)
     category = Column(String, nullable=True)
     is_cardio = Column(Boolean, default=False)
-    workout_id = Column(Integer, ForeignKey("workouts.id"))
+    workout_id = Column(Integer, ForeignKey("workouts.id", ondelete="CASCADE"), nullable=False)
 
     workout = relationship("Workout", back_populates="exercises")
     sets = relationship("Set", back_populates="exercise",
@@ -72,8 +72,8 @@ class Set(Base):
     duration = Column(Float, nullable=True)
     intensity = Column(String, nullable=True)
     notes = Column(String, nullable=True)
-    exercise_id = Column(Integer, ForeignKey("exercises.id"))
-
+    exercise_id = Column(Integer, ForeignKey(
+        "exercises.id", ondelete="CASCADE"), nullable=False)
     exercise = relationship("Exercise", back_populates="sets")
 
 
@@ -83,7 +83,7 @@ class CustomExercise(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True)
     category = Column(String, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
 
     user = relationship("User", back_populates="custom_exercises")
 
@@ -93,6 +93,9 @@ class Routine(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
-    user_id = Column(Integer, ForeignKey("users.id"))
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    workout_id = Column(Integer, ForeignKey("workouts.id", ondelete="CASCADE"), nullable=True)
 
-    user = relationship("User")
+    user = relationship("User", back_populates="routines")
+    workout = relationship("Workout", back_populates="routines")
+

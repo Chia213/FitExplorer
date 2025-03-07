@@ -42,7 +42,7 @@ class SetResponse(SetBase):
 class ExerciseBase(BaseModel):
     name: str
     category: Optional[str] = None
-    isCardio: Optional[bool] = False
+    is_cardio: Optional[bool] = False
 
 
 class ExerciseCreate(ExerciseBase):
@@ -103,7 +103,6 @@ class UserPreferencesUpdate(BaseModel):
 
 class WorkoutStatsResponse(BaseModel):
     total_workouts: int = Field(ge=0, description="Total number of workouts")
-    total_volume: float = Field(ge=0, description="Total workout volume")
     favorite_exercise: Optional[str] = None
     last_workout: Optional[datetime] = None
     total_cardio_duration: Optional[float] = Field(
@@ -154,7 +153,11 @@ class ValidationErrorResponse(BaseModel):
 
 class ChangePasswordRequest(BaseModel):
     old_password: str
-    new_password: str
+    new_password: str = Field(
+        min_length=8,
+        description="New password must be at least 8 characters long."
+    )
+
 
 
 class RoutineExerciseCreate(BaseModel):
@@ -172,6 +175,7 @@ class RoutineCreate(BaseModel):
 class RoutineResponse(BaseModel):
     id: int
     name: str
+    exercises: List[RoutineExerciseCreate] = []
 
     class Config:
         from_attributes = True

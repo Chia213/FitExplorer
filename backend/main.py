@@ -52,13 +52,12 @@ def get_workouts(user: dict = Depends(get_current_user), db: Session = Depends(g
         .options(joinedload(Workout.exercises).joinedload(Exercise.sets))\
         .filter(Workout.user_id == user.id)\
         .all()
-    
+
     return workouts
 
 
 @app.post("/workouts", response_model=WorkoutResponse)
 def add_workout(workout: WorkoutCreate, user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
-
     new_workout = Workout(
         name=workout.name,
         date=workout.date,
@@ -68,21 +67,21 @@ def add_workout(workout: WorkoutCreate, user: dict = Depends(get_current_user), 
         notes=workout.notes,
         user_id=user.id
     )
-    
     db.add(new_workout)
     db.commit()
     db.refresh(new_workout)
 
-    
     if workout.exercises:
         for exercise_data in workout.exercises:
             new_exercise = Exercise(
                 name=exercise_data.name,
                 category=exercise_data.category,
-                is_cardio=exercise_data.isCardio,
+                is_cardio=exercise_data.iscardio,
                 workout_id=new_workout.id
             )
             db.add(new_exercise)
+            db.commit()
+            db.refresh(new_exercise)
 
             for set_data in exercise_data.sets:
                 new_set = Set(
@@ -95,7 +94,8 @@ def add_workout(workout: WorkoutCreate, user: dict = Depends(get_current_user), 
                     exercise_id=new_exercise.id
                 )
                 db.add(new_set)
-        db.commit()
+
+            db.commit()
 
     return db.query(Workout)\
         .options(joinedload(Workout.exercises).joinedload(Exercise.sets))\
@@ -226,14 +226,7 @@ def get_workout_stats(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    total_workouts = db.query(Workout).filter(
-        Workout.user_id == user.id).count()
-
-    total_volume_query = db.query(func.sum(Set.weight * Set.reps))\
-        .join(Exercise)\
-        .join(Workout)\
-        .filter(Workout.user_id == user.id, Exercise.is_cardio == False)\
-        .scalar() or 0
+    total_workouts = db.query(Workout).filter(Workout.user_id == user.id).count()
 
     favorite_exercise_query = db.query(Exercise.name, func.count(Exercise.id))\
         .join(Workout)\
@@ -249,7 +242,7 @@ def get_workout_stats(
         .order_by(desc(Workout.date))\
         .first()
 
-    total_cardio_duration = db.query(func.sum(Set.duration))\
+    total_cardio_duration = db.query(func.sum(func.coalesce(Set.duration, 0)))\
         .join(Exercise)\
         .join(Workout)\
         .filter(Workout.user_id == user.id, Exercise.is_cardio == True)\
@@ -268,14 +261,13 @@ def get_workout_stats(
         } for workout in weight_progression
     ]
 
-    return WorkoutStatsResponse(
-        total_workouts=total_workouts,
-        total_volume=round(total_volume_query, 2),
-        favorite_exercise=favorite_exercise,
-        last_workout=last_workout.date if last_workout else None,
-        total_cardio_duration=round(total_cardio_duration, 2),
-        weight_progression=weight_progression_data
-    )
+    return {
+        "total_workouts": total_workouts,
+        "favorite_exercise": favorite_exercise,
+        "last_workout": last_workout.date if last_workout else None,
+        "total_cardio_duration": round(total_cardio_duration, 2),
+        "weight_progression": weight_progression_data
+    }
 
 
 @app.post("/upload-profile-picture")
@@ -349,7 +341,6 @@ def create_routine(
                 user_id=user.id
             )
             db.add(new_exercise)
-
-        db.commit()
+            db.commit()
 
     return new_routine
