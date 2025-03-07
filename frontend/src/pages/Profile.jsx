@@ -12,6 +12,7 @@ function Profile() {
   const [isEditing, setIsEditing] = useState(false);
   const [editedUsername, setEditedUsername] = useState("");
   const [workoutStats, setWorkoutStats] = useState(null);
+  const [isStatsLoading, setIsStatsLoading] = useState(false);
   const [profilePicture, setProfilePicture] = useState(null);
   const [preferences, setPreferences] = useState({
     weightUnit: "kg",
@@ -222,6 +223,25 @@ function Profile() {
     );
   }
 
+  const refreshWorkoutStats = async () => {
+    try {
+      setIsStatsLoading(true);
+      const token = localStorage.getItem("token");
+      const response = await fetch(`${backendURL}/workout-stats`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (response.ok) {
+        const statsData = await response.json();
+        setWorkoutStats(statsData);
+      }
+    } catch (error) {
+      console.error("Error refreshing workout stats:", error);
+    } finally {
+      setIsStatsLoading(false);
+    }
+  };
+
   return (
     <div
       className={`flex flex-col items-center justify-center min-h-screen p-6 ${
@@ -360,7 +380,19 @@ function Profile() {
 
           {workoutStats && (
             <div className="mb-6 p-4 bg-gray-100 dark:bg-gray-700 rounded-lg">
-              <h2 className="text-xl font-semibold mb-4">Workout Statistics</h2>
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold">Workout Statistics</h2>
+                <button
+                  onClick={refreshWorkoutStats}
+                  disabled={isStatsLoading}
+                  className={`
+          text-blue-500 hover:text-blue-600 flex items-center
+          ${isStatsLoading ? "opacity-50 cursor-not-allowed" : ""}
+        `}
+                >
+                  {isStatsLoading ? "Refreshing..." : "Refresh Stats"}
+                </button>
+              </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <p className="font-medium">Total Workouts</p>
