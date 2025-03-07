@@ -247,11 +247,32 @@ def get_workout_stats(
         .order_by(desc(Workout.date))\
         .first()
 
+    total_cardio_duration = db.query(func.sum(Set.duration))\
+        .join(Exercise)\
+        .join(Workout)\
+        .filter(Workout.user_id == user.id, Exercise.is_cardio == True)\
+        .scalar() or 0
+
+    weight_progression = db.query(Workout.date, Workout.bodyweight)\
+        .filter(Workout.user_id == user.id, Workout.bodyweight.isnot(None))\
+        .order_by(desc(Workout.date))\
+        .limit(5)\
+        .all()
+
+    weight_progression_data = [
+        {
+            "date": workout.date,
+            "bodyweight": workout.bodyweight
+        } for workout in weight_progression
+    ]
+
     return WorkoutStatsResponse(
         total_workouts=total_workouts,
         total_volume=round(total_volume_query, 2),
         favorite_exercise=favorite_exercise,
-        last_workout=last_workout.date if last_workout else None
+        last_workout=last_workout.date if last_workout else None,
+        total_cardio_duration=round(total_cardio_duration, 2),
+        weight_progression=weight_progression_data
     )
 
 
