@@ -25,7 +25,6 @@ def upgrade() -> None:
     op.drop_index('ix_exercises_id', table_name='exercises')
     op.drop_table('exercises')
     op.drop_index('ix_workouts_id', table_name='workouts')
-    op.drop_table('workouts')
     op.drop_index('ix_custom_exercises_category',
                   table_name='custom_exercises')
     op.drop_index('ix_custom_exercises_id', table_name='custom_exercises')
@@ -34,7 +33,6 @@ def upgrade() -> None:
     op.drop_index('ix_users_email', table_name='users')
     op.drop_index('ix_users_id', table_name='users')
     op.drop_index('ix_users_username', table_name='users')
-    op.drop_table('users')
     # ### end Alembic commands ###
 
 

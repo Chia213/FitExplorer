@@ -69,8 +69,8 @@ class Set(Base):
     weight = Column(Float, nullable=True)
     reps = Column(Integer, nullable=True)
     distance = Column(Float, nullable=True)
-    duration = Column(Integer, nullable=True)
-    intensity = Column(Integer, nullable=True)
+    duration = Column(Float, nullable=True)
+    intensity = Column(String, nullable=True)
     notes = Column(String, nullable=True)
     exercise_id = Column(Integer, ForeignKey("exercises.id"))
 

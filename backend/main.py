@@ -52,11 +52,13 @@ def get_workouts(user: dict = Depends(get_current_user), db: Session = Depends(g
         .options(joinedload(Workout.exercises).joinedload(Exercise.sets))\
         .filter(Workout.user_id == user.id)\
         .all()
+    
     return workouts
 
 
 @app.post("/workouts", response_model=WorkoutResponse)
 def add_workout(workout: WorkoutCreate, user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+
     new_workout = Workout(
         name=workout.name,
         date=workout.date,
@@ -66,10 +68,12 @@ def add_workout(workout: WorkoutCreate, user: dict = Depends(get_current_user), 
         notes=workout.notes,
         user_id=user.id
     )
+    
     db.add(new_workout)
     db.commit()
     db.refresh(new_workout)
 
+    
     if workout.exercises:
         for exercise_data in workout.exercises:
             new_exercise = Exercise(
@@ -79,8 +83,6 @@ def add_workout(workout: WorkoutCreate, user: dict = Depends(get_current_user), 
                 workout_id=new_workout.id
             )
             db.add(new_exercise)
-            db.commit()
-            db.refresh(new_exercise)
 
             for set_data in exercise_data.sets:
                 new_set = Set(
@@ -93,7 +95,7 @@ def add_workout(workout: WorkoutCreate, user: dict = Depends(get_current_user), 
                     exercise_id=new_exercise.id
                 )
                 db.add(new_set)
-            db.commit()
+        db.commit()
 
     return db.query(Workout)\
         .options(joinedload(Workout.exercises).joinedload(Exercise.sets))\
