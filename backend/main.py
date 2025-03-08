@@ -404,3 +404,56 @@ def create_routine(
     routine_data = db.query(Routine).filter(Routine.id == new_routine.id).first()
     
     return routine_data
+
+@app.put("/routines/{routine_id}", response_model=RoutineResponse)
+def update_routine(
+    routine_id: int,
+    routine_data: RoutineCreate,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    routine = db.query(Routine).filter(
+        Routine.id == routine_id,
+        Routine.user_id == user.id
+    ).first()
+    
+    if not routine:
+        raise HTTPException(status_code=404, detail="Routine not found")
+    
+    routine.name = routine_data.name
+    
+    if routine.workout_id:
+        db.query(Exercise).filter(Exercise.workout_id == routine.workout_id).delete()
+        
+        for exercise_data in routine_data.exercises:
+            new_exercise = Exercise(
+                name=exercise_data.name,
+                category=exercise_data.category or "Uncategorized",
+                is_cardio=exercise_data.is_cardio or False,
+                workout_id=routine.workout_id
+            )
+            db.add(new_exercise)
+    
+    db.commit()
+    db.refresh(routine)
+    
+    return routine
+
+@app.delete("/routines/{routine_id}")
+def delete_routine(
+    routine_id: int,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    routine = db.query(Routine).filter(
+        Routine.id == routine_id,
+        Routine.user_id == user.id
+    ).first()
+    
+    if not routine:
+        raise HTTPException(status_code=404, detail="Routine not found")
+    
+    db.delete(routine)
+    db.commit()
+    
+    return {"message": "Routine deleted successfully"}

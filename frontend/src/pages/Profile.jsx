@@ -60,7 +60,13 @@ function Profile() {
 
         if (statsRes.ok) {
           const statsData = await statsRes.json();
-          setWorkoutStats(statsData);
+          setWorkoutStats({
+            totalWorkouts: statsData.total_workouts,
+            favoriteExercise: statsData.favorite_exercise,
+            lastWorkout: statsData.last_workout,
+            totalCardioDuration: statsData.total_cardio_duration,
+            weightProgression: statsData.weight_progression
+          });
         }
       })
       .catch((err) => {
