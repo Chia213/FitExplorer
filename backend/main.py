@@ -8,10 +8,13 @@ from sqlalchemy import func, desc
 from database import engine, Base, get_db
 from auth import router as auth_router
 from dependencies import get_current_user
+from datetime import datetime, timezone
 from models import Workout, User, Exercise, Set, UserPreferences, Routine, CustomExercise
 from schemas import (
     WorkoutCreate,
     WorkoutResponse,
+    ExerciseCreate,
+    SetCreate,
     ProfileUpdateRequest,
     UserPreferencesUpdate,
     WorkoutStatsResponse,
@@ -42,12 +45,12 @@ app.include_router(auth_router)
 
 
 @app.get("/protected-route")
-def protected_route(user: dict = Depends(get_current_user)):
+def protected_route(user: User = Depends(get_current_user)):
     return {"email": user.email}
 
 
 @app.get("/workouts", response_model=list[WorkoutResponse])
-def get_workouts(user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+def get_workouts(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     workouts = db.query(Workout)\
         .options(joinedload(Workout.exercises).joinedload(Exercise.sets))\
         .filter(Workout.user_id == user.id)\
@@ -57,7 +60,7 @@ def get_workouts(user: dict = Depends(get_current_user), db: Session = Depends(g
 
 
 @app.post("/workouts", response_model=WorkoutResponse)
-def add_workout(workout: WorkoutCreate, user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+def add_workout(workout: WorkoutCreate, user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> WorkoutResponse:
     new_workout = Workout(
         name=workout.name,
         date=workout.date,
@@ -71,36 +74,47 @@ def add_workout(workout: WorkoutCreate, user: dict = Depends(get_current_user), 
     db.commit()
     db.refresh(new_workout)
 
+    new_exercises = []
+    new_sets = []
+
     if workout.exercises:
         for exercise_data in workout.exercises:
             new_exercise = Exercise(
                 name=exercise_data.name,
                 category=exercise_data.category,
-                is_cardio=exercise_data.iscardio,
+                is_cardio=exercise_data.is_cardio, 
                 workout_id=new_workout.id
             )
-            db.add(new_exercise)
-            db.commit()
-            db.refresh(new_exercise)
+            new_exercises.append(new_exercise)
 
-            for set_data in exercise_data.sets:
-                new_set = Set(
-                    weight=set_data.weight,
-                    reps=set_data.reps,
-                    distance=set_data.distance,
-                    duration=set_data.duration,
-                    intensity=set_data.intensity,
-                    notes=set_data.notes,
-                    exercise_id=new_exercise.id
-                )
-                db.add(new_set)
+    db.add_all(new_exercises)
+    db.commit()
 
-            db.commit()
+    for exercise, exercise_data in zip(new_exercises, workout.exercises):
+        for set_data in exercise_data.sets:
+            new_set = Set(
+                weight=set_data.weight,
+                reps=set_data.reps,
+                distance=set_data.distance,
+                duration=set_data.duration,
+                intensity=set_data.intensity,
+                notes=set_data.notes,
+                exercise_id=exercise.id
+            )
+            new_sets.append(new_set)
 
-    return db.query(Workout)\
+    db.add_all(new_sets)
+    db.commit()
+
+    workout_data = db.query(Workout)\
         .options(joinedload(Workout.exercises).joinedload(Exercise.sets))\
         .filter(Workout.id == new_workout.id)\
         .first()
+
+    if not workout_data:
+        raise HTTPException(status_code=404, detail="Workout not found")
+
+    return workout_data
 
 
 @app.get("/profile")
@@ -221,7 +235,7 @@ def delete_account(
             status_code=500, detail=f"Error deleting account: {str(e)}")
 
 
-@app.get("/workout-stats")
+@app.get("/workout-stats", response_model=WorkoutStatsResponse)
 def get_workout_stats(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -261,18 +275,18 @@ def get_workout_stats(
         } for workout in weight_progression
     ]
 
-    return {
-        "total_workouts": total_workouts,
-        "favorite_exercise": favorite_exercise,
-        "last_workout": last_workout.date if last_workout else None,
-        "total_cardio_duration": round(total_cardio_duration, 2),
-        "weight_progression": weight_progression_data
-    }
+    return WorkoutStatsResponse(
+        total_workouts=total_workouts,
+        favorite_exercise=favorite_exercise,
+        last_workout=last_workout.date if last_workout else None,
+        total_cardio_duration=round(total_cardio_duration, 2),
+        weight_progression=weight_progression_data
+    )
 
 
 @app.post("/upload-profile-picture")
 async def upload_profile_picture(
-    file: UploadFile = File(...),  #
+    file: UploadFile = File(...),
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -332,15 +346,61 @@ def create_routine(
     db.add(new_routine)
     db.commit()
     db.refresh(new_routine)
+    
+    new_workout = Workout(
+        name=f"{routine.name} Template",
+        date=datetime.now(timezone.utc),
+        user_id=user.id
+    )
+    db.add(new_workout)
+    db.commit()
+    db.refresh(new_workout)
+    
+    new_routine.workout_id = new_workout.id
+    db.commit()
+    
 
+    new_exercises = []
     if routine.exercises:
         for exercise_data in routine.exercises:
-            new_exercise = CustomExercise(
+            
+            custom_exercise = db.query(CustomExercise).filter(
+                CustomExercise.name == exercise_data.name,
+                CustomExercise.user_id == user.id
+            ).first()
+            
+            if not custom_exercise:
+                custom_exercise = CustomExercise(
+                    name=exercise_data.name,
+                    category=exercise_data.category or "Uncategorized",
+                    user_id=user.id
+                )
+                db.add(custom_exercise)
+                db.commit()
+            
+            new_exercise = Exercise(
                 name=exercise_data.name,
                 category=exercise_data.category or "Uncategorized",
-                user_id=user.id
+                is_cardio=exercise_data.is_cardio or False,
+                workout_id=new_workout.id
             )
-            db.add(new_exercise)
-            db.commit()
-
-    return new_routine
+            new_exercises.append(new_exercise)
+    
+    db.add_all(new_exercises)
+    db.commit()
+    
+    new_sets = []
+    for i, (exercise, exercise_data) in enumerate(zip(new_exercises, routine.exercises)):
+        initial_sets = exercise_data.initial_sets or 1
+        for _ in range(initial_sets):
+            new_set = Set(
+                exercise_id=exercise.id
+            )
+            new_sets.append(new_set)
+    
+    db.add_all(new_sets)
+    db.commit()
+    
+    routine_data = db.query(Routine).filter(Routine.id == new_routine.id).first()
+    
+    return routine_data

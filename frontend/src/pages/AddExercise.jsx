@@ -46,13 +46,13 @@ function AddExercise({ onClose, onSelectExercise }) {
   const handleAddExercise = () => {
     if (!selectedExercise) return;
 
-    const isCardio = selectedCategory === "Cardio";
+    const is_cardio = selectedCategory === "Cardio";
 
     onSelectExercise({
       name: selectedExercise,
       initialSets: parseInt(initialSets) || 1,
       category: selectedCategory,
-      isCardio,
+      is_cardio,
     });
     onClose();
   };

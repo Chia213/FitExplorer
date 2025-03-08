@@ -1,7 +1,8 @@
 from google.oauth2 import id_token
 from google.auth.transport.requests import Request
 import os
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response, Request
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
 from datetime import timedelta, datetime, timezone
@@ -9,7 +10,7 @@ import jwt
 from database import get_db
 from models import User
 from schemas import UserCreate, UserLogin, Token
-from config import SECRET_KEY, ACCESS_TOKEN_EXPIRE_MINUTES
+from config import settings
 
 from requests_oauthlib import OAuth2Session
 from dotenv import load_dotenv
@@ -28,7 +29,7 @@ def create_access_token(data: dict, expires_delta: timedelta):
     to_encode = data.copy()
     expire = datetime.now(timezone.utc) + expires_delta
     to_encode.update({"exp": expire})
-    return jwt.encode(to_encode, SECRET_KEY, algorithm="HS256")
+    return jwt.encode(to_encode, settings.SECRET_KEY, algorithm="HS256")
 
 
 @router.post("/register")
@@ -53,8 +54,8 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
     access_token = create_access_token(
-        {"sub": db_user.username}, timedelta(
-            minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        {"sub": db_user.email}, timedelta(
+            minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     )
     return {"access_token": access_token, "token_type": "bearer"}
 
@@ -65,19 +66,28 @@ async def google_login():
                                  "openid", "profile", "email"])
     authorization_url, state = google_oauth.authorization_url(
         "https://accounts.google.com/o/oauth2/auth")
-    return Response(status_code=303, headers={"Location": authorization_url})
+    response = Response(status_code=303, headers={"Location": authorization_url})
+    response.set_cookie(key="oauth_state", value=state)
+    return response
 
 
 @router.get("/auth/callback")
-async def google_callback(code: str, db: Session = Depends(get_db)):
+async def google_callback(code: str, state: str, request: Request, db: Session = Depends(get_db)):
+    stored_state = request.cookies.get("oauth_state")
+    if not stored_state or stored_state != state:
+        raise HTTPException(status_code=400, detail="Invalid state parameter")
+    
     google_oauth = OAuth2Session(
         GOOGLE_CLIENT_ID, redirect_uri=GOOGLE_REDIRECT_URI)
     google_oauth.fetch_token(
         "https://accounts.google.com/o/oauth2/token",
-        authorization_response=f"http://localhost:8000/auth/callback?code={code}",
+        authorization_response=f"http://localhost:8000/auth/callback?code={code}&state={state}",
         client_secret=GOOGLE_CLIENT_SECRET,
     )
-
+    
+    response = JSONResponse(content={})
+    response.delete_cookie(key="oauth_state")
+    
     token = google_oauth.token['access_token']
     try:
         id_info = id_token.verify_oauth2_token(
@@ -104,11 +114,12 @@ async def google_callback(code: str, db: Session = Depends(get_db)):
             user = existing_user
 
         access_token = create_access_token(
-            {"sub": user.username}, timedelta(
-                minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+            {"sub": user.email}, timedelta(
+                minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
         )
 
-        return {"access_token": access_token, "token_type": "bearer"}
+        token_response = {"access_token": access_token, "token_type": "bearer"}
+        return token_response
 
     except ValueError:
         raise HTTPException(status_code=401, detail="Invalid token")

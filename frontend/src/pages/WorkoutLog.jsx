@@ -121,7 +121,7 @@ function WorkoutLog() {
     let hasInvalidExercises = false;
 
     workoutExercises.forEach((exercise) => {
-      if (exercise.isCardio) {
+      if (exercise.is_cardio) {
         if (
           exercise.sets.some(
             (set) => !set.distance || !set.duration || !set.intensity
@@ -151,9 +151,9 @@ function WorkoutLog() {
     const cleanedExercises = workoutExercises.map((exercise) => ({
       name: exercise.name,
       category: exercise.category || "Uncategorized",
-      is_cardio: exercise.isCardio || false,
+      is_cardio: exercise.is_cardio || false,
       sets: exercise.sets.map((set) => {
-        if (exercise.isCardio) {
+        if (exercise.is_cardio) {
           return {
             distance: set.distance ? parseFloat(set.distance) : null,
             duration: set.duration ? parseFloat(set.duration) : null,
@@ -261,7 +261,7 @@ function WorkoutLog() {
     const routineExercises = workoutExercises.map((exercise) => ({
       name: exercise.name,
       category: exercise.category || "Uncategorized",
-      is_cardio: exercise.isCardio || false,
+      is_cardio: exercise.is_cardio || false,
       initial_sets: exercise.sets.length,
     }));
 
@@ -295,7 +295,7 @@ function WorkoutLog() {
   const handleAddExercise = (exercise) => {
     const initialSets = exercise.initialSets || 1;
 
-    if (exercise.isCardio) {
+    if (exercise.is_cardio) {
       const emptyCardioSets = Array(initialSets)
         .fill()
         .map(() => ({
@@ -310,7 +310,7 @@ function WorkoutLog() {
         {
           ...exercise,
           sets: emptyCardioSets,
-          isCardio: true,
+          is_cardio: true,
         },
       ]);
     } else {
@@ -324,7 +324,7 @@ function WorkoutLog() {
 
       setWorkoutExercises([
         ...workoutExercises,
-        { ...exercise, sets: emptySets, isCardio: false },
+        { ...exercise, sets: emptySets, is_cardio: false },
       ]);
     }
 
@@ -347,7 +347,7 @@ function WorkoutLog() {
     setWorkoutExercises((prev) =>
       prev.map((exercise, index) => {
         if (index === exerciseIndex) {
-          const newSet = exercise.isCardio
+          const newSet = exercise.is_cardio
             ? { distance: "", duration: "", intensity: "", notes: "" }
             : { weight: "", reps: "", notes: "" };
 
@@ -527,7 +527,7 @@ function WorkoutLog() {
                     </button>
                   </div>
 
-                  {exercise.isCardio ? (
+                  {exercise.is_cardio ? (
                     <div className="space-y-2">
                       <div className="grid grid-cols-2 gap-2">
                         <div>

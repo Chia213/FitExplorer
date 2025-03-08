@@ -24,7 +24,7 @@ class SetBase(BaseModel):
     reps: Optional[int] = None
     distance: Optional[float] = None
     duration: Optional[int] = None
-    intensity: Optional[int] = None
+    intensity: Optional[str] = None 
     notes: Optional[str] = None
 
 
@@ -159,7 +159,6 @@ class ChangePasswordRequest(BaseModel):
     )
 
 
-
 class RoutineExerciseCreate(BaseModel):
     name: str
     category: Optional[str] = "Uncategorized"
@@ -175,7 +174,7 @@ class RoutineCreate(BaseModel):
 class RoutineResponse(BaseModel):
     id: int
     name: str
-    exercises: List[RoutineExerciseCreate] = []
+    exercises: List[ExerciseResponse] = [] 
 
     class Config:
         from_attributes = True

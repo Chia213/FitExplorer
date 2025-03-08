@@ -132,11 +132,11 @@ function WorkoutHistory() {
 
         workout.exercises = workout.exercises.map((exercise) => {
           if (
-            exercise.isCardio !== undefined &&
+            exercise.is_cardio !== undefined &&
             exercise.is_cardio === undefined
           ) {
-            exercise.is_cardio = exercise.isCardio;
-            delete exercise.isCardio;
+            exercise.is_cardio = exercise.is_cardio;
+            delete exercise.is_cardio;
           }
 
           if (
