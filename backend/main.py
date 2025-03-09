@@ -1,6 +1,8 @@
 import uuid
 import os
-from fastapi import FastAPI, Depends, HTTPException, File, UploadFile
+from fastapi import FastAPI, Depends, HTTPException, File, UploadFile, BackgroundTasks
+from background_task import send_summary_emails
+from email_service import send_summary_email, send_security_alert
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session, joinedload
@@ -47,6 +49,40 @@ app.include_router(auth_router)
 @app.get("/protected-route")
 def protected_route(user: User = Depends(get_current_user)):
     return {"email": user.email}
+
+
+@app.on_event("startup")
+async def startup_event():
+    """Runs when the API starts"""
+    print("⏳ Starting background task for email summaries...")
+    background_tasks = BackgroundTasks()
+    background_tasks.add_task(send_summary_emails)
+
+
+@app.post("/trigger-email-summary")
+def trigger_email_summary(background_tasks: BackgroundTasks):
+    """Manually trigger email summary for testing"""
+    background_tasks.add_task(send_summary_emails)
+    return {"message": "Email summary task started!"}
+
+@app.get("/send-summary")
+async def send_summaries(background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+    users = db.query(User).join(UserPreferences).filter(
+        UserPreferences.email_notifications == True
+    ).all()
+
+    for user in users:
+        frequency = user.preferences.summary_frequency
+        if frequency:
+            workout_count = db.query(Workout).filter(
+                Workout.user_id == user.id
+            ).count()
+
+            background_tasks.add_task(
+                send_summary_email, user.email, frequency, workout_count
+            )
+
+    return {"message": "Scheduled summary emails"}
 
 
 @app.get("/workouts", response_model=list[WorkoutResponse])
@@ -162,7 +198,12 @@ def update_preferences(
         db.add(user_preferences)
         db.commit()
 
-    for key, value in preferences_data.model_dump(exclude_unset=True).items():
+    updated_prefs = preferences_data.model_dump(exclude_unset=True)
+    
+    if "email_notifications" in updated_prefs and not updated_prefs["email_notifications"]:
+        updated_prefs["summary_frequency"] = None
+
+    for key, value in updated_prefs.items():
         setattr(user_preferences, key, value)
 
     db.commit()
@@ -182,13 +223,14 @@ def change_password(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    user_data = db.query(User).filter(User.id == user.id).first()
-
-    if not user_data or not verify_password(request.old_password, user_data.hashed_password):
+    if not verify_password(request.old_password, user.hashed_password):
         raise HTTPException(status_code=400, detail="Incorrect old password")
 
-    user_data.hashed_password = hash_password(request.new_password)
+    user.hashed_password = hash_password(request.new_password)
     db.commit()
+
+    background_tasks.add_task(send_summary_email, user.email, frequency, workout_count)
+
 
     return {"message": "Password changed successfully"}
 
@@ -465,8 +507,11 @@ def delete_routine(
 @app.get("/routines", response_model=list[RoutineResponse])
 def get_routines(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     routines = db.query(Routine)\
-        .options(joinedload(Routine.workout).joinedload(Workout.exercises).joinedload(Exercise.sets))\
+        .options(
+            joinedload(Routine.workout)
+            .joinedload(Workout.exercises)
+            .joinedload(Exercise.sets)
+        )\
         .filter(Routine.user_id == user.id)\
         .all()
-    
     return routines

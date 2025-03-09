@@ -12,13 +12,13 @@ function Profile() {
   const [isEditing, setIsEditing] = useState(false);
   const [editedUsername, setEditedUsername] = useState("");
   const [workoutStats, setWorkoutStats] = useState(null);
-  const [isStatsLoading, setIsStatsLoading] = useState(false);
   const [profilePicture, setProfilePicture] = useState(null);
   const [preferences, setPreferences] = useState({
     weightUnit: "kg",
     goalWeight: null,
     emailNotifications: false,
   });
+  const [preferencesChanged, setPreferencesChanged] = useState(false);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const fileInputRef = useRef(null);
 
@@ -174,6 +174,11 @@ function Profile() {
     }
   };
 
+  const handlePreferenceChange = (newPrefs) => {
+    setPreferences(newPrefs);
+    setPreferencesChanged(true);
+  };
+
   const handlePreferenceUpdate = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -233,25 +238,6 @@ function Profile() {
       </div>
     );
   }
-
-  const refreshWorkoutStats = async () => {
-    try {
-      setIsStatsLoading(true);
-      const token = localStorage.getItem("token");
-      const response = await fetch(`${backendURL}/workout-stats`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (response.ok) {
-        const statsData = await response.json();
-        setWorkoutStats(statsData);
-      }
-    } catch (error) {
-      console.error("Error refreshing workout stats:", error);
-    } finally {
-      setIsStatsLoading(false);
-    }
-  };
 
   return (
     <div
@@ -424,9 +410,12 @@ function Profile() {
                     type="checkbox"
                     checked={preferences.emailNotifications}
                     onChange={(e) =>
-                      setPreferences({
+                      handlePreferenceChange({
                         ...preferences,
-                        emailNotifications: e.target.checked,
+                        email_notifications: e.target.checked,
+                        summary_frequency: e.target.checked
+                          ? preferences.summary_frequency
+                          : null,
                       })
                     }
                     className="mr-2"
@@ -442,7 +431,7 @@ function Profile() {
                   <select
                     value={preferences.summaryFrequency || ""}
                     onChange={(e) =>
-                      setPreferences({
+                      handlePreferenceChange({
                         ...preferences,
                         summaryFrequency: e.target.value,
                       })
@@ -460,7 +449,7 @@ function Profile() {
                 <select
                   value={preferences.weightUnit}
                   onChange={(e) =>
-                    setPreferences({
+                    handlePreferenceChange({
                       ...preferences,
                       weightUnit: e.target.value,
                     })
@@ -473,7 +462,12 @@ function Profile() {
               </div>
               <button
                 onClick={handlePreferenceUpdate}
-                className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600"
+                disabled={!preferencesChanged}
+                className={`w-full py-2 rounded-lg ${
+                  preferencesChanged
+                    ? "bg-blue-500 hover:bg-blue-600 text-white"
+                    : "bg-gray-400 text-gray-700 cursor-not-allowed"
+                }`}
               >
                 Save Preferences
               </button>

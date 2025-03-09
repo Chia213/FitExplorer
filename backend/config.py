@@ -9,6 +9,18 @@ class Settings(BaseSettings):
     SECRET_KEY: str = os.getenv("SECRET_KEY", "default_secret_key")
     ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 1000000))
 
+    MAIL_USERNAME: str = os.getenv("MAIL_USERNAME", "your-email@gmail.com")
+    MAIL_PASSWORD: str = os.getenv("MAIL_PASSWORD", "your-email-password")
+    MAIL_FROM: str = os.getenv("MAIL_FROM", "your-email@gmail.com")
+    MAIL_PORT: int = int(os.getenv("MAIL_PORT", 587))
+    MAIL_SERVER: str = os.getenv("MAIL_SERVER", "smtp.gmail.com")
+    MAIL_TLS: bool = os.getenv("MAIL_TLS", "true").lower() == "true"
+    MAIL_SSL: bool = os.getenv("MAIL_SSL", "false").lower() == "true"
+    MAIL_USE_CREDENTIALS: bool = True
+
+    ENABLE_EMAIL_NOTIFICATIONS: bool = os.getenv("ENABLE_EMAIL_NOTIFICATIONS", "true").lower() == "true"
+    SUMMARY_FREQUENCY: str = os.getenv("SUMMARY_FREQUENCY", "weekly")
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
