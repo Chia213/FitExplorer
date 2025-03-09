@@ -177,18 +177,14 @@ function WorkoutHistory() {
       alert("Please enter a routine name.");
       return;
     }
-
-    if (
-      !selectedWorkout ||
-      !selectedWorkout.exercises ||
-      selectedWorkout.exercises.length === 0
-    ) {
+  
+    if (!selectedWorkout || !selectedWorkout.exercises || selectedWorkout.exercises.length === 0) {
       alert("Cannot save an empty workout as a routine.");
       return;
     }
-
+  
     setSavingRoutine(true);
-
+  
     try {
       const token = localStorage.getItem("token");
       if (!token) {
@@ -196,31 +192,35 @@ function WorkoutHistory() {
         navigate("/login");
         return;
       }
-
-      const routineExercises = selectedWorkout.exercises
-        .filter((exercise) => exercise && exercise.name)
-        .map((exercise) => ({
+  
+      const routineData = {
+        name: routineName,
+        exercises: selectedWorkout.exercises.map(exercise => ({
           name: exercise.name,
           category: exercise.category || "Uncategorized",
           is_cardio: Boolean(exercise.is_cardio),
-          initial_sets:
-            exercise.sets && Array.isArray(exercise.sets)
-              ? exercise.sets.length
-              : 1,
-        }));
-
-      if (routineExercises.length === 0) {
-        throw new Error("No valid exercises found in this workout");
-      }
-
-      const routineData = {
-        name: routineName,
-        exercises: routineExercises,
+          initial_sets: exercise.sets && Array.isArray(exercise.sets) ? exercise.sets.length : 1
+        }))
       };
-
-      const savedRoutine = await saveRoutineToAPI(routineData, token);
+  
+      const response = await fetch(`${API_BASE_URL}/routines`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(routineData),
+      });
+  
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Server response:", errorText);
+        throw new Error(`Server error: ${response.status}`);
+      }
+  
+      const savedRoutine = await response.json();
       console.log("Routine saved successfully:", savedRoutine);
-
+  
       alert("Routine saved successfully!");
       setShowSaveRoutineModal(false);
     } catch (error) {

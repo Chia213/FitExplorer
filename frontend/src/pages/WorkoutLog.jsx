@@ -122,16 +122,11 @@ function WorkoutLog() {
 
     workoutExercises.forEach((exercise) => {
       if (exercise.is_cardio) {
-        if (
-          exercise.sets.some(
-            (set) => !set.distance || !set.duration || !set.intensity
-          )
-        ) {
-          alert(
-            `Please fill in Distance, Duration and Intensity ${exercise.name}.`
-          );
-          hasInvalidExercises = true;
-        }
+        if (exercise.sets.some((set) => 
+          (!set.distance && !set.duration) || !set.intensity)) {
+        alert(`Please fill in at least Distance or Duration, and Intensity for ${exercise.name}.`);
+        hasInvalidExercises = true;
+      }
       } else {
         if (exercise.sets.some((set) => !set.weight || !set.reps)) {
           alert(
@@ -236,11 +231,6 @@ function WorkoutLog() {
       return;
     }
 
-    if (!workoutHistory.find((workout) => workout.name === workoutName)) {
-      alert("You need to finish the workout before saving it as a routine.");
-      return;
-    }
-
     if (!workoutExercises.length) {
       alert("Please add at least one exercise before saving as a routine.");
       return;
@@ -255,35 +245,38 @@ function WorkoutLog() {
       alert("Please enter a routine name.");
       return;
     }
-
-    const token = localStorage.getItem("token");
-
-    const routineExercises = workoutExercises.map((exercise) => ({
-      name: exercise.name,
-      category: exercise.category || "Uncategorized",
-      is_cardio: exercise.is_cardio || false,
-      initial_sets: exercise.sets.length,
-    }));
-
-    const newRoutine = {
-      name: routineName,
-      exercises: routineExercises,
-    };
-
+  
     try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        alert("You need to be logged in to save routines.");
+        navigate("/login");
+        return;
+      }
+    
+      const routineData = {
+        name: routineName,
+        exercises: workoutExercises.map(exercise => ({
+          name: exercise.name,
+          category: exercise.category || "Uncategorized",
+          is_cardio: exercise.is_cardio || false,
+          initial_sets: exercise.sets.length
+        }))
+      };
+  
       const response = await fetch(`${API_BASE_URL}/routines`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(newRoutine),
+        body: JSON.stringify(routineData),
       });
-
+  
       if (!response.ok) {
         throw new Error("Failed to save routine");
       }
-
+  
       alert("Routine saved successfully!");
       setShowSaveRoutineModal(false);
     } catch (error) {

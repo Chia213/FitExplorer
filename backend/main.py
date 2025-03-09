@@ -401,8 +401,11 @@ def create_routine(
     db.add_all(new_sets)
     db.commit()
     
-    routine_data = db.query(Routine).filter(Routine.id == new_routine.id).first()
-    
+    routine_data = db.query(Routine)\
+    .options(joinedload(Routine.workout).joinedload(Workout.exercises).joinedload(Exercise.sets))\
+    .filter(Routine.id == new_routine.id)\
+    .first()
+
     return routine_data
 
 @app.put("/routines/{routine_id}", response_model=RoutineResponse)
@@ -457,3 +460,12 @@ def delete_routine(
     db.commit()
     
     return {"message": "Routine deleted successfully"}
+
+@app.get("/routines", response_model=list[RoutineResponse])
+def get_routines(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    routines = db.query(Routine)\
+        .options(joinedload(Routine.workout).joinedload(Workout.exercises).joinedload(Exercise.sets))\
+        .filter(Routine.user_id == user.id)\
+        .all()
+    
+    return routines

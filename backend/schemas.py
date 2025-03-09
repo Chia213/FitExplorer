@@ -174,7 +174,15 @@ class RoutineCreate(BaseModel):
 class RoutineResponse(BaseModel):
     id: int
     name: str
-    exercises: List[ExerciseResponse] = [] 
+    workout_id: Optional[int] = None
+    workout: Optional[WorkoutResponse] = None
 
     class Config:
         from_attributes = True
+        
+    @property
+    def exercises(self) -> List[ExerciseResponse]:
+        """Provide access to exercises through the workout relationship"""
+        if self.workout:
+            return self.workout.exercises
+        return []
