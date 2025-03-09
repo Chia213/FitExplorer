@@ -1,6 +1,6 @@
 from dotenv import load_dotenv
 import os
-from pydantic import BaseSettings
+from pydantic_settings import BaseSettings
 
 load_dotenv(dotenv_path=".env", override=True)
 
@@ -12,5 +12,6 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
+        extra = "allow"
 
 settings = Settings()
