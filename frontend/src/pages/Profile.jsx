@@ -65,7 +65,7 @@ function Profile() {
             favoriteExercise: statsData.favorite_exercise,
             lastWorkout: statsData.last_workout,
             totalCardioDuration: statsData.total_cardio_duration,
-            weightProgression: statsData.weight_progression
+            weightProgression: statsData.weight_progression,
           });
         }
       })
@@ -183,7 +183,12 @@ function Profile() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(preferences),
+        body: JSON.stringify({
+          emailNotifications: preferences.emailNotifications,
+          summaryFrequency: preferences.emailNotifications
+            ? preferences.summaryFrequency
+            : null,
+        }),
       });
 
       if (!response.ok) {
@@ -388,16 +393,6 @@ function Profile() {
             <div className="mb-6 p-4 bg-gray-100 dark:bg-gray-700 rounded-lg">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-semibold">Workout Statistics</h2>
-                <button
-                  onClick={refreshWorkoutStats}
-                  disabled={isStatsLoading}
-                  className={`
-          text-blue-500 hover:text-blue-600 flex items-center
-          ${isStatsLoading ? "opacity-50 cursor-not-allowed" : ""}
-        `}
-                >
-                  {isStatsLoading ? "Refreshing..." : "Refresh Stats"}
-                </button>
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
@@ -439,6 +434,27 @@ function Profile() {
                   Email Notifications
                 </label>
               </div>
+              {preferences.emailNotifications && (
+                <div className="mt-4">
+                  <label className="block text-sm font-medium mb-1">
+                    Workout Summary Frequency
+                  </label>
+                  <select
+                    value={preferences.summaryFrequency || ""}
+                    onChange={(e) =>
+                      setPreferences({
+                        ...preferences,
+                        summaryFrequency: e.target.value,
+                      })
+                    }
+                    className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600"
+                  >
+                    <option value="">Select Frequency</option>
+                    <option value="weekly">Weekly Summary</option>
+                    <option value="monthly">Monthly Summary</option>
+                  </select>
+                </div>
+              )}
               <div>
                 <label className="block mb-1">Weight Unit</label>
                 <select

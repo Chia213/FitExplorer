@@ -8,6 +8,7 @@ import {
   FaChevronUp,
   FaArrowLeft,
   FaSave,
+  FaSearch,
 } from "react-icons/fa";
 
 const API_BASE_URL = "http://localhost:8000";
@@ -83,6 +84,7 @@ function WorkoutHistory() {
   const [expandedWorkouts, setExpandedWorkouts] = useState({});
   const [filterDate, setFilterDate] = useState("");
   const [filterExercise, setFilterExercise] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [showSaveRoutineModal, setShowSaveRoutineModal] = useState(false);
   const [routineName, setRoutineName] = useState("");
   const [selectedWorkout, setSelectedWorkout] = useState(null);
@@ -177,14 +179,18 @@ function WorkoutHistory() {
       alert("Please enter a routine name.");
       return;
     }
-  
-    if (!selectedWorkout || !selectedWorkout.exercises || selectedWorkout.exercises.length === 0) {
+
+    if (
+      !selectedWorkout ||
+      !selectedWorkout.exercises ||
+      selectedWorkout.exercises.length === 0
+    ) {
       alert("Cannot save an empty workout as a routine.");
       return;
     }
-  
+
     setSavingRoutine(true);
-  
+
     try {
       const token = localStorage.getItem("token");
       if (!token) {
@@ -192,17 +198,20 @@ function WorkoutHistory() {
         navigate("/login");
         return;
       }
-  
+
       const routineData = {
         name: routineName,
-        exercises: selectedWorkout.exercises.map(exercise => ({
+        exercises: selectedWorkout.exercises.map((exercise) => ({
           name: exercise.name,
           category: exercise.category || "Uncategorized",
           is_cardio: Boolean(exercise.is_cardio),
-          initial_sets: exercise.sets && Array.isArray(exercise.sets) ? exercise.sets.length : 1
-        }))
+          initial_sets:
+            exercise.sets && Array.isArray(exercise.sets)
+              ? exercise.sets.length
+              : 1,
+        })),
       };
-  
+
       const response = await fetch(`${API_BASE_URL}/routines`, {
         method: "POST",
         headers: {
@@ -211,16 +220,16 @@ function WorkoutHistory() {
         },
         body: JSON.stringify(routineData),
       });
-  
+
       if (!response.ok) {
         const errorText = await response.text();
         console.error("Server response:", errorText);
         throw new Error(`Server error: ${response.status}`);
       }
-  
+
       const savedRoutine = await response.json();
       console.log("Routine saved successfully:", savedRoutine);
-  
+
       alert("Routine saved successfully!");
       setShowSaveRoutineModal(false);
     } catch (error) {
@@ -330,6 +339,7 @@ function WorkoutHistory() {
   const filteredWorkouts = workoutHistory.filter((workout) => {
     let matchesDate = true;
     let matchesExercise = true;
+    let matchesSearch = true;
 
     if (filterDate) {
       const workoutDate = new Date(workout.date || workout.start_time)
@@ -353,7 +363,13 @@ function WorkoutHistory() {
       matchesExercise = false;
     }
 
-    return matchesDate && matchesExercise;
+    if (searchQuery.trim() !== "") {
+      matchesSearch = workout.name
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase());
+    }
+
+    return matchesDate && matchesExercise && matchesSearch;
   });
 
   return (
@@ -400,7 +416,13 @@ function WorkoutHistory() {
                 className="w-full bg-gray-200 dark:bg-gray-700 rounded p-2"
               >
                 <option value="">All Exercises</option>
-                {getAllExerciseNames().map((name, index) => (
+                {Array.from(
+                  new Set(
+                    workoutHistory.flatMap((w) =>
+                      w.exercises?.map((e) => e.name)
+                    )
+                  )
+                ).map((name, index) => (
                   <option key={index} value={name}>
                     {name}
                   </option>
@@ -418,6 +440,21 @@ function WorkoutHistory() {
             >
               Clear Filters
             </button>
+          </div>
+          <div>
+            <label className="block text-gray-700 dark:text-gray-300 mb-2">
+              Search Workouts
+            </label>
+            <div className="relative">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search by workout name..."
+                className="w-full bg-gray-200 dark:bg-gray-700 rounded p-2 pl-10"
+              />
+              <FaSearch className="absolute left-3 top-3 text-gray-500 dark:text-gray-400" />
+            </div>
           </div>
         </div>
 
