@@ -162,7 +162,7 @@ def update_preferences(
         db.add(user_preferences)
         db.commit()
 
-    for key, value in preferences_data.dict(exclude_unset=True).items():
+    for key, value in preferences_data.model_dump(exclude_unset=True).items():
         setattr(user_preferences, key, value)
 
     db.commit()
@@ -171,7 +171,8 @@ def update_preferences(
     return {
         "weight_unit": user_preferences.weight_unit,
         "goal_weight": user_preferences.goal_weight,
-        "email_notifications": user_preferences.email_notifications
+        "email_notifications": user_preferences.email_notifications,
+        "summary_frequency": user_preferences.summary_frequency
     }
 
 
