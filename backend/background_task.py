@@ -1,6 +1,6 @@
 from database import SessionLocal
 from models import User, Workout, UserPreferences
-from utils.email import send_summary_email
+from email_service import send_summary_email
 from datetime import datetime, timedelta, timezone
 
 def send_summary_emails():
