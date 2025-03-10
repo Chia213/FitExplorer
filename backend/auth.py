@@ -1,5 +1,6 @@
 from google.oauth2 import id_token
 from google.auth.transport.requests import Request
+from email_validator import validate_email, EmailNotValidError
 import os
 from fastapi import APIRouter, Depends, HTTPException, Response, Request
 from fastapi.responses import JSONResponse
@@ -21,6 +22,11 @@ GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
 GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI")
 
+ALLOWED_EMAIL_DOMAINS = {
+    "gmail.com", "yahoo.com", "hotmail.com", "outlook.com", 
+    "icloud.com", "live.com", "live.se", "hotmail.se"
+}
+
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -31,19 +37,30 @@ def create_access_token(data: dict, expires_delta: timedelta):
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, settings.SECRET_KEY, algorithm="HS256")
 
-
 @router.post("/register")
-def register(user: UserCreate, db: Session = Depends(get_db)):
-    existing_user = db.query(User).filter(User.email == user.email).first()
-    if existing_user:
-        raise HTTPException(status_code=400, detail="Email already registered")
+def register(user_data: UserCreate, db: Session = Depends(get_db)):
+    try:
+        valid_email = validate_email(user_data.email).email
+        domain = valid_email.split("@")[-1]
 
-    hashed_password = pwd_context.hash(user.password)
-    new_user = User(email=user.email,
-                    hashed_password=hashed_password, username=user.username)
+    except EmailNotValidError:
+        raise HTTPException(status_code=400, detail="Invalid email format.")
+
+    existing_user = db.query(User).filter(User.email == user_data.email).first()
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Email already registered.")
+
+    hashed_password = pwd_context.hash(user_data.password)
+    new_user = User(
+        email=user_data.email,
+        hashed_password=hashed_password(user_data.password),
+        username=user_data.username
+    )
     db.add(new_user)
     db.commit()
-    return {"message": "User registered successfully"}
+    db.refresh(new_user)
+
+    return {"message": "User registered successfully!"}
 
 
 @router.post("/token", response_model=Token)
