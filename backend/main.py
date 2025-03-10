@@ -1,8 +1,9 @@
 import uuid
 import os
-from fastapi import FastAPI, Depends, HTTPException, File, UploadFile, BackgroundTasks
+from fastapi import FastAPI, Depends, HTTPException, File, UploadFile, BackgroundTasks, Request
 from background_task import send_summary_emails
 from email_service import send_summary_email, send_security_alert
+from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session, joinedload
@@ -31,11 +32,29 @@ Base.metadata.create_all(bind=engine)
 UPLOAD_DIRECTORY = "uploads/profile_pictures"
 os.makedirs(UPLOAD_DIRECTORY, exist_ok=True)
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    print("⏳ Starting background task for email summaries...")
+    background_tasks = BackgroundTasks()
+    background_tasks.add_task(send_summary_emails)
+    yield
+
+app = FastAPI(lifespan=lifespan)
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    print(f"\n>>> Request received: {request.method} {request.url.path}")
+    try:
+        response = await call_next(request)
+        print(f"<<< Response status: {response.status_code}")
+        return response
+    except Exception as e:
+        print(f"!!! Error processing request: {str(e)}")
+        raise
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:5173"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -45,19 +64,14 @@ app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 app.include_router(auth_router)
 
+@app.get("/test")
+def test_endpoint():
+    print("Test endpoint called")
+    return {"message": "Test successful"}
 
 @app.get("/protected-route")
 def protected_route(user: User = Depends(get_current_user)):
     return {"email": user.email}
-
-
-@app.on_event("startup")
-async def startup_event():
-    """Runs when the API starts"""
-    print("⏳ Starting background task for email summaries...")
-    background_tasks = BackgroundTasks()
-    background_tasks.add_task(send_summary_emails)
-
 
 @app.post("/trigger-email-summary")
 def trigger_email_summary(background_tasks: BackgroundTasks):
@@ -84,7 +98,6 @@ async def send_summaries(background_tasks: BackgroundTasks, db: Session = Depend
 
     return {"message": "Scheduled summary emails"}
 
-
 @app.get("/workouts", response_model=list[WorkoutResponse])
 def get_workouts(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     workouts = db.query(Workout)\
@@ -93,7 +106,6 @@ def get_workouts(user: User = Depends(get_current_user), db: Session = Depends(g
         .all()
 
     return workouts
-
 
 @app.post("/workouts", response_model=WorkoutResponse)
 def add_workout(workout: WorkoutCreate, user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> WorkoutResponse:
@@ -152,7 +164,6 @@ def add_workout(workout: WorkoutCreate, user: User = Depends(get_current_user), 
 
     return workout_data
 
-
 @app.get("/profile")
 def profile(user: User = Depends(get_current_user)):
     return {
@@ -160,7 +171,6 @@ def profile(user: User = Depends(get_current_user)):
         "email": user.email,
         "profile_picture": user.profile_picture
     }
-
 
 @app.put("/update-profile")
 def update_profile(
@@ -182,7 +192,6 @@ def update_profile(
     db.refresh(user)
 
     return {"username": user.username, "email": user.email}
-
 
 @app.patch("/update-preferences")
 def update_preferences(
@@ -216,10 +225,10 @@ def update_preferences(
         "summary_frequency": user_preferences.summary_frequency
     }
 
-
 @app.post("/change-password")
 def change_password(
     request: ChangePasswordRequest,
+    background_tasks: BackgroundTasks,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -229,11 +238,10 @@ def change_password(
     user.hashed_password = hash_password(request.new_password)
     db.commit()
 
-    background_tasks.add_task(send_summary_email, user.email, frequency, workout_count)
-
+    # Send security alert email
+    background_tasks.add_task(send_security_alert, user.email)
 
     return {"message": "Password changed successfully"}
-
 
 @app.delete("/delete-account")
 def delete_account(
@@ -276,7 +284,6 @@ def delete_account(
         db.rollback()
         raise HTTPException(
             status_code=500, detail=f"Error deleting account: {str(e)}")
-
 
 @app.get("/workout-stats", response_model=WorkoutStatsResponse)
 def get_workout_stats(
@@ -326,7 +333,6 @@ def get_workout_stats(
         weight_progression=weight_progression_data
     )
 
-
 @app.post("/upload-profile-picture")
 async def upload_profile_picture(
     file: UploadFile = File(...),
@@ -351,7 +357,6 @@ async def upload_profile_picture(
 
     return {"message": "Profile picture uploaded", "file_path": file_path}
 
-
 @app.delete("/remove-profile-picture")
 def remove_profile_picture(
     user: User = Depends(get_current_user),
@@ -374,7 +379,6 @@ def remove_profile_picture(
         db.rollback()
         raise HTTPException(
             status_code=500, detail=f"Error removing profile picture: {str(e)}")
-
 
 @app.post("/routines", response_model=RoutineResponse)
 def create_routine(
@@ -402,7 +406,6 @@ def create_routine(
     new_routine.workout_id = new_workout.id
     db.commit()
     
-
     new_exercises = []
     if routine.exercises:
         for exercise_data in routine.exercises:

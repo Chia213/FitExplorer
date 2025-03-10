@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { registerUser } from "../api/auth";
 import { useNavigate } from "react-router-dom";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
@@ -14,7 +14,23 @@ function Signup() {
   const [success, setSuccess] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isServerOnline, setIsServerOnline] = useState(true);
   const navigate = useNavigate();
+
+  // Check if server is online when component mounts
+  useEffect(() => {
+    const checkServerStatus = async () => {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/test`);
+        setIsServerOnline(response.ok);
+      } catch (error) {
+        setIsServerOnline(false);
+        setError("Server is currently offline. Please try again later.");
+      }
+    };
+
+    checkServerStatus();
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -29,6 +45,11 @@ function Signup() {
     setError(null);
     setSuccess(null);
 
+    if (!isServerOnline) {
+      setError("Server is currently offline. Please try again later.");
+      return;
+    }
+
     if (formData.password !== formData.confirmPassword) {
       setError("Passwords do not match");
       return;
@@ -41,14 +62,19 @@ function Signup() {
         formData.username
       );
 
-      if (response.message === "User registered successfully") {
+      if (response.message === "User registered successfully!") {
         setSuccess("Account created! Redirecting to login...");
         setTimeout(() => navigate("/login"), 2000);
       } else {
         setError(response.detail || "Failed to register.");
       }
     } catch (err) {
-      setError("Something went wrong. Try again.");
+      setError(err.message || "Something went wrong. Try again.");
+      
+      // Update server status if it's a connection error
+      if (err.message.includes("Cannot connect to the server")) {
+        setIsServerOnline(false);
+      }
     }
   };
 
@@ -69,6 +95,13 @@ function Signup() {
         <p className="text-center text-gray-500 dark:text-gray-400 mt-2">
           Create your account
         </p>
+
+        {!isServerOnline && (
+          <div className="bg-orange-100 border-l-4 border-orange-500 text-orange-700 p-4 my-4 rounded">
+            <p className="font-bold">Server Offline</p>
+            <p>The backend server is currently unavailable. Registration services will not work until the server is online.</p>
+          </div>
+        )}
 
         {error && <p className="text-red-500 text-center mt-2">{error}</p>}
         {success && (
@@ -91,6 +124,7 @@ function Signup() {
                          bg-white dark:bg-gray-700 
                          text-gray-900 dark:text-gray-100
                          focus:outline-none focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-500"
+              disabled={!isServerOnline}
             />
           </div>
 
@@ -109,6 +143,7 @@ function Signup() {
                          bg-white dark:bg-gray-700 
                          text-gray-900 dark:text-gray-100
                          focus:outline-none focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-500"
+              disabled={!isServerOnline}
             />
           </div>
 
@@ -127,11 +162,13 @@ function Signup() {
                          bg-white dark:bg-gray-700 
                          text-gray-900 dark:text-gray-100
                          focus:outline-none focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-500"
+              disabled={!isServerOnline}
             />
             <button
               type="button"
               onClick={togglePasswordVisibility}
               className="absolute top-12 right-3 transform -translate-y-1/2 text-gray-500 dark:text-gray-400"
+              disabled={!isServerOnline}
             >
               {showPassword ? <FaEyeSlash size={20} /> : <FaEye size={20} />}
             </button>
@@ -152,11 +189,13 @@ function Signup() {
                          bg-white dark:bg-gray-700 
                          text-gray-900 dark:text-gray-100
                          focus:outline-none focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-500"
+              disabled={!isServerOnline}
             />
             <button
               type="button"
               onClick={toggleConfirmPasswordVisibility}
               className="absolute top-12 right-3 transform -translate-y-1/2 text-gray-500 dark:text-gray-400"
+              disabled={!isServerOnline}
             >
               {showConfirmPassword ? (
                 <FaEyeSlash size={20} />
@@ -168,10 +207,12 @@ function Signup() {
 
           <button
             type="submit"
-            className="w-full bg-blue-500 hover:bg-blue-600 
-                       dark:bg-blue-600 dark:hover:bg-blue-700 
-                       text-white font-semibold py-2 rounded-lg 
-                       transition duration-300 ease-in-out"
+            className={`w-full ${
+              isServerOnline 
+                ? "bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700" 
+                : "bg-gray-400 cursor-not-allowed"
+            } text-white font-semibold py-2 rounded-lg transition duration-300 ease-in-out`}
+            disabled={!isServerOnline}
           >
             Sign Up
           </button>

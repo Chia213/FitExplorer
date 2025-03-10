@@ -10,8 +10,31 @@ function Login() {
   });
   const [error, setError] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [isServerOnline, setIsServerOnline] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Inside your Login component, add this function:
+const checkServerStatus = async () => {
+  try {
+    console.log("Checking server status...");
+    const testUrl = `${import.meta.env.VITE_API_URL}/test`;
+    console.log("Test URL:", testUrl);
+    
+    const response = await fetch(testUrl);
+    console.log("Response status:", response.status);
+    
+    setIsServerOnline(response.ok);
+  } catch (error) {
+    console.error("Error checking server:", error);
+    setIsServerOnline(false);
+  }
+};
+
+// Then make sure this function is called in a useEffect hook:
+useEffect(() => {
+  checkServerStatus();
+}, []);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -19,10 +42,34 @@ function Login() {
     const state = params.get('state');
     
     if (code && state) {
-      handleGoogleCallback(code, state);
+      const processGoogleCallback = async () => {
+        try {
+          console.log('Callback URL:', `${import.meta.env.VITE_API_URL}/auth/callback?code=${code}&state=${state}`);
+          
+          const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/callback?code=${code}&state=${state}`);
+  
+          console.log('Response status:', res.status);
+          
+          if (res.ok) {
+            const data = await res.json();
+            console.log('Received data:', data);
+            localStorage.setItem("token", data.access_token);
+            navigate("/profile");
+          } else {
+            const errorData = await res.text();
+            console.error("Google login failed:", res.status, errorData);
+            setError(`Google login failed: ${errorData}`);
+          }
+        } catch (error) {
+          console.error("Authentication error:", error);
+          setError(`Something went wrong: ${error.message}`);
+          setIsServerOnline(false);
+        }
+      };
+      
+      processGoogleCallback();
     }
-  }, [location]);
-
+  }, [location, navigate]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -36,6 +83,11 @@ function Login() {
     e.preventDefault();
     setError(null);
 
+    if (!isServerOnline) {
+      setError("Server is currently offline. Please try again later.");
+      return;
+    }
+
     try {
       const response = await loginUser(formData.email, formData.password);
 
@@ -46,8 +98,13 @@ function Login() {
         setError("Invalid credentials");
       }
     } catch (err) {
-      setError("Something went wrong. Try again.");
+      setError(err.message || "Something went wrong. Try again.");
       console.error("Login error:", err);
+      
+      // Update server status if it's a connection error
+      if (err.message.includes("Cannot connect to the server")) {
+        setIsServerOnline(false);
+      }
     }
   };
 
@@ -55,27 +112,12 @@ function Login() {
     setShowPassword((prev) => !prev);
   };
 
-  const handleGoogleCallback = async (code, state) => {
-    try {
-      const res = await fetch(`http://localhost:8000/auth/callback?code=${code}&state=${state}`);
-
-      if (res.ok) {
-        const data = await res.json();
-        localStorage.setItem("token", data.access_token);
-        navigate("/profile");
-      } else {
-        const errorData = await res.text();
-        console.error("Google login failed:", res.status, errorData);
-        setError("Google login failed.");
-      }
-    } catch (error) {
-      console.error("Authentication error:", error);
-      setError("Something went wrong.");
-    }
-  };
-
   const handleGoogleLogin = () => {
-    window.location.href = "http://localhost:8000/auth/login/google";
+    if (!isServerOnline) {
+      setError("Server is currently offline. Please try again later.");
+      return;
+    }
+    window.location.href = `${import.meta.env.VITE_API_URL}/auth/login/google`;
   };
 
   return (
@@ -84,6 +126,13 @@ function Login() {
         <h1 className="text-3xl font-bold text-center text-gray-800 dark:text-gray-100 mb-6">
           Login
         </h1>
+
+        {!isServerOnline && (
+          <div className="bg-orange-100 border-l-4 border-orange-500 text-orange-700 p-4 mb-4 rounded">
+            <p className="font-bold">Server Offline</p>
+            <p>The backend server is currently unavailable. Authentication services will not work until the server is online.</p>
+          </div>
+        )}
 
         {error && <p className="text-red-500 text-center mb-4">{error}</p>}
 
@@ -103,6 +152,7 @@ function Login() {
                          bg-white dark:bg-gray-700 
                          text-gray-900 dark:text-gray-100
                          focus:outline-none focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-500"
+              disabled={!isServerOnline}
             />
           </div>
 
@@ -121,11 +171,13 @@ function Login() {
                          bg-white dark:bg-gray-700 
                          text-gray-900 dark:text-gray-100
                          focus:outline-none focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-500"
+              disabled={!isServerOnline}
             />
             <button
               type="button"
               onClick={togglePasswordVisibility}
               className="absolute top-12 right-3 transform -translate-y-1/2 text-gray-500 dark:text-gray-400"
+              disabled={!isServerOnline}
             >
               {showPassword ? <FaEyeSlash size={20} /> : <FaEye size={20} />}
             </button>
@@ -133,18 +185,19 @@ function Login() {
 
           <button
             type="submit"
-            className="w-full bg-blue-500 hover:bg-blue-600 
-                       dark:bg-blue-600 dark:hover:bg-blue-700 
-                       text-white font-semibold py-2 rounded-lg 
-                       transition duration-300 ease-in-out"
+            className={`w-full ${
+              isServerOnline 
+                ? "bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700" 
+                : "bg-gray-400 cursor-not-allowed"
+            } text-white font-semibold py-2 rounded-lg transition duration-300 ease-in-out`}
+            disabled={!isServerOnline}
           >
             Login
           </button>
 
           <p className="text-sm text-gray-500 dark:text-gray-400 text-center">
             Don't have an account?{" "}
-            
-             <a href="/signup"
+            <a href="/signup"
               className="text-blue-500 dark:text-blue-400 hover:underline"
             >
               Sign up
@@ -155,11 +208,14 @@ function Login() {
         <div className="mt-6">
           <button
             onClick={handleGoogleLogin}
-            className="w-full flex items-center justify-center gap-2 bg-white dark:bg-gray-700 
-                     border border-gray-300 dark:border-gray-600 rounded-lg 
+            className={`w-full flex items-center justify-center gap-2 ${
+              isServerOnline
+                ? "bg-white dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600"
+                : "bg-gray-300 dark:bg-gray-600 cursor-not-allowed"
+            } border border-gray-300 dark:border-gray-600 rounded-lg 
                      py-2 px-4 text-gray-700 dark:text-gray-200 
-                     hover:bg-gray-100 dark:hover:bg-gray-600 
-                     transition duration-300 ease-in-out"
+                     transition duration-300 ease-in-out`}
+            disabled={!isServerOnline}
           >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20">
               <path
@@ -188,4 +244,3 @@ function Login() {
 }
 
 export default Login;
-

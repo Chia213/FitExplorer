@@ -5,10 +5,17 @@ import { FaEdit, FaTrash, FaSave, FaTimes, FaCamera } from "react-icons/fa";
 
 const backendURL = "http://localhost:8000";
 
+const ALLOWED_EMAIL_DOMAINS = new Set([
+  "gmail.com", "yahoo.com", "outlook.com", "hotmail.com", "icloud.com"
+]);
+
 function Profile() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [cardColor, setCardColor] = useState(() => {
+    return localStorage.getItem("cardColor") || "#f0f4ff";
+  });
   const [isEditing, setIsEditing] = useState(false);
   const [editedUsername, setEditedUsername] = useState("");
   const [workoutStats, setWorkoutStats] = useState(null);
@@ -17,6 +24,7 @@ function Profile() {
     weightUnit: "kg",
     goalWeight: null,
     emailNotifications: false,
+    summaryFrequency: null
   });
   const [preferencesChanged, setPreferencesChanged] = useState(false);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
@@ -26,13 +34,16 @@ function Profile() {
   const { theme } = useTheme();
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
+    localStorage.setItem("cardColor", cardColor);
+  }, [cardColor]);
 
+  useEffect(() => {
+    const token = localStorage.getItem("token");
     if (!token) {
       navigate("/login");
       return;
     }
-
+  
     Promise.all([
       fetch(`${backendURL}/profile`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -76,6 +87,13 @@ function Profile() {
         navigate("/login");
       });
   }, [navigate]);
+
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good morning";
+    if (hour < 18) return "Good afternoon";
+    return "Good evening";
+  };
 
   const handleUpdateProfile = async () => {
     try {
@@ -242,9 +260,7 @@ function Profile() {
   return (
     <div
       className={`flex flex-col items-center justify-center min-h-screen p-6 ${
-        theme === "dark"
-          ? "bg-gray-900 text-white"
-          : "bg-gray-100 text-gray-900"
+        theme === "dark" ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-900"
       }`}
     >
       {error && (
@@ -257,6 +273,25 @@ function Profile() {
             theme === "dark" ? "text-white" : "text-gray-900"
           }`}
         >
+          <div
+            className="p-6 rounded-xl shadow-md text-center mb-6"
+            style={{ backgroundColor: cardColor }}
+          >
+            <h2 className="text-3xl font-bold text-gray-900">
+              {getGreeting()}, {user.username}!
+            </h2>
+          </div>
+
+          <div className="mb-6 text-center">
+            <label className="block text-gray-700 dark:text-gray-300 font-medium">Card Color</label>
+            <input
+              type="color"
+              value={cardColor}
+              onChange={(e) => setCardColor(e.target.value)}
+              className="w-16 h-10 mt-2 border border-gray-300 rounded-md cursor-pointer"
+            />
+          </div>
+
           <div className="flex flex-col items-center mb-6">
             <div className="relative">
               <div
@@ -292,7 +327,7 @@ function Profile() {
                 {profilePicture && (
                   <button
                     onClick={handleRemoveProfilePicture}
-                    className="bg-red-500 text-white p-2 rounded-full shadow-lg -mr-14"
+                    className="bg-red-500 text-white p-2 rounded-full shadow-lg ml-2"
                     title="Remove Profile Picture"
                   >
                     <FaTrash />
@@ -376,7 +411,7 @@ function Profile() {
           </div>
 
           {workoutStats && (
-            <div className="mb-6 p-4 bg-gray-100 dark:bg-gray-700 rounded-lg">
+            <div className="mb-6 p-4 bg-gray-100 dark:bg-gray-700 rounded-lg w-full">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-semibold">Workout Statistics</h2>
               </div>
@@ -412,10 +447,8 @@ function Profile() {
                     onChange={(e) =>
                       handlePreferenceChange({
                         ...preferences,
-                        email_notifications: e.target.checked,
-                        summary_frequency: e.target.checked
-                          ? preferences.summary_frequency
-                          : null,
+                        emailNotifications: e.target.checked,
+                        summaryFrequency: e.target.checked ? preferences.summaryFrequency : null,
                       })
                     }
                     className="mr-2"
@@ -427,28 +460,29 @@ function Profile() {
                 <div className="mt-4">
                   {!ALLOWED_EMAIL_DOMAINS.has(user.email.split("@")[1]) ? (
                     <p className="text-red-500 text-sm">
-                      ⚠️ To enable email notifications, please use a valid email provider (Gmail, Yahoo, Outlook, etc.).
+                      ⚠️ To enable email notifications, please use a valid email
+                      provider (Gmail, Yahoo, Outlook, etc.).
                     </p>
-                   ) : (
-                     <>
-                  <label className="block text-sm font-medium mb-1">
-                    Workout Summary Frequency
-                  </label>
-                  <select
-                    value={preferences.summaryFrequency || ""}
-                    onChange={(e) =>
-                      handlePreferenceChange({
-                        ...preferences,
-                        summaryFrequency: e.target.value,
-                      })
-                    }
-                    className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600"
-                  >
-                    <option value="">Select Frequency</option>
-                    <option value="weekly">Weekly Summary</option>
-                    <option value="monthly">Monthly Summary</option>
-                  </select>
-                  </>
+                  ) : (
+                    <>
+                      <label className="block text-sm font-medium mb-1">
+                        Workout Summary Frequency
+                      </label>
+                      <select
+                        value={preferences.summaryFrequency || ""}
+                        onChange={(e) =>
+                          handlePreferenceChange({
+                            ...preferences,
+                            summaryFrequency: e.target.value,
+                          })
+                        }
+                        className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600"
+                      >
+                        <option value="">Select Frequency</option>
+                        <option value="weekly">Weekly Summary</option>
+                        <option value="monthly">Monthly Summary</option>
+                      </select>
+                    </>
                   )}
                 </div>
               )}
