@@ -10,31 +10,8 @@ function Login() {
   });
   const [error, setError] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
-  const [isServerOnline, setIsServerOnline] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
-
-  // Inside your Login component, add this function:
-const checkServerStatus = async () => {
-  try {
-    console.log("Checking server status...");
-    const testUrl = `${import.meta.env.VITE_API_URL}/test`;
-    console.log("Test URL:", testUrl);
-    
-    const response = await fetch(testUrl);
-    console.log("Response status:", response.status);
-    
-    setIsServerOnline(response.ok);
-  } catch (error) {
-    console.error("Error checking server:", error);
-    setIsServerOnline(false);
-  }
-};
-
-// Then make sure this function is called in a useEffect hook:
-useEffect(() => {
-  checkServerStatus();
-}, []);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -63,7 +40,6 @@ useEffect(() => {
         } catch (error) {
           console.error("Authentication error:", error);
           setError(`Something went wrong: ${error.message}`);
-          setIsServerOnline(false);
         }
       };
       
@@ -83,11 +59,6 @@ useEffect(() => {
     e.preventDefault();
     setError(null);
 
-    if (!isServerOnline) {
-      setError("Server is currently offline. Please try again later.");
-      return;
-    }
-
     try {
       const response = await loginUser(formData.email, formData.password);
 
@@ -100,11 +71,6 @@ useEffect(() => {
     } catch (err) {
       setError(err.message || "Something went wrong. Try again.");
       console.error("Login error:", err);
-      
-      // Update server status if it's a connection error
-      if (err.message.includes("Cannot connect to the server")) {
-        setIsServerOnline(false);
-      }
     }
   };
 
@@ -113,10 +79,6 @@ useEffect(() => {
   };
 
   const handleGoogleLogin = () => {
-    if (!isServerOnline) {
-      setError("Server is currently offline. Please try again later.");
-      return;
-    }
     window.location.href = `${import.meta.env.VITE_API_URL}/auth/login/google`;
   };
 
@@ -126,13 +88,6 @@ useEffect(() => {
         <h1 className="text-3xl font-bold text-center text-gray-800 dark:text-gray-100 mb-6">
           Login
         </h1>
-
-        {!isServerOnline && (
-          <div className="bg-orange-100 border-l-4 border-orange-500 text-orange-700 p-4 mb-4 rounded">
-            <p className="font-bold">Server Offline</p>
-            <p>The backend server is currently unavailable. Authentication services will not work until the server is online.</p>
-          </div>
-        )}
 
         {error && <p className="text-red-500 text-center mb-4">{error}</p>}
 
@@ -152,7 +107,6 @@ useEffect(() => {
                          bg-white dark:bg-gray-700 
                          text-gray-900 dark:text-gray-100
                          focus:outline-none focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-500"
-              disabled={!isServerOnline}
             />
           </div>
 
@@ -171,13 +125,11 @@ useEffect(() => {
                          bg-white dark:bg-gray-700 
                          text-gray-900 dark:text-gray-100
                          focus:outline-none focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-500"
-              disabled={!isServerOnline}
             />
             <button
               type="button"
               onClick={togglePasswordVisibility}
               className="absolute top-12 right-3 transform -translate-y-1/2 text-gray-500 dark:text-gray-400"
-              disabled={!isServerOnline}
             >
               {showPassword ? <FaEyeSlash size={20} /> : <FaEye size={20} />}
             </button>
@@ -185,12 +137,10 @@ useEffect(() => {
 
           <button
             type="submit"
-            className={`w-full ${
-              isServerOnline 
-                ? "bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700" 
-                : "bg-gray-400 cursor-not-allowed"
-            } text-white font-semibold py-2 rounded-lg transition duration-300 ease-in-out`}
-            disabled={!isServerOnline}
+            className="w-full bg-blue-500 hover:bg-blue-600 
+                       dark:bg-blue-600 dark:hover:bg-blue-700 
+                       text-white font-semibold py-2 rounded-lg 
+                       transition duration-300 ease-in-out"
           >
             Login
           </button>
@@ -208,14 +158,11 @@ useEffect(() => {
         <div className="mt-6">
           <button
             onClick={handleGoogleLogin}
-            className={`w-full flex items-center justify-center gap-2 ${
-              isServerOnline
-                ? "bg-white dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600"
-                : "bg-gray-300 dark:bg-gray-600 cursor-not-allowed"
-            } border border-gray-300 dark:border-gray-600 rounded-lg 
+            className="w-full flex items-center justify-center gap-2 bg-white dark:bg-gray-700 
+                     border border-gray-300 dark:border-gray-600 rounded-lg 
                      py-2 px-4 text-gray-700 dark:text-gray-200 
-                     transition duration-300 ease-in-out`}
-            disabled={!isServerOnline}
+                     hover:bg-gray-100 dark:hover:bg-gray-600 
+                     transition duration-300 ease-in-out"
           >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20">
               <path
