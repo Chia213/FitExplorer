@@ -425,6 +425,12 @@ function Profile() {
               </div>
               {preferences.emailNotifications && (
                 <div className="mt-4">
+                  {!ALLOWED_EMAIL_DOMAINS.has(user.email.split("@")[1]) ? (
+                    <p className="text-red-500 text-sm">
+                      ⚠️ To enable email notifications, please use a valid email provider (Gmail, Yahoo, Outlook, etc.).
+                    </p>
+                   ) : (
+                     <>
                   <label className="block text-sm font-medium mb-1">
                     Workout Summary Frequency
                   </label>
@@ -442,6 +448,8 @@ function Profile() {
                     <option value="weekly">Weekly Summary</option>
                     <option value="monthly">Monthly Summary</option>
                   </select>
+                  </>
+                  )}
                 </div>
               )}
               <div>
