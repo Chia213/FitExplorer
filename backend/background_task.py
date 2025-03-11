@@ -1,10 +1,13 @@
+import logging
 from database import SessionLocal
 from models import User, Workout, UserPreferences
 from email_service import send_summary_email
 from datetime import datetime, timedelta, timezone
 
+logger = logging.getLogger(__name__)
+
 def send_summary_emails():
-    print("📧 Starting email summary task...")
+    logger.info("Starting email summary task...")
     db = SessionLocal()
 
     try:
@@ -27,10 +30,11 @@ def send_summary_emails():
             if workout_count > 0:
                 email_body = f"Good job this {summary_period}! You have completed {workout_count} workouts. Keep it up! 💪"
                 send_summary_email(user.email, f"{summary_period}ly Workout Summary", email_body)
+                logger.info(f"Summary email sent to {user.email}")
 
     except Exception as e:
-        print(f"Error sending summary emails: {e}")
+        logger.error(f"Error sending summary emails: {e}")
     finally:
         db.close()
 
-    print("📧 Summary emails sent successfully!")
+    logger.info("Summary emails task completed")

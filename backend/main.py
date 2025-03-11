@@ -1,6 +1,7 @@
 import uuid
 import os
-from fastapi import FastAPI, Depends, HTTPException, File, UploadFile, BackgroundTasks, Request
+import logging
+from fastapi import FastAPI, Depends, HTTPException, File, UploadFile, BackgroundTasks
 from background_task import send_summary_emails
 from email_service import send_summary_email, send_security_alert
 from contextlib import asynccontextmanager
@@ -27,6 +28,8 @@ from schemas import (
 )
 from security import hash_password, verify_password
 
+logger = logging.getLogger(__name__)
+
 Base.metadata.create_all(bind=engine)
 
 UPLOAD_DIRECTORY = "uploads/profile_pictures"
@@ -34,23 +37,12 @@ os.makedirs(UPLOAD_DIRECTORY, exist_ok=True)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    print("⏳ Starting background task for email summaries...")
+    logger.info("Starting background task for email summaries")
     background_tasks = BackgroundTasks()
     background_tasks.add_task(send_summary_emails)
-    yield
-
+    
+    yield 
 app = FastAPI(lifespan=lifespan)
-
-@app.middleware("http")
-async def log_requests(request: Request, call_next):
-    print(f"\n>>> Request received: {request.method} {request.url.path}")
-    try:
-        response = await call_next(request)
-        print(f"<<< Response status: {response.status_code}")
-        return response
-    except Exception as e:
-        print(f"!!! Error processing request: {str(e)}")
-        raise
 
 app.add_middleware(
     CORSMiddleware,
@@ -63,11 +55,6 @@ app.add_middleware(
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 app.include_router(auth_router)
-
-@app.get("/test")
-def test_endpoint():
-    print("Test endpoint called")
-    return {"message": "Test successful"}
 
 @app.get("/protected-route")
 def protected_route(user: User = Depends(get_current_user)):
@@ -274,7 +261,7 @@ def delete_account(
                 if os.path.exists(file_path):
                     os.remove(file_path)
             except Exception as e:
-                print(f"Failed to delete profile picture: {str(e)}")
+                logger.error(f"Failed to delete profile picture: {str(e)}")
 
         db.delete(user)
         db.commit()
