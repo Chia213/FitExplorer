@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { loginUser } from "../api/auth";
@@ -10,31 +10,40 @@ function Login() {
   });
   const [error, setError] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    const token = params.get('token');
-    const email = params.get('email');
-    const errorParam = params.get('error');
+    const code = params.get('code');
+    const state = params.get('state');
     
-    if (errorParam) {
-      setError(`Google login failed: ${decodeURIComponent(errorParam)}`);
-    } else if (token) {
-      try {
-        localStorage.setItem('token', token);
-        
-        if (email) {
-          localStorage.setItem('userEmail', email);
+    if (code && state) {
+      const processGoogleCallback = async () => {
+        try {
+          console.log('Callback URL:', `${import.meta.env.VITE_API_URL}/auth/callback?code=${code}&state=${state}`);
+          
+          const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/callback?code=${code}&state=${state}`);
+  
+          console.log('Response status:', res.status);
+          
+          if (res.ok) {
+            const data = await res.json();
+            console.log('Received data:', data);
+            localStorage.setItem("token", data.access_token);
+            navigate("/profile");
+          } else {
+            const errorData = await res.text();
+            console.error("Google login failed:", res.status, errorData);
+            setError(`Google login failed: ${errorData}`);
+          }
+        } catch (error) {
+          console.error("Authentication error:", error);
+          setError(`Something went wrong: ${error.message}`);
         }
-        
-        navigate('/');
-      } catch (err) {
-        setError("Error processing login. Please try again.");
-        console.error("Login processing error:", err);
-      }
+      };
+      
+      processGoogleCallback();
     }
   }, [location, navigate]);
 
@@ -49,7 +58,6 @@ function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
-    setIsLoading(true);
 
     try {
       const response = await loginUser(formData.email, formData.password);
@@ -63,8 +71,6 @@ function Login() {
     } catch (err) {
       setError(err.message || "Something went wrong. Try again.");
       console.error("Login error:", err);
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -131,20 +137,17 @@ function Login() {
 
           <button
             type="submit"
-            disabled={isLoading}
-            className={`w-full text-white font-semibold py-2 rounded-lg 
-                       transition duration-300 ease-in-out
-                       ${isLoading 
-                         ? 'bg-gray-400 cursor-not-allowed' 
-                         : 'bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700'}`}
+            className="w-full bg-blue-500 hover:bg-blue-600 
+                       dark:bg-blue-600 dark:hover:bg-blue-700 
+                       text-white font-semibold py-2 rounded-lg 
+                       transition duration-300 ease-in-out"
           >
-            {isLoading ? 'Logging in...' : 'Login'}
+            Login
           </button>
 
           <p className="text-sm text-gray-500 dark:text-gray-400 text-center">
             Don't have an account?{" "}
-            <a 
-              href="/signup"
+            <a href="/signup"
               className="text-blue-500 dark:text-blue-400 hover:underline"
             >
               Sign up
@@ -155,7 +158,6 @@ function Login() {
         <div className="mt-6">
           <button
             onClick={handleGoogleLogin}
-            disabled={isLoading}
             className="w-full flex items-center justify-center gap-2 bg-white dark:bg-gray-700 
                      border border-gray-300 dark:border-gray-600 rounded-lg 
                      py-2 px-4 text-gray-700 dark:text-gray-200 

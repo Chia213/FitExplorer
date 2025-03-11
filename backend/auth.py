@@ -126,10 +126,7 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
     
     if not code or not state:
         logger.error("Missing code or state parameter")
-        return Response(
-            status_code=303, 
-            headers={"Location": f"http://localhost:5173/login?error=Missing+required+parameters"}
-        )
+        raise HTTPException(status_code=400, detail="Missing required parameters")
     
     logger.debug(f"Full Request URL: {request.url}")
     logger.debug(f"Received code: {code}")
@@ -140,10 +137,7 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
     
     if not stored_state or stored_state != state:
         logger.warning("State mismatch!")
-        return Response(
-            status_code=303, 
-            headers={"Location": f"http://localhost:5173/login?error=Invalid+state+parameter"}
-        )
+        raise HTTPException(status_code=400, detail="Invalid state parameter")
     
     try:
         google_oauth = OAuth2Session(
@@ -166,6 +160,7 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
             request_obj,
             GOOGLE_CLIENT_ID
         )
+        
         logger.debug(f"ID Token info: {id_info}")
 
         user_info = {
@@ -198,13 +193,12 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
         )
         logger.info(f"Google authentication successful for: {user.email}")
 
-        redirect_url = f"http://localhost:5173/login?token={access_token}&email={user.email}"
-        return Response(status_code=303, headers={"Location": redirect_url})
+        return {
+            "access_token": access_token, 
+            "token_type": "bearer", 
+            "user_email": user.email
+        }
 
     except Exception as e:
         logger.error(f"Error in Google callback: {str(e)}")
-        error_msg = str(e).replace(" ", "+")
-        return Response(
-            status_code=303, 
-            headers={"Location": f"http://localhost:5173/login?error={error_msg}"}
-        )
+        raise HTTPException(status_code=401, detail=f"Authentication failed: {str(e)}")
