@@ -32,6 +32,7 @@ class UserPreferences(Base):
     goal_weight = Column(Float, nullable=True)
     email_notifications = Column(Boolean, default=False)
     summary_frequency = Column(String, nullable=True)
+    card_color = Column(String, default="#dbeafe")
 
     user = relationship("User", back_populates="preferences")
 

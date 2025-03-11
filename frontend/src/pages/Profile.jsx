@@ -6,7 +6,11 @@ import { FaEdit, FaTrash, FaSave, FaTimes, FaCamera } from "react-icons/fa";
 const backendURL = "http://localhost:8000";
 
 const ALLOWED_EMAIL_DOMAINS = new Set([
-  "gmail.com", "yahoo.com", "outlook.com", "hotmail.com", "icloud.com"
+  "gmail.com",
+  "yahoo.com",
+  "outlook.com",
+  "hotmail.com",
+  "icloud.com",
 ]);
 
 function Profile() {
@@ -24,7 +28,8 @@ function Profile() {
     weightUnit: "kg",
     goalWeight: null,
     emailNotifications: false,
-    summaryFrequency: null
+    summaryFrequency: null,
+    cardColor: "#dbeafe",
   });
   const [preferencesChanged, setPreferencesChanged] = useState(false);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
@@ -43,7 +48,7 @@ function Profile() {
       navigate("/login");
       return;
     }
-  
+
     Promise.all([
       fetch(`${backendURL}/profile`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -58,6 +63,34 @@ function Profile() {
 
         setUser(userData);
         setEditedUsername(userData.username);
+
+        if (userData.preferences && userData.preferences.card_color) {
+          setCardColor(userData.preferences.card_color);
+          setPreferences((prev) => ({
+            ...prev,
+            cardColor: userData.preferences.card_color,
+          }));
+        } else {
+          const savedColor = localStorage.getItem("cardColor");
+          if (savedColor) {
+            setCardColor(savedColor);
+            setPreferences((prev) => ({
+              ...prev,
+              cardColor: savedColor,
+            }));
+          }
+        }
+
+        if (userData.preferences) {
+          setPreferences((prev) => ({
+            ...prev,
+            weightUnit: userData.preferences.weight_unit || "kg",
+            goalWeight: userData.preferences.goal_weight,
+            emailNotifications:
+              userData.preferences.email_notifications || false,
+            summaryFrequency: userData.preferences.summary_frequency,
+          }));
+        }
 
         if (userData.profile_picture) {
           setProfilePicture(
@@ -87,6 +120,17 @@ function Profile() {
         navigate("/login");
       });
   }, [navigate]);
+
+  const handleColorChange = (newColor) => {
+    setCardColor(newColor);
+    setPreferences((prev) => ({
+      ...prev,
+      cardColor: newColor,
+    }));
+    setPreferencesChanged(true);
+
+    localStorage.setItem("cardColor", newColor);
+  };
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -211,6 +255,8 @@ function Profile() {
           summaryFrequency: preferences.emailNotifications
             ? preferences.summaryFrequency
             : null,
+          weightUnit: preferences.weightUnit,
+          cardColor: preferences.cardColor,
         }),
       });
 
@@ -260,7 +306,9 @@ function Profile() {
   return (
     <div
       className={`flex flex-col items-center justify-center min-h-screen p-6 ${
-        theme === "dark" ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-900"
+        theme === "dark"
+          ? "bg-gray-900 text-white"
+          : "bg-gray-100 text-gray-900"
       }`}
     >
       {error && (
@@ -283,11 +331,13 @@ function Profile() {
           </div>
 
           <div className="mb-6 text-center">
-            <label className="block text-gray-700 dark:text-gray-300 font-medium">Card Color</label>
+            <label className="block text-gray-700 dark:text-gray-300 font-medium">
+              Card Color
+            </label>
             <input
               type="color"
               value={cardColor}
-              onChange={(e) => setCardColor(e.target.value)}
+              onChange={(e) => handleColorChange(e.target.value)}
               className="w-16 h-10 mt-2 border border-gray-300 rounded-md cursor-pointer"
             />
           </div>
@@ -448,7 +498,9 @@ function Profile() {
                       handlePreferenceChange({
                         ...preferences,
                         emailNotifications: e.target.checked,
-                        summaryFrequency: e.target.checked ? preferences.summaryFrequency : null,
+                        summaryFrequency: e.target.checked
+                          ? preferences.summaryFrequency
+                          : null,
                       })
                     }
                     className="mr-2"

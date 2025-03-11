@@ -1,5 +1,5 @@
 from google.oauth2 import id_token
-from google.auth.transport.requests import Request
+from google.auth.transport import requests as google_requests
 from email_validator import validate_email, EmailNotValidError
 import os
 import logging
@@ -112,13 +112,25 @@ async def google_login():
     logger.debug(f"Redirect URI: {GOOGLE_REDIRECT_URI}")
 
     response = Response(status_code=303, headers={"Location": authorization_url})
-    response.set_cookie(key="oauth_state", value=state, httponly=True, secure=False)  # Changed secure to False for development
+    response.set_cookie(key="oauth_state", value=state, httponly=True, secure=False)
     logger.info("Redirecting to Google login page")
     return response
 
 @router.get("/callback")
-async def google_callback(code: str, state: str, request: Request, db: Session = Depends(get_db)):
+async def google_callback(request: Request, db: Session = Depends(get_db)):
     logger.info("CALLBACK ROUTE REACHED")
+    
+    params = dict(request.query_params)
+    code = params.get("code")
+    state = params.get("state")
+    
+    if not code or not state:
+        logger.error("Missing code or state parameter")
+        return Response(
+            status_code=303, 
+            headers={"Location": f"http://localhost:5173/login?error=Missing+required+parameters"}
+        )
+    
     logger.debug(f"Full Request URL: {request.url}")
     logger.debug(f"Received code: {code}")
     logger.debug(f"Received state: {state}")
@@ -128,7 +140,10 @@ async def google_callback(code: str, state: str, request: Request, db: Session =
     
     if not stored_state or stored_state != state:
         logger.warning("State mismatch!")
-        raise HTTPException(status_code=400, detail="Invalid state parameter")
+        return Response(
+            status_code=303, 
+            headers={"Location": f"http://localhost:5173/login?error=Invalid+state+parameter"}
+        )
     
     try:
         google_oauth = OAuth2Session(
@@ -144,9 +159,11 @@ async def google_callback(code: str, state: str, request: Request, db: Session =
         )
         logger.debug(f"Fetched token: {token}")
 
+        request_obj = google_requests.Request()
+        
         id_info = id_token.verify_oauth2_token(
             token['id_token'], 
-            Request(), 
+            request_obj,
             GOOGLE_CLIENT_ID
         )
         logger.debug(f"ID Token info: {id_info}")
@@ -181,12 +198,13 @@ async def google_callback(code: str, state: str, request: Request, db: Session =
         )
         logger.info(f"Google authentication successful for: {user.email}")
 
-        return {
-            "access_token": access_token, 
-            "token_type": "bearer", 
-            "user_email": user.email
-        }
+        redirect_url = f"http://localhost:5173/login?token={access_token}&email={user.email}"
+        return Response(status_code=303, headers={"Location": redirect_url})
 
     except Exception as e:
         logger.error(f"Error in Google callback: {str(e)}")
-        raise HTTPException(status_code=401, detail=f"Authentication failed: {str(e)}")
+        error_msg = str(e).replace(" ", "+")
+        return Response(
+            status_code=303, 
+            headers={"Location": f"http://localhost:5173/login?error={error_msg}"}
+        )

@@ -99,6 +99,12 @@ class UserPreferencesUpdate(BaseModel):
         description="Goal weight must be a positive number"
     )
     email_notifications: Optional[bool] = None
+    summary_frequency: Optional[str] = None
+    card_color: Optional[str] = Field(
+        None,
+        pattern="^#[0-9A-Fa-f]{6}$",
+        description="Card color in hex format (e.g., #dbeafe)"
+    )
 
 
 class WorkoutStatsResponse(BaseModel):

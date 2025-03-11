@@ -62,7 +62,6 @@ def protected_route(user: User = Depends(get_current_user)):
 
 @app.post("/trigger-email-summary")
 def trigger_email_summary(background_tasks: BackgroundTasks):
-    """Manually trigger email summary for testing"""
     background_tasks.add_task(send_summary_emails)
     return {"message": "Email summary task started!"}
 
@@ -152,11 +151,20 @@ def add_workout(workout: WorkoutCreate, user: User = Depends(get_current_user), 
     return workout_data
 
 @app.get("/profile")
-def profile(user: User = Depends(get_current_user)):
+def profile(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    user_preferences = db.query(UserPreferences).filter_by(user_id=user.id).first()
+    
     return {
         "username": user.username,
         "email": user.email,
-        "profile_picture": user.profile_picture
+        "profile_picture": user.profile_picture,
+        "preferences": {
+            "weight_unit": user_preferences.weight_unit if user_preferences else "kg",
+            "goal_weight": user_preferences.goal_weight if user_preferences else None,
+            "email_notifications": user_preferences.email_notifications if user_preferences else False,
+            "summary_frequency": user_preferences.summary_frequency if user_preferences else None,
+            "card_color": user_preferences.card_color if user_preferences else "#f0f4ff"
+        }
     }
 
 @app.put("/update-profile")
@@ -209,7 +217,8 @@ def update_preferences(
         "weight_unit": user_preferences.weight_unit,
         "goal_weight": user_preferences.goal_weight,
         "email_notifications": user_preferences.email_notifications,
-        "summary_frequency": user_preferences.summary_frequency
+        "summary_frequency": user_preferences.summary_frequency,
+        "card_color": user_preferences.card_color
     }
 
 @app.post("/change-password")
@@ -225,7 +234,6 @@ def change_password(
     user.hashed_password = hash_password(request.new_password)
     db.commit()
 
-    # Send security alert email
     background_tasks.add_task(send_security_alert, user.email)
 
     return {"message": "Password changed successfully"}
