@@ -14,7 +14,7 @@ import {
   FaRunning,
   FaAtlas,
 } from "react-icons/fa";
-import logo from "../assets/logo.png";
+import logo from "../assets/established-badge-logo.svg";
 import ThemeToggle from "./ThemeToggle";
 import { useTheme } from "../hooks/useTheme";
 
@@ -23,6 +23,7 @@ const pages = [
   { name: "Workout Log", path: "/workout-log" },
   { name: "Workout History", path: "/workout-history" },
   { name: "Explore Muscle Guide", path: "/explore-muscle-guide" },
+  { name: "Routines", path: "/routines" },
   { name: "About", path: "/about" },
   { name: "Profile", path: "/profile" },
 ];
@@ -119,15 +120,12 @@ function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-3 md:py-4 relative">
           <div className="flex items-center space-x-4">
-            <Link to="/" className="flex items-center gap-2">
+            <Link to="/" className="flex items-center">
               <img
                 src={logo}
                 alt="FitExplorer Logo"
-                className="w-12 md:w-16 hover:scale-105 transition-all dark:invert"
+                className="w-20 md:w-52 hover:scale-105 transition-all dark:invert"
               />
-              <span className="text-lg md:text-xl font-bold hidden sm:block dark:text-white">
-                FitExplorer
-              </span>
             </Link>
 
             <button
