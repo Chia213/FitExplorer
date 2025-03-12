@@ -3,4 +3,6 @@ venv/
 env/
 uploads/
 uploads/profile_pictures/
+__pycache__/
+*.pyc
 
