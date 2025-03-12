@@ -8,18 +8,22 @@ import {
   FaBars,
   FaTimes,
   FaSignOutAlt,
+  FaHistory,
+  FaListAlt,
   FaRandom,
+  FaRunning,
+  FaAtlas,
 } from "react-icons/fa";
 import logo from "../assets/logo.png";
 import ThemeToggle from "./ThemeToggle";
 import { useTheme } from "../hooks/useTheme";
 
 const pages = [
-  { name: "Home", path: "/" },
-  { name: "About", path: "/about" },
+  { name: "Workout Generator", path: "/" },
   { name: "Workout Log", path: "/workout-log" },
   { name: "Workout History", path: "/workout-history" },
-  { name: "Workout Generator", path: "/workout-generator" },
+  { name: "Explore Muscle Guide", path: "/explore-muscle-guide" },
+  { name: "About", path: "/about" },
   { name: "Profile", path: "/profile" },
 ];
 
@@ -178,33 +182,41 @@ function Navbar() {
                   <div className="absolute top-full right-0 mt-1 bg-white dark:bg-gray-800 shadow-lg rounded-md overflow-hidden z-50 w-48">
                     <Link
                       to="/workout-log"
-                      className="block p-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                      className="block p-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center"
                     >
-                      Workout Log
+                      <FaDumbbell className="mr-2 text-blue-500" /> Workout Log
                     </Link>
                     <Link
                       to="/workout-history"
-                      className="block p-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                    >
-                      Workout History
-                    </Link>
-                    <Link
-                      to="/workout-generator"
                       className="block p-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center"
                     >
-                      <FaRandom className="mr-2 text-green-500" /> Workout
+                      <FaHistory className="mr-2 text-purple-500" /> Workout
+                      History
+                    </Link>
+                    <Link
+                      to="/"
+                      className="block p-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center"
+                    >
+                      <FaRunning className="mr-2 text-green-500" /> Workout
                       Generator
                     </Link>
                     <Link
                       to="/routines"
-                      className="flex flex-col items-center p-3 hover:bg-sky-700/20 dark:hover:bg-sky-700/40 rounded-md transition-all"
+                      className="block p-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center"
                     >
-                      <FaDumbbell size={20} />
-                      <span className="text-sm mt-1">Routines</span>
+                      <FaListAlt className="mr-2 text-orange-500" /> My Routines
                     </Link>
                   </div>
                 )}
               </div>
+
+              <Link
+                to="/explore-muscle-guide"
+                className="flex flex-col items-center p-3 hover:bg-sky-700/20 dark:hover:bg-sky-700/40 rounded-md transition-all"
+              >
+                <FaAtlas size={20} />
+                <span className="text-sm mt-1">Muscle Guide</span>
+              </Link>
 
               <Link
                 to="/about"
@@ -300,6 +312,14 @@ function Navbar() {
             </div>
 
             <nav className="space-y-2">
+              <Link
+                to="/"
+                className="flex items-center p-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
+              >
+                <FaRunning className="mr-3" size={18} />
+                <span>Workout Generator</span>
+              </Link>
+
               <div className="mb-2">
                 <button
                   className="flex items-center w-full p-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 text-left"
@@ -329,15 +349,22 @@ function Navbar() {
                       Workout History
                     </Link>
                     <Link
-                      to="/workout-generator"
-                      className="block p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded flex items-center"
+                      to="/routines"
+                      className="block p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
                     >
-                      <FaRandom className="mr-2 text-green-500" /> Workout
-                      Generator
+                      My Routines
                     </Link>
                   </div>
                 )}
               </div>
+
+              <Link
+                to="/explore-muscle-guide"
+                className="flex items-center p-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
+              >
+                <FaAtlas className="mr-3" size={18} />
+                <span>Explore Muscle Guide</span>
+              </Link>
 
               <Link
                 to="/about"

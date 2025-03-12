@@ -307,7 +307,7 @@ const backMuscles = [
   },
 ];
 
-function Home() {
+function ExploreMuscleGuide() {
   const { theme } = useTheme();
   const [selectedMuscle, setSelectedMuscle] = useState(null);
   const [hoveredMuscle, setHoveredMuscle] = useState(null);
@@ -637,4 +637,4 @@ function Home() {
   );
 }
 
-export default Home;
+export default ExploreMuscleGuide;

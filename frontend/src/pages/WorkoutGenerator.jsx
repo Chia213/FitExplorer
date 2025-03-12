@@ -36,7 +36,6 @@ const exerciseAssets = {
   },
 };
 
-// Define exercisesByMuscle at the top level so it's accessible to getExercisesForEquipment
 const exercisesByMuscle = {
   Chest: [
     "Bench Press",
@@ -260,7 +259,6 @@ function WorkoutGenerator() {
       );
 
       if (availableExercises.length === 0) {
-        // Fallback to bodyweight exercises if no equipment matches
         availableExercises = getExercisesForEquipment(muscle, ["Bodyweight"]);
       }
 
@@ -394,7 +392,6 @@ function WorkoutGenerator() {
       setTimeout(() => setShowSuccess(false), 3000);
     } catch (error) {
       console.error("Error saving workout to localStorage:", error);
-      // Continue without showing success message
     }
 
     setTimeout(() => {
@@ -407,15 +404,12 @@ function WorkoutGenerator() {
 
   const handleEquipmentChange = (equipment) => {
     if (equipment === "Select all") {
-      // If "Select all" is clicked, check if it's already selected
       if (preferences.equipment.includes("Select all")) {
-        // If already selected, deselect all
         setPreferences({
           ...preferences,
           equipment: [],
         });
       } else {
-        // If not selected, select all options
         setPreferences({
           ...preferences,
           equipment: [
@@ -432,8 +426,6 @@ function WorkoutGenerator() {
       return;
     }
 
-    // If current selection includes "Select all" and user selects something else,
-    // remove "Select all" and add the new selection
     if (preferences.equipment.includes("Select all")) {
       setPreferences({
         ...preferences,
@@ -444,7 +436,6 @@ function WorkoutGenerator() {
       return;
     }
 
-    // Toggle equipment selection
     if (preferences.equipment.includes(equipment)) {
       setPreferences({
         ...preferences,
@@ -458,7 +449,6 @@ function WorkoutGenerator() {
     }
   };
 
-  // Handle muscle group selection
   const handleMuscleChange = (muscle) => {
     if (preferences.targetMuscles.includes(muscle)) {
       setPreferences({
@@ -473,7 +463,6 @@ function WorkoutGenerator() {
     }
   };
 
-  // Render the current step
   const renderStep = () => {
     switch (currentStep) {
       case 1:
@@ -482,8 +471,8 @@ function WorkoutGenerator() {
             <h2 className="text-xl font-bold mb-4 flex items-center">
               <FaVenusMars className="mr-2 text-blue-500" /> Select Your Gender
             </h2>
-            <div className="grid grid-cols-3 gap-4">
-              {["Male", "Female", "Prefer not to say"].map((gender) => (
+            <div className="grid grid-cols-2 gap-4">
+              {["Male", "Female"].map((gender) => (
                 <label
                   key={gender}
                   className={`
@@ -535,7 +524,6 @@ function WorkoutGenerator() {
               </p>
             </div>
 
-            {/* Age range slider */}
             <div className="mt-8">
               <input
                 type="range"
@@ -656,7 +644,6 @@ function WorkoutGenerator() {
               )}
             </div>
 
-            {/* Fitness level info modal */}
             {viewingLevelInfo && (
               <div
                 className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4"
@@ -733,7 +720,6 @@ function WorkoutGenerator() {
               Groups to Train
             </h2>
 
-            {/* Human body visualization for muscle selection */}
             <div className="relative w-full max-w-lg mx-auto mb-6 mt-4 bg-gray-100 dark:bg-gray-700 rounded-lg p-4">
               <p className="text-center text-sm mb-2">
                 Click on the muscle groups you want to train
@@ -745,10 +731,9 @@ function WorkoutGenerator() {
                   className="w-full"
                 />
 
-                {/* Interactive muscle area overlays */}
                 <div
                   onClick={() => handleMuscleChange("Chest")}
-                  className={`absolute top-[20%] left-[38%] w-[24%] h-[12%] rounded-full cursor-pointer ${
+                  className={`absolute top-[2%] left-[38%] w-[24%] h-[12%] rounded-full cursor-pointer ${
                     preferences.targetMuscles.includes("Chest")
                       ? "bg-blue-500 bg-opacity-50"
                       : "hover:bg-blue-300 hover:bg-opacity-30"
@@ -829,7 +814,6 @@ function WorkoutGenerator() {
               </div>
             </div>
 
-            {/* Checkbox selection alternative */}
             <div className="grid grid-cols-3 gap-3 mt-4">
               {["Chest", "Back", "Shoulders", "Arms", "Abs", "Legs"].map(
                 (muscle) => (
@@ -872,7 +856,6 @@ function WorkoutGenerator() {
         Create a custom workout plan tailored to your specific needs and goals
       </p>
 
-      {/* Progress indicator */}
       <div className="max-w-2xl mx-auto mb-6">
         <div className="flex justify-between mb-2">
           {[1, 2, 3, 4, 5, 6].map((step) => (
@@ -894,11 +877,9 @@ function WorkoutGenerator() {
         </div>
       </div>
 
-      {/* Form container */}
       <div className="max-w-2xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-8">
         {renderStep()}
 
-        {/* Navigation buttons */}
         <div className="flex justify-between mt-8">
           <button
             type="button"
@@ -923,7 +904,6 @@ function WorkoutGenerator() {
         </div>
       </div>
 
-      {/* Login prompt modal */}
       {showLoginPrompt && (
         <div
           className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4"
@@ -962,7 +942,6 @@ function WorkoutGenerator() {
         </div>
       )}
 
-      {/* Generated workout display */}
       {workout && (
         <div
           id="workout-results"
@@ -975,7 +954,6 @@ function WorkoutGenerator() {
             </div>
           </div>
 
-          {/* User info and workout details */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
             {workout.gender && (
               <div className="bg-gray-100 dark:bg-gray-700 p-2 rounded-lg text-center">
@@ -1032,7 +1010,6 @@ function WorkoutGenerator() {
             )}
           </div>
 
-          {/* Warmup section */}
           <div className="mb-6 bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
             <h3 className="text-lg font-medium mb-2">Warm-up</h3>
             <ul className="space-y-1">
@@ -1047,7 +1024,6 @@ function WorkoutGenerator() {
             </ul>
           </div>
 
-          {/* Workout exercises */}
           <div className="space-y-4 mb-6">
             <h3 className="text-lg font-medium mb-2">Main Workout</h3>
             {workout.exercises.map((exercise, index) => (
@@ -1089,7 +1065,6 @@ function WorkoutGenerator() {
             ))}
           </div>
 
-          {/* Cooldown section */}
           <div className="mb-6 bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
             <h3 className="text-lg font-medium mb-2">Cool-down</h3>
             <ul className="space-y-1">
@@ -1104,7 +1079,6 @@ function WorkoutGenerator() {
             </ul>
           </div>
 
-          {/* Print button */}
           <div className="mt-6">
             <button
               onClick={() => window.print()}
@@ -1121,17 +1095,6 @@ function WorkoutGenerator() {
         </div>
       )}
 
-      {/* Link back to muscle guide */}
-      <div className="text-center mt-8 mb-16">
-        <Link
-          to="/"
-          className="text-blue-500 hover:text-blue-700 flex items-center justify-center"
-        >
-          <FaAngleLeft className="mr-1" /> Return to Muscle Guide
-        </Link>
-      </div>
-
-      {/* Exercise demonstration modal */}
       {viewingExercise && (
         <div
           className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4"

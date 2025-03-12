@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Layout from "./components/Layout";
-import Home from "./pages/Home";
+import ExploreMuscleGuide from "./pages/ExploreMuscleGuide";
 import About from "./pages/About";
 import WorkoutLog from "./pages/WorkoutLog";
 import WorkoutHistory from "./pages/WorkoutHistory";
@@ -21,11 +21,14 @@ function App() {
         <Navbar />
         <Layout>
           <Routes>
-            <Route path="/" element={<Home />} />
+            <Route path="/" element={<WorkoutGenerator />} />
+            <Route
+              path="/explore-muscle-guide"
+              element={<ExploreMuscleGuide />}
+            />
             <Route path="/about" element={<About />} />
             <Route path="/workout-log" element={<WorkoutLog />} />
             <Route path="/workout-history" element={<WorkoutHistory />} />
-            <Route path="/workout-generator" element={<WorkoutGenerator />} />
             <Route path="/routines" element={<Routines />} />
             <Route path="/add-exercise" element={<AddExercise />} />
             <Route path="/login" element={<Login />} />

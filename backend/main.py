@@ -8,6 +8,7 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func, desc
 from database import engine, Base, get_db
+from datetime import datetime, timezone
 from auth import router as auth_router
 from dependencies import get_current_user
 from models import Workout, User, Exercise, Set, UserPreferences, Routine, CustomExercise
@@ -393,28 +394,47 @@ def create_routine(
     db: Session = Depends(get_db)
 ):
     try:
+        new_workout = Workout(
+            name=routine.name,
+            user_id=user.id,
+            date=datetime.now(timezone.utc)
+        )
+        db.add(new_workout)
+        db.commit()
+        db.refresh(new_workout)
+
         new_routine = Routine(
             name=routine.name,
-            user_id=user.id
+            user_id=user.id,
+            workout_id=new_workout.id
         )
         db.add(new_routine)
-        db.commit()
-        db.refresh(new_routine)
 
         for exercise_data in routine.exercises:
-            custom_exercise = CustomExercise(
+
+            new_exercise = Exercise(
                 name=exercise_data.name,
-                category=exercise_data.category,
+                category=exercise_data.category or "Uncategorized",
+                is_cardio=exercise_data.is_cardio,
+                workout_id=new_workout.id
+            )
+            db.add(new_exercise)
+
+            new_custom_exercise = CustomExercise(
+                name=exercise_data.name,
+                category=exercise_data.category or "Uncategorized",
                 user_id=user.id
             )
-            db.add(custom_exercise)
+            db.add(new_custom_exercise)
 
         db.commit()
+        db.refresh(new_routine)
 
         return new_routine
 
     except Exception as e:
         db.rollback()
+        print(f"Error creating routine: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -476,12 +496,17 @@ def delete_routine(
 
 @app.get("/routines", response_model=list[RoutineResponse])
 def get_routines(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    routines = db.query(Routine)\
-        .options(
-            joinedload(Routine.workout)
-            .joinedload(Workout.exercises)
-            .joinedload(Exercise.sets)
-    )\
-        .filter(Routine.user_id == user.id)\
-        .all()
-    return routines
+    try:
+        routines = db.query(Routine)\
+            .options(
+                joinedload(Routine.workout)
+                .joinedload(Workout.exercises)
+                .joinedload(Exercise.sets)
+        )\
+            .filter(Routine.user_id == user.id)\
+            .all()
+
+        return routines
+    except Exception as e:
+        print(f"Error fetching routines: {e}")
+        raise HTTPException(status_code=500, detail="Error fetching routines")
