@@ -1,59 +1,10 @@
-![established-badge-logo](https://github.com/user-attachments/assets/aa4e07e9-1834-4c1f-adfc-dc860c4e12e5)# FitExplorer 🏋️‍♀️💪
+# FitExplorer 🏋️‍♀️💪
+
+<img src="https://github.com/user-attachments/assets/aa4e07e9-1834-4c1f-adfc-dc860c4e12e5" width="300" alt="FitExplorer Logo">
 
 ## Overview
 
 FitExplorer is a comprehensive fitness tracking and workout management application designed to help users achieve their fitness goals through interactive tools, personalized workout generation, and progress tracking.
-
-
-![Upload<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500">
-  <!-- Gradient Background -->
-  <defs>
-    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#3B82F6;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#10B981;stop-opacity:1" />
-    </linearGradient>
-    <linearGradient id="grad2" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#111827;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#1F2937;stop-opacity:1" />
-    </linearGradient>
-  </defs>
-  
-  <!-- Main Circle -->
-  <circle cx="250" cy="250" r="220" fill="url(#grad2)" />
-  <circle cx="250" cy="250" r="210" fill="url(#grad1)" />
-  <circle cx="250" cy="250" r="195" fill="url(#grad2)" />
-  
-  <!-- Inner Border Circle -->
-  <circle cx="250" cy="250" r="170" fill="none" stroke="white" stroke-width="2" />
-  <circle cx="250" cy="250" r="165" fill="none" stroke="white" stroke-width="1" />
-  
-  <!-- Established Banner -->
-  <path d="M140,170 H360 L350,190 H150 Z" fill="white" />
-  <text x="250" y="186" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="#111827">ESTABLISHED 2025</text>
-  
-  <!-- Main Title -->
-  <text x="250" y="250" font-family="Arial, sans-serif" font-size="60" font-weight="bold" text-anchor="middle" fill="white">FIT</text>
-  <text x="250" y="310" font-family="Arial, sans-serif" font-size="48" font-weight="bold" text-anchor="middle" fill="white">EXPLORER</text>
-  
-  <!-- Fitness Icon Elements -->
-  <g fill="white">
-    <!-- Dumbbell -->
-    <rect x="175" y="330" width="150" height="10" rx="2" />
-    <rect x="165" y="320" width="30" height="30" rx="5" />
-    <rect x="305" y="320" width="30" height="30" rx="5" />
-    
-    <!-- Stars -->
-    <polygon points="220,140 225,130 230,140 220,135 230,135" />
-    <polygon points="250,130 255,120 260,130 250,125 260,125" />
-    <polygon points="280,140 285,130 290,140 280,135 290,135" />
-  </g>
-  
-  <!-- Bottom Tagline -->
-  <text x="250" y="390" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="white" letter-spacing="2">STRENGTH • FITNESS • HEALTH</text>
-</svg>ding established-badge-logo.svg…]()
-
-
-
 
 ## 🌟 Key Features
 
