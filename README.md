@@ -148,7 +148,7 @@ Distributed under the MIT License. See `LICENSE` for more information.
 
 ## 📧 Contact
 
-- Chiranjeev Bharadwaj: chiranchber@gmail.com
+- Chia Ranchber: chiranchber@gmail.com
 - Ivan Lee: ivan98lee@gmail.com
 
 ---
