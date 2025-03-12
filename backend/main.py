@@ -392,26 +392,30 @@ def create_routine(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    new_routine = Routine(
-        name=routine.name,
-        user_id=user.id
-    )
-    db.add(new_routine)
-    db.commit()
-    db.refresh(new_routine)
+    try:
+        new_routine = Routine(
+            name=routine.name,
+            user_id=user.id
+        )
+        db.add(new_routine)
+        db.commit()
+        db.refresh(new_routine)
 
-    if routine.exercises:
         for exercise_data in routine.exercises:
-            new_exercise = CustomExercise(
+            custom_exercise = CustomExercise(
                 name=exercise_data.name,
-                category=exercise_data.category or "Uncategorized",
+                category=exercise_data.category,
                 user_id=user.id
             )
-            db.add(new_exercise)
+            db.add(custom_exercise)
 
         db.commit()
 
-    return new_routine
+        return new_routine
+
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.put("/routines/{routine_id}", response_model=RoutineResponse)

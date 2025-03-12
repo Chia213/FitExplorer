@@ -213,18 +213,20 @@ function Routines() {
                 </div>
                 <div className="p-4">
                   <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                    {routine.exercises.length} exercise
-                    {routine.exercises.length !== 1 ? "s" : ""}
+                    {(routine.exercises || []).length} exercise
+                    {(routine.exercises || []).length !== 1 ? "s" : ""}
                   </div>
                   <div className="space-y-1 mb-4">
-                    {routine.exercises.slice(0, 3).map((exercise, index) => (
-                      <div key={index} className="text-sm">
-                        • {exercise.name}
-                      </div>
-                    ))}
-                    {routine.exercises.length > 3 && (
+                    {(routine.exercises || [])
+                      .slice(0, 3)
+                      .map((exercise, index) => (
+                        <div key={index} className="text-sm">
+                          • {exercise.name}
+                        </div>
+                      ))}
+                    {(routine.exercises || []).length > 3 && (
                       <div className="text-sm text-gray-500">
-                        +{routine.exercises.length - 3} more...
+                        +{(routine.exercises || []).length - 3} more...
                       </div>
                     )}
                   </div>
