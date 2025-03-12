@@ -12,16 +12,18 @@ conf = ConnectionConfig(
     USE_CREDENTIALS=True
 )
 
-async def send_summary_email(email: str, frequency: str, workout_count: int):
+
+async def send_summary_email(email: str, subject: str, body: str):
     message = MessageSchema(
-        subject=f"Your {frequency.capitalize()} Workout Summary",
+        subject=subject,
         recipients=[email],
-        body=f"Good job this {frequency}! You have completed {workout_count} workouts, keep it up! 😊",
+        body=body,
         subtype="html"
     )
 
     fm = FastMail(conf)
     await fm.send_message(message)
+
 
 async def send_security_alert(email: str):
     message = MessageSchema(
@@ -33,4 +35,3 @@ async def send_security_alert(email: str):
 
     fm = FastMail(conf)
     await fm.send_message(message)
-

@@ -24,7 +24,7 @@ class SetBase(BaseModel):
     reps: Optional[int] = None
     distance: Optional[float] = None
     duration: Optional[int] = None
-    intensity: Optional[str] = None 
+    intensity: Optional[str] = None
     notes: Optional[str] = None
 
 
@@ -185,10 +185,17 @@ class RoutineResponse(BaseModel):
 
     class Config:
         from_attributes = True
-        
+
     @property
     def exercises(self) -> List[ExerciseResponse]:
-        """Provide access to exercises through the workout relationship"""
         if self.workout:
             return self.workout.exercises
         return []
+
+
+class GoogleTokenVerifyRequest(BaseModel):
+    token: str
+
+
+class GoogleAuthResponse(Token):
+    pass

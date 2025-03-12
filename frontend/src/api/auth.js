@@ -4,6 +4,7 @@ export const registerUser = async (email, password, username) => {
   const response = await fetch(`${API_URL}/auth/register`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
+    credentials: "include",
     body: JSON.stringify({ email, password, username }),
   });
   return response.json();
@@ -11,16 +12,15 @@ export const registerUser = async (email, password, username) => {
 
 export const loginUser = async (email, password) => {
   const response = await fetch(`${API_URL}/auth/token`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
     body: JSON.stringify({ email, password }),
   });
 
   if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.detail || 'Login failed');
+    const errorData = await response.text();
+    throw new Error(errorData || `HTTP error! status: ${response.status}`);
   }
 
   return response.json();

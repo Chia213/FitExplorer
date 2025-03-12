@@ -41,14 +41,14 @@ function Signup() {
         formData.username
       );
 
-      if (response.message === "User registered successfully!") {
+      if (response.message === "User registered successfully") {
         setSuccess("Account created! Redirecting to login...");
         setTimeout(() => navigate("/login"), 2000);
       } else {
         setError(response.detail || "Failed to register.");
       }
     } catch (err) {
-      setError(err.message || "Something went wrong. Try again.");
+      setError("Something went wrong. Try again.");
     }
   };
 

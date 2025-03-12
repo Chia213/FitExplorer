@@ -1,52 +1,37 @@
-import logging
 from fastapi import HTTPException, Depends
 from sqlalchemy.orm import Session
 from fastapi.security import OAuth2PasswordBearer
-from jose import JWTError
+import jwt
 from database import get_db
 from models import User
-from security import decode_access_token
-
-logger = logging.getLogger(__name__)
+from config import settings
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
 
 
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
-    logger.info("Validating token for protected route")
-    credentials_exception = HTTPException(
-        status_code=401, 
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"}
-    )
-
     try:
-        payload = decode_access_token(token)
-        logger.debug(f"Token payload: {payload}")
-        
-        if payload is None or "sub" not in payload:
-            logger.warning("Invalid payload structure")
-            raise credentials_exception
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+        username = payload.get("sub")
 
-        user_email = payload["sub"]
-        logger.debug(f"Looking up user: {user_email}")
-        
-        user = db.query(User).filter(User.email == user_email).first()
+        if username is None:
+            raise HTTPException(
+                status_code=401, detail="Invalid token"
+            )
+
+        user = db.query(User).filter(User.username == username).first()
         if user is None:
-            logger.warning(f"User not found: {user_email}")
-            raise credentials_exception
+            raise HTTPException(
+                status_code=401, detail="User not found"
+            )
 
-        logger.info(f"Authentication successful for user: {user.email}")
-        return user 
+        return user
 
-    except JWTError as e:
-        logger.error(f"JWT Error: {str(e)}")
+    except jwt.ExpiredSignatureError:
         raise HTTPException(
-            status_code=401, 
-            detail="Invalid token",
-            headers={"WWW-Authenticate": "Bearer"}
+            status_code=401, detail="Token expired"
         )
-
-    except Exception as e:
-        logger.error(f"Unexpected error during authentication: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
+    except jwt.PyJWTError:
+        raise HTTPException(
+            status_code=401, detail="Invalid token"
+        )

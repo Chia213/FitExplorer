@@ -1,24 +1,19 @@
 import uuid
 import os
-import logging
 from fastapi import FastAPI, Depends, HTTPException, File, UploadFile, BackgroundTasks
+from fastapi.middleware.cors import CORSMiddleware
 from background_task import send_summary_emails
 from email_service import send_summary_email, send_security_alert
-from contextlib import asynccontextmanager
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func, desc
 from database import engine, Base, get_db
 from auth import router as auth_router
 from dependencies import get_current_user
-from datetime import datetime, timezone
 from models import Workout, User, Exercise, Set, UserPreferences, Routine, CustomExercise
 from schemas import (
     WorkoutCreate,
     WorkoutResponse,
-    ExerciseCreate,
-    SetCreate,
     ProfileUpdateRequest,
     UserPreferencesUpdate,
     WorkoutStatsResponse,
@@ -28,25 +23,37 @@ from schemas import (
 )
 from security import hash_password, verify_password
 
-logger = logging.getLogger(__name__)
 
 Base.metadata.create_all(bind=engine)
 
 UPLOAD_DIRECTORY = "uploads/profile_pictures"
 os.makedirs(UPLOAD_DIRECTORY, exist_ok=True)
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    logger.info("Starting background task for email summaries")
+app = FastAPI()
+
+
+@app.middleware("http")
+async def add_security_headers(request, call_next):
+    response = await call_next(request)
+    response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
+    response.headers["Cross-Origin-Embedder-Policy"] = "require-corp"
+    return response
+
+
+@app.on_event("startup")
+async def startup_event():
+    print("Starting background task for email summaries")
     background_tasks = BackgroundTasks()
     background_tasks.add_task(send_summary_emails)
-    
-    yield 
-app = FastAPI(lifespan=lifespan)
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    print("Shutting down")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -56,14 +63,17 @@ app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 app.include_router(auth_router)
 
+
 @app.get("/protected-route")
 def protected_route(user: User = Depends(get_current_user)):
     return {"email": user.email}
+
 
 @app.post("/trigger-email-summary")
 def trigger_email_summary(background_tasks: BackgroundTasks):
     background_tasks.add_task(send_summary_emails)
     return {"message": "Email summary task started!"}
+
 
 @app.get("/send-summary")
 async def send_summaries(background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
@@ -72,7 +82,7 @@ async def send_summaries(background_tasks: BackgroundTasks, db: Session = Depend
     ).all()
 
     for user in users:
-        frequency = user.preferences.summary_frequency
+        frequency = UserPreferences.summary_frequency if user.preferences else None
         if frequency:
             workout_count = db.query(Workout).filter(
                 Workout.user_id == user.id
@@ -84,6 +94,7 @@ async def send_summaries(background_tasks: BackgroundTasks, db: Session = Depend
 
     return {"message": "Scheduled summary emails"}
 
+
 @app.get("/workouts", response_model=list[WorkoutResponse])
 def get_workouts(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     workouts = db.query(Workout)\
@@ -93,8 +104,9 @@ def get_workouts(user: User = Depends(get_current_user), db: Session = Depends(g
 
     return workouts
 
+
 @app.post("/workouts", response_model=WorkoutResponse)
-def add_workout(workout: WorkoutCreate, user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> WorkoutResponse:
+def add_workout(workout: WorkoutCreate, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     new_workout = Workout(
         name=workout.name,
         date=workout.date,
@@ -108,52 +120,42 @@ def add_workout(workout: WorkoutCreate, user: User = Depends(get_current_user), 
     db.commit()
     db.refresh(new_workout)
 
-    new_exercises = []
-    new_sets = []
-
     if workout.exercises:
         for exercise_data in workout.exercises:
             new_exercise = Exercise(
                 name=exercise_data.name,
                 category=exercise_data.category,
-                is_cardio=exercise_data.is_cardio, 
+                is_cardio=exercise_data.is_cardio,
                 workout_id=new_workout.id
             )
-            new_exercises.append(new_exercise)
+            db.add(new_exercise)
+            db.commit()
+            db.refresh(new_exercise)
 
-    db.add_all(new_exercises)
-    db.commit()
+            for set_data in exercise_data.sets:
+                new_set = Set(
+                    weight=set_data.weight,
+                    reps=set_data.reps,
+                    distance=set_data.distance,
+                    duration=set_data.duration,
+                    intensity=set_data.intensity,
+                    notes=set_data.notes,
+                    exercise_id=new_exercise.id
+                )
+                db.add(new_set)
+            db.commit()
 
-    for exercise, exercise_data in zip(new_exercises, workout.exercises):
-        for set_data in exercise_data.sets:
-            new_set = Set(
-                weight=set_data.weight,
-                reps=set_data.reps,
-                distance=set_data.distance,
-                duration=set_data.duration,
-                intensity=set_data.intensity,
-                notes=set_data.notes,
-                exercise_id=exercise.id
-            )
-            new_sets.append(new_set)
-
-    db.add_all(new_sets)
-    db.commit()
-
-    workout_data = db.query(Workout)\
+    return db.query(Workout)\
         .options(joinedload(Workout.exercises).joinedload(Exercise.sets))\
         .filter(Workout.id == new_workout.id)\
         .first()
 
-    if not workout_data:
-        raise HTTPException(status_code=404, detail="Workout not found")
-
-    return workout_data
 
 @app.get("/profile")
 def profile(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    user_preferences = db.query(UserPreferences).filter_by(user_id=user.id).first()
-    
+    user_preferences = db.query(
+        UserPreferences).filter_by(user_id=user.id).first()
+
     return {
         "username": user.username,
         "email": user.email,
@@ -163,9 +165,10 @@ def profile(user: User = Depends(get_current_user), db: Session = Depends(get_db
             "goal_weight": user_preferences.goal_weight if user_preferences else None,
             "email_notifications": user_preferences.email_notifications if user_preferences else False,
             "summary_frequency": user_preferences.summary_frequency if user_preferences else None,
-            "card_color": user_preferences.card_color if user_preferences else "#f0f4ff"
+            "card_color": user_preferences.card_color if user_preferences else "#dbeafe"
         }
     }
+
 
 @app.put("/update-profile")
 def update_profile(
@@ -188,6 +191,7 @@ def update_profile(
 
     return {"username": user.username, "email": user.email}
 
+
 @app.patch("/update-preferences")
 def update_preferences(
     preferences_data: UserPreferencesUpdate,
@@ -203,7 +207,7 @@ def update_preferences(
         db.commit()
 
     updated_prefs = preferences_data.model_dump(exclude_unset=True)
-    
+
     if "email_notifications" in updated_prefs and not updated_prefs["email_notifications"]:
         updated_prefs["summary_frequency"] = None
 
@@ -221,6 +225,7 @@ def update_preferences(
         "card_color": user_preferences.card_color
     }
 
+
 @app.post("/change-password")
 def change_password(
     request: ChangePasswordRequest,
@@ -237,6 +242,7 @@ def change_password(
     background_tasks.add_task(send_security_alert, user.email)
 
     return {"message": "Password changed successfully"}
+
 
 @app.delete("/delete-account")
 def delete_account(
@@ -269,7 +275,7 @@ def delete_account(
                 if os.path.exists(file_path):
                     os.remove(file_path)
             except Exception as e:
-                logger.error(f"Failed to delete profile picture: {str(e)}")
+                print(f"Failed to delete profile picture: {str(e)}")
 
         db.delete(user)
         db.commit()
@@ -280,12 +286,14 @@ def delete_account(
         raise HTTPException(
             status_code=500, detail=f"Error deleting account: {str(e)}")
 
+
 @app.get("/workout-stats", response_model=WorkoutStatsResponse)
 def get_workout_stats(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    total_workouts = db.query(Workout).filter(Workout.user_id == user.id).count()
+    total_workouts = db.query(Workout).filter(
+        Workout.user_id == user.id).count()
 
     favorite_exercise_query = db.query(Exercise.name, func.count(Exercise.id))\
         .join(Workout)\
@@ -315,9 +323,9 @@ def get_workout_stats(
 
     weight_progression_data = [
         {
-            "date": workout.date,
-            "bodyweight": workout.bodyweight
-        } for workout in weight_progression
+            "date": Workout.date,
+            "bodyweight": Workout.bodyweight
+        } for Workout in weight_progression
     ]
 
     return WorkoutStatsResponse(
@@ -327,6 +335,7 @@ def get_workout_stats(
         total_cardio_duration=round(total_cardio_duration, 2),
         weight_progression=weight_progression_data
     )
+
 
 @app.post("/upload-profile-picture")
 async def upload_profile_picture(
@@ -352,6 +361,7 @@ async def upload_profile_picture(
 
     return {"message": "Profile picture uploaded", "file_path": file_path}
 
+
 @app.delete("/remove-profile-picture")
 def remove_profile_picture(
     user: User = Depends(get_current_user),
@@ -375,6 +385,7 @@ def remove_profile_picture(
         raise HTTPException(
             status_code=500, detail=f"Error removing profile picture: {str(e)}")
 
+
 @app.post("/routines", response_model=RoutineResponse)
 def create_routine(
     routine: RoutineCreate,
@@ -388,66 +399,20 @@ def create_routine(
     db.add(new_routine)
     db.commit()
     db.refresh(new_routine)
-    
-    new_workout = Workout(
-        name=f"{routine.name} Template",
-        date=datetime.now(timezone.utc),
-        user_id=user.id
-    )
-    db.add(new_workout)
-    db.commit()
-    db.refresh(new_workout)
-    
-    new_routine.workout_id = new_workout.id
-    db.commit()
-    
-    new_exercises = []
+
     if routine.exercises:
         for exercise_data in routine.exercises:
-            
-            custom_exercise = db.query(CustomExercise).filter(
-                CustomExercise.name == exercise_data.name,
-                CustomExercise.user_id == user.id
-            ).first()
-            
-            if not custom_exercise:
-                custom_exercise = CustomExercise(
-                    name=exercise_data.name,
-                    category=exercise_data.category or "Uncategorized",
-                    user_id=user.id
-                )
-                db.add(custom_exercise)
-                db.commit()
-            
-            new_exercise = Exercise(
+            new_exercise = CustomExercise(
                 name=exercise_data.name,
                 category=exercise_data.category or "Uncategorized",
-                is_cardio=exercise_data.is_cardio or False,
-                workout_id=new_workout.id
+                user_id=user.id
             )
-            new_exercises.append(new_exercise)
-    
-    db.add_all(new_exercises)
-    db.commit()
-    
-    new_sets = []
-    for i, (exercise, exercise_data) in enumerate(zip(new_exercises, routine.exercises)):
-        initial_sets = exercise_data.initial_sets or 1
-        for _ in range(initial_sets):
-            new_set = Set(
-                exercise_id=exercise.id
-            )
-            new_sets.append(new_set)
-    
-    db.add_all(new_sets)
-    db.commit()
-    
-    routine_data = db.query(Routine)\
-    .options(joinedload(Routine.workout).joinedload(Workout.exercises).joinedload(Exercise.sets))\
-    .filter(Routine.id == new_routine.id)\
-    .first()
+            db.add(new_exercise)
 
-    return routine_data
+        db.commit()
+
+    return new_routine
+
 
 @app.put("/routines/{routine_id}", response_model=RoutineResponse)
 def update_routine(
@@ -460,15 +425,16 @@ def update_routine(
         Routine.id == routine_id,
         Routine.user_id == user.id
     ).first()
-    
+
     if not routine:
         raise HTTPException(status_code=404, detail="Routine not found")
-    
+
     routine.name = routine_data.name
-    
+
     if routine.workout_id:
-        db.query(Exercise).filter(Exercise.workout_id == routine.workout_id).delete()
-        
+        db.query(Exercise).filter(
+            Exercise.workout_id == routine.workout_id).delete()
+
         for exercise_data in routine_data.exercises:
             new_exercise = Exercise(
                 name=exercise_data.name,
@@ -477,11 +443,12 @@ def update_routine(
                 workout_id=routine.workout_id
             )
             db.add(new_exercise)
-    
+
     db.commit()
     db.refresh(routine)
-    
+
     return routine
+
 
 @app.delete("/routines/{routine_id}")
 def delete_routine(
@@ -493,14 +460,15 @@ def delete_routine(
         Routine.id == routine_id,
         Routine.user_id == user.id
     ).first()
-    
+
     if not routine:
         raise HTTPException(status_code=404, detail="Routine not found")
-    
+
     db.delete(routine)
     db.commit()
-    
+
     return {"message": "Routine deleted successfully"}
+
 
 @app.get("/routines", response_model=list[RoutineResponse])
 def get_routines(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
@@ -509,7 +477,7 @@ def get_routines(user: User = Depends(get_current_user), db: Session = Depends(g
             joinedload(Routine.workout)
             .joinedload(Workout.exercises)
             .joinedload(Exercise.sets)
-        )\
+    )\
         .filter(Routine.user_id == user.id)\
         .all()
     return routines
