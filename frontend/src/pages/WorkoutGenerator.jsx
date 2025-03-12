@@ -13,6 +13,7 @@ import {
   FaInfoCircle,
   FaVenusMars,
   FaBirthdayCake,
+  FaCalendarAlt,
 } from "react-icons/fa";
 
 const exerciseAssets = {
@@ -133,6 +134,7 @@ function WorkoutGenerator() {
     age: 30,
     fitnessGoal: "",
     fitnessLevel: "",
+    workoutsPerWeek: 3,
     equipment: [],
     targetMuscles: [],
   });
@@ -306,11 +308,12 @@ function WorkoutGenerator() {
       id: workoutId,
       title: `${
         prefs.fitnessLevel.charAt(0).toUpperCase() + prefs.fitnessLevel.slice(1)
-      } ${prefs.fitnessGoal} Workout`,
+      } ${prefs.fitnessGoal} Workout (${prefs.workoutsPerWeek}x/week)`,
       exercises: selectedExercises,
       duration: workoutDuration,
       difficulty: prefs.fitnessLevel,
-      fitnessGoal: prefs.fitnessGoal, // Added to store the goal for display
+      fitnessGoal: prefs.fitnessGoal,
+      workoutsPerWeek: prefs.workoutsPerWeek,
       restPeriod: setsReps[prefs.fitnessGoal]?.rest || 60,
       targetMuscles: targetMuscles,
       equipment: prefs.equipment,
@@ -349,17 +352,25 @@ function WorkoutGenerator() {
       return;
     }
 
-    if (currentStep === 5 && preferences.equipment.length === 0) {
+    if (
+      currentStep === 5 &&
+      (preferences.workoutsPerWeek < 1 || preferences.workoutsPerWeek > 7)
+    ) {
+      alert("Please select between 1 and 7 workouts per week");
+      return;
+    }
+
+    if (currentStep === 6 && preferences.equipment.length === 0) {
       alert("Please select at least one type of equipment");
       return;
     }
 
-    if (currentStep === 6 && preferences.targetMuscles.length === 0) {
+    if (currentStep === 7 && preferences.targetMuscles.length === 0) {
       alert("Please select at least one muscle group to train");
       return;
     }
 
-    if (currentStep < 6) {
+    if (currentStep < 7) {
       setCurrentStep(currentStep + 1);
     } else {
       generateWorkoutHandler();
@@ -675,6 +686,66 @@ function WorkoutGenerator() {
         return (
           <div className="mb-8">
             <h2 className="text-xl font-bold mb-4 flex items-center">
+              <FaCalendarAlt className="mr-2 text-blue-500" /> How Many Times Do
+              You Want to Workout in a Week?
+            </h2>
+            <div className="mb-4">
+              <div className="flex justify-center mb-6">
+                <div className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg flex items-center p-1">
+                  <input
+                    type="number"
+                    min="1"
+                    max="7"
+                    value={preferences.workoutsPerWeek}
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value);
+                      if (!isNaN(value) && value >= 1 && value <= 7) {
+                        setPreferences({
+                          ...preferences,
+                          workoutsPerWeek: value,
+                        });
+                      }
+                    }}
+                    className="w-16 bg-transparent text-center text-3xl font-bold p-2 focus:outline-none"
+                  />
+                  <span className="text-gray-500 dark:text-gray-400 ml-2">
+                    days / week
+                  </span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-7 gap-2">
+                {[1, 2, 3, 4, 5, 6, 7].map((num) => (
+                  <button
+                    key={num}
+                    onClick={() =>
+                      setPreferences({ ...preferences, workoutsPerWeek: num })
+                    }
+                    className={`
+                      flex items-center justify-center p-3 rounded-lg transition-all
+                      ${
+                        preferences.workoutsPerWeek === num
+                          ? "bg-blue-500 text-white"
+                          : "bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"
+                      }
+                    `}
+                  >
+                    {num}
+                  </button>
+                ))}
+              </div>
+
+              <p className="text-center mt-6 text-sm text-gray-500 dark:text-gray-400">
+                Select between 1 and 7 workouts per week
+              </p>
+            </div>
+          </div>
+        );
+
+      case 6:
+        return (
+          <div className="mb-8">
+            <h2 className="text-xl font-bold mb-4 flex items-center">
               <FaDumbbell className="mr-2 text-blue-500" /> Select Available
               Equipment
             </h2>
@@ -712,7 +783,7 @@ function WorkoutGenerator() {
           </div>
         );
 
-      case 6:
+      case 7:
         return (
           <div className="mb-8">
             <h2 className="text-xl font-bold mb-4 flex items-center">
@@ -820,13 +891,13 @@ function WorkoutGenerator() {
                   <label
                     key={muscle}
                     className={`
-                    flex items-center justify-center p-4 rounded-lg cursor-pointer transition-all
-                    ${
-                      preferences.targetMuscles.includes(muscle)
-                        ? "bg-blue-500 text-white"
-                        : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
-                    }
-                  `}
+                      flex items-center justify-center p-4 rounded-lg cursor-pointer transition-all
+                      ${
+                        preferences.targetMuscles.includes(muscle)
+                          ? "bg-blue-500 text-white"
+                          : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                      }
+                    `}
                   >
                     <input
                       type="checkbox"
@@ -858,7 +929,7 @@ function WorkoutGenerator() {
 
       <div className="max-w-2xl mx-auto mb-6">
         <div className="flex justify-between mb-2">
-          {[1, 2, 3, 4, 5, 6].map((step) => (
+          {[1, 2, 3, 4, 5, 6, 7].map((step) => (
             <div
               key={step}
               className={`text-xs font-medium ${
@@ -872,7 +943,7 @@ function WorkoutGenerator() {
         <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
           <div
             className="bg-blue-500 h-2.5 rounded-full transition-all duration-300"
-            style={{ width: `${(currentStep / 6) * 100}%` }}
+            style={{ width: `${(currentStep / 7) * 100}%` }}
           ></div>
         </div>
       </div>
@@ -899,7 +970,7 @@ function WorkoutGenerator() {
             onClick={handleNextStep}
             className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
           >
-            {currentStep === 6 ? "Generate Workout" : "Next"}
+            {currentStep === 7 ? "Generate Workout" : "Next"}
           </button>
         </div>
       </div>
