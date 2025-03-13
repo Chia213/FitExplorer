@@ -872,6 +872,11 @@ function WorkoutGenerator() {
 // This focuses on the specific change to place buttons next to the muscle diagram
 // while maintaining the original size of the muscle diagram
 
+// Updated layout for step 6 in WorkoutGenerator.jsx
+// This focuses on the specific change to place buttons next to the muscle diagram
+// while maintaining the original size of the muscle diagram
+// All dots now have red hover highlights
+
 case 6:
   return (
     <div className="mb-8">
@@ -895,7 +900,7 @@ case 6:
             {/* Chest - First Dot */}
             <div
               onClick={() => handleMuscleChange("Chest")}
-              className="absolute top-[20%] left-[10%] w-[10%] h-[10%] rounded-full cursor-pointer hover:bg-gray-400 hover:bg-opacity-20"
+              className="absolute top-[20%] left-[10%] w-[10%] h-[10%] rounded-full cursor-pointer hover:bg-red-400 hover:bg-opacity-30"
             >
               {preferences.targetMuscles.includes("Chest") && (
                 <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-red-600 border-2 border-white shadow-md"></div>
@@ -905,7 +910,7 @@ case 6:
             {/* Chest - Second Dot */}
             <div
               onClick={() => handleMuscleChange("Chest")}
-              className="absolute top-[20%] left-[21%] w-[10%] h-[10%] rounded-full cursor-pointer hover:bg-gray-400 hover:bg-opacity-20"
+              className="absolute top-[20%] left-[21%] w-[10%] h-[10%] rounded-full cursor-pointer hover:bg-red-400 hover:bg-opacity-30"
             >
               {preferences.targetMuscles.includes("Chest") && (
                 <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-red-600 border-2 border-white shadow-md"></div>
@@ -915,7 +920,7 @@ case 6:
             {/* Back - First Dot */}
             <div
               onClick={() => handleMuscleChange("Back")}
-              className="absolute top-[29%] left-[68%] w-[10%] h-[10%] rounded-full cursor-pointer hover:bg-gray-400 hover:bg-opacity-20"
+              className="absolute top-[29%] left-[68%] w-[10%] h-[10%] rounded-full cursor-pointer hover:bg-red-400 hover:bg-opacity-30"
             >
               {preferences.targetMuscles.includes("Back") && (
                 <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-red-600 border-2 border-white shadow-md"></div>
@@ -925,7 +930,7 @@ case 6:
             {/* Back - Second Dot */}
             <div
               onClick={() => handleMuscleChange("Back")}
-              className="absolute top-[29%] left-[78%] w-[10%] h-[10%] rounded-full cursor-pointer hover:bg-gray-400 hover:bg-opacity-20"
+              className="absolute top-[29%] left-[78%] w-[10%] h-[10%] rounded-full cursor-pointer hover:bg-red-400 hover:bg-opacity-30"
             >
               {preferences.targetMuscles.includes("Back") && (
                 <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-red-600 border-2 border-white shadow-md"></div>
@@ -935,7 +940,7 @@ case 6:
             {/* Left Shoulder - First Dot */}
             <div
               onClick={() => handleMuscleChange("Shoulders")}
-              className="absolute top-[15%] left-[30%] w-[10%] h-[10%] rounded-full cursor-pointer hover:bg-gray-400 hover:bg-opacity-20"
+              className="absolute top-[15%] left-[30%] w-[10%] h-[10%] rounded-full cursor-pointer hover:bg-red-400 hover:bg-opacity-30"
             >
               {preferences.targetMuscles.includes("Shoulders") && (
                 <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-red-600 border-2 border-white shadow-md"></div>
@@ -945,7 +950,7 @@ case 6:
             {/* Left Shoulder - Second Dot */}
             <div
               onClick={() => handleMuscleChange("Shoulders")}
-              className="absolute top-[15%] left-[2%] w-[10%] h-[10%] rounded-full cursor-pointer hover:bg-gray-400 hover:bg-opacity-20"
+              className="absolute top-[15%] left-[2%] w-[10%] h-[10%] rounded-full cursor-pointer hover:bg-red-400 hover:bg-opacity-30"
             >
               {preferences.targetMuscles.includes("Shoulders") && (
                 <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-red-600 border-2 border-white shadow-md"></div>
@@ -955,7 +960,7 @@ case 6:
             {/* Right Shoulder - First Dot */}
             <div
               onClick={() => handleMuscleChange("Shoulders")}
-              className="absolute top-[15%] left-[60%] w-[10%] h-[10%] rounded-full cursor-pointer hover:bg-gray-400 hover:bg-opacity-20"
+              className="absolute top-[15%] left-[60%] w-[10%] h-[10%] rounded-full cursor-pointer hover:bg-red-400 hover:bg-opacity-30"
             >
               {preferences.targetMuscles.includes("Shoulders") && (
                 <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-red-600 border-2 border-white shadow-md"></div>
@@ -965,7 +970,7 @@ case 6:
             {/* Right Shoulder - Second Dot */}
             <div
               onClick={() => handleMuscleChange("Shoulders")}
-              className="absolute top-[15%] left-[88%] w-[10%] h-[10%] rounded-full cursor-pointer hover:bg-gray-400 hover:bg-opacity-20"
+              className="absolute top-[15%] left-[88%] w-[10%] h-[10%] rounded-full cursor-pointer hover:bg-red-400 hover:bg-opacity-30"
             >
               {preferences.targetMuscles.includes("Shoulders") && (
                 <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-red-600 border-2 border-white shadow-md"></div>
@@ -975,7 +980,7 @@ case 6:
             {/* Left Bicep - First Dot */}
             <div
               onClick={() => handleMuscleChange("Biceps")}
-              className="absolute top-[26%] left-[3%] w-[8%] h-[10%] rounded-full cursor-pointer hover:bg-gray-400 hover:bg-opacity-20"
+              className="absolute top-[26%] left-[3%] w-[8%] h-[10%] rounded-full cursor-pointer hover:bg-red-400 hover:bg-opacity-30"
             >
               {preferences.targetMuscles.includes("Biceps") && (
                 <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-red-600 border-2 border-white shadow-md"></div>
@@ -985,7 +990,7 @@ case 6:
             {/* Right Bicep - First Dot */}
             <div
               onClick={() => handleMuscleChange("Biceps")}
-              className="absolute top-[26%] left-[30%] w-[8%] h-[10%] rounded-full cursor-pointer hover:bg-gray-400 hover:bg-opacity-20"
+              className="absolute top-[26%] left-[30%] w-[8%] h-[10%] rounded-full cursor-pointer hover:bg-red-400 hover:bg-opacity-30"
             >
               {preferences.targetMuscles.includes("Biceps") && (
                 <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-red-600 border-2 border-white shadow-md"></div>
@@ -995,7 +1000,7 @@ case 6:
             {/* Left Triceps - First Dot */}
             <div
               onClick={() => handleMuscleChange("Triceps")}
-              className="absolute top-[23%] left-[60%] w-[8%] h-[10%] rounded-full cursor-pointer hover:bg-gray-400 hover:bg-opacity-20"
+              className="absolute top-[23%] left-[60%] w-[8%] h-[10%] rounded-full cursor-pointer hover:bg-red-400 hover:bg-opacity-30"
             >
               {preferences.targetMuscles.includes("Triceps") && (
                 <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-red-600 border-2 border-white shadow-md"></div>
@@ -1005,7 +1010,7 @@ case 6:
             {/* Right Triceps - First Dot */}
             <div
               onClick={() => handleMuscleChange("Triceps")}
-              className="absolute top-[23%] left-[88%] w-[8%] h-[10%] rounded-full cursor-pointer hover:bg-gray-400 hover:bg-opacity-20"
+              className="absolute top-[23%] left-[88%] w-[8%] h-[10%] rounded-full cursor-pointer hover:bg-red-400 hover:bg-opacity-30"
             >
               {preferences.targetMuscles.includes("Triceps") && (
                 <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-red-600 border-2 border-white shadow-md"></div>
@@ -1015,7 +1020,7 @@ case 6:
             {/* Abs Dot */}
             <div
               onClick={() => handleMuscleChange("Abs")}
-              className="absolute top-[33%] left-[16%] w-[8%] h-[10%] rounded-full cursor-pointer hover:bg-gray-400 hover:bg-opacity-20"
+              className="absolute top-[33%] left-[16%] w-[8%] h-[10%] rounded-full cursor-pointer hover:bg-red-400 hover:bg-opacity-30"
             >
               {preferences.targetMuscles.includes("Abs") && (
                 <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-red-600 border-2 border-white shadow-md"></div>
@@ -1025,7 +1030,7 @@ case 6:
             {/* Left Quads - First Dot */}
             <div
               onClick={() => handleMuscleChange("Quads")}
-              className="absolute top-[52%] left-[8%] w-[10%] h-[12%] rounded-full cursor-pointer hover:bg-gray-400 hover:bg-opacity-20"
+              className="absolute top-[52%] left-[8%] w-[10%] h-[12%] rounded-full cursor-pointer hover:bg-red-400 hover:bg-opacity-30"
             >
               {preferences.targetMuscles.includes("Quads") && (
                 <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-red-600 border-2 border-white shadow-md"></div>
@@ -1035,7 +1040,7 @@ case 6:
             {/* Right Quads - Second Dot */}
             <div
               onClick={() => handleMuscleChange("Quads")}
-              className="absolute top-[52%] left-[23%] w-[10%] h-[12%] rounded-full cursor-pointer hover:bg-gray-400 hover:bg-opacity-20"
+              className="absolute top-[52%] left-[23%] w-[10%] h-[12%] rounded-full cursor-pointer hover:bg-red-400 hover:bg-opacity-30"
             >
               {preferences.targetMuscles.includes("Quads") && (
                 <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-red-600 border-2 border-white shadow-md"></div>
@@ -1045,7 +1050,7 @@ case 6:
             {/* Left Hamstrings - First Dot */}
             <div
               onClick={() => handleMuscleChange("Hamstrings")}
-              className="absolute top-[56%] left-[67%] w-[10%] h-[12%] rounded-full cursor-pointer hover:bg-gray-400 hover:bg-opacity-20"
+              className="absolute top-[56%] left-[67%] w-[10%] h-[12%] rounded-full cursor-pointer hover:bg-red-400 hover:bg-opacity-30"
             >
               {preferences.targetMuscles.includes("Hamstrings") && (
                 <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-red-600 border-2 border-white shadow-md"></div>
@@ -1055,7 +1060,7 @@ case 6:
             {/* Right Hamstrings - Second Dot */}
             <div
               onClick={() => handleMuscleChange("Hamstrings")}
-              className="absolute top-[56%] left-[80%] w-[10%] h-[12%] rounded-full cursor-pointer hover:bg-gray-400 hover:bg-opacity-20"
+              className="absolute top-[56%] left-[80%] w-[10%] h-[12%] rounded-full cursor-pointer hover:bg-red-400 hover:bg-opacity-30"
             >
               {preferences.targetMuscles.includes("Hamstrings") && (
                 <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-red-600 border-2 border-white shadow-md"></div>
@@ -1065,7 +1070,7 @@ case 6:
             {/* Left Glutes Dot */}
             <div
               onClick={() => handleMuscleChange("Glutes")}
-              className="absolute top-[43%] left-[69%] w-[10%] h-[12%] rounded-full cursor-pointer hover:bg-gray-400 hover:bg-opacity-20"
+              className="absolute top-[43%] left-[69%] w-[10%] h-[12%] rounded-full cursor-pointer hover:bg-red-400 hover:bg-opacity-30"
             >
               {preferences.targetMuscles.includes("Glutes") && (
                 <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-red-600 border-2 border-white shadow-md"></div>
@@ -1075,7 +1080,7 @@ case 6:
             {/* Right Glutes Dot */}
             <div
               onClick={() => handleMuscleChange("Glutes")}
-              className="absolute top-[43%] left-[77%] w-[10%] h-[12%] rounded-full cursor-pointer hover:bg-gray-400 hover:bg-opacity-20"
+              className="absolute top-[43%] left-[77%] w-[10%] h-[12%] rounded-full cursor-pointer hover:bg-red-400 hover:bg-opacity-30"
             >
               {preferences.targetMuscles.includes("Glutes") && (
                 <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-red-600 border-2 border-white shadow-md"></div>
@@ -1084,7 +1089,7 @@ case 6:
             {/* Left Calves - First Dot */}
             <div
               onClick={() => handleMuscleChange("Calves")}
-              className="absolute top-[75%] left-[68%] w-[8%] h-[10%] rounded-full cursor-pointer hover:bg-gray-400 hover:bg-opacity-20"
+              className="absolute top-[75%] left-[68%] w-[8%] h-[10%] rounded-full cursor-pointer hover:bg-red-400 hover:bg-opacity-30"
             >
               {preferences.targetMuscles.includes("Calves") && (
                 <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-red-600 border-2 border-white shadow-md"></div>
@@ -1094,7 +1099,7 @@ case 6:
             {/* Right Calves - Second Dot */}
             <div
               onClick={() => handleMuscleChange("Calves")}
-              className="absolute top-[75%] left-[80%] w-[8%] h-[10%] rounded-full cursor-pointer hover:bg-gray-400 hover:bg-opacity-20"
+              className="absolute top-[75%] left-[80%] w-[8%] h-[10%] rounded-full cursor-pointer hover:bg-red-400 hover:bg-opacity-30"
             >
               {preferences.targetMuscles.includes("Calves") && (
                 <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-red-600 border-2 border-white shadow-md"></div>
@@ -1177,7 +1182,6 @@ case 6:
       </div>
     </div>
   );
-
       default:
         return null;
     }
