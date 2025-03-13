@@ -159,6 +159,73 @@ function WorkoutGenerator() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+  const validateCurrentStep = () => {
+    switch (currentStep) {
+      case 1:
+        return preferences.gender ? true : false;
+      case 2:
+        return preferences.age >= 13 && preferences.age <= 80 ? true : false;
+      case 3:
+        return preferences.fitnessGoal ? true : false;
+      case 4:
+        return preferences.fitnessLevel ? true : false;
+      case 5:
+        return preferences.workoutsPerWeek >= 1 &&
+          preferences.workoutsPerWeek <= 7
+          ? true
+          : false;
+      case 6:
+        return preferences.targetMuscles.length > 0 ? true : false;
+      case 7:
+        return preferences.equipment.length > 0 ? true : false;
+      default:
+        return true;
+    }
+  };
+  const handleStepValidation = () => {
+    switch (currentStep) {
+      case 1:
+        if (!preferences.gender) {
+          alert("Please select your gender");
+        }
+        break;
+      case 2:
+        if (preferences.age < 13 || preferences.age > 80) {
+          alert("Please enter a valid age between 13 and 80");
+        }
+        break;
+      case 3:
+        if (!preferences.fitnessGoal) {
+          alert("Please select your fitness goal");
+        }
+        break;
+      case 4:
+        if (!preferences.fitnessLevel) {
+          alert("Please select your fitness level");
+        }
+        break;
+      case 5:
+        if (
+          preferences.workoutsPerWeek < 1 ||
+          preferences.workoutsPerWeek > 7
+        ) {
+          alert("Please select between 1 and 7 workouts per week");
+        }
+        break;
+      case 6:
+        if (preferences.targetMuscles.length === 0) {
+          alert("Please select at least one muscle group to train");
+        }
+        break;
+      case 7:
+        if (preferences.equipment.length === 0) {
+          alert("Please select at least one type of equipment");
+        }
+        break;
+      default:
+        break;
+    }
+  };
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -379,41 +446,8 @@ function WorkoutGenerator() {
   };
 
   const handleNextStep = () => {
-    if (currentStep === 1 && !preferences.gender) {
-      alert("Please select your gender");
-      return;
-    }
-
-    if (currentStep === 2 && (preferences.age < 13 || preferences.age > 80)) {
-      alert("Please enter a valid age between 13 and 80");
-      return;
-    }
-
-    if (currentStep === 3 && !preferences.fitnessGoal) {
-      alert("Please select your fitness goal");
-      return;
-    }
-
-    if (currentStep === 4 && !preferences.fitnessLevel) {
-      alert("Please select your fitness level");
-      return;
-    }
-
-    if (
-      currentStep === 5 &&
-      (preferences.workoutsPerWeek < 1 || preferences.workoutsPerWeek > 7)
-    ) {
-      alert("Please select between 1 and 7 workouts per week");
-      return;
-    }
-
-    if (currentStep === 6 && preferences.equipment.length === 0) {
-      alert("Please select at least one type of equipment");
-      return;
-    }
-
-    if (currentStep === 7 && preferences.targetMuscles.length === 0) {
-      alert("Please select at least one muscle group to train");
+    if (!validateCurrentStep()) {
+      handleStepValidation();
       return;
     }
 
@@ -969,8 +1003,8 @@ function WorkoutGenerator() {
                   )}
                 </div>
 
-                                {/* Right Triceps - First Dot */}
-                                <div
+                {/* Right Triceps - First Dot */}
+                <div
                   onClick={() => handleMuscleChange("Abs")}
                   className="absolute top-[33%] left-[16%] w-[8%] h-[10%] rounded-full cursor-pointer hover:bg-gray-400 hover:bg-opacity-20"
                 >
@@ -1114,14 +1148,24 @@ function WorkoutGenerator() {
       <div className="max-w-2xl mx-auto mb-6">
         <div className="flex justify-between mb-2">
           {[1, 2, 3, 4, 5, 6, 7].map((step) => (
-            <div
+            <button
               key={step}
-              className={`text-xs font-medium ${
-                currentStep >= step ? "text-blue-500" : "text-gray-400"
+              onClick={() => {
+                // Only allow navigating to steps that have validation passed
+                if (step < currentStep || validateCurrentStep()) {
+                  setCurrentStep(step);
+                } else {
+                  handleStepValidation();
+                }
+              }}
+              className={`text-xs font-medium cursor-pointer transition-all duration-200 px-2 py-1 ${
+                currentStep >= step
+                  ? "text-blue-500 font-bold"
+                  : "text-gray-400 hover:text-gray-500"
               }`}
             >
               Step {step}
-            </div>
+            </button>
           ))}
         </div>
         <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
