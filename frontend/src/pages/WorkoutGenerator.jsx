@@ -143,6 +143,17 @@ const getExerciseAsset = (exerciseName) => {
   );
 };
 
+const fitnessGoalInfo = {
+  Endurance:
+    "Focuses on increasing your stamina and cardiovascular capacity with higher reps, shorter rest periods, and moderate intensity. Great for improving overall fitness and energy levels.",
+  "Gain Strength":
+    "Prioritizes heavier weights with lower reps and longer rest periods to maximize strength gains. Ideal for building raw power and functional strength.",
+  "Muscle Building":
+    "Balances moderate-to-heavy weights with optimal time under tension and moderate rest periods to stimulate muscle growth (hypertrophy). Perfect for adding muscle mass and definition.",
+  "Weight Loss":
+    "Combines resistance training with higher rep ranges and shorter rest periods to maximize calorie burn and metabolic impact. Effective for fat loss while preserving muscle.",
+};
+
 const fitnessLevelInfo = {
   novice:
     "You're new to exercise or returning after a long break. Focus on learning proper form and building basic fitness.",
@@ -158,10 +169,8 @@ function WorkoutGenerator() {
   const navigate = useNavigate();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
+  const [viewingGoalInfo, setViewingGoalInfo] = useState(null);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
-  const [isGeneratingAiWorkout, setIsGeneratingAiWorkout] = useState(false);
-  const [aiWorkoutPlan, setAiWorkoutPlan] = useState(null);
-  const [weekViewIndex, setWeekViewIndex] = useState(0);
   const validateCurrentStep = () => {
     switch (currentStep) {
       case 1:
@@ -660,13 +669,13 @@ function WorkoutGenerator() {
                 <label
                   key={goal}
                   className={`
-                    flex items-center justify-center p-6 rounded-lg cursor-pointer transition-all
-                    ${
-                      preferences.fitnessGoal === goal
-                        ? "bg-blue-500 text-white"
-                        : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
-                    }
-                  `}
+                      relative flex flex-col items-center justify-center p-6 rounded-lg cursor-pointer transition-all
+                      ${
+                        preferences.fitnessGoal === goal
+                          ? "bg-blue-500 text-white"
+                          : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                      }
+                    `}
                 >
                   <input
                     type="radio"
@@ -678,10 +687,47 @@ function WorkoutGenerator() {
                     }
                     className="sr-only"
                   />
-                  {goal}
+                  <div className="font-medium">{goal}</div>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setViewingGoalInfo(goal);
+                    }}
+                    className={`mt-2 text-xs ${
+                      preferences.fitnessGoal === goal
+                        ? "text-white"
+                        : "text-blue-500"
+                    }`}
+                  >
+                    <FaInfoCircle /> More info
+                  </button>
                 </label>
               ))}
             </div>
+
+            {viewingGoalInfo && (
+              <div
+                className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4"
+                onClick={() => setViewingGoalInfo(null)}
+              >
+                <div
+                  className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <h3 className="text-xl font-bold mb-4">{viewingGoalInfo}</h3>
+                  <p className="text-gray-700 dark:text-gray-300">
+                    {fitnessGoalInfo[viewingGoalInfo]}
+                  </p>
+                  <button
+                    onClick={() => setViewingGoalInfo(null)}
+                    className="mt-6 w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                  >
+                    Got it
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         );
 
