@@ -122,11 +122,16 @@ function WorkoutLog() {
 
     workoutExercises.forEach((exercise) => {
       if (exercise.is_cardio) {
-        if (exercise.sets.some((set) => 
-          (!set.distance && !set.duration) || !set.intensity)) {
-        alert(`Please fill in at least Distance or Duration, and Intensity for ${exercise.name}.`);
-        hasInvalidExercises = true;
-      }
+        if (
+          exercise.sets.some(
+            (set) => (!set.distance && !set.duration) || !set.intensity
+          )
+        ) {
+          alert(
+            `Please fill in at least Distance or Duration, and Intensity for ${exercise.name}.`
+          );
+          hasInvalidExercises = true;
+        }
       } else {
         if (exercise.sets.some((set) => !set.weight || !set.reps)) {
           alert(
@@ -245,7 +250,7 @@ function WorkoutLog() {
       alert("Please enter a routine name.");
       return;
     }
-  
+
     try {
       const token = localStorage.getItem("token");
       if (!token) {
@@ -253,17 +258,17 @@ function WorkoutLog() {
         navigate("/login");
         return;
       }
-    
+
       const routineData = {
         name: routineName,
-        exercises: workoutExercises.map(exercise => ({
+        exercises: workoutExercises.map((exercise) => ({
           name: exercise.name,
           category: exercise.category || "Uncategorized",
           is_cardio: exercise.is_cardio || false,
-          initial_sets: exercise.sets.length
-        }))
+          initial_sets: exercise.sets.length,
+        })),
       };
-  
+
       const response = await fetch(`${API_BASE_URL}/routines`, {
         method: "POST",
         headers: {
@@ -272,11 +277,11 @@ function WorkoutLog() {
         },
         body: JSON.stringify(routineData),
       });
-  
+
       if (!response.ok) {
         throw new Error("Failed to save routine");
       }
-  
+
       alert("Routine saved successfully!");
       setShowSaveRoutineModal(false);
     } catch (error) {
@@ -287,6 +292,13 @@ function WorkoutLog() {
 
   const handleAddExercise = (exercise) => {
     const initialSets = exercise.initialSets || 1;
+
+    // Auto-collapse all existing exercises when adding a new one
+    const allCollapsed = {};
+    workoutExercises.forEach((_, index) => {
+      allCollapsed[index] = true;
+    });
+    setCollapsedExercises(allCollapsed);
 
     if (exercise.is_cardio) {
       const emptyCardioSets = Array(initialSets)
@@ -453,9 +465,15 @@ function WorkoutLog() {
           className="bg-white dark:bg-gray-700 p-4 rounded-lg mt-4 w-full max-w-lg"
         >
           <div className="flex justify-between items-center">
-            <h3 className="text-black dark:text-white font-semibold">
-              {exercise.name}
-            </h3>
+            <div className="flex items-center">
+              <h3 className="text-black dark:text-white font-semibold">
+                {exercise.name}
+              </h3>
+              <span className="ml-2 text-sm text-gray-500 dark:text-gray-400 bg-gray-200 dark:bg-gray-600 px-2 py-1 rounded-full">
+                {exercise.sets.length}{" "}
+                {exercise.sets.length === 1 ? "set" : "sets"}
+              </span>
+            </div>
             <div className="flex items-center space-x-3">
               <div className="flex space-x-1">
                 <button
