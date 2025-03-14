@@ -167,7 +167,7 @@ function WorkoutGenerator() {
       case 1:
         return preferences.gender ? true : false;
       case 2:
-        return preferences.age >= 13 && preferences.age <= 80 ? true : false;
+        return preferences.age >= 13 && preferences.age <= 100 ? true : false;
       case 3:
         return preferences.fitnessGoal ? true : false;
       case 4:
@@ -193,8 +193,8 @@ function WorkoutGenerator() {
         }
         break;
       case 2:
-        if (preferences.age < 13 || preferences.age > 80) {
-          alert("Please enter a valid age between 13 and 80");
+        if (preferences.age < 13 || preferences.age > 100) {
+          alert("Please enter a valid age between 13 and 100");
         }
         break;
       case 3:
@@ -606,7 +606,7 @@ function WorkoutGenerator() {
               <input
                 type="number"
                 min="13"
-                max="80"
+                max="100"
                 value={preferences.age}
                 onChange={(e) =>
                   setPreferences({
@@ -617,7 +617,7 @@ function WorkoutGenerator() {
                 className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-center text-xl"
               />
               <p className="text-center mt-2 text-sm text-gray-500 dark:text-gray-400">
-                Please enter an age between 13 and 80
+                Please enter an age between 13 and 100
               </p>
             </div>
 
@@ -625,7 +625,7 @@ function WorkoutGenerator() {
               <input
                 type="range"
                 min="13"
-                max="80"
+                max="100"
                 value={preferences.age}
                 onChange={(e) =>
                   setPreferences({
@@ -637,10 +637,7 @@ function WorkoutGenerator() {
               />
               <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
                 <span>13</span>
-                <span>30</span>
-                <span>50</span>
-                <span>65</span>
-                <span>80</span>
+                <span>100</span>
               </div>
             </div>
           </div>
