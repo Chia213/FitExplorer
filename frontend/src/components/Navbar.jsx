@@ -10,10 +10,10 @@ import {
   FaSignOutAlt,
   FaHistory,
   FaListAlt,
-  FaRandom,
   FaRunning,
   FaAtlas,
 } from "react-icons/fa";
+import { LuBicepsFlexed, LuCalendarClock } from "react-icons/lu";
 import logo from "../assets/established-badge-logo.svg";
 import ThemeToggle from "./ThemeToggle";
 import { useTheme } from "../hooks/useTheme";
@@ -182,7 +182,7 @@ function Navbar() {
                       to="/workout-log"
                       className="block p-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center"
                     >
-                      <FaDumbbell className="mr-2 text-blue-500" /> Workout Log
+                      <FaListAlt className="mr-2 text-blue-500" /> Workout Log
                     </Link>
                     <Link
                       to="/workout-history"
@@ -195,14 +195,15 @@ function Navbar() {
                       to="/"
                       className="block p-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center"
                     >
-                      <FaRunning className="mr-2 text-green-500" /> Workout
+                      <LuBicepsFlexed className="mr-2 text-green-500" /> Workout
                       Generator
                     </Link>
                     <Link
                       to="/routines"
                       className="block p-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center"
                     >
-                      <FaListAlt className="mr-2 text-orange-500" /> My Routines
+                      <LuCalendarClock className="mr-2 text-orange-500" /> My
+                      Routines
                     </Link>
                   </div>
                 )}
