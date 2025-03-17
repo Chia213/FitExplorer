@@ -12,12 +12,14 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Profile from "./pages/Profile";
 import ChangePassword from "./pages/ChangePassword";
+import ScrollToTop from "./components/ScrollToTop";
 import { ThemeProvider } from "./hooks/useTheme";
 
 function App() {
   return (
     <ThemeProvider>
       <Router>
+        <ScrollToTop />
         <Navbar />
         <Layout>
           <Routes>
