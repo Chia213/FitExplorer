@@ -401,7 +401,7 @@ function WorkoutLog() {
           type="text"
           value={workoutName}
           onChange={(e) => setWorkoutName(e.target.value)}
-          placeholder="Enter Workout Name"
+          placeholder="What are we training today?"
           className="bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-semibold text-lg px-3 py-2 rounded-lg flex-grow mr-2"
         />
         <button
