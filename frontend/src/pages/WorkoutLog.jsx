@@ -6,6 +6,7 @@ import {
   FaArrowUp,
   FaArrowDown,
   FaListAlt,
+  FaHistory,
   FaChevronUp,
   FaChevronDown,
   FaSave,
@@ -409,7 +410,7 @@ function WorkoutLog() {
           className="bg-teal-500 text-white p-2 rounded-lg hover:bg-teal-400"
           title="View Workout History"
         >
-          <FaListAlt className="text-xl" />
+          <FaHistory className="text-xl" />
         </button>
       </div>
 
