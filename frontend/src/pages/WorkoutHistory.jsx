@@ -15,13 +15,19 @@ const API_BASE_URL = "http://localhost:8000";
 
 const getIntensityName = (intensityValue) => {
   const intensityMap = {
-    0: "",
+    "": "-",
+    Low: "Low",
+    Medium: "Medium",
+    High: "High",
+    "Very High": "Very High",
+    // Handle numeric values too in case they come from the backend
+    0: "-",
     1: "Low",
     2: "Medium",
     3: "High",
     4: "Very High",
   };
-  return intensityMap[intensityValue] || "";
+  return intensityMap[intensityValue] || "-";
 };
 
 const saveRoutineToAPI = async (routineData, token) => {
