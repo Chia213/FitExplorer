@@ -605,7 +605,7 @@ function ExploreMuscleGuide() {
                     <span className="text-sm">Click to select this muscle group</span>
                   </>
                 ) : (
-                  "Hover over or click on the muscle diagram to explore specific exercises for each muscle group."
+                  ""
                 )}
               </p>
               <div className="grid grid-cols-2 gap-2">
