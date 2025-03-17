@@ -6,6 +6,9 @@ import {
   FaTrash,
   FaChevronDown,
   FaChevronUp,
+  FaTimes,
+  FaPlus,
+  FaSave,
 } from "react-icons/fa";
 
 const backendURL = "http://localhost:8000";
@@ -15,6 +18,9 @@ function Routines() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [expandedRoutines, setExpandedRoutines] = useState({});
+  const [editingRoutine, setEditingRoutine] = useState(null);
+  const [editedRoutineName, setEditedRoutineName] = useState("");
+  const [editedExercises, setEditedExercises] = useState([]);
 
   const navigate = useNavigate();
 
@@ -74,51 +80,84 @@ function Routines() {
     }
   };
 
-  const handleStartWorkout = (routine) => {
-    if (!routine || !routine.workout || !routine.workout.exercises) {
-      alert("This routine doesn't have any exercises.");
+  const handleStartEditRoutine = (routine) => {
+    setEditingRoutine(routine);
+    setEditedRoutineName(routine.name);
+    setEditedExercises(
+      routine.workout?.exercises || routine.exercises || []
+    );
+  };
+
+  const handleSaveEditedRoutine = async () => {
+    // Basic validation
+    if (!editedRoutineName.trim()) {
+      alert("Routine name cannot be empty");
       return;
     }
 
-    // Convert routine exercises to a format compatible with workout log
-    const workoutExercises = routine.workout.exercises.map(exercise => {
-      const initialSets = exercise.initial_sets || 1;
-      
-      if (exercise.is_cardio) {
-        const cardioSets = Array(initialSets).fill().map(() => ({
-          distance: "",
-          duration: "",
-          intensity: "",
-          notes: ""
-        }));
-        
-        return {
-          name: exercise.name,
-          category: exercise.category || "Uncategorized",
-          is_cardio: true,
-          sets: cardioSets
-        };
-      } else {
-        const sets = Array(initialSets).fill().map(() => ({
-          weight: "",
-          reps: "",
-          notes: ""
-        }));
-        
-        return {
-          name: exercise.name,
-          category: exercise.category || "Uncategorized",
-          is_cardio: false,
-          sets: sets
-        };
+    if (editedExercises.length === 0) {
+      alert("Routine must have at least one exercise");
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(
+        `${backendURL}/routines/${editingRoutine.id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            name: editedRoutineName,
+            exercises: editedExercises.map((exercise) => ({
+              name: exercise.name,
+              category: exercise.category || "Uncategorized",
+              is_cardio: exercise.is_cardio || false,
+              initial_sets: exercise.initial_sets || exercise.sets?.length || 1,
+            })),
+          }),
+        }
+      );
+
+      if (!response.ok) throw new Error("Failed to update routine");
+
+      // Update the routine in the list
+      const updatedRoutine = await response.json();
+      setRoutines((prev) =>
+        prev.map((r) => (r.id === editingRoutine.id ? updatedRoutine : r))
+      );
+
+      // Close the editing modal
+      setEditingRoutine(null);
+      setEditedRoutineName("");
+      setEditedExercises([]);
+    } catch (err) {
+      console.error("Error updating routine:", err);
+      alert("Failed to update routine. Please try again.");
+    }
+  };
+
+  const handleStartWorkout = (routine) => {
+    localStorage.setItem("activeWorkout", JSON.stringify(routine));
+    navigate("/workout-log", { state: { routineId: routine.id } });
+  };
+
+  const handleRemoveExercise = (indexToRemove) => {
+    setEditedExercises((prev) =>
+      prev.filter((_, index) => index !== indexToRemove)
+    );
+  };
+
+  const handleAddExercise = () => {
+    navigate("/workout-log", {
+      state: { 
+        editingRoutineId: editingRoutine.id, 
+        routineName: editedRoutineName 
       }
     });
-
-    // Store the exercises in localStorage for the workout log to pick up
-    localStorage.setItem("preloadedWorkoutExercises", JSON.stringify(workoutExercises));
-    localStorage.setItem("preloadedWorkoutName", routine.name);
-
-    navigate("/workout-log");
   };
 
   if (loading) {
@@ -190,7 +229,7 @@ function Routines() {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        // Implement edit functionality
+                        handleStartEditRoutine(routine);
                       }}
                       className="text-green-400 hover:text-green-300"
                     >
@@ -254,6 +293,91 @@ function Routines() {
           </div>
         )}
       </div>
+
+      {/* Edit Routine Modal */}
+      {editingRoutine && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-[#334155] rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center p-4 border-b border-gray-700">
+              <h2 className="text-xl font-bold">Edit Routine</h2>
+              <button
+                onClick={() => setEditingRoutine(null)}
+                className="text-gray-400 hover:text-white"
+              >
+                <FaTimes />
+              </button>
+            </div>
+
+            <div className="p-4">
+              <div className="mb-4">
+                <label className="block text-sm mb-2">Routine Name</label>
+                <input
+                  type="text"
+                  value={editedRoutineName}
+                  onChange={(e) => setEditedRoutineName(e.target.value)}
+                  className="w-full bg-[#2C3E50] rounded p-2 text-white"
+                  placeholder="Enter routine name"
+                />
+              </div>
+
+              <div className="mb-4">
+                <div className="flex justify-between items-center mb-2">
+                  <h3 className="text-lg font-semibold">Exercises</h3>
+                  <button
+                    onClick={handleAddExercise}
+                    className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded flex items-center"
+                  >
+                    <FaPlus className="mr-2" /> Add Exercise
+                  </button>
+                </div>
+
+                {editedExercises.length === 0 ? (
+                  <div className="text-center text-gray-400 py-4">
+                    No exercises in this routine
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {editedExercises.map((exercise, index) => (
+                      <div
+                        key={index}
+                        className="bg-[#2C3E50] p-3 rounded flex justify-between items-center"
+                      >
+                        <div>
+                          <span className="font-medium">{exercise.name}</span>
+                          <span className="ml-2 text-sm text-gray-400">
+                            {exercise.is_cardio ? "Cardio" : "Strength"}
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => handleRemoveExercise(index)}
+                          className="text-red-400 hover:text-red-500"
+                        >
+                          <FaTrash />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex space-x-2">
+                <button
+                  onClick={handleSaveEditedRoutine}
+                  className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 rounded flex items-center justify-center"
+                >
+                  <FaSave className="mr-2" /> Save Routine
+                </button>
+                <button
+                  onClick={() => setEditingRoutine(null)}
+                  className="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-2 rounded"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
