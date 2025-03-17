@@ -85,6 +85,27 @@ function WorkoutLog() {
     console.log("Auth token:", token);
     fetchWorkoutHistory(token);
     fetchRoutines(token);
+
+    // Check for preloaded exercises from a routine
+    const preloadedExercises = localStorage.getItem("preloadedWorkoutExercises");
+    const preloadedWorkoutName = localStorage.getItem("preloadedWorkoutName");
+    
+    if (preloadedExercises) {
+      try {
+        const parsedExercises = JSON.parse(preloadedExercises);
+        setWorkoutExercises(parsedExercises);
+        
+        if (preloadedWorkoutName) {
+          setWorkoutName(preloadedWorkoutName);
+        }
+        
+        // Clear the preloaded data
+        localStorage.removeItem("preloadedWorkoutExercises");
+        localStorage.removeItem("preloadedWorkoutName");
+      } catch (error) {
+        console.error("Error parsing preloaded exercises:", error);
+      }
+    }
   }, [navigate]);
 
   useEffect(() => {

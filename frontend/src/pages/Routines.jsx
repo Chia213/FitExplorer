@@ -75,8 +75,50 @@ function Routines() {
   };
 
   const handleStartWorkout = (routine) => {
-    localStorage.setItem("activeWorkout", JSON.stringify(routine));
-    navigate("/workout-log", { state: { routineId: routine.id } });
+    if (!routine || !routine.workout || !routine.workout.exercises) {
+      alert("This routine doesn't have any exercises.");
+      return;
+    }
+
+    // Convert routine exercises to a format compatible with workout log
+    const workoutExercises = routine.workout.exercises.map(exercise => {
+      const initialSets = exercise.initial_sets || 1;
+      
+      if (exercise.is_cardio) {
+        const cardioSets = Array(initialSets).fill().map(() => ({
+          distance: "",
+          duration: "",
+          intensity: "",
+          notes: ""
+        }));
+        
+        return {
+          name: exercise.name,
+          category: exercise.category || "Uncategorized",
+          is_cardio: true,
+          sets: cardioSets
+        };
+      } else {
+        const sets = Array(initialSets).fill().map(() => ({
+          weight: "",
+          reps: "",
+          notes: ""
+        }));
+        
+        return {
+          name: exercise.name,
+          category: exercise.category || "Uncategorized",
+          is_cardio: false,
+          sets: sets
+        };
+      }
+    });
+
+    // Store the exercises in localStorage for the workout log to pick up
+    localStorage.setItem("preloadedWorkoutExercises", JSON.stringify(workoutExercises));
+    localStorage.setItem("preloadedWorkoutName", routine.name);
+
+    navigate("/workout-log");
   };
 
   if (loading) {
