@@ -10,8 +10,12 @@ import {
   FaChevronUp,
   FaChevronDown,
   FaSave,
+  FaPlayCircle,
+  FaBook,
+  FaTimes,
 } from "react-icons/fa";
 import AddExercise from "./AddExercise";
+import {LuCalendarClock } from "react-icons/lu";
 
 const API_BASE_URL = "http://localhost:8000";
 
@@ -40,6 +44,9 @@ function WorkoutLog() {
   const [showSaveRoutineModal, setShowSaveRoutineModal] = useState(false);
   const [routineName, setRoutineName] = useState("");
   const [workoutHistory, setWorkoutHistory] = useState([]);
+  const [routines, setRoutines] = useState([]);
+  const [showRoutinesSelector, setShowRoutinesSelector] = useState(false);
+  const [loadingRoutines, setLoadingRoutines] = useState(false);
   const navigate = useNavigate();
 
   const toggleExerciseCollapse = (exerciseIndex) => {
@@ -77,6 +84,7 @@ function WorkoutLog() {
     }
     console.log("Auth token:", token);
     fetchWorkoutHistory(token);
+    fetchRoutines(token);
   }, [navigate]);
 
   useEffect(() => {
@@ -107,6 +115,77 @@ function WorkoutLog() {
       console.error("Error fetching workouts:", error);
     }
   }
+
+  async function fetchRoutines(token) {
+    setLoadingRoutines(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/routines`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) throw new Error("Failed to fetch routines");
+      const data = await response.json();
+      console.log("Fetched routines:", data);
+      setRoutines(data);
+    } catch (error) {
+      console.error("Error fetching routines:", error);
+    } finally {
+      setLoadingRoutines(false);
+    }
+  }
+
+  const handleSelectRoutine = (routine) => {
+    if (!routine || !routine.workout || !routine.workout.exercises) {
+      alert("This routine doesn't have any exercises.");
+      return;
+    }
+
+    // Confirm with user if they're about to replace existing exercises
+    if (workoutExercises.length > 0) {
+      if (!window.confirm("This will replace your current workout. Continue?")) {
+        return;
+      }
+    }
+
+    // Set the workout name
+    setWorkoutName(routine.name);
+
+    // Convert routine exercises to workout exercises
+    const newExercises = routine.workout.exercises.map(exercise => {
+      const initialSets = exercise.initial_sets || 1;
+      
+      if (exercise.is_cardio) {
+        const cardioSets = Array(initialSets).fill().map(() => ({
+          distance: "",
+          duration: "",
+          intensity: "",
+          notes: ""
+        }));
+        
+        return {
+          name: exercise.name,
+          category: exercise.category || "Uncategorized",
+          is_cardio: true,
+          sets: cardioSets
+        };
+      } else {
+        const sets = Array(initialSets).fill().map(() => ({
+          weight: "",
+          reps: "",
+          notes: ""
+        }));
+        
+        return {
+          name: exercise.name,
+          category: exercise.category || "Uncategorized",
+          is_cardio: false,
+          sets: sets
+        };
+      }
+    });
+
+    setWorkoutExercises(newExercises);
+    setShowRoutinesSelector(false);
+  };
 
   const handleFinishWorkout = async () => {
     if (!workoutName.trim()) {
@@ -283,6 +362,9 @@ function WorkoutLog() {
         throw new Error("Failed to save routine");
       }
 
+      // Fetch the updated list of routines
+      fetchRoutines(localStorage.getItem("token"));
+      
       alert("Routine saved successfully!");
       setShowSaveRoutineModal(false);
     } catch (error) {
@@ -405,13 +487,22 @@ function WorkoutLog() {
           placeholder="What are we training today?"
           className="bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-semibold text-lg px-3 py-2 rounded-lg flex-grow mr-2"
         />
-        <button
-          onClick={() => navigate("/workout-history")}
-          className="bg-teal-500 text-white p-2 rounded-lg hover:bg-teal-400"
-          title="View Workout History"
-        >
-          <FaHistory className="text-xl" />
-        </button>
+        <div className="flex space-x-2">
+          <button
+            onClick={() => setShowRoutinesSelector(true)}
+            className="bg-blue-500 text-white p-2 rounded-lg hover:bg-blue-400"
+            title="Select Routine"
+          >
+            <LuCalendarClock className="text-xl" />
+          </button>
+          <button
+            onClick={() => navigate("/workout-history")}
+            className="bg-teal-500 text-white p-2 rounded-lg hover:bg-teal-400"
+            title="View Workout History"
+          >
+            <FaHistory className="text-xl" />
+          </button>
+        </div>
       </div>
 
       <div className="w-full max-w-lg bg-white dark:bg-gray-800 p-4 rounded-lg mt-4 space-y-4">
@@ -726,6 +817,99 @@ function WorkoutLog() {
         />
       )}
 
+      {/* Routines Selector Modal */}
+      {showRoutinesSelector && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                Select a Routine
+              </h2>
+              <button
+                onClick={() => setShowRoutinesSelector(false)}
+                className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+              >
+                <FaTimes className="text-xl" />
+              </button>
+            </div>
+            
+            <div className="mb-4">
+              <p className="text-gray-600 dark:text-gray-400">
+                Choose a routine to start your workout with predefined exercises.
+              </p>
+            </div>
+
+            {loadingRoutines ? (
+              <div className="flex justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+              </div>
+            ) : routines.length === 0 ? (
+              <div className="text-center py-6 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                <p className="text-gray-600 dark:text-gray-400">
+                  You don't have any saved routines yet.
+                </p>
+                <button
+                  onClick={() => {
+                    setShowRoutinesSelector(false);
+                    navigate("/routines");
+                  }}
+                  className="mt-4 text-blue-500 hover:text-blue-600 dark:hover:text-blue-400"
+                >
+                  Go to Routines
+                </button>
+              </div>
+            ) : (
+              <div className="max-h-80 overflow-y-auto">
+                <div className="space-y-3">
+                  {routines.map((routine) => (
+                    <div
+                      key={routine.id}
+                      className="bg-gray-100 dark:bg-gray-700 rounded-lg p-3 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors cursor-pointer"
+                      onClick={() => handleSelectRoutine(routine)}
+                    >
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <h3 className="font-medium text-gray-900 dark:text-white">
+                            {routine.name}
+                          </h3>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">
+                            {routine.workout && routine.workout.exercises ? (
+                              `${routine.workout.exercises.length} Exercise${routine.workout.exercises.length !== 1 ? 's' : ''}`
+                            ) : "No exercises"}
+                          </p>
+                        </div>
+                        <button 
+                          className="flex items-center justify-center bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-lg"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSelectRoutine(routine);
+                          }}
+                        >
+                          <FaPlayCircle />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="mt-6 flex justify-end">
+              <button 
+                onClick={() => {
+                  setShowRoutinesSelector(false);
+                  navigate("/routines");
+                }}
+                className="text-blue-500 hover:text-blue-600 dark:hover:text-blue-400 font-medium"
+              >
+                View All Routines
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Save Routine Modal */}
       {showSaveRoutineModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
