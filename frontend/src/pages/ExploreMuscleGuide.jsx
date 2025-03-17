@@ -596,18 +596,19 @@ function ExploreMuscleGuide() {
           ) : (
             <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg">
               <h2 className="text-xl font-bold mb-4">Select a Muscle Group</h2>
-              <p className="text-gray-600 dark:text-gray-400 mb-4">
-                {hoveredMuscle && hoveredMuscle !== (activeMuscleIndex !== null ? allMuscles[activeMuscleIndex].name : null) ? (
-                  <>
+              
+              {/* Fixed height container for hover text to prevent layout shifts */}
+              <div className="h-16 mb-4">
+                {hoveredMuscle && (
+                  <p className="text-gray-600 dark:text-gray-400">
                     <span className="font-semibold">Hovering over: </span> 
                     <span className="text-red-600">{hoveredMuscle}</span>
                     <br/>
                     <span className="text-sm">Click to select this muscle group</span>
-                  </>
-                ) : (
-                  ""
+                  </p>
                 )}
-              </p>
+              </div>
+              
               <div className="grid grid-cols-2 gap-2">
                 {allMuscles.map((muscle, idx) => (
                   <button
