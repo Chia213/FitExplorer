@@ -135,7 +135,7 @@ function WorkoutLog() {
       } else {
         if (exercise.sets.some((set) => !set.weight || !set.reps)) {
           alert(
-            `Please fill in Distance, Duration and Intensity to save exercise ${exercise.name}.`
+            `Please fill in Weight and Reps to save exercise ${exercise.name}.`
           );
           hasInvalidExercises = true;
         }
@@ -157,7 +157,7 @@ function WorkoutLog() {
           return {
             distance: set.distance ? parseFloat(set.distance) : null,
             duration: set.duration ? parseFloat(set.duration) : null,
-            intensity: getIntensityValue(set.intensity),
+            intensity: set.intensity,
             notes: set.notes || "",
           };
         } else {
