@@ -189,11 +189,18 @@ function WorkoutGenerator() {
       case 6:
         return preferences.equipment.length > 0 ? true : false;
       case 7:
+        // Enhanced validation based on number of workouts per week
+        if (preferences.workoutsPerWeek > 5 && preferences.targetMuscles.length < 4) {
+          return false;
+        } else if (preferences.workoutsPerWeek > 2 && preferences.targetMuscles.length < 2) {
+          return false;
+        }
         return preferences.targetMuscles.length > 0 ? true : false;
       default:
         return true;
     }
   };
+  
   const handleStepValidation = () => {
     switch (currentStep) {
       case 1:
@@ -226,14 +233,16 @@ function WorkoutGenerator() {
         break;
       case 6:
         if (preferences.equipment.length === 0) {
-          alert(
-            "Please select at least one type of equipmentPlease select at least one muscle group to train"
-          );
+          alert("Please select at least one type of equipment");
         }
         break;
       case 7:
         if (preferences.targetMuscles.length === 0) {
           alert("Please select at least one muscle group to train");
+        } else if (preferences.workoutsPerWeek > 5 && preferences.targetMuscles.length < 4) {
+          alert("When training more than 5 times per week, you should select at least 4 muscle groups for a balanced routine");
+        } else if (preferences.workoutsPerWeek > 2 && preferences.targetMuscles.length < 2) {
+          alert("When training more than 2 times per week, you should select at least 2 muscle groups for a balanced routine");
         }
         break;
       default:
