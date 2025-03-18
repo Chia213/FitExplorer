@@ -152,6 +152,51 @@ def add_workout(workout: WorkoutCreate, user: User = Depends(get_current_user), 
         .first()
 
 
+@app.delete("/workouts/{workout_id}")
+def delete_workout(
+    workout_id: int,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    # First check if the workout exists and belongs to the user
+    workout = db.query(Workout).filter(
+        Workout.id == workout_id,
+        Workout.user_id == user.id
+    ).first()
+
+    if not workout:
+        raise HTTPException(
+            status_code=404,
+            detail="Workout not found or you don't have permission to delete it"
+        )
+
+    try:
+        # Delete all related sets first
+        db.query(Set).filter(
+            Set.exercise_id.in_(
+                db.query(Exercise.id).filter(Exercise.workout_id == workout_id)
+            )
+        ).delete(synchronize_session=False)
+
+        # Delete all related exercises
+        db.query(Exercise).filter(
+            Exercise.workout_id == workout_id
+        ).delete(synchronize_session=False)
+
+        # Finally delete the workout
+        db.query(Workout).filter(Workout.id == workout_id).delete()
+
+        db.commit()
+        return {"message": "Workout deleted successfully"}
+
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error deleting workout: {str(e)}"
+        )
+
+
 @app.get("/profile")
 def profile(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     user_preferences = db.query(

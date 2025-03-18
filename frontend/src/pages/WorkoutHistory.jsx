@@ -9,6 +9,7 @@ import {
   FaArrowLeft,
   FaSave,
   FaSearch,
+  FaTrash,
 } from "react-icons/fa";
 
 const API_BASE_URL = "http://localhost:8000";
@@ -95,6 +96,8 @@ function WorkoutHistory() {
   const [routineName, setRoutineName] = useState("");
   const [selectedWorkout, setSelectedWorkout] = useState(null);
   const [savingRoutine, setSavingRoutine] = useState(false);
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  const [workoutToDelete, setWorkoutToDelete] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -243,6 +246,48 @@ function WorkoutHistory() {
       alert(`Error saving routine: ${error.message}. Please try again.`);
     } finally {
       setSavingRoutine(false);
+    }
+  };
+
+  const handleDeleteWorkout = (workoutId) => {
+    setWorkoutToDelete(workoutId);
+    setShowDeleteConfirmation(true);
+  };
+
+  const confirmDeleteWorkout = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        alert("You need to be logged in to delete workouts.");
+        navigate("/login");
+        return;
+      }
+
+      const response = await fetch(
+        `${API_BASE_URL}/workouts/${workoutToDelete}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to delete workout: ${response.status}`);
+      }
+
+      // Remove the workout from state
+      setWorkoutHistory(
+        workoutHistory.filter((workout) => workout.id !== workoutToDelete)
+      );
+      setShowDeleteConfirmation(false);
+      setWorkoutToDelete(null);
+
+      alert("Workout deleted successfully!");
+    } catch (error) {
+      console.error("Error deleting workout:", error);
+      alert(`Error deleting workout: ${error.message}. Please try again.`);
     }
   };
 
@@ -526,7 +571,17 @@ function WorkoutHistory() {
                       )}
                     </div>
                   </div>
-                  <div>
+                  <div className="flex items-center">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteWorkout(workout.id);
+                      }}
+                      className="text-red-500 hover:text-red-700 mr-4"
+                      title="Delete workout"
+                    >
+                      <FaTrash />
+                    </button>
                     {expandedWorkouts[workout.id || index] ? (
                       <FaChevronUp className="text-gray-400" />
                     ) : (
@@ -741,6 +796,38 @@ function WorkoutHistory() {
                 onClick={() => setShowSaveRoutineModal(false)}
                 className="flex-1 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-white py-2 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500"
                 disabled={savingRoutine}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDeleteConfirmation && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
+            <h2 className="text-xl font-bold mb-4 text-red-600 dark:text-red-500">
+              Delete Workout
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
+              Are you sure you want to delete this workout? This action cannot
+              be undone.
+            </p>
+
+            <div className="flex space-x-3">
+              <button
+                onClick={confirmDeleteWorkout}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg"
+              >
+                Delete
+              </button>
+              <button
+                onClick={() => {
+                  setShowDeleteConfirmation(false);
+                  setWorkoutToDelete(null);
+                }}
+                className="flex-1 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-white py-2 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500"
               >
                 Cancel
               </button>
