@@ -391,11 +391,11 @@ function ExploreMuscleGuide() {
 
     let closestMuscle = null;
     let minDistance = Infinity;
-    
+
     // We'll only highlight one muscle at a time to avoid lagginess
     for (let i = 0; i < allMuscles.length; i++) {
       const muscle = allMuscles[i];
-      
+
       for (let j = 0; j < muscle.positions.length; j++) {
         const position = muscle.positions[j];
         const posLeft = parseInt(position.left);
@@ -413,19 +413,20 @@ function ExploreMuscleGuide() {
           if (distance < 8) break;
         }
       }
-      
+
       // If we found a very close match, no need to check other muscles
       if (minDistance < 8) break;
     }
 
     // Only update state if there's a change to avoid unnecessary re-renders
-    if ((closestMuscle && closestMuscle.name !== hoveredMuscle) || 
-        (!closestMuscle && hoveredMuscle !== null)) {
-      
-      const newHighlightedAreas = closestMuscle 
-        ? { [closestMuscle.name]: true } 
+    if (
+      (closestMuscle && closestMuscle.name !== hoveredMuscle) ||
+      (!closestMuscle && hoveredMuscle !== null)
+    ) {
+      const newHighlightedAreas = closestMuscle
+        ? { [closestMuscle.name]: true }
         : {};
-        
+
       setHighlightedAreas(newHighlightedAreas);
       setHoveredMuscle(closestMuscle ? closestMuscle.name : null);
     }
@@ -464,13 +465,13 @@ function ExploreMuscleGuide() {
         <div className="md:w-3/5 relative">
           <div className="relative max-h-[500px] overflow-hidden mx-auto">
             {/* Add a clickable transparent overlay - this handles all clicks and hover events */}
-            <div 
+            <div
               className="absolute inset-0 z-20 cursor-pointer"
               onClick={handleImageClick}
               onMouseMove={handleMouseMove}
               onMouseLeave={handleMouseLeave}
             ></div>
-            
+
             <img
               src="/src/assets/titan.png"
               alt="Muscle Groups - Front and Back View"
@@ -494,69 +495,72 @@ function ExploreMuscleGuide() {
             {/* Active muscle group dots - always visible when a muscle is selected */}
             {activeMuscleIndex !== null && (
               <div key={`active-dots-${activeMuscleIndex}`}>
-                {allMuscles[activeMuscleIndex].positions.map((position, posIndex) => (
-                  <div
-                    key={`active-${activeMuscleIndex}-${posIndex}`}
-                    style={{
-                      position: "absolute",
-                      top: position.top,
-                      left: position.left,
-                      transition: "transform 0.2s ease",
-                      zIndex: 10,
-                      pointerEvents: "none", // Prevent the dot from intercepting mouse events
-                    }}
-                  >
+                {allMuscles[activeMuscleIndex].positions.map(
+                  (position, posIndex) => (
                     <div
-                      className="relative"
+                      key={`active-${activeMuscleIndex}-${posIndex}`}
                       style={{
-                        width: "16px",
-                        height: "16px",
-                        backgroundColor: "#ff6600",
-                        borderRadius: "50%",
-                        border: "2px solid white",
-                        boxShadow: "0 0 4px rgba(0,0,0,0.4)",
-                        transform: "scale(1.3)",
+                        position: "absolute",
+                        top: position.top,
+                        left: position.left,
+                        transition: "transform 0.2s ease",
+                        zIndex: 10,
+                        pointerEvents: "none", // Prevent the dot from intercepting mouse events
                       }}
-                    ></div>
-                  </div>
-                ))}
+                    >
+                      <div
+                        className="relative"
+                        style={{
+                          width: "16px",
+                          height: "16px",
+                          backgroundColor: "#ff6600",
+                          borderRadius: "50%",
+                          border: "2px solid white",
+                          boxShadow: "0 0 4px rgba(0,0,0,0.4)",
+                          transform: "scale(1.3)",
+                        }}
+                      ></div>
+                    </div>
+                  )
+                )}
               </div>
             )}
-            
+
             {/* Hovered muscle group dots - only show when hovering and no active selection */}
-            {activeMuscleIndex === null && hoveredMuscle && (
-              allMuscles.filter(muscle => muscle.name === hoveredMuscle).map((muscle, idx) => (
-                <div
-                key={`hover-dots-${idx}`}>
-                {muscle.positions.map((position, posIndex) => (
-                  <div
-                    key={`hover-${idx}-${posIndex}`}
-                    style={{
-                      position: "absolute",
-                      top: position.top,
-                      left: position.left,
-                      transition: "transform 0.2s ease",
-                      zIndex: 10,
-                      pointerEvents: "none", // Prevent the dot from intercepting mouse events
-                    }}
-                  >
-                    <div
-                      className="relative"
-                      style={{
-                        width: "16px",
-                        height: "16px",
-                        backgroundColor: "#ff0000",
-                        borderRadius: "50%",
-                        border: "2px solid white",
-                        boxShadow: "0 0 4px rgba(0,0,0,0.4)",
-                        transform: "scale(1.2)",
-                      }}
-                    ></div>
+            {activeMuscleIndex === null &&
+              hoveredMuscle &&
+              allMuscles
+                .filter((muscle) => muscle.name === hoveredMuscle)
+                .map((muscle, idx) => (
+                  <div key={`hover-dots-${idx}`}>
+                    {muscle.positions.map((position, posIndex) => (
+                      <div
+                        key={`hover-${idx}-${posIndex}`}
+                        style={{
+                          position: "absolute",
+                          top: position.top,
+                          left: position.left,
+                          transition: "transform 0.2s ease",
+                          zIndex: 10,
+                          pointerEvents: "none", // Prevent the dot from intercepting mouse events
+                        }}
+                      >
+                        <div
+                          className="relative"
+                          style={{
+                            width: "16px",
+                            height: "16px",
+                            backgroundColor: "#ff0000",
+                            borderRadius: "50%",
+                            border: "2px solid white",
+                            boxShadow: "0 0 4px rgba(0,0,0,0.4)",
+                            transform: "scale(1.2)",
+                          }}
+                        ></div>
+                      </div>
+                    ))}
                   </div>
                 ))}
-              </div>
-              ))
-            )}
           </div>
         </div>
 
@@ -568,17 +572,19 @@ function ExploreMuscleGuide() {
                 {allMuscles[activeMuscleIndex].name} Exercises
               </h2>
               <ul className="divide-y divide-gray-200 dark:divide-gray-700">
-                {allMuscles[activeMuscleIndex].exercises.map((exercise, idx) => (
-                  <li key={idx} className="py-3">
-                    <button
-                      onClick={() => setViewingExercise(exercise)}
-                      className="flex items-center w-full text-left hover:text-blue-500"
-                    >
-                      <span className="mr-2 text-green-500">✓</span>
-                      <span className="font-medium">{exercise}</span>
-                    </button>
-                  </li>
-                ))}
+                {allMuscles[activeMuscleIndex].exercises.map(
+                  (exercise, idx) => (
+                    <li key={idx} className="py-3">
+                      <button
+                        onClick={() => setViewingExercise(exercise)}
+                        className="flex items-center w-full text-left hover:text-blue-500"
+                      >
+                        <span className="mr-2 text-green-500">✓</span>
+                        <span className="font-medium">{exercise}</span>
+                      </button>
+                    </li>
+                  )
+                )}
               </ul>
               <button
                 onClick={() => {
@@ -596,19 +602,21 @@ function ExploreMuscleGuide() {
           ) : (
             <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg">
               <h2 className="text-xl font-bold mb-4">Select a Muscle Group</h2>
-              
+
               {/* Fixed height container for hover text to prevent layout shifts */}
               <div className="h-16 mb-4">
                 {hoveredMuscle && (
                   <p className="text-gray-600 dark:text-gray-400">
-                    <span className="font-semibold">Hovering over: </span> 
+                    <span className="font-semibold">Hovering over: </span>
                     <span className="text-red-600">{hoveredMuscle}</span>
-                    <br/>
-                    <span className="text-sm">Click to select this muscle group</span>
+                    <br />
+                    <span className="text-sm">
+                      Click to select this muscle group
+                    </span>
                   </p>
                 )}
               </div>
-              
+
               <div className="grid grid-cols-2 gap-2">
                 {allMuscles.map((muscle, idx) => (
                   <button
