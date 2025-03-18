@@ -109,11 +109,11 @@ function WorkoutLog() {
   }, [navigate]);
 
   useEffect(() => {
-    if (workoutHistory.length > 0 && !bodyweight) {
+    if (workoutHistory.length > 0 && bodyweight === undefined) {
       const recentWorkoutWithBodyweight = workoutHistory.find(
         (workout) => workout.bodyweight && workout.bodyweight !== null
       );
-
+  
       if (
         recentWorkoutWithBodyweight &&
         recentWorkoutWithBodyweight.bodyweight
@@ -122,6 +122,7 @@ function WorkoutLog() {
       }
     }
   }, [workoutHistory, bodyweight]);
+  
 
   async function fetchWorkoutHistory(token) {
     try {
