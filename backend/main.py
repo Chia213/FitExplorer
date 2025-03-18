@@ -2,7 +2,6 @@ import uuid
 import os
 from fastapi import FastAPI, Depends, HTTPException, File, UploadFile, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 from background_task import send_summary_emails
 from email_service import send_summary_email, send_security_alert
 from fastapi.staticfiles import StaticFiles
@@ -433,6 +432,8 @@ def remove_profile_picture(
             status_code=500, detail=f"Error removing profile picture: {str(e)}")
 
 
+# In main.py, modify the create_routine function to save set information:
+
 @app.post("/routines", response_model=RoutineResponse)
 def create_routine(
     routine: RoutineCreate,
@@ -440,18 +441,6 @@ def create_routine(
     db: Session = Depends(get_db)
 ):
     try:
-        existing_routine = db.query(Routine).filter(
-            Routine.name == routine.name,
-            Routine.user_id == user.id
-        ).first()
-
-        if existing_routine:
-            return JSONResponse(
-                status_code=409,
-                content={"detail": "Routine with this name already exists",
-                         "routine_id": existing_routine.id}
-            )
-
         new_workout = Workout(
             name=routine.name,
             user_id=user.id,
@@ -478,32 +467,48 @@ def create_routine(
             db.add(new_exercise)
             db.commit()
             db.refresh(new_exercise)
-
+            
+            # Add sets if they exist in the request
             if hasattr(exercise_data, 'sets') and exercise_data.sets:
                 for set_data in exercise_data.sets:
                     new_set = Set(
-                        exercise_id=new_exercise.id,
-                        weight=getattr(set_data, 'weight', None),
-                        reps=getattr(set_data, 'reps', None),
-                        distance=getattr(set_data, 'distance', None),
-                        duration=getattr(set_data, 'duration', None),
-                        intensity=getattr(set_data, 'intensity', None),
-                        notes=getattr(set_data, 'notes', None)
+                        weight=set_data.weight,
+                        reps=set_data.reps,
+                        distance=set_data.distance,
+                        duration=set_data.duration,
+                        intensity=set_data.intensity,
+                        notes=set_data.notes,
+                        exercise_id=new_exercise.id
                     )
                     db.add(new_set)
-
-            existing_custom = db.query(CustomExercise).filter(
-                CustomExercise.name == exercise_data.name,
-                CustomExercise.user_id == user.id
-            ).first()
-
-            if not existing_custom:
-                new_custom_exercise = CustomExercise(
-                    name=exercise_data.name,
-                    category=exercise_data.category or "Uncategorized",
-                    user_id=user.id
-                )
-                db.add(new_custom_exercise)
+            # If no sets provided, create empty sets based on initial_sets count
+            else:
+                initial_sets = exercise_data.initial_sets or 1
+                for _ in range(initial_sets):
+                    if exercise_data.is_cardio:
+                        new_set = Set(
+                            distance=None,
+                            duration=None,
+                            intensity="",
+                            notes="",
+                            exercise_id=new_exercise.id
+                        )
+                    else:
+                        new_set = Set(
+                            weight=None,
+                            reps=None,
+                            notes="",
+                            exercise_id=new_exercise.id
+                        )
+                    db.add(new_set)
+            
+            # Add custom exercise to user's custom exercises
+            new_custom_exercise = CustomExercise(
+                name=exercise_data.name,
+                category=exercise_data.category or "Uncategorized",
+                user_id=user.id
+            )
+            db.add(new_custom_exercise)
 
         db.commit()
         db.refresh(new_routine)
@@ -515,6 +520,7 @@ def create_routine(
         print(f"Error creating routine: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# In main.py, update the update_routine function to handle sets properly:
 
 @app.put("/routines/{routine_id}", response_model=RoutineResponse)
 def update_routine(
@@ -534,9 +540,19 @@ def update_routine(
     routine.name = routine_data.name
 
     if routine.workout_id:
+        # Delete existing sets first
+        db.query(Set).filter(
+            Set.exercise_id.in_(
+                db.query(Exercise.id).filter(Exercise.workout_id == routine.workout_id)
+            )
+        ).delete(synchronize_session=False)
+        
+        # Then delete exercises
         db.query(Exercise).filter(
-            Exercise.workout_id == routine.workout_id).delete()
-
+            Exercise.workout_id == routine.workout_id
+        ).delete(synchronize_session=False)
+        
+        # Create new exercises with sets
         for exercise_data in routine_data.exercises:
             new_exercise = Exercise(
                 name=exercise_data.name,
@@ -545,97 +561,47 @@ def update_routine(
                 workout_id=routine.workout_id
             )
             db.add(new_exercise)
+            db.commit()
+            db.refresh(new_exercise)
+            
+            # Add sets if they exist in the request
+            if hasattr(exercise_data, 'sets') and exercise_data.sets:
+                for set_data in exercise_data.sets:
+                    new_set = Set(
+                        weight=set_data.weight,
+                        reps=set_data.reps,
+                        distance=set_data.distance,
+                        duration=set_data.duration,
+                        intensity=set_data.intensity,
+                        notes=set_data.notes,
+                        exercise_id=new_exercise.id
+                    )
+                    db.add(new_set)
+            # If no sets provided, create empty sets based on initial_sets count
+            else:
+                initial_sets = exercise_data.initial_sets or 1
+                for _ in range(initial_sets):
+                    if exercise_data.is_cardio:
+                        new_set = Set(
+                            distance=None,
+                            duration=None,
+                            intensity="",
+                            notes="",
+                            exercise_id=new_exercise.id
+                        )
+                    else:
+                        new_set = Set(
+                            weight=None,
+                            reps=None,
+                            notes="",
+                            exercise_id=new_exercise.id
+                        )
+                    db.add(new_set)
 
     db.commit()
     db.refresh(routine)
 
     return routine
-
-
-@app.put("/routines/{routine_id}/overwrite", response_model=RoutineResponse)
-def overwrite_routine(
-    routine_id: int,
-    routine: RoutineCreate,
-    user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    existing_routine = db.query(Routine).filter(
-        Routine.id == routine_id,
-        Routine.user_id == user.id
-    ).first()
-
-    if not existing_routine:
-        raise HTTPException(status_code=404, detail="Routine not found")
-
-    try:
-        old_workout_id = existing_routine.workout_id
-
-        new_workout = Workout(
-            name=routine.name,
-            user_id=user.id,
-            date=datetime.now(timezone.utc)
-        )
-        db.add(new_workout)
-        db.commit()
-        db.refresh(new_workout)
-
-        existing_routine.workout_id = new_workout.id
-        existing_routine.name = routine.name
-
-        if old_workout_id:
-            db.query(Set).filter(
-                Set.exercise_id.in_(
-                    db.query(Exercise.id).filter(
-                        Exercise.workout_id == old_workout_id)
-                )
-            ).delete(synchronize_session=False)
-
-            db.query(Exercise).filter(Exercise.workout_id ==
-                                      old_workout_id).delete(synchronize_session=False)
-
-        for exercise_data in routine.exercises:
-            new_exercise = Exercise(
-                name=exercise_data.name,
-                category=exercise_data.category or "Uncategorized",
-                is_cardio=exercise_data.is_cardio,
-                workout_id=new_workout.id
-            )
-            db.add(new_exercise)
-            db.commit()
-            db.refresh(new_exercise)
-
-            if hasattr(exercise_data, 'sets') and exercise_data.sets:
-                for set_data in exercise_data.sets:
-                    new_set = Set(
-                        exercise_id=new_exercise.id,
-                        weight=getattr(set_data, 'weight', None),
-                        reps=getattr(set_data, 'reps', None),
-                        distance=getattr(set_data, 'distance', None),
-                        duration=getattr(set_data, 'duration', None),
-                        intensity=getattr(set_data, 'intensity', None),
-                        notes=getattr(set_data, 'notes', None)
-                    )
-                    db.add(new_set)
-
-        if old_workout_id:
-            other_routines = db.query(Routine).filter(
-                Routine.workout_id == old_workout_id,
-                Routine.id != existing_routine.id
-            ).first()
-
-            if not other_routines:
-                db.query(Workout).filter(Workout.id == old_workout_id).delete()
-
-        db.commit()
-        db.refresh(existing_routine)
-
-        return existing_routine
-
-    except Exception as e:
-        db.rollback()
-        print(f"Error overwriting routine: {str(e)}")
-        raise HTTPException(
-            status_code=500, detail=f"Error overwriting routine: {str(e)}")
 
 
 @app.delete("/routines/{routine_id}")

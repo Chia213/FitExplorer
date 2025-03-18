@@ -88,58 +88,76 @@ function Routines() {
     );
   };
 
-  const handleSaveEditedRoutine = async () => {
-    // Basic validation
-    if (!editedRoutineName.trim()) {
-      alert("Routine name cannot be empty");
-      return;
-    }
+  // In Routines.jsx, update the handleSaveEditedRoutine function to include set details
 
-    if (editedExercises.length === 0) {
-      alert("Routine must have at least one exercise");
-      return;
-    }
+const handleSaveEditedRoutine = async () => {
+  // Basic validation
+  if (!editedRoutineName.trim()) {
+    alert("Routine name cannot be empty");
+    return;
+  }
 
-    try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(
-        `${backendURL}/routines/${editingRoutine.id}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            name: editedRoutineName,
-            exercises: editedExercises.map((exercise) => ({
-              name: exercise.name,
-              category: exercise.category || "Uncategorized",
-              is_cardio: exercise.is_cardio || false,
-              initial_sets: exercise.initial_sets || exercise.sets?.length || 1,
-            })),
-          }),
-        }
-      );
+  if (editedExercises.length === 0) {
+    alert("Routine must have at least one exercise");
+    return;
+  }
 
-      if (!response.ok) throw new Error("Failed to update routine");
+  try {
+    const token = localStorage.getItem("token");
+    const response = await fetch(
+      `${backendURL}/routines/${editingRoutine.id}`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          name: editedRoutineName,
+          exercises: editedExercises.map((exercise) => ({
+            name: exercise.name,
+            category: exercise.category || "Uncategorized",
+            is_cardio: exercise.is_cardio || false,
+            initial_sets: exercise.initial_sets || exercise.sets?.length || 1,
+            // Add this to include set information
+            sets: Array.isArray(exercise.sets) ? exercise.sets.map(set => {
+              if (exercise.is_cardio) {
+                return {
+                  distance: set.distance || null,
+                  duration: set.duration || null,
+                  intensity: set.intensity || "",
+                  notes: set.notes || ""
+                };
+              } else {
+                return {
+                  weight: set.weight || null,
+                  reps: set.reps || null,
+                  notes: set.notes || ""
+                };
+              }
+            }) : []
+          })),
+        }),
+      }
+    );
 
-      // Update the routine in the list
-      const updatedRoutine = await response.json();
-      setRoutines((prev) =>
-        prev.map((r) => (r.id === editingRoutine.id ? updatedRoutine : r))
-      );
+    if (!response.ok) throw new Error("Failed to update routine");
 
-      // Close the editing modal
-      setEditingRoutine(null);
-      setEditedRoutineName("");
-      setEditedExercises([]);
-    } catch (err) {
-      console.error("Error updating routine:", err);
-      alert("Failed to update routine. Please try again.");
-    }
-  };
+    // Update the routine in the list
+    const updatedRoutine = await response.json();
+    setRoutines((prev) =>
+      prev.map((r) => (r.id === editingRoutine.id ? updatedRoutine : r))
+    );
 
+    // Close the editing modal
+    setEditingRoutine(null);
+    setEditedRoutineName("");
+    setEditedExercises([]);
+  } catch (err) {
+    console.error("Error updating routine:", err);
+    alert("Failed to update routine. Please try again.");
+  }
+};
   const handleStartWorkout = (routine) => {
     localStorage.setItem("activeWorkout", JSON.stringify(routine));
     navigate("/workout-log", { state: { routineId: routine.id } });

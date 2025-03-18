@@ -346,53 +346,73 @@ function WorkoutLog() {
     setShowSaveRoutineModal(true);
   };
 
-  const handleSaveRoutine = async () => {
-    if (!routineName.trim()) {
-      alert("Please enter a routine name.");
+  // In handleSaveRoutine in WorkoutLog.jsx, modify the routineData object to include set details:
+
+const handleSaveRoutine = async () => {
+  if (!routineName.trim()) {
+    alert("Please enter a routine name.");
+    return;
+  }
+
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      alert("You need to be logged in to save routines.");
+      navigate("/login");
       return;
     }
 
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        alert("You need to be logged in to save routines.");
-        navigate("/login");
-        return;
-      }
+    // Modified to include set information along with exercises
+    const routineData = {
+      name: routineName,
+      exercises: workoutExercises.map((exercise) => ({
+        name: exercise.name,
+        category: exercise.category || "Uncategorized",
+        is_cardio: exercise.is_cardio || false,
+        initial_sets: exercise.sets.length,
+        // Store a template of set information for each exercise
+        sets: exercise.sets.map(set => {
+          if (exercise.is_cardio) {
+            return {
+              distance: set.distance || null,
+              duration: set.duration || null,
+              intensity: set.intensity || "",
+              notes: set.notes || ""
+            };
+          } else {
+            return {
+              weight: set.weight || null,
+              reps: set.reps || null,
+              notes: set.notes || ""
+            };
+          }
+        })
+      })),
+    };
 
-      const routineData = {
-        name: routineName,
-        exercises: workoutExercises.map((exercise) => ({
-          name: exercise.name,
-          category: exercise.category || "Uncategorized",
-          is_cardio: exercise.is_cardio || false,
-          initial_sets: exercise.sets.length,
-        })),
-      };
+    const response = await fetch(`${API_BASE_URL}/routines`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(routineData),
+    });
 
-      const response = await fetch(`${API_BASE_URL}/routines`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(routineData),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to save routine");
-      }
-
-      // Fetch the updated list of routines
-      fetchRoutines(localStorage.getItem("token"));
-      
-      alert("Routine saved successfully!");
-      setShowSaveRoutineModal(false);
-    } catch (error) {
-      console.error("Error saving routine:", error);
-      alert("Error saving routine. Please try again.");
+    if (!response.ok) {
+      throw new Error("Failed to save routine");
     }
-  };
+
+    // Fetch the updated list of routines
+    fetchRoutines(localStorage.getItem("token"));
+    
+    alert("Routine saved successfully!");
+    setShowSaveRoutineModal(false);
+  } catch (error) {
+    console.error("Error saving routine:", error);
+    alert("Error saving routine. Please try again.");
+  }
+};
 
   const handleAddExercise = (exercise) => {
     const initialSets = exercise.initialSets || 1;

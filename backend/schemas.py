@@ -165,11 +165,20 @@ class ChangePasswordRequest(BaseModel):
     )
 
 
+class RoutineSetCreate(BaseModel):
+    weight: Optional[float] = None
+    reps: Optional[int] = None
+    distance: Optional[float] = None
+    duration: Optional[float] = None
+    intensity: Optional[str] = None
+    notes: Optional[str] = None
+
 class RoutineExerciseCreate(BaseModel):
     name: str
     category: Optional[str] = "Uncategorized"
     is_cardio: Optional[bool] = False
     initial_sets: Optional[int] = 1
+    sets: Optional[List[RoutineSetCreate]] = []
 
 
 class RoutineCreate(BaseModel):
