@@ -21,7 +21,7 @@ const getIntensityName = (intensityValue) => {
     Medium: "Medium",
     High: "High",
     "Very High": "Very High",
-    // Handle numeric values too in case they come from the backend
+
     0: "-",
     1: "Low",
     2: "Medium",
@@ -29,59 +29,6 @@ const getIntensityName = (intensityValue) => {
     4: "Very High",
   };
   return intensityMap[intensityValue] || "-";
-};
-
-const saveRoutineToAPI = async (routineData, token) => {
-  if (!routineData || !routineData.name || !routineData.exercises) {
-    throw new Error("Invalid routine data");
-  }
-
-  if (!token) {
-    throw new Error("Authentication token is required");
-  }
-
-  const cleanedExercises = routineData.exercises
-    .filter((exercise) => exercise && exercise.name)
-    .map((exercise) => ({
-      name: exercise.name,
-      category: exercise.category || "Uncategorized",
-      is_cardio: Boolean(exercise.is_cardio),
-      initial_sets: Number(exercise.initial_sets || 1),
-    }));
-
-  if (cleanedExercises.length === 0) {
-    throw new Error("Routine must contain at least one exercise");
-  }
-
-  const routinePayload = {
-    name: routineData.name.trim(),
-    exercises: cleanedExercises,
-  };
-
-  console.log("Saving routine:", JSON.stringify(routinePayload, null, 2));
-
-  const response = await fetch(`${API_BASE_URL}/routines`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(routinePayload),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error("Server response:", errorText);
-
-    try {
-      const errorJson = JSON.parse(errorText);
-      console.error("Detailed error:", errorJson);
-    } catch (e) {}
-
-    throw new Error(`Server error: ${response.status}`);
-  }
-
-  return await response.json();
 };
 
 function WorkoutHistory() {
@@ -218,6 +165,7 @@ function WorkoutHistory() {
             exercise.sets && Array.isArray(exercise.sets)
               ? exercise.sets.length
               : 1,
+          sets: exercise.sets,
         })),
       };
 
@@ -229,6 +177,44 @@ function WorkoutHistory() {
         },
         body: JSON.stringify(routineData),
       });
+
+      if (response.status === 409) {
+        const data = await response.json();
+        const confirmed = window.confirm(
+          `A routine named "${routineName}" already exists. Do you want to overwrite it?`
+        );
+
+        if (confirmed) {
+          const overwriteResponse = await fetch(
+            `${API_BASE_URL}/routines/${data.routine_id}/overwrite`,
+            {
+              method: "PUT",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify(routineData),
+            }
+          );
+
+          if (!overwriteResponse.ok) {
+            const errorText = await overwriteResponse.text();
+            console.error("Server response:", errorText);
+            throw new Error(
+              `Failed to overwrite routine: ${overwriteResponse.status}`
+            );
+          }
+
+          alert("Routine updated successfully!");
+          setShowSaveRoutineModal(false);
+          return;
+        } else {
+          alert("Operation cancelled. Routine was not overwritten.");
+          setShowSaveRoutineModal(false);
+          setSavingRoutine(false);
+          return;
+        }
+      }
 
       if (!response.ok) {
         const errorText = await response.text();
