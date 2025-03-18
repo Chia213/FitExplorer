@@ -2,6 +2,7 @@ import uuid
 import os
 from fastapi import FastAPI, Depends, HTTPException, File, UploadFile, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from background_task import send_summary_emails
 from email_service import send_summary_email, send_security_alert
 from fastapi.staticfiles import StaticFiles
@@ -439,6 +440,18 @@ def create_routine(
     db: Session = Depends(get_db)
 ):
     try:
+        existing_routine = db.query(Routine).filter(
+            Routine.name == routine.name,
+            Routine.user_id == user.id
+        ).first()
+
+        if existing_routine:
+            return JSONResponse(
+                status_code=409,
+                content={"detail": "Routine with this name already exists",
+                         "routine_id": existing_routine.id}
+            )
+
         new_workout = Workout(
             name=routine.name,
             user_id=user.id,
@@ -456,7 +469,6 @@ def create_routine(
         db.add(new_routine)
 
         for exercise_data in routine.exercises:
-
             new_exercise = Exercise(
                 name=exercise_data.name,
                 category=exercise_data.category or "Uncategorized",
@@ -464,13 +476,34 @@ def create_routine(
                 workout_id=new_workout.id
             )
             db.add(new_exercise)
+            db.commit()
+            db.refresh(new_exercise)
 
-            new_custom_exercise = CustomExercise(
-                name=exercise_data.name,
-                category=exercise_data.category or "Uncategorized",
-                user_id=user.id
-            )
-            db.add(new_custom_exercise)
+            if hasattr(exercise_data, 'sets') and exercise_data.sets:
+                for set_data in exercise_data.sets:
+                    new_set = Set(
+                        exercise_id=new_exercise.id,
+                        weight=getattr(set_data, 'weight', None),
+                        reps=getattr(set_data, 'reps', None),
+                        distance=getattr(set_data, 'distance', None),
+                        duration=getattr(set_data, 'duration', None),
+                        intensity=getattr(set_data, 'intensity', None),
+                        notes=getattr(set_data, 'notes', None)
+                    )
+                    db.add(new_set)
+
+            existing_custom = db.query(CustomExercise).filter(
+                CustomExercise.name == exercise_data.name,
+                CustomExercise.user_id == user.id
+            ).first()
+
+            if not existing_custom:
+                new_custom_exercise = CustomExercise(
+                    name=exercise_data.name,
+                    category=exercise_data.category or "Uncategorized",
+                    user_id=user.id
+                )
+                db.add(new_custom_exercise)
 
         db.commit()
         db.refresh(new_routine)
@@ -517,6 +550,92 @@ def update_routine(
     db.refresh(routine)
 
     return routine
+
+
+@app.put("/routines/{routine_id}/overwrite", response_model=RoutineResponse)
+def overwrite_routine(
+    routine_id: int,
+    routine: RoutineCreate,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    existing_routine = db.query(Routine).filter(
+        Routine.id == routine_id,
+        Routine.user_id == user.id
+    ).first()
+
+    if not existing_routine:
+        raise HTTPException(status_code=404, detail="Routine not found")
+
+    try:
+        old_workout_id = existing_routine.workout_id
+
+        new_workout = Workout(
+            name=routine.name,
+            user_id=user.id,
+            date=datetime.now(timezone.utc)
+        )
+        db.add(new_workout)
+        db.commit()
+        db.refresh(new_workout)
+
+        existing_routine.workout_id = new_workout.id
+        existing_routine.name = routine.name
+
+        if old_workout_id:
+            db.query(Set).filter(
+                Set.exercise_id.in_(
+                    db.query(Exercise.id).filter(
+                        Exercise.workout_id == old_workout_id)
+                )
+            ).delete(synchronize_session=False)
+
+            db.query(Exercise).filter(Exercise.workout_id ==
+                                      old_workout_id).delete(synchronize_session=False)
+
+        for exercise_data in routine.exercises:
+            new_exercise = Exercise(
+                name=exercise_data.name,
+                category=exercise_data.category or "Uncategorized",
+                is_cardio=exercise_data.is_cardio,
+                workout_id=new_workout.id
+            )
+            db.add(new_exercise)
+            db.commit()
+            db.refresh(new_exercise)
+
+            if hasattr(exercise_data, 'sets') and exercise_data.sets:
+                for set_data in exercise_data.sets:
+                    new_set = Set(
+                        exercise_id=new_exercise.id,
+                        weight=getattr(set_data, 'weight', None),
+                        reps=getattr(set_data, 'reps', None),
+                        distance=getattr(set_data, 'distance', None),
+                        duration=getattr(set_data, 'duration', None),
+                        intensity=getattr(set_data, 'intensity', None),
+                        notes=getattr(set_data, 'notes', None)
+                    )
+                    db.add(new_set)
+
+        if old_workout_id:
+            other_routines = db.query(Routine).filter(
+                Routine.workout_id == old_workout_id,
+                Routine.id != existing_routine.id
+            ).first()
+
+            if not other_routines:
+                db.query(Workout).filter(Workout.id == old_workout_id).delete()
+
+        db.commit()
+        db.refresh(existing_routine)
+
+        return existing_routine
+
+    except Exception as e:
+        db.rollback()
+        print(f"Error overwriting routine: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error overwriting routine: {str(e)}")
 
 
 @app.delete("/routines/{routine_id}")
