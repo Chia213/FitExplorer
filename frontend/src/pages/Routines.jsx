@@ -271,41 +271,74 @@ const handleSaveEditedRoutine = async () => {
                 </div>
 
                 {expandedRoutines[routine.id] &&
-                  routine.workout &&
-                  routine.workout.exercises && (
-                    <div className="bg-[#2C3E50] p-4">
-                      <table className="w-full">
-                        <thead>
-                          <tr className="text-left border-b border-gray-700">
-                            <th className="pb-2">Exercise</th>
-                            <th className="pb-2">Sets</th>
-                            <th className="pb-2">Reps/Weight</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {routine.workout.exercises.map((exercise, index) => (
-                            <tr
-                              key={index}
-                              className="border-b border-gray-700 last:border-b-0"
-                            >
-                              <td className="py-2">{exercise.name}</td>
-                              <td className="py-2">
-                                {exercise.sets.length} Sets
-                              </td>
-                              <td className="py-2">
-                                {exercise.sets.map((set, setIndex) => (
-                                  <div key={setIndex}>
-                                    {set.weight ? `${set.weight} kg` : ""}
-                                    {set.reps ? `${set.reps} reps` : ""}
-                                  </div>
-                                ))}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+  routine.workout &&
+  routine.workout.exercises && (
+    <div className="bg-[#2C3E50] p-4">
+      <table className="w-full table-fixed">
+        <thead>
+          <tr className="text-left border-b border-gray-700">
+            <th className="pb-2 w-3/8">Exercise</th>
+            <th className="pb-2 w-1/8 text-center">Sets</th>
+            <th className="pb-2 w-1/8 text-center">Reps</th>
+            <th className="pb-2 w-1/4 text-center">Weight</th>
+          </tr>
+        </thead>
+        <tbody>
+          {routine.workout.exercises.map((exercise, index) => (
+            <tr
+              key={index}
+              className="border-b border-gray-700 last:border-b-0"
+            >
+              <td className="py-2">{exercise.name}</td>
+              <td className="py-2 text-center">
+                {exercise.sets.length}
+              </td>
+              <td className="py-2 text-center">
+                {exercise.is_cardio ? (
+                  "Cardio"
+                ) : (
+                  <>
+                    {exercise.sets.some(set => set.reps) ? (
+                      exercise.sets.map((set, setIndex) => (
+                        <div key={setIndex} className="text-sm">
+                          {set.reps ? `${set.reps}` : "-"}
+                        </div>
+                      ))
+                    ) : (
+                      "-"
+                    )}
+                  </>
+                )}
+              </td>
+              <td className="py-2 text-center">
+                {exercise.is_cardio ? (
+                  exercise.sets.map((set, setIndex) => (
+                    <div key={setIndex} className="text-sm flex justify-center space-x-1">
+                      {set.distance ? `${set.distance}km` : ""} 
+                      {set.duration ? `${set.duration}min` : ""}
+                      {set.intensity ? ` (${set.intensity})` : ""}
                     </div>
-                  )}
+                  ))
+                ) : (
+                  <>
+                    {exercise.sets.some(set => set.weight) ? (
+                      exercise.sets.map((set, setIndex) => (
+                        <div key={setIndex} className="text-sm">
+                          {set.weight ? `${set.weight} kg` : "-"}
+                        </div>
+                      ))
+                    ) : (
+                      "-"
+                    )}
+                  </>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )}
               </div>
             ))}
           </div>
