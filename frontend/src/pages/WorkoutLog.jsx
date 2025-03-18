@@ -161,7 +161,7 @@ function WorkoutLog() {
       alert("This routine doesn't have any exercises.");
       return;
     }
-
+  
     // Confirm with user if they're about to replace existing exercises
     if (workoutExercises.length > 0) {
       if (
@@ -170,15 +170,43 @@ function WorkoutLog() {
         return;
       }
     }
-
+  
     // Set the workout name
     setWorkoutName(routine.name);
-
+  
     // Convert routine exercises to workout exercises
     const newExercises = routine.workout.exercises.map((exercise) => {
-      const initialSets = exercise.initial_sets || 1;
-
-      if (exercise.is_cardio) {
+      // Ensure is_cardio is properly set as a boolean
+      const isCardio = Boolean(exercise.is_cardio);
+      const initialSets = exercise.initial_sets || exercise.sets?.length || 1;
+  
+      // If the exercise has existing sets, use those
+      if (Array.isArray(exercise.sets) && exercise.sets.length > 0) {
+        return {
+          name: exercise.name,
+          category: exercise.category || "Uncategorized",
+          is_cardio: isCardio,
+          sets: exercise.sets.map(set => {
+            if (isCardio) {
+              return {
+                distance: set.distance || "",
+                duration: set.duration || "",
+                intensity: set.intensity || "",
+                notes: set.notes || ""
+              };
+            } else {
+              return {
+                weight: set.weight || "",
+                reps: set.reps || "",
+                notes: set.notes || ""
+              };
+            }
+          })
+        };
+      }
+  
+      // Otherwise create new empty sets
+      if (isCardio) {
         const cardioSets = Array(initialSets)
           .fill()
           .map(() => ({
@@ -187,7 +215,7 @@ function WorkoutLog() {
             intensity: "",
             notes: "",
           }));
-
+  
         return {
           name: exercise.name,
           category: exercise.category || "Uncategorized",
@@ -202,7 +230,7 @@ function WorkoutLog() {
             reps: "",
             notes: "",
           }));
-
+  
         return {
           name: exercise.name,
           category: exercise.category || "Uncategorized",
@@ -211,7 +239,7 @@ function WorkoutLog() {
         };
       }
     });
-
+  
     setWorkoutExercises(newExercises);
     setShowRoutinesSelector(false);
   };
@@ -359,7 +387,7 @@ function WorkoutLog() {
       alert("Please enter a routine name.");
       return;
     }
-
+  
     try {
       const token = localStorage.getItem("token");
       if (!token) {
@@ -367,17 +395,36 @@ function WorkoutLog() {
         navigate("/login");
         return;
       }
-
+  
       const routineData = {
         name: routineName,
         exercises: workoutExercises.map((exercise) => ({
           name: exercise.name,
           category: exercise.category || "Uncategorized",
-          is_cardio: exercise.is_cardio || false,
-          initial_sets: exercise.sets.length,
+          is_cardio: Boolean(exercise.is_cardio),
+          initial_sets: exercise.sets?.length || 1,
+          // Include the sets information to preserve cardio-specific data
+          sets: exercise.sets?.map(set => {
+            if (exercise.is_cardio) {
+              return {
+                distance: set.distance || null,
+                duration: set.duration || null,
+                intensity: set.intensity || "",
+                notes: set.notes || ""
+              };
+            } else {
+              return {
+                weight: set.weight || null,
+                reps: set.reps || null,
+                notes: set.notes || ""
+              };
+            }
+          }) || []
         })),
       };
-
+  
+      console.log("Saving routine:", routineData); // For debugging
+  
       const response = await fetch(`${API_BASE_URL}/routines`, {
         method: "POST",
         headers: {
@@ -386,14 +433,13 @@ function WorkoutLog() {
         },
         body: JSON.stringify(routineData),
       });
-
-      // Handle potential 409 conflict (existing routine)
+  
       if (response.status === 409) {
         const data = await response.json();
         const confirmed = window.confirm(
           `A routine named "${routineName}" already exists. Do you want to overwrite it?`
         );
-
+  
         if (confirmed) {
           const overwriteResponse = await fetch(
             `${API_BASE_URL}/routines/${data.routine_id}/overwrite`,
@@ -406,7 +452,7 @@ function WorkoutLog() {
               body: JSON.stringify(routineData),
             }
           );
-
+  
           if (!overwriteResponse.ok) {
             const errorText = await overwriteResponse.text();
             console.error("Server response:", errorText);
@@ -414,7 +460,7 @@ function WorkoutLog() {
               `Failed to overwrite routine: ${overwriteResponse.status}`
             );
           }
-
+  
           alert("Routine updated successfully!");
           setShowSaveRoutineModal(false);
           return;
@@ -424,16 +470,16 @@ function WorkoutLog() {
           return;
         }
       }
-
+  
       if (!response.ok) {
         const errorText = await response.text();
         console.error("Server response:", errorText);
         throw new Error(`Server error: ${response.status}`);
       }
-
+  
       // Fetch the updated list of routines
       fetchRoutines(token);
-
+  
       alert("Routine saved successfully!");
       setShowSaveRoutineModal(false);
     } catch (error) {
