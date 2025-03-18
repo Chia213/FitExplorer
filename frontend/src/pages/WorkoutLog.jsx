@@ -15,7 +15,7 @@ import {
   FaTimes,
 } from "react-icons/fa";
 import AddExercise from "./AddExercise";
-import {LuCalendarClock } from "react-icons/lu";
+import { LuCalendarClock } from "react-icons/lu";
 
 const API_BASE_URL = "http://localhost:8000";
 
@@ -87,18 +87,20 @@ function WorkoutLog() {
     fetchRoutines(token);
 
     // Check for preloaded exercises from a routine
-    const preloadedExercises = localStorage.getItem("preloadedWorkoutExercises");
+    const preloadedExercises = localStorage.getItem(
+      "preloadedWorkoutExercises"
+    );
     const preloadedWorkoutName = localStorage.getItem("preloadedWorkoutName");
-    
+
     if (preloadedExercises) {
       try {
         const parsedExercises = JSON.parse(preloadedExercises);
         setWorkoutExercises(parsedExercises);
-        
+
         if (preloadedWorkoutName) {
           setWorkoutName(preloadedWorkoutName);
         }
-        
+
         // Clear the preloaded data
         localStorage.removeItem("preloadedWorkoutExercises");
         localStorage.removeItem("preloadedWorkoutName");
@@ -113,7 +115,7 @@ function WorkoutLog() {
       const recentWorkoutWithBodyweight = workoutHistory.find(
         (workout) => workout.bodyweight && workout.bodyweight !== null
       );
-  
+
       if (
         recentWorkoutWithBodyweight &&
         recentWorkoutWithBodyweight.bodyweight
@@ -122,7 +124,6 @@ function WorkoutLog() {
       }
     }
   }, [workoutHistory, bodyweight]);
-  
 
   async function fetchWorkoutHistory(token) {
     try {
@@ -163,7 +164,9 @@ function WorkoutLog() {
 
     // Confirm with user if they're about to replace existing exercises
     if (workoutExercises.length > 0) {
-      if (!window.confirm("This will replace your current workout. Continue?")) {
+      if (
+        !window.confirm("This will replace your current workout. Continue?")
+      ) {
         return;
       }
     }
@@ -172,35 +175,39 @@ function WorkoutLog() {
     setWorkoutName(routine.name);
 
     // Convert routine exercises to workout exercises
-    const newExercises = routine.workout.exercises.map(exercise => {
+    const newExercises = routine.workout.exercises.map((exercise) => {
       const initialSets = exercise.initial_sets || 1;
-      
+
       if (exercise.is_cardio) {
-        const cardioSets = Array(initialSets).fill().map(() => ({
-          distance: "",
-          duration: "",
-          intensity: "",
-          notes: ""
-        }));
-        
+        const cardioSets = Array(initialSets)
+          .fill()
+          .map(() => ({
+            distance: "",
+            duration: "",
+            intensity: "",
+            notes: "",
+          }));
+
         return {
           name: exercise.name,
           category: exercise.category || "Uncategorized",
           is_cardio: true,
-          sets: cardioSets
+          sets: cardioSets,
         };
       } else {
-        const sets = Array(initialSets).fill().map(() => ({
-          weight: "",
-          reps: "",
-          notes: ""
-        }));
-        
+        const sets = Array(initialSets)
+          .fill()
+          .map(() => ({
+            weight: "",
+            reps: "",
+            notes: "",
+          }));
+
         return {
           name: exercise.name,
           category: exercise.category || "Uncategorized",
           is_cardio: false,
-          sets: sets
+          sets: sets,
         };
       }
     });
@@ -347,73 +354,93 @@ function WorkoutLog() {
     setShowSaveRoutineModal(true);
   };
 
-  // In handleSaveRoutine in WorkoutLog.jsx, modify the routineData object to include set details:
-
-const handleSaveRoutine = async () => {
-  if (!routineName.trim()) {
-    alert("Please enter a routine name.");
-    return;
-  }
-
-  try {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      alert("You need to be logged in to save routines.");
-      navigate("/login");
+  const handleSaveRoutine = async () => {
+    if (!routineName.trim()) {
+      alert("Please enter a routine name.");
       return;
     }
 
-    // Modified to include set information along with exercises
-    const routineData = {
-      name: routineName,
-      exercises: workoutExercises.map((exercise) => ({
-        name: exercise.name,
-        category: exercise.category || "Uncategorized",
-        is_cardio: exercise.is_cardio || false,
-        initial_sets: exercise.sets.length,
-        // Store a template of set information for each exercise
-        sets: exercise.sets.map(set => {
-          if (exercise.is_cardio) {
-            return {
-              distance: set.distance || null,
-              duration: set.duration || null,
-              intensity: set.intensity || "",
-              notes: set.notes || ""
-            };
-          } else {
-            return {
-              weight: set.weight || null,
-              reps: set.reps || null,
-              notes: set.notes || ""
-            };
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        alert("You need to be logged in to save routines.");
+        navigate("/login");
+        return;
+      }
+
+      const routineData = {
+        name: routineName,
+        exercises: workoutExercises.map((exercise) => ({
+          name: exercise.name,
+          category: exercise.category || "Uncategorized",
+          is_cardio: exercise.is_cardio || false,
+          initial_sets: exercise.sets.length,
+        })),
+      };
+
+      const response = await fetch(`${API_BASE_URL}/routines`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(routineData),
+      });
+
+      // Handle potential 409 conflict (existing routine)
+      if (response.status === 409) {
+        const data = await response.json();
+        const confirmed = window.confirm(
+          `A routine named "${routineName}" already exists. Do you want to overwrite it?`
+        );
+
+        if (confirmed) {
+          const overwriteResponse = await fetch(
+            `${API_BASE_URL}/routines/${data.routine_id}/overwrite`,
+            {
+              method: "PUT",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify(routineData),
+            }
+          );
+
+          if (!overwriteResponse.ok) {
+            const errorText = await overwriteResponse.text();
+            console.error("Server response:", errorText);
+            throw new Error(
+              `Failed to overwrite routine: ${overwriteResponse.status}`
+            );
           }
-        })
-      })),
-    };
 
-    const response = await fetch(`${API_BASE_URL}/routines`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(routineData),
-    });
+          alert("Routine updated successfully!");
+          setShowSaveRoutineModal(false);
+          return;
+        } else {
+          alert("Operation cancelled. Routine was not overwritten.");
+          setShowSaveRoutineModal(false);
+          return;
+        }
+      }
 
-    if (!response.ok) {
-      throw new Error("Failed to save routine");
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Server response:", errorText);
+        throw new Error(`Server error: ${response.status}`);
+      }
+
+      // Fetch the updated list of routines
+      fetchRoutines(token);
+
+      alert("Routine saved successfully!");
+      setShowSaveRoutineModal(false);
+    } catch (error) {
+      console.error("Error saving routine:", error);
+      alert(`Error saving routine: ${error.message}. Please try again.`);
     }
-
-    // Fetch the updated list of routines
-    fetchRoutines(localStorage.getItem("token"));
-    
-    alert("Routine saved successfully!");
-    setShowSaveRoutineModal(false);
-  } catch (error) {
-    console.error("Error saving routine:", error);
-    alert("Error saving routine. Please try again.");
-  }
-};
+  };
 
   const handleAddExercise = (exercise) => {
     const initialSets = exercise.initialSets || 1;
@@ -874,10 +901,11 @@ const handleSaveRoutine = async () => {
                 <FaTimes className="text-xl" />
               </button>
             </div>
-            
+
             <div className="mb-4">
               <p className="text-gray-600 dark:text-gray-400">
-                Choose a routine to start your workout with predefined exercises.
+                Choose a routine to start your workout with predefined
+                exercises.
               </p>
             </div>
 
@@ -915,12 +943,16 @@ const handleSaveRoutine = async () => {
                             {routine.name}
                           </h3>
                           <p className="text-sm text-gray-600 dark:text-gray-400">
-                            {routine.workout && routine.workout.exercises ? (
-                              `${routine.workout.exercises.length} Exercise${routine.workout.exercises.length !== 1 ? 's' : ''}`
-                            ) : "No exercises"}
+                            {routine.workout && routine.workout.exercises
+                              ? `${routine.workout.exercises.length} Exercise${
+                                  routine.workout.exercises.length !== 1
+                                    ? "s"
+                                    : ""
+                                }`
+                              : "No exercises"}
                           </p>
                         </div>
-                        <button 
+                        <button
                           className="flex items-center justify-center bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-lg"
                           onClick={(e) => {
                             e.stopPropagation();
@@ -937,7 +969,7 @@ const handleSaveRoutine = async () => {
             )}
 
             <div className="mt-6 flex justify-end">
-              <button 
+              <button
                 onClick={() => {
                   setShowRoutinesSelector(false);
                   navigate("/routines");

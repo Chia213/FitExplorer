@@ -21,7 +21,7 @@ const getIntensityName = (intensityValue) => {
     Medium: "Medium",
     High: "High",
     "Very High": "Very High",
-
+    // Handle numeric values too in case they come from the backend
     0: "-",
     1: "Low",
     2: "Medium",

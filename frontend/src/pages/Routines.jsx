@@ -83,81 +83,81 @@ function Routines() {
   const handleStartEditRoutine = (routine) => {
     setEditingRoutine(routine);
     setEditedRoutineName(routine.name);
-    setEditedExercises(
-      routine.workout?.exercises || routine.exercises || []
-    );
+    setEditedExercises(routine.workout?.exercises || routine.exercises || []);
   };
 
   // In Routines.jsx, update the handleSaveEditedRoutine function to include set details
 
-const handleSaveEditedRoutine = async () => {
-  // Basic validation
-  if (!editedRoutineName.trim()) {
-    alert("Routine name cannot be empty");
-    return;
-  }
+  const handleSaveEditedRoutine = async () => {
+    // Basic validation
+    if (!editedRoutineName.trim()) {
+      alert("Routine name cannot be empty");
+      return;
+    }
 
-  if (editedExercises.length === 0) {
-    alert("Routine must have at least one exercise");
-    return;
-  }
+    if (editedExercises.length === 0) {
+      alert("Routine must have at least one exercise");
+      return;
+    }
 
-  try {
-    const token = localStorage.getItem("token");
-    const response = await fetch(
-      `${backendURL}/routines/${editingRoutine.id}`,
-      {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          name: editedRoutineName,
-          exercises: editedExercises.map((exercise) => ({
-            name: exercise.name,
-            category: exercise.category || "Uncategorized",
-            is_cardio: exercise.is_cardio || false,
-            initial_sets: exercise.initial_sets || exercise.sets?.length || 1,
-            // Add this to include set information
-            sets: Array.isArray(exercise.sets) ? exercise.sets.map(set => {
-              if (exercise.is_cardio) {
-                return {
-                  distance: set.distance || null,
-                  duration: set.duration || null,
-                  intensity: set.intensity || "",
-                  notes: set.notes || ""
-                };
-              } else {
-                return {
-                  weight: set.weight || null,
-                  reps: set.reps || null,
-                  notes: set.notes || ""
-                };
-              }
-            }) : []
-          })),
-        }),
-      }
-    );
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(
+        `${backendURL}/routines/${editingRoutine.id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            name: editedRoutineName,
+            exercises: editedExercises.map((exercise) => ({
+              name: exercise.name,
+              category: exercise.category || "Uncategorized",
+              is_cardio: exercise.is_cardio || false,
+              initial_sets: exercise.initial_sets || exercise.sets?.length || 1,
+              // Add this to include set information
+              sets: Array.isArray(exercise.sets)
+                ? exercise.sets.map((set) => {
+                    if (exercise.is_cardio) {
+                      return {
+                        distance: set.distance || null,
+                        duration: set.duration || null,
+                        intensity: set.intensity || "",
+                        notes: set.notes || "",
+                      };
+                    } else {
+                      return {
+                        weight: set.weight || null,
+                        reps: set.reps || null,
+                        notes: set.notes || "",
+                      };
+                    }
+                  })
+                : [],
+            })),
+          }),
+        }
+      );
 
-    if (!response.ok) throw new Error("Failed to update routine");
+      if (!response.ok) throw new Error("Failed to update routine");
 
-    // Update the routine in the list
-    const updatedRoutine = await response.json();
-    setRoutines((prev) =>
-      prev.map((r) => (r.id === editingRoutine.id ? updatedRoutine : r))
-    );
+      // Update the routine in the list
+      const updatedRoutine = await response.json();
+      setRoutines((prev) =>
+        prev.map((r) => (r.id === editingRoutine.id ? updatedRoutine : r))
+      );
 
-    // Close the editing modal
-    setEditingRoutine(null);
-    setEditedRoutineName("");
-    setEditedExercises([]);
-  } catch (err) {
-    console.error("Error updating routine:", err);
-    alert("Failed to update routine. Please try again.");
-  }
-};
+      // Close the editing modal
+      setEditingRoutine(null);
+      setEditedRoutineName("");
+      setEditedExercises([]);
+    } catch (err) {
+      console.error("Error updating routine:", err);
+      alert("Failed to update routine. Please try again.");
+    }
+  };
   const handleStartWorkout = (routine) => {
     localStorage.setItem("activeWorkout", JSON.stringify(routine));
     navigate("/workout-log", { state: { routineId: routine.id } });
@@ -171,10 +171,10 @@ const handleSaveEditedRoutine = async () => {
 
   const handleAddExercise = () => {
     navigate("/workout-log", {
-      state: { 
-        editingRoutineId: editingRoutine.id, 
-        routineName: editedRoutineName 
-      }
+      state: {
+        editingRoutineId: editingRoutine.id,
+        routineName: editedRoutineName,
+      },
     });
   };
 
@@ -271,74 +271,83 @@ const handleSaveEditedRoutine = async () => {
                 </div>
 
                 {expandedRoutines[routine.id] &&
-  routine.workout &&
-  routine.workout.exercises && (
-    <div className="bg-[#2C3E50] p-4">
-      <table className="w-full table-fixed">
-        <thead>
-          <tr className="text-left border-b border-gray-700">
-            <th className="pb-2 w-3/8">Exercise</th>
-            <th className="pb-2 w-1/8 text-center">Sets</th>
-            <th className="pb-2 w-1/8 text-center">Reps</th>
-            <th className="pb-2 w-1/4 text-center">Weight</th>
-          </tr>
-        </thead>
-        <tbody>
-          {routine.workout.exercises.map((exercise, index) => (
-            <tr
-              key={index}
-              className="border-b border-gray-700 last:border-b-0"
-            >
-              <td className="py-2">{exercise.name}</td>
-              <td className="py-2 text-center">
-                {exercise.sets.length}
-              </td>
-              <td className="py-2 text-center">
-                {exercise.is_cardio ? (
-                  "Cardio"
-                ) : (
-                  <>
-                    {exercise.sets.some(set => set.reps) ? (
-                      exercise.sets.map((set, setIndex) => (
-                        <div key={setIndex} className="text-sm">
-                          {set.reps ? `${set.reps}` : "-"}
-                        </div>
-                      ))
-                    ) : (
-                      "-"
-                    )}
-                  </>
-                )}
-              </td>
-              <td className="py-2 text-center">
-                {exercise.is_cardio ? (
-                  exercise.sets.map((set, setIndex) => (
-                    <div key={setIndex} className="text-sm flex justify-center space-x-1">
-                      {set.distance ? `${set.distance}km` : ""} 
-                      {set.duration ? `${set.duration}min` : ""}
-                      {set.intensity ? ` (${set.intensity})` : ""}
+                  routine.workout &&
+                  routine.workout.exercises && (
+                    <div className="bg-[#2C3E50] p-4">
+                      <table className="w-full table-fixed">
+                        <thead>
+                          <tr className="text-left border-b border-gray-700">
+                            <th className="pb-2 w-3/8">Exercise</th>
+                            <th className="pb-2 w-1/8 text-center">Sets</th>
+                            <th className="pb-2 w-1/8 text-center">Reps</th>
+                            <th className="pb-2 w-1/4 text-center">Weight</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {routine.workout.exercises.map((exercise, index) => (
+                            <tr
+                              key={index}
+                              className="border-b border-gray-700 last:border-b-0"
+                            >
+                              <td className="py-2">{exercise.name}</td>
+                              <td className="py-2 text-center">
+                                {exercise.sets.length}
+                              </td>
+                              <td className="py-2 text-center">
+                                {exercise.is_cardio ? (
+                                  "Cardio"
+                                ) : (
+                                  <>
+                                    {exercise.sets.some((set) => set.reps)
+                                      ? exercise.sets.map((set, setIndex) => (
+                                          <div
+                                            key={setIndex}
+                                            className="text-sm"
+                                          >
+                                            {set.reps ? `${set.reps}` : "-"}
+                                          </div>
+                                        ))
+                                      : "-"}
+                                  </>
+                                )}
+                              </td>
+                              <td className="py-2 text-center">
+                                {exercise.is_cardio ? (
+                                  exercise.sets.map((set, setIndex) => (
+                                    <div
+                                      key={setIndex}
+                                      className="text-sm flex justify-center space-x-1"
+                                    >
+                                      {set.distance ? `${set.distance}km` : ""}
+                                      {set.duration ? `${set.duration}min` : ""}
+                                      {set.intensity
+                                        ? ` (${set.intensity})`
+                                        : ""}
+                                    </div>
+                                  ))
+                                ) : (
+                                  <>
+                                    {exercise.sets.some((set) => set.weight)
+                                      ? exercise.sets.map((set, setIndex) => (
+                                          <div
+                                            key={setIndex}
+                                            className="text-sm"
+                                          >
+                                            {set.weight
+                                              ? `${set.weight} kg`
+                                              : "-"}
+                                          </div>
+                                        ))
+                                      : "-"}
+                                  </>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
                     </div>
-                  ))
-                ) : (
-                  <>
-                    {exercise.sets.some(set => set.weight) ? (
-                      exercise.sets.map((set, setIndex) => (
-                        <div key={setIndex} className="text-sm">
-                          {set.weight ? `${set.weight} kg` : "-"}
-                        </div>
-                      ))
-                    ) : (
-                      "-"
-                    )}
-                  </>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  )}
+                  )}
               </div>
             ))}
           </div>
