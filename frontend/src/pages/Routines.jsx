@@ -94,12 +94,12 @@ function Routines() {
       alert("Routine name cannot be empty");
       return;
     }
-  
+
     if (editedExercises.length === 0) {
       alert("Routine must have at least one exercise");
       return;
     }
-  
+
     try {
       const token = localStorage.getItem("token");
       const response = await fetch(
@@ -140,15 +140,15 @@ function Routines() {
           }),
         }
       );
-  
+
       if (!response.ok) throw new Error("Failed to update routine");
-  
+
       // Update the routine in the list
       const updatedRoutine = await response.json();
       setRoutines((prev) =>
         prev.map((r) => (r.id === editingRoutine.id ? updatedRoutine : r))
       );
-  
+
       // Close the editing modal
       setEditingRoutine(null);
       setEditedRoutineName("");
@@ -161,67 +161,79 @@ function Routines() {
 
   const handleStartWorkout = (routine) => {
     // Prepare the workout data from the routine
-    if (!routine || !routine.workout || !routine.workout.exercises || routine.workout.exercises.length === 0) {
+    if (
+      !routine ||
+      !routine.workout ||
+      !routine.workout.exercises ||
+      routine.workout.exercises.length === 0
+    ) {
       alert("This routine doesn't have any exercises to start a workout.");
       return;
     }
 
     // Create the workout exercises data structure from the routine
-    const workoutExercises = routine.workout.exercises.map(exercise => {
+    const workoutExercises = routine.workout.exercises.map((exercise) => {
       const isCardio = Boolean(exercise.is_cardio);
       const initialSets = exercise.initial_sets || exercise.sets?.length || 1;
-      
+
       // If the exercise already has sets, use those
       if (Array.isArray(exercise.sets) && exercise.sets.length > 0) {
         return {
           name: exercise.name,
           category: exercise.category || "Uncategorized",
           is_cardio: isCardio,
-          sets: exercise.sets.map(set => {
+          sets: exercise.sets.map((set) => {
             if (isCardio) {
               return {
                 distance: set.distance || "",
                 duration: set.duration || "",
                 intensity: set.intensity || "",
-                notes: set.notes || ""
+                notes: set.notes || "",
               };
             } else {
               return {
                 weight: set.weight || "",
                 reps: set.reps || "",
-                notes: set.notes || ""
+                notes: set.notes || "",
               };
             }
-          })
+          }),
         };
       }
-      
+
       // Otherwise create empty sets based on the exercise type
       const sets = isCardio
-        ? Array(initialSets).fill().map(() => ({
-            distance: "",
-            duration: "",
-            intensity: "",
-            notes: ""
-          }))
-        : Array(initialSets).fill().map(() => ({
-            weight: "",
-            reps: "",
-            notes: ""
-          }));
-      
+        ? Array(initialSets)
+            .fill()
+            .map(() => ({
+              distance: "",
+              duration: "",
+              intensity: "",
+              notes: "",
+            }))
+        : Array(initialSets)
+            .fill()
+            .map(() => ({
+              weight: "",
+              reps: "",
+              notes: "",
+            }));
+
       return {
         name: exercise.name,
         category: exercise.category || "Uncategorized",
         is_cardio: isCardio,
-        sets: sets
+        sets: sets,
       };
     });
 
     // Store the exercise data and workout name in localStorage for WorkoutLog to use
-    localStorage.setItem("preloadedWorkoutExercises", JSON.stringify(workoutExercises));
+    localStorage.setItem(
+      "preloadedWorkoutExercises",
+      JSON.stringify(workoutExercises)
+    );
     localStorage.setItem("preloadedWorkoutName", routine.name);
-    
+
     // Navigate to the workout log
     navigate("/workout-log", { state: { routineId: routine.id } });
   };
@@ -239,23 +251,27 @@ function Routines() {
   const handleSelectExercise = (exercise) => {
     // Create empty sets based on exercise type and initialSets
     const initialSets = exercise.initialSets || 1;
-    
+
     let sets;
     if (exercise.is_cardio) {
-      sets = Array(initialSets).fill().map(() => ({
-        distance: "",
-        duration: "",
-        intensity: "",
-        notes: ""
-      }));
+      sets = Array(initialSets)
+        .fill()
+        .map(() => ({
+          distance: "",
+          duration: "",
+          intensity: "",
+          notes: "",
+        }));
     } else {
-      sets = Array(initialSets).fill().map(() => ({
-        weight: "",
-        reps: "",
-        notes: ""
-      }));
+      sets = Array(initialSets)
+        .fill()
+        .map(() => ({
+          weight: "",
+          reps: "",
+          notes: "",
+        }));
     }
-    
+
     // Add the new exercise to edited exercises
     setEditedExercises([
       ...editedExercises,
@@ -264,10 +280,10 @@ function Routines() {
         category: exercise.category || "Uncategorized",
         is_cardio: exercise.is_cardio,
         initial_sets: initialSets,
-        sets: sets
-      }
+        sets: sets,
+      },
     ]);
-    
+
     // Close the add exercise modal
     setShowAddExerciseModal(false);
   };
@@ -368,83 +384,102 @@ function Routines() {
                 </div>
 
                 {expandedRoutines[routine.id] &&
-  routine.workout &&
-  routine.workout.exercises && (
-    <div className="bg-[#2C3E50] p-4">
-      {routine.workout.exercises.map((exercise, index) => (
-        <div key={index} className="mb-4 last:mb-0">
-          <h3 className="text-lg font-medium text-white mb-2 border-b border-gray-700 pb-2">
-            {exercise.name}
-            <span className="ml-2 text-sm text-gray-400">
-              {exercise.is_cardio ? "(Cardio)" : "(Strength)"}
-            </span>
-          </h3>
-          
-          <table className="w-full table-fixed mb-4">
-            <thead>
-              <tr className="text-left border-b border-gray-700">
-                <th className="pb-2 w-1/8">Set</th>
-                {exercise.is_cardio ? (
-                  <>
-                    <th className="pb-2 w-1/4 text-center">Distance</th>
-                    <th className="pb-2 w-1/4 text-center">Duration</th>
-                    <th className="pb-2 w-1/4 text-center">Intensity</th>
-                  </>
-                ) : (
-                  <>
-                    <th className="pb-2 w-3/8 text-center">Weight</th>
-                    <th className="pb-2 w-3/8 text-center">Reps</th>
-                  </>
-                )}
-              </tr>
-            </thead>
-            <tbody>
-              {exercise.sets && exercise.sets.length > 0 ? (
-                exercise.sets.map((set, setIndex) => (
-                  <tr
-                    key={setIndex}
-                    className="border-b border-gray-700 last:border-b-0"
-                  >
-                    <td className="py-2">{setIndex + 1}</td>
-                    {exercise.is_cardio ? (
-                      <>
-                        <td className="py-2 text-center">
-                          {set.distance ? `${set.distance} km` : "-"}
-                        </td>
-                        <td className="py-2 text-center">
-                          {set.duration ? `${set.duration} min` : "-"}
-                        </td>
-                        <td className="py-2 text-center">
-                          {set.intensity || "-"}
-                        </td>
-                      </>
-                    ) : (
-                      <>
-                        <td className="py-2 text-center">
-                          {set.weight ? `${set.weight} kg` : "-"}
-                        </td>
-                        <td className="py-2 text-center">
-                          {set.reps || "-"}
-                        </td>
-                      </>
-                    )}
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={exercise.is_cardio ? 4 : 3} className="py-2 text-center text-gray-400">
-                    {exercise.is_cardio ? 
-                      "No cardio data recorded" : 
-                      "No sets recorded"}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      ))}
-    </div>
-  )}
+                  routine.workout &&
+                  routine.workout.exercises && (
+                    <div className="bg-[#2C3E50] p-4">
+                      {routine.workout.exercises.map((exercise, index) => (
+                        <div key={index} className="mb-4 last:mb-0">
+                          <h3 className="text-lg font-medium text-white mb-2 border-b border-gray-700 pb-2">
+                            {exercise.name}
+                            <span className="ml-2 text-sm text-gray-400">
+                              {exercise.is_cardio ? "(Cardio)" : "(Strength)"}
+                            </span>
+                          </h3>
+
+                          <table className="w-full table-fixed mb-4">
+                            <thead>
+                              <tr className="text-left border-b border-gray-700">
+                                <th className="pb-2 w-1/8">Set</th>
+                                {exercise.is_cardio ? (
+                                  <>
+                                    <th className="pb-2 w-1/4 text-center">
+                                      Distance
+                                    </th>
+                                    <th className="pb-2 w-1/4 text-center">
+                                      Duration
+                                    </th>
+                                    <th className="pb-2 w-1/4 text-center">
+                                      Intensity
+                                    </th>
+                                  </>
+                                ) : (
+                                  <>
+                                    <th className="pb-2 w-3/8 text-center">
+                                      Weight
+                                    </th>
+                                    <th className="pb-2 w-3/8 text-center">
+                                      Reps
+                                    </th>
+                                  </>
+                                )}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {exercise.sets && exercise.sets.length > 0 ? (
+                                exercise.sets.map((set, setIndex) => (
+                                  <tr
+                                    key={setIndex}
+                                    className="border-b border-gray-700 last:border-b-0"
+                                  >
+                                    <td className="py-2">{setIndex + 1}</td>
+                                    {exercise.is_cardio ? (
+                                      <>
+                                        <td className="py-2 text-center">
+                                          {set.distance
+                                            ? `${set.distance} km`
+                                            : "-"}
+                                        </td>
+                                        <td className="py-2 text-center">
+                                          {set.duration
+                                            ? `${set.duration} min`
+                                            : "-"}
+                                        </td>
+                                        <td className="py-2 text-center">
+                                          {set.intensity || "-"}
+                                        </td>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <td className="py-2 text-center">
+                                          {set.weight
+                                            ? `${set.weight} kg`
+                                            : "-"}
+                                        </td>
+                                        <td className="py-2 text-center">
+                                          {set.reps || "-"}
+                                        </td>
+                                      </>
+                                    )}
+                                  </tr>
+                                ))
+                              ) : (
+                                <tr>
+                                  <td
+                                    colSpan={exercise.is_cardio ? 4 : 3}
+                                    className="py-2 text-center text-gray-400"
+                                  >
+                                    {exercise.is_cardio
+                                      ? "No cardio data recorded"
+                                      : "No sets recorded"}
+                                  </td>
+                                </tr>
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
+                      ))}
+                    </div>
+                  )}
               </div>
             ))}
           </div>
