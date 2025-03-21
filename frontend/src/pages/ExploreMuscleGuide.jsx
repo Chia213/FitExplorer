@@ -579,7 +579,6 @@ function ExploreMuscleGuide() {
                         onClick={() => setViewingExercise(exercise)}
                         className="flex items-center w-full text-left hover:text-blue-500"
                       >
-                        <span className="mr-2 text-green-500">✓</span>
                         <span className="font-medium">{exercise}</span>
                       </button>
                     </li>
