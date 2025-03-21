@@ -10,6 +10,7 @@ import {
   FaPlus,
   FaSave,
 } from "react-icons/fa";
+import AddExercise from "./AddExercise"; // Import the AddExercise component
 
 const backendURL = "http://localhost:8000";
 
@@ -21,6 +22,7 @@ function Routines() {
   const [editingRoutine, setEditingRoutine] = useState(null);
   const [editedRoutineName, setEditedRoutineName] = useState("");
   const [editedExercises, setEditedExercises] = useState([]);
+  const [showAddExerciseModal, setShowAddExerciseModal] = useState(false);
 
   const navigate = useNavigate();
 
@@ -85,8 +87,6 @@ function Routines() {
     setEditedRoutineName(routine.name);
     setEditedExercises(routine.workout?.exercises || routine.exercises || []);
   };
-
-  // In Routines.jsx, update the handleSaveEditedRoutine function to include set details
 
   const handleSaveEditedRoutine = async () => {
     // Basic validation
@@ -232,13 +232,44 @@ function Routines() {
     );
   };
 
-  const handleAddExercise = () => {
-    navigate("/workout-log", {
-      state: {
-        editingRoutineId: editingRoutine.id,
-        routineName: editedRoutineName,
-      },
-    });
+  const handleAddExerciseClick = () => {
+    setShowAddExerciseModal(true);
+  };
+
+  const handleSelectExercise = (exercise) => {
+    // Create empty sets based on exercise type and initialSets
+    const initialSets = exercise.initialSets || 1;
+    
+    let sets;
+    if (exercise.is_cardio) {
+      sets = Array(initialSets).fill().map(() => ({
+        distance: "",
+        duration: "",
+        intensity: "",
+        notes: ""
+      }));
+    } else {
+      sets = Array(initialSets).fill().map(() => ({
+        weight: "",
+        reps: "",
+        notes: ""
+      }));
+    }
+    
+    // Add the new exercise to edited exercises
+    setEditedExercises([
+      ...editedExercises,
+      {
+        name: exercise.name,
+        category: exercise.category || "Uncategorized",
+        is_cardio: exercise.is_cardio,
+        initial_sets: initialSets,
+        sets: sets
+      }
+    ]);
+    
+    // Close the add exercise modal
+    setShowAddExerciseModal(false);
   };
 
   if (loading) {
@@ -450,7 +481,7 @@ function Routines() {
                 <div className="flex justify-between items-center mb-2">
                   <h3 className="text-lg font-semibold">Exercises</h3>
                   <button
-                    onClick={handleAddExercise}
+                    onClick={handleAddExerciseClick}
                     className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded flex items-center"
                   >
                     <FaPlus className="mr-2" /> Add Exercise
@@ -503,6 +534,14 @@ function Routines() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Add Exercise Modal */}
+      {showAddExerciseModal && (
+        <AddExercise
+          onClose={() => setShowAddExerciseModal(false)}
+          onSelectExercise={handleSelectExercise}
+        />
       )}
     </div>
   );
