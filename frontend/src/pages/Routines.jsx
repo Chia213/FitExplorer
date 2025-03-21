@@ -158,8 +158,71 @@ function Routines() {
       alert("Failed to update routine. Please try again.");
     }
   };
+
   const handleStartWorkout = (routine) => {
-    localStorage.setItem("activeWorkout", JSON.stringify(routine));
+    // Prepare the workout data from the routine
+    if (!routine || !routine.workout || !routine.workout.exercises || routine.workout.exercises.length === 0) {
+      alert("This routine doesn't have any exercises to start a workout.");
+      return;
+    }
+
+    // Create the workout exercises data structure from the routine
+    const workoutExercises = routine.workout.exercises.map(exercise => {
+      const isCardio = Boolean(exercise.is_cardio);
+      const initialSets = exercise.initial_sets || exercise.sets?.length || 1;
+      
+      // If the exercise already has sets, use those
+      if (Array.isArray(exercise.sets) && exercise.sets.length > 0) {
+        return {
+          name: exercise.name,
+          category: exercise.category || "Uncategorized",
+          is_cardio: isCardio,
+          sets: exercise.sets.map(set => {
+            if (isCardio) {
+              return {
+                distance: set.distance || "",
+                duration: set.duration || "",
+                intensity: set.intensity || "",
+                notes: set.notes || ""
+              };
+            } else {
+              return {
+                weight: set.weight || "",
+                reps: set.reps || "",
+                notes: set.notes || ""
+              };
+            }
+          })
+        };
+      }
+      
+      // Otherwise create empty sets based on the exercise type
+      const sets = isCardio
+        ? Array(initialSets).fill().map(() => ({
+            distance: "",
+            duration: "",
+            intensity: "",
+            notes: ""
+          }))
+        : Array(initialSets).fill().map(() => ({
+            weight: "",
+            reps: "",
+            notes: ""
+          }));
+      
+      return {
+        name: exercise.name,
+        category: exercise.category || "Uncategorized",
+        is_cardio: isCardio,
+        sets: sets
+      };
+    });
+
+    // Store the exercise data and workout name in localStorage for WorkoutLog to use
+    localStorage.setItem("preloadedWorkoutExercises", JSON.stringify(workoutExercises));
+    localStorage.setItem("preloadedWorkoutName", routine.name);
+    
+    // Navigate to the workout log
     navigate("/workout-log", { state: { routineId: routine.id } });
   };
 
@@ -241,6 +304,7 @@ function Routines() {
                         handleStartWorkout(routine);
                       }}
                       className="text-blue-400 hover:text-blue-300"
+                      title="Start this routine"
                     >
                       <FaPlay />
                     </button>
@@ -250,6 +314,7 @@ function Routines() {
                         handleStartEditRoutine(routine);
                       }}
                       className="text-green-400 hover:text-green-300"
+                      title="Edit routine"
                     >
                       <FaEdit />
                     </button>
@@ -259,6 +324,7 @@ function Routines() {
                         handleDeleteRoutine(routine.id);
                       }}
                       className="text-red-400 hover:text-red-300"
+                      title="Delete routine"
                     >
                       <FaTrash />
                     </button>
