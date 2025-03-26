@@ -1,6 +1,7 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
 from datetime import datetime
 from typing import Optional, List
+import json
 
 
 class UserCreate(BaseModel):
@@ -173,6 +174,7 @@ class RoutineSetCreate(BaseModel):
     intensity: Optional[str] = None
     notes: Optional[str] = None
 
+
 class RoutineExerciseCreate(BaseModel):
     name: str
     category: Optional[str] = "Uncategorized"
@@ -208,3 +210,32 @@ class GoogleTokenVerifyRequest(BaseModel):
 
 class GoogleAuthResponse(Token):
     pass
+
+
+class SavedWorkoutProgramCreate(BaseModel):
+    program_data: dict  # Ensure this is a dict, not a string
+    current_week: Optional[int] = 1
+    completed_weeks: Optional[List[int]] = []  # Ensure this is a list
+
+
+class SavedWorkoutProgramResponse(BaseModel):
+    id: int
+    program_data: dict
+    created_at: datetime
+    current_week: int
+    completed_weeks: Optional[List[int]] = []
+
+    class Config:
+        from_attributes = True
+
+    @field_validator('program_data', mode='before')
+    def parse_program_data(cls, v):
+        if isinstance(v, str):
+            return json.loads(v)
+        return v
+
+    @field_validator('completed_weeks', mode='before')
+    def parse_completed_weeks(cls, v):
+        if isinstance(v, str):
+            return json.loads(v)
+        return v or []

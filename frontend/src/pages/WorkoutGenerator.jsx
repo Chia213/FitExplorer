@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { createSavedProgram } from "../api/savedProgramsApi";
 import {
   FaDumbbell,
   FaHourglassHalf,
@@ -224,6 +225,27 @@ function WorkoutGenerator() {
         return preferences.targetMuscles.length > 0 ? true : false;
       default:
         return true;
+    }
+  };
+
+  const saveWorkoutProgram = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setShowLoginPrompt(true);
+        return;
+      }
+
+      await createSavedProgram(workout, token);
+
+      setShowSuccess(true);
+      setTimeout(() => {
+        setShowSuccess(false);
+        navigate("/saved-programs");
+      }, 3000);
+    } catch (error) {
+      console.error("Error saving workout program:", error);
+      alert("Failed to save workout program. Please try again.");
     }
   };
 
@@ -1679,30 +1701,7 @@ function WorkoutGenerator() {
             </button>
 
             <button
-              onClick={() => {
-                if (!isAuthenticated) {
-                  setShowLoginPrompt(true);
-                  return;
-                }
-
-                try {
-                  const savedWorkouts = JSON.parse(
-                    localStorage.getItem("savedWorkouts") || "[]"
-                  );
-                  savedWorkouts.push(workout);
-                  localStorage.setItem(
-                    "savedWorkouts",
-                    JSON.stringify(savedWorkouts)
-                  );
-
-                  setShowSuccess(true);
-                  setTimeout(() => setShowSuccess(false), 3000);
-
-                  navigate("/saved-workouts");
-                } catch (error) {
-                  console.error("Error saving workout to localStorage:", error);
-                }
-              }}
+              onClick={saveWorkoutProgram}
               className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center justify-center"
             >
               <FaRegSave className="mr-2" /> Save Workout Program
@@ -1710,7 +1709,7 @@ function WorkoutGenerator() {
           </div>
           {showSuccess && (
             <div className="text-center mt-3 text-sm text-green-600 dark:text-green-500">
-              Workout saved successfully to your profile!
+              Workout saved successfully to your Account!
             </div>
           )}
         </div>

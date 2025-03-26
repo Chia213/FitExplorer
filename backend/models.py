@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Float, Boolean
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Float, Boolean, JSON
 from sqlalchemy.orm import relationship
 from database import Base
 from datetime import datetime, timezone
@@ -13,6 +13,11 @@ class User(Base):
     username = Column(String, unique=True, nullable=False)
     profile_picture = Column(String, nullable=True)
 
+    saved_programs = relationship(
+        "SavedWorkoutProgram",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
     workouts = relationship(
         "Workout", back_populates="user", cascade="all, delete-orphan")
     preferences = relationship(
@@ -111,3 +116,17 @@ class Routine(Base):
 
     user = relationship("User", back_populates="routines")
     workout = relationship("Workout", back_populates="routines")
+
+
+class SavedWorkoutProgram(Base):
+    __tablename__ = "saved_workout_programs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey(
+        "users.id", ondelete="CASCADE"), nullable=False)
+    program_data = Column(JSON)  # Use JSON column type instead of String
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))
+    current_week = Column(Integer, default=1)
+    completed_weeks = Column(JSON)  # Use JSON column type for lists
+
+    user = relationship("User", back_populates="saved_programs")

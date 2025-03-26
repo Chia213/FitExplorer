@@ -1,5 +1,6 @@
 import uuid
 import os
+import json
 from fastapi import FastAPI, Depends, HTTPException, File, UploadFile, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from background_task import send_summary_emails
@@ -11,7 +12,8 @@ from database import engine, Base, get_db
 from datetime import datetime, timezone
 from auth import router as auth_router
 from dependencies import get_current_user
-from models import Workout, User, Exercise, Set, UserPreferences, Routine, CustomExercise
+from typing import List
+from models import Workout, User, Exercise, Set, UserPreferences, Routine, CustomExercise, SavedWorkoutProgram
 from schemas import (
     WorkoutCreate,
     WorkoutResponse,
@@ -20,7 +22,9 @@ from schemas import (
     WorkoutStatsResponse,
     ChangePasswordRequest,
     RoutineCreate,
-    RoutineResponse
+    RoutineResponse,
+    SavedWorkoutProgramCreate,
+    SavedWorkoutProgramResponse
 )
 from security import hash_password, verify_password
 
@@ -642,3 +646,103 @@ def get_routines(user: User = Depends(get_current_user), db: Session = Depends(g
     except Exception as e:
         print(f"Error fetching routines: {e}")
         raise HTTPException(status_code=500, detail="Error fetching routines")
+
+
+@app.post("/saved-programs", response_model=SavedWorkoutProgramResponse)
+def create_saved_program(
+    program: SavedWorkoutProgramCreate,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    try:
+        new_saved_program = SavedWorkoutProgram(
+            user_id=user.id,
+            # Convert dict to JSON string
+            program_data=json.dumps(program.program_data),
+            current_week=program.current_week or 1,
+            completed_weeks=json.dumps(
+                program.completed_weeks) if program.completed_weeks else "[]"
+        )
+        db.add(new_saved_program)
+        db.commit()
+        db.refresh(new_saved_program)
+
+        return new_saved_program
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/saved-programs", response_model=List[SavedWorkoutProgramResponse])
+def get_saved_programs(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    try:
+        saved_programs = db.query(SavedWorkoutProgram)\
+            .filter(SavedWorkoutProgram.user_id == user.id)\
+            .order_by(SavedWorkoutProgram.created_at.desc())\
+            .all()
+        return saved_programs
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.put("/saved-programs/{program_id}", response_model=SavedWorkoutProgramResponse)
+def update_saved_program(
+    program_id: int,
+    program_data: SavedWorkoutProgramCreate,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    try:
+        saved_program = db.query(SavedWorkoutProgram)\
+            .filter(SavedWorkoutProgram.id == program_id, SavedWorkoutProgram.user_id == user.id)\
+            .first()
+
+        if not saved_program:
+            raise HTTPException(
+                status_code=404, detail="Saved program not found")
+
+        saved_program.program_data = json.dumps(program_data.program_data)
+        saved_program.current_week = program_data.current_week
+        saved_program.completed_weeks = json.dumps(
+            program_data.completed_weeks) if program_data.completed_weeks else "[]"
+
+        db.commit()
+        db.refresh(saved_program)
+
+        # Parse back to dictionary
+        saved_program.program_data = json.loads(saved_program.program_data)
+        if saved_program.completed_weeks:
+            saved_program.completed_weeks = json.loads(
+                saved_program.completed_weeks)
+
+        return saved_program
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.delete("/saved-programs/{program_id}")
+def delete_saved_program(
+    program_id: int,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    try:
+        saved_program = db.query(SavedWorkoutProgram)\
+            .filter(SavedWorkoutProgram.id == program_id, SavedWorkoutProgram.user_id == user.id)\
+            .first()
+
+        if not saved_program:
+            raise HTTPException(
+                status_code=404, detail="Saved program not found")
+
+        db.delete(saved_program)
+        db.commit()
+
+        return {"message": "Saved program deleted successfully"}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))

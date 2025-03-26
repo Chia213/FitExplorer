@@ -11,7 +11,8 @@ import AddExercise from "./pages/AddExercise";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Profile from "./pages/Profile";
-import SavedWorkouts from "./pages/SavedWorkouts";
+import SavedPrograms from "./pages/SavedPrograms";
+import ProgramTracker from "./pages/ProgramTracker";
 import ChangePassword from "./pages/ChangePassword";
 import ScrollToTop from "./components/ScrollToTop";
 import { ThemeProvider } from "./hooks/useTheme";
@@ -37,7 +38,8 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/profile" element={<Profile />} />
-            <Route path="/saved-workouts" element={<SavedWorkouts />} />
+            <Route path="/saved-programs" element={<SavedPrograms />} />
+            <Route path="/program-tracker" element={<ProgramTracker />} />
             <Route path="/change-password" element={<ChangePassword />} />
           </Routes>
         </Layout>
