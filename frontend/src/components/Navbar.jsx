@@ -7,6 +7,7 @@ import {
   FaSearch,
   FaBars,
   FaTimes,
+  FaSave,
   FaSignOutAlt,
   FaHistory,
   FaListAlt,
@@ -251,6 +252,14 @@ function Navbar() {
                         >
                           Profile
                         </Link>
+                        <Link
+                          to="/saved-workouts"
+                          className="block p-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center"
+                        >
+                          <FaSave className="mr-2 text-indigo-500" /> Saved
+                          Programs
+                        </Link>
+
                         <button
                           onClick={handleLogout}
                           className="block w-full text-left p-3 hover:bg-red-500 hover:text-white transition-colors flex items-center"

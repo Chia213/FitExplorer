@@ -3,11 +3,12 @@ import { Link, useNavigate } from "react-router-dom";
 import {
   FaDumbbell,
   FaHourglassHalf,
-  FaUserAlt,
+  FaUser,
   FaWeightHanging,
   FaRunning,
   FaRegSave,
   FaPrint,
+  FaUserAlt,
   FaRandom,
   FaAngleLeft,
   FaInfoCircle,
@@ -171,6 +172,26 @@ function WorkoutGenerator() {
   const [currentStep, setCurrentStep] = useState(1);
   const [viewingGoalInfo, setViewingGoalInfo] = useState(null);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+  const [preferences, setPreferences] = useState({
+    gender: "",
+    age: 30,
+    fitnessGoal: "",
+    fitnessLevel: "",
+    workoutsPerWeek: 3,
+    equipment: [],
+    targetMuscles: [],
+  });
+  const [workout, setWorkout] = useState(null);
+  const [viewingExercise, setViewingExercise] = useState(null);
+  const [viewingLevelInfo, setViewingLevelInfo] = useState(null);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [activeTab, setActiveTab] = useState("workout");
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    setIsAuthenticated(!!token);
+  }, []);
+
   const validateCurrentStep = () => {
     switch (currentStep) {
       case 1:
@@ -189,10 +210,15 @@ function WorkoutGenerator() {
       case 6:
         return preferences.equipment.length > 0 ? true : false;
       case 7:
-        // Enhanced validation based on number of workouts per week
-        if (preferences.workoutsPerWeek > 5 && preferences.targetMuscles.length < 4) {
+        if (
+          preferences.workoutsPerWeek > 5 &&
+          preferences.targetMuscles.length < 4
+        ) {
           return false;
-        } else if (preferences.workoutsPerWeek > 2 && preferences.targetMuscles.length < 2) {
+        } else if (
+          preferences.workoutsPerWeek > 2 &&
+          preferences.targetMuscles.length < 2
+        ) {
           return false;
         }
         return preferences.targetMuscles.length > 0 ? true : false;
@@ -200,7 +226,7 @@ function WorkoutGenerator() {
         return true;
     }
   };
-  
+
   const handleStepValidation = () => {
     switch (currentStep) {
       case 1:
@@ -239,39 +265,26 @@ function WorkoutGenerator() {
       case 7:
         if (preferences.targetMuscles.length === 0) {
           alert("Please select at least one muscle group to train");
-        } else if (preferences.workoutsPerWeek > 5 && preferences.targetMuscles.length < 4) {
-          alert("When training more than 5 times per week, you should select at least 4 muscle groups for a balanced routine");
-        } else if (preferences.workoutsPerWeek > 2 && preferences.targetMuscles.length < 2) {
-          alert("When training more than 2 times per week, you should select at least 2 muscle groups for a balanced routine");
+        } else if (
+          preferences.workoutsPerWeek > 5 &&
+          preferences.targetMuscles.length < 4
+        ) {
+          alert(
+            "When training more than 5 times per week, you should select at least 4 muscle groups for a balanced routine"
+          );
+        } else if (
+          preferences.workoutsPerWeek > 2 &&
+          preferences.targetMuscles.length < 2
+        ) {
+          alert(
+            "When training more than 2 times per week, you should select at least 2 muscle groups for a balanced routine"
+          );
         }
         break;
       default:
         break;
     }
   };
-
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    setIsAuthenticated(!!token);
-  }, []);
-
-  const [preferences, setPreferences] = useState({
-    gender: "",
-    age: 30,
-    fitnessGoal: "",
-    fitnessLevel: "",
-    workoutsPerWeek: 3,
-    equipment: [],
-    targetMuscles: [],
-  });
-
-  const [workout, setWorkout] = useState(null);
-
-  const [viewingExercise, setViewingExercise] = useState(null);
-
-  const [viewingLevelInfo, setViewingLevelInfo] = useState(null);
-
-  const [showSuccess, setShowSuccess] = useState(false);
 
   const getExercisesForEquipment = (muscle, equipmentList) => {
     if (equipmentList.length === 0 || equipmentList.includes("Select all")) {
@@ -293,56 +306,25 @@ function WorkoutGenerator() {
         sets: 3,
         reps: "12-15",
         rest: 45,
-        tempo: "1-0-1",
         intensity: "60-75%",
       },
       Endurance: {
         sets: 3,
         reps: "15-20",
         rest: 60,
-        tempo: "1-0-1",
         intensity: "50-70%",
       },
       "Gain Strength": {
         sets: 5,
         reps: "3-5",
         rest: 180,
-        tempo: "2-0-2",
         intensity: "85-95%",
       },
       "Muscle Building": {
         sets: 4,
         reps: "8-12",
         rest: 90,
-        tempo: "2-1-2",
         intensity: "70-85%",
-      },
-    };
-
-    const workoutStructure = {
-      novice: {
-        warmup: ["Light Cardio (5 min)", "Dynamic Stretching (3 min)"],
-        cooldown: ["Static Stretching (5 min)"],
-        exerciseDensity: 0.7,
-      },
-      beginner: {
-        warmup: ["Light Cardio (5 min)", "Dynamic Stretching (3 min)"],
-        cooldown: ["Static Stretching (5 min)"],
-        exerciseDensity: 0.8,
-      },
-      intermediate: {
-        warmup: ["Light Cardio (5 min)", "Dynamic Stretching (5 min)"],
-        cooldown: ["Static Stretching (5 min)", "Foam Rolling (3 min)"],
-        exerciseDensity: 1.0,
-      },
-      advanced: {
-        warmup: [
-          "Light Cardio (5 min)",
-          "Dynamic Stretching (5 min)",
-          "Activation Exercises (3 min)",
-        ],
-        cooldown: ["Static Stretching (5 min)", "Foam Rolling (5 min)"],
-        exerciseDensity: 1.2,
       },
     };
 
@@ -380,16 +362,8 @@ function WorkoutGenerator() {
         workoutDuration = 60;
     }
 
-    const exerciseDensity =
-      workoutStructure[prefs.fitnessLevel]?.exerciseDensity || 1.0;
-    const exercisesPerArea = Math.max(
-      1,
-      Math.floor(
-        ((workoutDuration / 15) * exerciseDensity) / targetMuscles.length
-      )
-    );
-
     const selectedExercises = [];
+    let totalWorkoutTime = 0; // Initialize total workout time
 
     targetMuscles.forEach((muscle) => {
       let availableExercises = getExercisesForEquipment(
@@ -401,27 +375,39 @@ function WorkoutGenerator() {
         availableExercises = getExercisesForEquipment(muscle, ["Bodyweight"]);
       }
 
-      for (let i = 0; i < exercisesPerArea; i++) {
+      // Ensure at least 3 exercises are selected for each muscle group
+      const exercisesToSelect = Math.min(3, availableExercises.length);
+      for (let i = 0; i < exercisesToSelect; i++) {
         if (availableExercises.length > 0) {
           const randomIndex = Math.floor(
             Math.random() * availableExercises.length
           );
           const exercise = availableExercises[randomIndex];
 
+          const sets = setsReps[prefs.fitnessGoal]?.sets || 3;
+          const reps = setsReps[prefs.fitnessGoal]?.reps || "10-12";
+          const rest = setsReps[prefs.fitnessGoal]?.rest || 60;
+
           selectedExercises.push({
             name: exercise,
             muscle: muscle,
-            sets: setsReps[prefs.fitnessGoal]?.sets || 3,
-            reps: setsReps[prefs.fitnessGoal]?.reps || "10-12",
-            rest: setsReps[prefs.fitnessGoal]?.rest || 60,
-            tempo: setsReps[prefs.fitnessGoal]?.tempo || "2-0-2",
+            sets: sets,
+            reps: reps,
+            rest: rest,
             intensity: setsReps[prefs.fitnessGoal]?.intensity || "70-80%",
           });
+
+          // Calculate total workout time
+          totalWorkoutTime +=
+            sets * (parseInt(reps.split("-")[0]) + 1) * 0.5 + rest; // Approximate time for each set + rest
 
           availableExercises.splice(randomIndex, 1);
         }
       }
     });
+
+    // Convert total workout time to minutes
+    const totalTimeInMinutes = Math.ceil(totalWorkoutTime / 60);
 
     let ageAdjustments = [];
     if (prefs.age < 18) {
@@ -447,7 +433,7 @@ function WorkoutGenerator() {
         prefs.fitnessLevel.charAt(0).toUpperCase() + prefs.fitnessLevel.slice(1)
       } ${prefs.fitnessGoal} Workout (${prefs.workoutsPerWeek}x/week)`,
       exercises: selectedExercises,
-      duration: workoutDuration,
+      duration: totalTimeInMinutes, // Set the total time for the workout
       difficulty: prefs.fitnessLevel,
       fitnessGoal: prefs.fitnessGoal,
       workoutsPerWeek: prefs.workoutsPerWeek,
@@ -457,15 +443,139 @@ function WorkoutGenerator() {
       gender: prefs.gender,
       age: prefs.age,
       ageAdjustments: ageAdjustments,
-      warmup: workoutStructure[prefs.fitnessLevel]?.warmup || [
-        "Light Cardio (5 min)",
-        "Dynamic Stretching (5 min)",
-      ],
-      cooldown: workoutStructure[prefs.fitnessLevel]?.cooldown || [
-        "Static Stretching (5 min)",
-      ],
+      warmup: ["Light Cardio (5 min)", "Dynamic Stretching (5 min)"],
+      cooldown: ["Static Stretching (5 min)"],
       createdAt: new Date().toISOString(),
     };
+  };
+
+  const generateSixWeekProgram = (prefs) => {
+    const program = [];
+    for (let week = 1; week <= 6; week++) {
+      const workoutPlan = generateWorkoutPlan(prefs);
+      program.push({
+        week: week,
+        workout: workoutPlan,
+      });
+    }
+    return program;
+  };
+
+  const generateTrainingSchedule = (muscleGroups, daysPerWeek) => {
+    // Basic logic - divide muscle groups across available training days
+    const schedule = {};
+
+    // Create a copy of muscle groups to work with
+    const muscles = [...muscleGroups];
+
+    // Handle different training frequencies with appropriate splits
+    if (daysPerWeek === 1) {
+      // Full body workout
+      schedule["Day 1"] = muscles;
+    } else if (daysPerWeek === 2) {
+      // Upper/Lower split
+      const upperBody = muscles.filter((m) =>
+        ["Chest", "Back", "Shoulders", "Biceps", "Triceps", "Abs"].includes(m)
+      );
+      const lowerBody = muscles.filter((m) =>
+        ["Quads", "Hamstrings", "Glutes", "Calves"].includes(m)
+      );
+
+      schedule["Day 1"] =
+        upperBody.length > 0
+          ? upperBody
+          : muscles.slice(0, Math.ceil(muscles.length / 2));
+      schedule["Day 2"] =
+        lowerBody.length > 0
+          ? lowerBody
+          : muscles.slice(Math.ceil(muscles.length / 2));
+    } else if (daysPerWeek === 3) {
+      // Push/Pull/Legs or 3-day split
+      const push = muscles.filter((m) =>
+        ["Chest", "Shoulders", "Triceps"].includes(m)
+      );
+      const pull = muscles.filter((m) => ["Back", "Biceps"].includes(m));
+      const legs = muscles.filter((m) =>
+        ["Quads", "Hamstrings", "Glutes", "Calves"].includes(m)
+      );
+      const core = muscles.filter((m) => ["Abs"].includes(m));
+
+      if (push.length > 0 && pull.length > 0 && legs.length > 0) {
+        schedule["Day 1"] = [...push];
+        schedule["Day 2"] = [...pull, ...core];
+        schedule["Day 3"] = [...legs];
+      } else {
+        // Divide evenly if not enough muscle groups for PPL
+        const chunkSize = Math.ceil(muscles.length / 3);
+        schedule["Day 1"] = muscles.slice(0, chunkSize);
+        schedule["Day 2"] = muscles.slice(chunkSize, chunkSize * 2);
+        schedule["Day 3"] = muscles.slice(chunkSize * 2);
+      }
+    } else {
+      // For 4+ days, create a more specialized split
+      const muscleChunks = [];
+      const chunkSize = Math.ceil(muscles.length / daysPerWeek);
+
+      for (let i = 0; i < muscles.length; i += chunkSize) {
+        muscleChunks.push(muscles.slice(i, i + chunkSize));
+      }
+
+      // Fill in the schedule
+      muscleChunks.forEach((chunk, index) => {
+        schedule[`Day ${index + 1}`] = chunk;
+      });
+    }
+
+    return schedule;
+  };
+
+  const generateWorkoutHandler = () => {
+    // Generate a single workout plan
+    const workoutPlan = generateWorkoutPlan(preferences);
+
+    // Generate training schedule
+    const trainingSchedule = generateTrainingSchedule(
+      workoutPlan.targetMuscles,
+      workoutPlan.workoutsPerWeek
+    );
+
+    // Add schedule to workout plan
+    workoutPlan.trainingSchedule = trainingSchedule;
+
+    // Generate a six-week program
+    const sixWeekProgram = [];
+    for (let week = 1; week <= 6; week++) {
+      // Clone the workout plan for each week
+      const weeklyPlan = { ...workoutPlan };
+      weeklyPlan.week = week;
+
+      // For progressive overload, we could increase intensity each week
+      if (week > 1) {
+        weeklyPlan.exercises = weeklyPlan.exercises.map((ex) => ({
+          ...ex,
+          sets: Math.min(ex.sets + Math.floor((week - 1) / 2), 6), // Gradually increase sets
+          intensity: `${Math.min(
+            parseInt(ex.intensity) + (week - 1) * 5,
+            95
+          )}%`, // Gradually increase intensity
+        }));
+      }
+
+      sixWeekProgram.push(weeklyPlan);
+    }
+
+    // Set the workout state with just the first week workout
+    setWorkout(workoutPlan);
+
+    // Add the full program to the workout
+    workoutPlan.sixWeekProgram = sixWeekProgram;
+
+    setTimeout(() => {
+      const workoutResults = document.getElementById("workout-results");
+      if (workoutResults) {
+        workoutResults.scrollIntoView({ behavior: "smooth" });
+      }
+    }, 100);
   };
 
   const handleNextStep = () => {
@@ -485,36 +595,6 @@ function WorkoutGenerator() {
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
     }
-  };
-
-  const generateWorkoutHandler = () => {
-    if (!isAuthenticated) {
-      setShowLoginPrompt(true);
-      return;
-    }
-
-    const workoutPlan = generateWorkoutPlan(preferences);
-    setWorkout(workoutPlan);
-
-    try {
-      const savedWorkouts = JSON.parse(
-        localStorage.getItem("savedWorkouts") || "[]"
-      );
-      savedWorkouts.push(workoutPlan);
-      localStorage.setItem("savedWorkouts", JSON.stringify(savedWorkouts));
-
-      setShowSuccess(true);
-      setTimeout(() => setShowSuccess(false), 3000);
-    } catch (error) {
-      console.error("Error saving workout to localStorage:", error);
-    }
-
-    setTimeout(() => {
-      const workoutResults = document.getElementById("workout-results");
-      if (workoutResults) {
-        workoutResults.scrollIntoView({ behavior: "smooth" });
-      }
-    }, 100);
   };
 
   const handleEquipmentChange = (equipment) => {
@@ -921,19 +1001,6 @@ function WorkoutGenerator() {
           </div>
         );
 
-      // Updated layout for step 6 in WorkoutGenerator.jsx
-      // This focuses on the specific change to place buttons next to the muscle diagram
-      // while maintaining the original size of the muscle diagram
-
-      // Updated layout for step 6 in WorkoutGenerator.jsx
-      // This focuses on the specific change to place buttons next to the muscle diagram
-      // while maintaining the original size of the muscle diagram
-
-      // Updated layout for step 6 in WorkoutGenerator.jsx
-      // This focuses on the specific change to place buttons next to the muscle diagram
-      // while maintaining the original size of the muscle diagram
-      // All dots now have red hover highlights
-
       case 7:
         return (
           <div className="mb-8">
@@ -1187,13 +1254,13 @@ function WorkoutGenerator() {
                     <label
                       key={muscle}
                       className={`
-                  flex items-center justify-center p-3 rounded-lg cursor-pointer transition-all text-sm
-                  ${
-                    preferences.targetMuscles.includes(muscle)
-                      ? "bg-blue-500 text-white"
-                      : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
-                  }
-                `}
+                    flex items-center justify-center p-3 rounded-lg cursor-pointer transition-all text-sm
+                    ${
+                      preferences.targetMuscles.includes(muscle)
+                        ? "bg-blue-500 text-white"
+                        : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                    }
+                  `}
                     >
                       <input
                         type="checkbox"
@@ -1302,7 +1369,6 @@ function WorkoutGenerator() {
             <button
               key={step}
               onClick={() => {
-                // Only allow navigating to steps that have validation passed
                 if (step < currentStep || validateCurrentStep()) {
                   setCurrentStep(step);
                 } else {
@@ -1404,144 +1470,249 @@ function WorkoutGenerator() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-            {workout.gender && (
-              <div className="bg-gray-100 dark:bg-gray-700 p-2 rounded-lg text-center">
-                <div className="text-xs text-gray-500 dark:text-gray-400">
-                  Gender
-                </div>
-                <div className="font-medium">{workout.gender}</div>
-              </div>
-            )}
-            {workout.age && (
-              <div className="bg-gray-100 dark:bg-gray-700 p-2 rounded-lg text-center">
-                <div className="text-xs text-gray-500 dark:text-gray-400">
-                  Age
-                </div>
-                <div className="font-medium">{workout.age} years</div>
-              </div>
-            )}
-            <div className="bg-gray-100 dark:bg-gray-700 p-2 rounded-lg text-center">
-              <div className="text-xs text-gray-500 dark:text-gray-400">
-                Goal
-              </div>
-              <div className="font-medium">
-                {workout.fitnessGoal || "Custom"}
-              </div>
-            </div>
-            <div className="bg-gray-100 dark:bg-gray-700 p-2 rounded-lg text-center">
-              <div className="text-xs text-gray-500 dark:text-gray-400">
-                Level
-              </div>
-              <div className="font-medium capitalize">{workout.difficulty}</div>
+          {/* Weekly Training Schedule */}
+          <div className="mb-6">
+            <h3 className="text-lg font-medium mb-2">
+              Weekly Training Schedule
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {workout.trainingSchedule &&
+                Object.entries(workout.trainingSchedule).map(
+                  ([day, muscles]) => (
+                    <div
+                      key={day}
+                      className="border border-gray-200 dark:border-gray-700 rounded-lg p-3"
+                    >
+                      <h4 className="font-medium text-lg mb-2">{day}</h4>
+                      <div className="flex flex-wrap gap-1">
+                        {muscles.map((muscle) => (
+                          <div
+                            key={muscle}
+                            className="text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 px-2 py-1 rounded-full"
+                          >
+                            {muscle}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                )}
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-2 mb-4">
-            {workout.targetMuscles.map((muscle) => (
-              <div
-                key={muscle}
-                className="text-sm bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 px-3 py-1 rounded-full"
+          {/* Workout Tabs */}
+          <div className="mb-6">
+            <div className="flex border-b border-gray-200 dark:border-gray-700 mb-4">
+              <button
+                className={`py-2 px-4 font-medium ${
+                  activeTab === "workout"
+                    ? "border-b-2 border-blue-500 text-blue-600 dark:text-blue-400"
+                    : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                }`}
+                onClick={() => setActiveTab("workout")}
               >
-                {muscle}
+                Current Workout
+              </button>
+              <button
+                className={`py-2 px-4 font-medium ${
+                  activeTab === "program"
+                    ? "border-b-2 border-blue-500 text-blue-600 dark:text-blue-400"
+                    : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                }`}
+                onClick={() => setActiveTab("program")}
+              >
+                6-Week Progression
+              </button>
+            </div>
+
+            {activeTab === "workout" ? (
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium mb-2">Main Workout</h3>
+                {workout.exercises.map((exercise, index) => (
+                  <div
+                    key={index}
+                    className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 transition-shadow hover:shadow-md"
+                  >
+                    <div className="flex justify-between items-center">
+                      <h4 className="font-medium text-lg">
+                        {index + 1}. {exercise.name}
+                      </h4>
+                      <div className="text-sm bg-blue-50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 px-2 py-1 rounded">
+                        {exercise.muscle}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-3">
+                      <div className="text-sm bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded">
+                        <span className="font-bold">Sets:</span> {exercise.sets}
+                      </div>
+                      <div className="text-sm bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded">
+                        <span className="font-bold">Reps:</span> {exercise.reps}
+                      </div>
+                      <div className="text-sm bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded">
+                        <span className="font-bold">Rest:</span> {exercise.rest}
+                        s
+                      </div>
+                    </div>
+
+                    <button
+                      className="mt-3 text-blue-500 hover:text-blue-700 text-sm flex items-center"
+                      onClick={() => setViewingExercise(exercise.name)}
+                    >
+                      <span className="mr-1">View Demonstration</span>
+                    </button>
+                  </div>
+                ))}
               </div>
-            ))}
-            {workout.ageAdjustments && workout.ageAdjustments.length > 0 && (
-              <div className="w-full mt-3">
-                <div className="text-sm bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 px-3 py-2 rounded-lg">
-                  <strong>Age-based adjustments:</strong>
-                  <ul className="list-disc ml-5 mt-1">
-                    {workout.ageAdjustments.map((adj, idx) => (
-                      <li key={idx}>{adj}</li>
-                    ))}
-                  </ul>
+            ) : (
+              <div>
+                <h3 className="text-lg font-medium mb-4">
+                  6-Week Progression Plan
+                </h3>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full border-collapse">
+                    <thead>
+                      <tr className="bg-gray-100 dark:bg-gray-700">
+                        <th className="border border-gray-300 dark:border-gray-600 px-4 py-2">
+                          Week
+                        </th>
+                        <th className="border border-gray-300 dark:border-gray-600 px-4 py-2">
+                          Focus
+                        </th>
+                        <th className="border border-gray-300 dark:border-gray-600 px-4 py-2">
+                          Intensity
+                        </th>
+                        <th className="border border-gray-300 dark:border-gray-600 px-4 py-2">
+                          Changes
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {workout.sixWeekProgram &&
+                        workout.sixWeekProgram.map((weekPlan, index) => (
+                          <tr
+                            key={weekPlan.week}
+                            className={
+                              index % 2 === 0
+                                ? ""
+                                : "bg-gray-50 dark:bg-gray-800"
+                            }
+                          >
+                            <td className="border border-gray-300 dark:border-gray-600 px-4 py-2 font-medium">
+                              Week {weekPlan.week}
+                            </td>
+                            <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">
+                              {weekPlan.week <= 2
+                                ? "Form & Adaptation"
+                                : weekPlan.week <= 4
+                                ? "Progressive Overload"
+                                : "Peak Intensity"}
+                            </td>
+                            <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">
+                              {weekPlan.week === 1
+                                ? "Base"
+                                : `+${(weekPlan.week - 1) * 5}% intensity`}
+                            </td>
+                            <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">
+                              {weekPlan.week === 1
+                                ? "Starting point"
+                                : weekPlan.week <= 3
+                                ? "Focus on increasing reps"
+                                : weekPlan.week <= 5
+                                ? "Increase weight/resistance"
+                                : "Max effort, full intensity"}
+                            </td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Week Details Section */}
+                <div className="mt-6">
+                  <h4 className="font-medium text-lg mb-3">Week Details</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {[1, 3, 6].map((weekNum) => {
+                      const weekPlan = workout.sixWeekProgram?.find(
+                        (p) => p.week === weekNum
+                      );
+                      if (!weekPlan) return null;
+
+                      return (
+                        <div
+                          key={weekNum}
+                          className="border border-gray-200 dark:border-gray-700 rounded-lg p-4"
+                        >
+                          <h5 className="font-medium mb-2">Week {weekNum}</h5>
+                          <div className="text-sm text-gray-600 dark:text-gray-400 space-y-2">
+                            <p>
+                              <span className="font-medium">Sets:</span>{" "}
+                              {weekPlan.exercises[0].sets}
+                            </p>
+                            <p>
+                              <span className="font-medium">Intensity:</span>{" "}
+                              {weekPlan.exercises[0].intensity}
+                            </p>
+                            <p className="text-xs">
+                              {weekNum === 1
+                                ? "Focus on proper form and building a foundation"
+                                : weekNum === 3
+                                ? "Increase volume and begin pushing intensity"
+                                : "Peak week - max effort for best results"}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
             )}
           </div>
 
-          <div className="mb-6 bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
-            <h3 className="text-lg font-medium mb-2">Warm-up</h3>
-            <ul className="space-y-1">
-              {workout.warmup.map((item, idx) => (
-                <li
-                  key={idx}
-                  className="text-gray-700 dark:text-gray-300 flex items-center"
-                >
-                  <span className="mr-2 text-green-500">•</span> {item}
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div className="space-y-4 mb-6">
-            <h3 className="text-lg font-medium mb-2">Main Workout</h3>
-            {workout.exercises.map((exercise, index) => (
-              <div
-                key={index}
-                className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 transition-shadow hover:shadow-md"
-              >
-                <div className="flex justify-between items-center">
-                  <h4 className="font-medium text-lg">
-                    {index + 1}. {exercise.name}
-                  </h4>
-                  <div className="text-sm bg-blue-50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 px-2 py-1 rounded">
-                    {exercise.muscle}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-3">
-                  <div className="text-sm bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded">
-                    <span className="font-bold">Sets:</span> {exercise.sets}
-                  </div>
-                  <div className="text-sm bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded">
-                    <span className="font-bold">Reps:</span> {exercise.reps}
-                  </div>
-                  <div className="text-sm bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded">
-                    <span className="font-bold">Rest:</span> {exercise.rest}s
-                  </div>
-                  <div className="text-sm bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded">
-                    <span className="font-bold">Tempo:</span> {exercise.tempo}
-                  </div>
-                </div>
-
-                <button
-                  className="mt-3 text-blue-500 hover:text-blue-700 text-sm flex items-center"
-                  onClick={() => setViewingExercise(exercise.name)}
-                >
-                  <span className="mr-1">View Demonstration</span>
-                </button>
-              </div>
-            ))}
-          </div>
-
-          <div className="mb-6 bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
-            <h3 className="text-lg font-medium mb-2">Cool-down</h3>
-            <ul className="space-y-1">
-              {workout.cooldown.map((item, idx) => (
-                <li
-                  key={idx}
-                  className="text-gray-700 dark:text-gray-300 flex items-center"
-                >
-                  <span className="mr-2 text-green-500">•</span> {item}
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div className="mt-6">
+          <div className="mt-6 flex gap-4">
             <button
               onClick={() => window.print()}
-              className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center justify-center"
+              className="flex-1 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors flex items-center justify-center"
             >
               <FaPrint className="mr-2" /> Print Workout
             </button>
-            {showSuccess && (
-              <div className="text-center mt-3 text-sm text-green-600 dark:text-green-500">
-                Workout saved successfully to your profile!
-              </div>
-            )}
+
+            <button
+              onClick={() => {
+                if (!isAuthenticated) {
+                  setShowLoginPrompt(true);
+                  return;
+                }
+
+                try {
+                  const savedWorkouts = JSON.parse(
+                    localStorage.getItem("savedWorkouts") || "[]"
+                  );
+                  savedWorkouts.push(workout);
+                  localStorage.setItem(
+                    "savedWorkouts",
+                    JSON.stringify(savedWorkouts)
+                  );
+
+                  setShowSuccess(true);
+                  setTimeout(() => setShowSuccess(false), 3000);
+
+                  navigate("/saved-workouts");
+                } catch (error) {
+                  console.error("Error saving workout to localStorage:", error);
+                }
+              }}
+              className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center justify-center"
+            >
+              <FaRegSave className="mr-2" /> Save Workout Program
+            </button>
           </div>
+          {showSuccess && (
+            <div className="text-center mt-3 text-sm text-green-600 dark:text-green-500">
+              Workout saved successfully to your profile!
+            </div>
+          )}
         </div>
       )}
 
