@@ -1,11 +1,14 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "../hooks/useTheme";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 
 function ChangePassword() {
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [message, setMessage] = useState(null);
+  const [showOldPassword, setShowOldPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
   const navigate = useNavigate();
   const { theme } = useTheme();
 
@@ -45,6 +48,14 @@ function ChangePassword() {
     }
   };
 
+  const toggleOldPasswordVisibility = () => {
+    setShowOldPassword(!showOldPassword);
+  };
+
+  const toggleNewPasswordVisibility = () => {
+    setShowNewPassword(!showNewPassword);
+  };
+
   return (
     <div
       className={`flex flex-col items-center justify-center h-screen ${
@@ -60,28 +71,46 @@ function ChangePassword() {
       >
         <h1 className="text-2xl font-bold mb-4 text-center">Change Password</h1>
         {message && (
-          <p className="text-center text-red-500 bg-gray-100 p-2 rounded">
+          <p className={`text-center ${message.includes("successfully") ? "text-green-500" : "text-red-500"} bg-gray-100 p-2 rounded`}>
             {message}
           </p>
         )}
         <form onSubmit={handlePasswordChange} className="flex flex-col">
           <label className="font-semibold">Old Password:</label>
-          <input
-            type="password"
-            value={oldPassword}
-            onChange={(e) => setOldPassword(e.target.value)}
-            className="border p-2 rounded mb-3"
-            required
-          />
+          <div className="relative mb-3">
+            <input
+              type={showOldPassword ? "text" : "password"}
+              value={oldPassword}
+              onChange={(e) => setOldPassword(e.target.value)}
+              className="border p-2 rounded w-full"
+              required
+            />
+            <button
+              type="button"
+              onClick={toggleOldPasswordVisibility}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+            >
+              {showOldPassword ? <FaEyeSlash size={20} /> : <FaEye size={20} />}
+            </button>
+          </div>
 
           <label className="font-semibold">New Password:</label>
-          <input
-            type="password"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            className="border p-2 rounded mb-3"
-            required
-          />
+          <div className="relative mb-3">
+            <input
+              type={showNewPassword ? "text" : "password"}
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              className="border p-2 rounded w-full"
+              required
+            />
+            <button
+              type="button"
+              onClick={toggleNewPasswordVisibility}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+            >
+              {showNewPassword ? <FaEyeSlash size={20} /> : <FaEye size={20} />}
+            </button>
+          </div>
 
           <button
             type="submit"
