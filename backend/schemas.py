@@ -89,11 +89,6 @@ class ProfileUpdateRequest(BaseModel):
 
 
 class UserPreferencesUpdate(BaseModel):
-    weight_unit: Optional[str] = Field(
-        None,
-        pattern="^(kg|lbs)$",
-        description="Weight unit must be either 'kg' or 'lbs'"
-    )
     goal_weight: Optional[float] = Field(
         None,
         gt=0,
@@ -128,7 +123,6 @@ class UserProfileResponse(BaseModel):
     email: str
     profile_picture: Optional[str] = None
     preferences: Optional[dict] = {
-        "weight_unit": str,
         "goal_weight": Optional[float],
         "email_notifications": bool
     }

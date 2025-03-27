@@ -210,7 +210,6 @@ def profile(user: User = Depends(get_current_user), db: Session = Depends(get_db
         "email": user.email,
         "profile_picture": user.profile_picture,
         "preferences": {
-            "weight_unit": user_preferences.weight_unit if user_preferences else "kg",
             "goal_weight": user_preferences.goal_weight if user_preferences else None,
             "email_notifications": user_preferences.email_notifications if user_preferences else False,
             "summary_frequency": user_preferences.summary_frequency if user_preferences else None,
@@ -267,7 +266,6 @@ def update_preferences(
     db.refresh(user_preferences)
 
     return {
-        "weight_unit": user_preferences.weight_unit,
         "goal_weight": user_preferences.goal_weight,
         "email_notifications": user_preferences.email_notifications,
         "summary_frequency": user_preferences.summary_frequency,

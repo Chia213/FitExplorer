@@ -83,7 +83,6 @@ function Profile() {
         if (userData.preferences) {
           setPreferences((prev) => ({
             ...prev,
-            weightUnit: userData.preferences.weight_unit || "kg",
             goalWeight: userData.preferences.goal_weight,
             emailNotifications:
               userData.preferences.email_notifications || false,
@@ -257,7 +256,7 @@ function Profile() {
           cardColor: preferences.cardColor,
         }),
       });
-  
+
       if (!response.ok) {
         const errorData = await response.json();
         setError(errorData.detail || "Failed to update preferences");
@@ -536,7 +535,6 @@ function Profile() {
                   )}
                 </div>
               )}
-
               <button
                 onClick={handlePreferenceUpdate}
                 disabled={!preferencesChanged}

@@ -34,7 +34,6 @@ class UserPreferences(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), unique=True)
-    weight_unit = Column(String, default="kg")
     goal_weight = Column(Float, nullable=True)
     email_notifications = Column(Boolean, default=False)
     summary_frequency = Column(String, nullable=True)
