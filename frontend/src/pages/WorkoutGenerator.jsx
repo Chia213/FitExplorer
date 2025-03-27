@@ -185,6 +185,7 @@ function WorkoutGenerator() {
   const [activeTab, setActiveTab] = useState("workout");
   const [workoutVersions, setWorkoutVersions] = useState([]);
   const [currentVersionIndex, setCurrentVersionIndex] = useState(0);
+  const [selectedDayExercises, setSelectedDayExercises] = useState(null);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -415,18 +416,25 @@ function WorkoutGenerator() {
         availableExercises = getExercisesForEquipment(muscle, ["Bodyweight"]);
       }
 
-      // Important change: Always select exactly 1 exercise per iteration
-      // but make multiple passes to ensure variety
-      const muscleExercises = [];
+      // Ensure we select up to 3 unique exercises per muscle group
       const desiredExerciseCount = Math.min(3, availableExercises.length);
+      const muscleExercises = [];
 
-      for (let i = 0; i < desiredExerciseCount; i++) {
-        if (availableExercises.length > 0) {
-          const randomIndex = Math.floor(
-            Math.random() * availableExercises.length
-          );
-          const exercise = availableExercises[randomIndex];
+      // Use a Set to track selected exercises to ensure uniqueness
+      const selectedExerciseNames = new Set();
 
+      while (
+        muscleExercises.length < desiredExerciseCount &&
+        availableExercises.length > 0
+      ) {
+        // Randomly select an index
+        const randomIndex = Math.floor(
+          Math.random() * availableExercises.length
+        );
+        const exercise = availableExercises[randomIndex];
+
+        // Only add if not already selected
+        if (!selectedExerciseNames.has(exercise)) {
           const sets = setsReps[prefs.fitnessGoal]?.sets || 3;
           const reps = setsReps[prefs.fitnessGoal]?.reps || "10-12";
           const rest = setsReps[prefs.fitnessGoal]?.rest || 60;
@@ -440,11 +448,13 @@ function WorkoutGenerator() {
             intensity: setsReps[prefs.fitnessGoal]?.intensity || "70-80%",
           });
 
+          // Mark as selected and remove from available list
+          selectedExerciseNames.add(exercise);
+          availableExercises.splice(randomIndex, 1);
+
           // Calculate total workout time
           totalWorkoutTime +=
             sets * (parseInt(reps.split("-")[0]) + 1) * 0.5 + rest;
-
-          availableExercises.splice(randomIndex, 1);
         }
       }
 
@@ -1796,36 +1806,6 @@ function WorkoutGenerator() {
             </div>
           </div>
 
-          {/* Weekly Training Schedule */}
-          <div className="mb-6">
-            <h3 className="text-lg font-medium mb-2">
-              Weekly Training Schedule
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              {workout.trainingSchedule &&
-                Object.entries(workout.trainingSchedule).map(
-                  ([day, muscles]) => (
-                    <div
-                      key={day}
-                      className="border border-gray-200 dark:border-gray-700 rounded-lg p-3"
-                    >
-                      <h4 className="font-medium text-lg mb-2">{day}</h4>
-                      <div className="flex flex-wrap gap-1">
-                        {muscles.map((muscle) => (
-                          <div
-                            key={muscle}
-                            className="text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 px-2 py-1 rounded-full"
-                          >
-                            {muscle}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )
-                )}
-            </div>
-          </div>
-
           {/* Workout Tabs */}
           <div className="mb-6">
             <div className="flex border-b border-gray-200 dark:border-gray-700 mb-4">
@@ -1862,56 +1842,22 @@ function WorkoutGenerator() {
                         key={day}
                         className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-4"
                       >
-                        <h4 className="font-medium text-lg mb-3 bg-gray-100 dark:bg-gray-700 p-2 rounded">
-                          {day} - {muscles.join(", ")}
-                        </h4>
-
-                        <div className="space-y-4">
-                          {workout.exercises
-                            .filter((exercise) =>
-                              muscles.includes(exercise.muscle)
-                            )
-                            .map((exercise, exIndex) => (
-                              <div
-                                key={exIndex}
-                                className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 transition-shadow hover:shadow-md"
-                              >
-                                <div className="flex justify-between items-center">
-                                  <h5 className="font-medium text-lg">
-                                    {exIndex + 1}. {exercise.name}
-                                  </h5>
-                                  <div className="text-sm bg-blue-50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 px-2 py-1 rounded">
-                                    {exercise.muscle}
-                                  </div>
-                                </div>
-
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-3">
-                                  <div className="text-sm bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded">
-                                    <span className="font-bold">Sets:</span>{" "}
-                                    {exercise.sets}
-                                  </div>
-                                  <div className="text-sm bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded">
-                                    <span className="font-bold">Reps:</span>{" "}
-                                    {exercise.reps}
-                                  </div>
-                                  <div className="text-sm bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded">
-                                    <span className="font-bold">Rest:</span>{" "}
-                                    {exercise.rest}s
-                                  </div>
-                                </div>
-
-                                <button
-                                  className="mt-3 text-blue-500 hover:text-blue-700 text-sm flex items-center"
-                                  onClick={() =>
-                                    setViewingExercise(exercise.name)
-                                  }
-                                >
-                                  <span className="mr-1">
-                                    View Demonstration
-                                  </span>
-                                </button>
-                              </div>
-                            ))}
+                        <div className="flex justify-between items-center mb-3">
+                          <h4 className="font-medium text-lg bg-gray-100 dark:bg-gray-700 p-2 rounded">
+                            {day} - {muscles.join(", ")}
+                          </h4>
+                          <button
+                            onClick={() =>
+                              setSelectedDayExercises(
+                                workout.exercises.filter((exercise) =>
+                                  muscles.includes(exercise.muscle)
+                                )
+                              )
+                            }
+                            className="text-blue-500 hover:text-blue-700 flex items-center"
+                          >
+                            <FaDumbbell className="mr-2" /> View Exercises
+                          </button>
                         </div>
                       </div>
                     )
@@ -1979,6 +1925,73 @@ function WorkoutGenerator() {
                         ))}
                     </tbody>
                   </table>
+                </div>
+              </div>
+            )}
+
+            {/* Exercise Modal */}
+            {selectedDayExercises && (
+              <div
+                className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4"
+                onClick={(e) => {
+                  if (e.target === e.currentTarget) {
+                    setSelectedDayExercises(null);
+                  }
+                }}
+              >
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-xl font-bold">Day Exercises</h3>
+                    <button
+                      onClick={() => setSelectedDayExercises(null)}
+                      className="text-gray-500 hover:text-gray-700 focus:outline-none"
+                    >
+                      <span className="text-2xl">×</span>
+                    </button>
+                  </div>
+
+                  <div className="space-y-4">
+                    {selectedDayExercises.map((exercise, exIndex) => (
+                      <div
+                        key={exIndex}
+                        className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 transition-shadow hover:shadow-md"
+                      >
+                        <div className="flex justify-between items-center">
+                          <h5 className="font-medium text-lg">
+                            {exIndex + 1}. {exercise.name}
+                          </h5>
+                          <div className="text-sm bg-blue-50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 px-2 py-1 rounded">
+                            {exercise.muscle}
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-3">
+                          <div className="text-sm bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded">
+                            <span className="font-bold">Sets:</span>{" "}
+                            {exercise.sets}
+                          </div>
+                          <div className="text-sm bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded">
+                            <span className="font-bold">Reps:</span>{" "}
+                            {exercise.reps}
+                          </div>
+                          <div className="text-sm bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded">
+                            <span className="font-bold">Rest:</span>{" "}
+                            {exercise.rest}s
+                          </div>
+                        </div>
+
+                        <button
+                          className="mt-3 text-blue-500 hover:text-blue-700 text-sm flex items-center"
+                          onClick={() => {
+                            setSelectedDayExercises(null);
+                            setViewingExercise(exercise.name);
+                          }}
+                        >
+                          <span className="mr-1">View Demonstration</span>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
                 {/* Week Details Section */}

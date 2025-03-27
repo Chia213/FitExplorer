@@ -7,6 +7,7 @@ import {
   FaClipboardList,
   FaArrowLeft,
   FaEdit,
+  FaSpinner,
 } from "react-icons/fa";
 
 function ProgramTracker() {
@@ -20,45 +21,103 @@ function ProgramTracker() {
   const [editingWeight, setEditingWeight] = useState(null);
   const [exerciseWeights, setExerciseWeights] = useState({});
   const [savedProgramId, setSavedProgramId] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Check if workout and progress are passed from previous page
-    if (location.state?.workout && location.state?.progress) {
-      const { workout, progress } = location.state;
-      setWorkout(workout);
-      setProgramProgress(progress);
+    const initializeTracker = async () => {
+      try {
+        // Log the entire location state for debugging
+        console.log("Location state:", location.state);
 
-      // Find the current week's workout
-      if (workout.sixWeekProgram) {
-        const weekWorkout = workout.sixWeekProgram.find(
-          (weekPlan) => weekPlan.week === progress.currentWeek
-        );
-        setCurrentWeekWorkout(weekWorkout);
-      }
+        // Attempt to parse workout data more flexibly
+        let workoutData = location.state?.workout;
+        let progressData = location.state?.progress;
 
-      // Find the corresponding saved program
-      const findSavedProgram = async () => {
-        try {
-          const token = localStorage.getItem("token");
-          const savedPrograms = await getSavedPrograms(token);
-
-          const matchingProgram = savedPrograms.find(
-            (program) => program.program_data.id === workout.id
-          );
-
-          if (matchingProgram) {
-            setSavedProgramId(matchingProgram.id);
+        // If workout is a string, try parsing it
+        if (typeof workoutData === "string") {
+          try {
+            workoutData = JSON.parse(workoutData);
+          } catch (parseError) {
+            console.error("Failed to parse workout data:", parseError);
+            throw new Error("Invalid workout data format");
           }
-        } catch (error) {
-          console.error("Error finding saved program:", error);
         }
-      };
 
-      findSavedProgram();
-    } else {
-      // If no state is passed, redirect back to saved workouts
-      navigate("/saved-programs");
-    }
+        // If progress is a string, try parsing it
+        if (typeof progressData === "string") {
+          try {
+            progressData = JSON.parse(progressData);
+          } catch (parseError) {
+            console.error("Failed to parse progress data:", parseError);
+            throw new Error("Invalid progress data format");
+          }
+        }
+
+        // Validate required data
+        if (!workoutData || !progressData) {
+          throw new Error("Incomplete workout or progress information");
+        }
+
+        // Ensure sixWeekProgram exists and is an array
+        if (
+          !workoutData.sixWeekProgram ||
+          !Array.isArray(workoutData.sixWeekProgram)
+        ) {
+          throw new Error("Invalid workout program structure");
+        }
+
+        // Set initial states
+        setWorkout(workoutData);
+        setProgramProgress(progressData);
+
+        // Find the current week's workout
+        const weekWorkout = workoutData.sixWeekProgram.find(
+          (weekPlan) => weekPlan.week === progressData.currentWeek
+        );
+
+        if (!weekWorkout) {
+          throw new Error(
+            `Could not find workout for week ${progressData.currentWeek}`
+          );
+        }
+
+        setCurrentWeekWorkout(weekWorkout);
+
+        // Find the corresponding saved program
+        const token = localStorage.getItem("token");
+        if (!token) {
+          throw new Error("No authentication token found");
+        }
+
+        const savedPrograms = await getSavedPrograms(token);
+        const matchingProgram = savedPrograms.find((program) => {
+          // Handle potential parsing of program_data
+          let programData = program.program_data;
+          if (typeof programData === "string") {
+            try {
+              programData = JSON.parse(programData);
+            } catch {
+              return false;
+            }
+          }
+          return programData.id === workoutData.id;
+        });
+
+        if (matchingProgram) {
+          setSavedProgramId(matchingProgram.id);
+        }
+
+        setIsLoading(false);
+      } catch (error) {
+        console.error("Initialization error:", error);
+        setError(error.message);
+        setIsLoading(false);
+        navigate("/saved-programs");
+      }
+    };
+
+    initializeTracker();
   }, [location.state, navigate]);
 
   const saveExerciseWeight = (exerciseName, weight) => {
@@ -128,8 +187,38 @@ function ProgramTracker() {
     (exercise) => exerciseProgress[exercise.name]
   );
 
-  if (!workout || !programProgress || !currentWeekWorkout) {
-    return <div>Loading...</div>;
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-gray-900">
+        <div className="flex flex-col items-center">
+          <FaSpinner className="animate-spin text-4xl text-blue-500" />
+          <p className="mt-4 text-gray-600 dark:text-gray-400">
+            Loading workout tracker...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-gray-900">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-red-500 mb-4">
+            Error Loading Workout
+          </h2>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">{error}</p>
+          <button
+            onClick={() => navigate("/saved-programs")}
+            className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+          >
+            Back to Saved Programs
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -399,14 +488,14 @@ function ProgramTracker() {
                   complete all sets with good form, reduce the weight.
                 </p>
               </div>
-            </div>
 
-            <button
-              onClick={() => setShowExerciseDetails(null)}
-              className="mt-4 w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-            >
-              Close
-            </button>
+              <button
+                onClick={() => setShowExerciseDetails(null)}
+                className="mt-4 w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+              >
+                Close
+              </button>
+            </div>
           </div>
         )}
       </div>

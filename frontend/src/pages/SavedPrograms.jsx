@@ -89,44 +89,81 @@ function SavedPrograms() {
     let programData = program.program_data;
     if (typeof programData === "string") {
       try {
-        programData = JSON.parse(programData); // Parse it as JSON if it's a string
+        programData = JSON.parse(programData);
       } catch (error) {
         console.error("Failed to parse program_data:", error);
         programData = {}; // fallback to empty object if parsing fails
       }
     }
 
+    // Check if the program has been started before
+    const initialProgress =
+      program.current_week === 1 &&
+      (!program.completed_weeks || program.completed_weeks.length === 0)
+        ? {
+            currentWeek: 1,
+            completedWeeks: [],
+          }
+        : {
+            currentWeek: program.current_week || 1,
+            completedWeeks: program.completed_weeks || [],
+          };
+
     navigate("/program-tracker", {
       state: {
         workout: programData,
-        progress: {
-          currentWeek: program.current_week,
-          completedWeeks: program.completed_weeks || [],
-        },
+        progress: initialProgress,
       },
     });
   };
 
   const renderProgramProgress = (program) => {
+    // Parse program data
+    let programData = program.program_data;
+    if (typeof programData === "string") {
+      try {
+        programData = JSON.parse(programData);
+      } catch (error) {
+        console.error("Failed to parse program_data:", error);
+        return null;
+      }
+    }
+
+    // Determine if the program is ready to start or in progress
+    const isNotStarted =
+      program.current_week === 1 &&
+      (!program.completed_weeks || program.completed_weeks.length === 0);
+
     return (
       <div className="mt-2 text-sm">
-        <div className="flex items-center space-x-2">
-          <FaClock className="text-blue-500" />
-          <span>Current Week: {program.current_week}</span>
-        </div>
-        <div className="flex items-center space-x-2 mt-1">
-          <FaCheckCircle className="text-green-500" />
-          <span>
-            Completed Weeks:{" "}
-            {program.completed_weeks ? program.completed_weeks.length : 0}
-          </span>
-        </div>
-        <button
-          onClick={() => startProgram(program)}
-          className="mt-2 flex items-center justify-center w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-        >
-          <FaPlay className="mr-2" /> Continue Program
-        </button>
+        {isNotStarted ? (
+          <button
+            onClick={() => startProgram(program)}
+            className="mt-2 flex items-center justify-center w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+          >
+            <FaPlay className="mr-2" /> Start 6-Week Program
+          </button>
+        ) : (
+          <>
+            <div className="flex items-center space-x-2">
+              <FaClock className="text-blue-500" />
+              <span>Current Week: {program.current_week}</span>
+            </div>
+            <div className="flex items-center space-x-2 mt-1">
+              <FaCheckCircle className="text-green-500" />
+              <span>
+                Completed Weeks:{" "}
+                {program.completed_weeks ? program.completed_weeks.length : 0}
+              </span>
+            </div>
+            <button
+              onClick={() => startProgram(program)}
+              className="mt-2 flex items-center justify-center w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+            >
+              <FaPlay className="mr-2" /> Continue Program
+            </button>
+          </>
+        )}
       </div>
     );
   };
