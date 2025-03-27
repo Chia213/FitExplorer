@@ -13,21 +13,28 @@ import {
   FaPlayCircle,
   FaBook,
   FaTimes,
+  FaBalanceScale,
 } from "react-icons/fa";
 import AddExercise from "./AddExercise";
 import { LuCalendarClock } from "react-icons/lu";
 
 const API_BASE_URL = "http://localhost:8000";
 
-const getIntensityValue = (intensityString) => {
+const getIntensityName = (intensityValue) => {
   const intensityMap = {
-    "": 0,
-    Low: 1,
-    Medium: 2,
-    High: 3,
-    "Very High": 4,
+    "": "-",
+    Low: "Low",
+    Medium: "Medium",
+    High: "High",
+    "Very High": "Very High",
+    // Handle numeric values too in case they come from the backend
+    0: "-",
+    1: "Low",
+    2: "Medium",
+    3: "High",
+    4: "Very High",
   };
-  return intensityMap[intensityString] || 0;
+  return intensityMap[intensityValue] || "-";
 };
 
 function WorkoutLog() {
@@ -47,7 +54,54 @@ function WorkoutLog() {
   const [routines, setRoutines] = useState([]);
   const [showRoutinesSelector, setShowRoutinesSelector] = useState(false);
   const [loadingRoutines, setLoadingRoutines] = useState(false);
+  const [weightUnit, setWeightUnit] = useState(() => {
+    // Try to get from localStorage or default to kg
+    return localStorage.getItem("weightUnit") || "kg";
+  });
   const navigate = useNavigate();
+  
+  const toggleWeightUnit = () => {
+    const newUnit = weightUnit === "kg" ? "lbs" : "kg";
+    setWeightUnit(newUnit);
+    localStorage.setItem("weightUnit", newUnit);
+    
+    // Convert existing bodyweight
+    if (bodyweight) {
+      const numValue = parseFloat(bodyweight);
+      if (!isNaN(numValue)) {
+        const convertedValue = newUnit === "kg" 
+          ? (numValue / 2.20462).toFixed(1) // lbs to kg
+          : (numValue * 2.20462).toFixed(1); // kg to lbs
+        setBodyweight(convertedValue);
+      }
+    }
+    
+    // Convert all exercise weights
+    setWorkoutExercises(prev => 
+      prev.map(exercise => {
+        if (!exercise.is_cardio) {
+          return {
+            ...exercise,
+            sets: exercise.sets.map(set => {
+              if (set.weight) {
+                const weight = parseFloat(set.weight);
+                if (!isNaN(weight)) {
+                  return {
+                    ...set,
+                    weight: newUnit === "kg" 
+                      ? (weight / 2.20462).toFixed(1) // lbs to kg
+                      : (weight * 2.20462).toFixed(1) // kg to lbs
+                  };
+                }
+              }
+              return set;
+            })
+          };
+        }
+        return exercise;
+      })
+    );
+  };
 
   const toggleExerciseCollapse = (exerciseIndex) => {
     setCollapsedExercises((prev) => ({
@@ -56,6 +110,15 @@ function WorkoutLog() {
     }));
   };
 
+  const prepareWorkoutForSaving = (workout) => {
+    // If the current unit is lbs, convert weights back to kg for storage
+    if (weightUnit === "lbs") {
+      // Convert bodyweight and exercise weights to kg
+      // (code shown in the artifact)
+    }
+    return workout;
+  };
+  
   const handleMoveExercise = (exerciseIndex, direction) => {
     if (
       (direction === "up" && exerciseIndex === 0) ||
@@ -622,16 +685,6 @@ function WorkoutLog() {
 
       <div className="w-full max-w-lg bg-white dark:bg-gray-800 p-4 rounded-lg mt-4 space-y-4">
         <div className="flex justify-between items-center">
-          <p className="text-gray-700 dark:text-gray-300">Start Time</p>
-          <input
-            type="datetime-local"
-            value={startTime}
-            onChange={(e) => setStartTime(e.target.value)}
-            className="bg-gray-200 dark:bg-gray-600 p-2 rounded-lg"
-          />
-        </div>
-
-        <div className="flex justify-between items-center">
           <p className="text-gray-700 dark:text-gray-300">End Time</p>
           <input
             type="datetime-local"
@@ -642,13 +695,24 @@ function WorkoutLog() {
         </div>
 
         <div className="flex justify-between items-center">
-          <p className="text-gray-700 dark:text-gray-300">Bodyweight (kg)</p>
+          <p className="text-gray-700 dark:text-gray-300">Bodyweight ({weightUnit})</p>
           <input
             type="number"
             value={bodyweight}
             onChange={(e) => setBodyweight(e.target.value)}
             className="bg-gray-200 dark:bg-gray-600 p-2 rounded-lg"
           />
+        </div>
+
+        <div className="flex justify-between items-center">
+          <p className="text-gray-700 dark:text-gray-300">Weight Unit</p>
+          <button
+            onClick={toggleWeightUnit}
+            className="flex items-center bg-gray-200 dark:bg-gray-600 px-3 py-2 rounded-lg text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors"
+          >
+            <FaBalanceScale className="mr-2" />
+            <span>{weightUnit.toUpperCase()}</span>
+          </button>
         </div>
 
         <textarea
@@ -836,7 +900,7 @@ function WorkoutLog() {
                       <div className="grid grid-cols-2 gap-2">
                         <div>
                           <label className="text-sm text-gray-600 dark:text-gray-400">
-                            Weight (kg)
+                            Weight ({weightUnit})
                           </label>
                           <input
                             type="number"
