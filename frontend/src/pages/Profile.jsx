@@ -25,7 +25,6 @@ function Profile() {
   const [workoutStats, setWorkoutStats] = useState(null);
   const [profilePicture, setProfilePicture] = useState(null);
   const [preferences, setPreferences] = useState({
-    weightUnit: "kg",
     goalWeight: null,
     emailNotifications: false,
     summaryFrequency: null,
@@ -255,11 +254,10 @@ function Profile() {
           summaryFrequency: preferences.emailNotifications
             ? preferences.summaryFrequency
             : null,
-          weightUnit: preferences.weightUnit,
           cardColor: preferences.cardColor,
         }),
       });
-
+  
       if (!response.ok) {
         const errorData = await response.json();
         setError(errorData.detail || "Failed to update preferences");
@@ -538,22 +536,7 @@ function Profile() {
                   )}
                 </div>
               )}
-              <div>
-                <label className="block mb-1">Weight Unit</label>
-                <select
-                  value={preferences.weightUnit}
-                  onChange={(e) =>
-                    handlePreferenceChange({
-                      ...preferences,
-                      weightUnit: e.target.value,
-                    })
-                  }
-                  className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600"
-                >
-                  <option value="kg">Kilograms (kg)</option>
-                  <option value="lbs">Pounds (lbs)</option>
-                </select>
-              </div>
+
               <button
                 onClick={handlePreferenceUpdate}
                 disabled={!preferencesChanged}
