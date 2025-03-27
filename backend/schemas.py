@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from pydantic import BaseModel, EmailStr, Field
 from datetime import datetime
 from typing import Optional, List
 import json
@@ -213,9 +213,9 @@ class GoogleAuthResponse(Token):
 
 
 class SavedWorkoutProgramCreate(BaseModel):
-    program_data: dict  # Ensure this is a dict, not a string
+    program_data: dict
     current_week: Optional[int] = 1
-    completed_weeks: Optional[List[int]] = []  # Ensure this is a list
+    completed_weeks: Optional[List[int]] = []
 
 
 class SavedWorkoutProgramResponse(BaseModel):
@@ -227,15 +227,3 @@ class SavedWorkoutProgramResponse(BaseModel):
 
     class Config:
         from_attributes = True
-
-    @field_validator('program_data', mode='before')
-    def parse_program_data(cls, v):
-        if isinstance(v, str):
-            return json.loads(v)
-        return v
-
-    @field_validator('completed_weeks', mode='before')
-    def parse_completed_weeks(cls, v):
-        if isinstance(v, str):
-            return json.loads(v)
-        return v or []

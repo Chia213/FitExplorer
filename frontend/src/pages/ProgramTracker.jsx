@@ -18,6 +18,7 @@ function ProgramTracker() {
   const [exerciseProgress, setExerciseProgress] = useState({});
   const [showExerciseDetails, setShowExerciseDetails] = useState(null);
   const [editingWeight, setEditingWeight] = useState(null);
+  const [exerciseWeights, setExerciseWeights] = useState({});
   const [savedProgramId, setSavedProgramId] = useState(null);
 
   useEffect(() => {
@@ -42,7 +43,7 @@ function ProgramTracker() {
           const savedPrograms = await getSavedPrograms(token);
 
           const matchingProgram = savedPrograms.find(
-            (program) => JSON.parse(program.program_data).id === workout.id
+            (program) => program.program_data.id === workout.id
           );
 
           if (matchingProgram) {
@@ -56,7 +57,7 @@ function ProgramTracker() {
       findSavedProgram();
     } else {
       // If no state is passed, redirect back to saved workouts
-      navigate("/saved-workouts");
+      navigate("/saved-programs");
     }
   }, [location.state, navigate]);
 
@@ -136,7 +137,7 @@ function ProgramTracker() {
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center mb-6">
           <Link
-            to="/saved-workouts"
+            to="/saved-programs"
             className="mr-4 text-blue-500 hover:text-blue-600"
           >
             <FaArrowLeft size={20} />
@@ -379,33 +380,33 @@ function ProgramTracker() {
                       {showExerciseDetails.rest}s
                     </span>
                   </div>
-                  <div className="bg-gray-100 dark:bg-gray-700 p-2 rounded text-center">
-                    <span className="text-xs block text-gray-500 dark:text-gray-400">
-                      Weight
-                    </span>
-                    <span className="font-medium">
-                      {exerciseWeights?.[showExerciseDetails.name] || "-"} kg
-                    </span>
-                  </div>
                 </div>
-
-                <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded">
-                  <h4 className="font-medium mb-2">Performance Notes</h4>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Focus on maintaining proper form. Aim to progressively
-                    increase weight or resistance each week. If you cannot
-                    complete all sets with good form, reduce the weight.
-                  </p>
+                <div className="bg-gray-100 dark:bg-gray-700 p-2 rounded text-center">
+                  <span className="text-xs block text-gray-500 dark:text-gray-400">
+                    Weight
+                  </span>
+                  <span className="font-medium">
+                    {exerciseWeights?.[showExerciseDetails.name] || "-"} kg
+                  </span>
                 </div>
               </div>
 
-              <button
-                onClick={() => setShowExerciseDetails(null)}
-                className="mt-4 w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-              >
-                Close
-              </button>
+              <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded">
+                <h4 className="font-medium mb-2">Performance Notes</h4>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Focus on maintaining proper form. Aim to progressively
+                  increase weight or resistance each week. If you cannot
+                  complete all sets with good form, reduce the weight.
+                </p>
+              </div>
             </div>
+
+            <button
+              onClick={() => setShowExerciseDetails(null)}
+              className="mt-4 w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+            >
+              Close
+            </button>
           </div>
         )}
       </div>

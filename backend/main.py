@@ -1,6 +1,5 @@
 import uuid
 import os
-import json
 from fastapi import FastAPI, Depends, HTTPException, File, UploadFile, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from background_task import send_summary_emails
@@ -12,7 +11,7 @@ from database import engine, Base, get_db
 from datetime import datetime, timezone
 from auth import router as auth_router
 from dependencies import get_current_user
-from typing import List
+from typing import List, Dict, Any
 from models import Workout, User, Exercise, Set, UserPreferences, Routine, CustomExercise, SavedWorkoutProgram
 from schemas import (
     WorkoutCreate,
@@ -657,11 +656,9 @@ def create_saved_program(
     try:
         new_saved_program = SavedWorkoutProgram(
             user_id=user.id,
-            # Convert dict to JSON string
-            program_data=json.dumps(program.program_data),
+            program_data=program.program_data,  # Store as JSON, not as a string
             current_week=program.current_week or 1,
-            completed_weeks=json.dumps(
-                program.completed_weeks) if program.completed_weeks else "[]"
+            completed_weeks=program.completed_weeks if program.completed_weeks else []
         )
         db.add(new_saved_program)
         db.commit()
@@ -673,7 +670,8 @@ def create_saved_program(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/saved-programs", response_model=List[SavedWorkoutProgramResponse])
+# Change the return type
+@app.get("/saved-programs", response_model=List[Dict[str, Any]])
 def get_saved_programs(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -683,8 +681,23 @@ def get_saved_programs(
             .filter(SavedWorkoutProgram.user_id == user.id)\
             .order_by(SavedWorkoutProgram.created_at.desc())\
             .all()
-        return saved_programs
+
+        # Convert to dicts and ensure all data is serializable
+        result = []
+        for program in saved_programs:
+            program_dict = {
+                "id": program.id,
+                "user_id": program.user_id,
+                "program_data": program.program_data,
+                "created_at": program.created_at.isoformat(),
+                "current_week": program.current_week,
+                "completed_weeks": program.completed_weeks if isinstance(program.completed_weeks, list) else []
+            }
+            result.append(program_dict)
+
+        return result
     except Exception as e:
+        print(f"Error in get_saved_programs: {str(e)}")  # Debug print
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -704,20 +717,12 @@ def update_saved_program(
             raise HTTPException(
                 status_code=404, detail="Saved program not found")
 
-        saved_program.program_data = json.dumps(program_data.program_data)
+        saved_program.program_data = program_data.program_data  # Store as JSON
         saved_program.current_week = program_data.current_week
-        saved_program.completed_weeks = json.dumps(
-            program_data.completed_weeks) if program_data.completed_weeks else "[]"
+        saved_program.completed_weeks = program_data.completed_weeks if program_data.completed_weeks else []
 
         db.commit()
         db.refresh(saved_program)
-
-        # Parse back to dictionary
-        saved_program.program_data = json.loads(saved_program.program_data)
-        if saved_program.completed_weeks:
-            saved_program.completed_weeks = json.loads(
-                saved_program.completed_weeks)
-
         return saved_program
     except Exception as e:
         db.rollback()
@@ -743,6 +748,22 @@ def delete_saved_program(
         db.commit()
 
         return {"message": "Saved program deleted successfully"}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.delete("/saved-programs/clear")
+def clear_saved_programs(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    try:
+        db.query(SavedWorkoutProgram).filter(
+            SavedWorkoutProgram.user_id == user.id
+        ).delete(synchronize_session=False)
+        db.commit()
+        return {"message": "All saved programs cleared successfully"}
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))

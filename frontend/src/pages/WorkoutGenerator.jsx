@@ -1,17 +1,13 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { createSavedProgram } from "../api/savedProgramsApi";
 import {
   FaDumbbell,
-  FaHourglassHalf,
-  FaUser,
   FaWeightHanging,
   FaRunning,
   FaRegSave,
   FaPrint,
   FaUserAlt,
-  FaRandom,
-  FaAngleLeft,
   FaInfoCircle,
   FaVenusMars,
   FaBirthdayCake,
@@ -230,13 +226,33 @@ function WorkoutGenerator() {
 
   const saveWorkoutProgram = async () => {
     try {
-      const token = localStorage.getItem("token");
-      if (!token) {
+      if (!isAuthenticated) {
         setShowLoginPrompt(true);
         return;
       }
 
-      await createSavedProgram(workout, token);
+      const token = localStorage.getItem("token");
+
+      // Create a simplified version of the workout that removes any potential circular references
+      const simplifiedWorkout = {
+        id: workout.id,
+        title: workout.title,
+        difficulty: workout.difficulty,
+        fitnessGoal: workout.fitnessGoal,
+        duration: workout.duration,
+        workoutsPerWeek: workout.workoutsPerWeek,
+        targetMuscles: workout.targetMuscles,
+        exercises: workout.exercises.map((ex) => ({
+          name: ex.name,
+          muscle: ex.muscle,
+          sets: ex.sets,
+          reps: ex.reps,
+          rest: ex.rest,
+          intensity: ex.intensity,
+        })),
+      };
+
+      await createSavedProgram(simplifiedWorkout, token);
 
       setShowSuccess(true);
       setTimeout(() => {

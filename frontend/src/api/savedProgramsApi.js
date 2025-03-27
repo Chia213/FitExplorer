@@ -1,11 +1,13 @@
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
+// Create Saved Program
 export const createSavedProgram = async (programData, token) => {
   if (!token) {
     throw new Error("Authentication token is required");
   }
 
   try {
+    // Send program_data as an object, not as a stringified JSON
     const response = await fetch(`${API_URL}/saved-programs`, {
       method: "POST",
       headers: {
@@ -13,7 +15,7 @@ export const createSavedProgram = async (programData, token) => {
         Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({
-        program_data: programData,
+        program_data: programData, // Send as an object
         current_week: 1,
         completed_weeks: [],
       }),
@@ -21,6 +23,7 @@ export const createSavedProgram = async (programData, token) => {
 
     if (!response.ok) {
       const errorText = await response.text();
+      console.error("Server error response:", errorText);
       throw new Error(`Server error: ${response.status} - ${errorText}`);
     }
 
@@ -31,6 +34,7 @@ export const createSavedProgram = async (programData, token) => {
   }
 };
 
+// Get Saved Programs
 export const getSavedPrograms = async (token) => {
   if (!token) {
     throw new Error("Authentication token is required");
@@ -46,6 +50,7 @@ export const getSavedPrograms = async (token) => {
 
     if (!response.ok) {
       const errorText = await response.text();
+      console.error("Server response:", errorText);
       throw new Error(`Server error: ${response.status} - ${errorText}`);
     }
 
@@ -56,6 +61,7 @@ export const getSavedPrograms = async (token) => {
   }
 };
 
+// Update Saved Program
 export const updateSavedProgram = async (programId, programData, token) => {
   if (!token) {
     throw new Error("Authentication token is required");
@@ -69,7 +75,7 @@ export const updateSavedProgram = async (programId, programData, token) => {
         Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({
-        program_data: programData.program_data,
+        program_data: programData.program_data, // Send as an object
         current_week: programData.current_week,
         completed_weeks: programData.completed_weeks || [],
       }),
@@ -77,6 +83,7 @@ export const updateSavedProgram = async (programId, programData, token) => {
 
     if (!response.ok) {
       const errorText = await response.text();
+      console.error("Server error response:", errorText);
       throw new Error(`Server error: ${response.status} - ${errorText}`);
     }
 
@@ -87,6 +94,7 @@ export const updateSavedProgram = async (programId, programData, token) => {
   }
 };
 
+// Delete Saved Program
 export const deleteSavedProgram = async (programId, token) => {
   if (!token) {
     throw new Error("Authentication token is required");

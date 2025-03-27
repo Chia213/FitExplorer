@@ -12,7 +12,7 @@ import {
   FaCheckCircle,
 } from "react-icons/fa";
 
-function SavedWorkouts() {
+function SavedPrograms() {
   const [savedPrograms, setSavedPrograms] = useState([]);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [selectedWorkout, setSelectedWorkout] = useState(null);
@@ -85,17 +85,23 @@ function SavedWorkouts() {
   };
 
   const startProgram = (program) => {
-    // Parse the stored JSON data
-    const parsedProgramData = JSON.parse(program.program_data);
+    // Parse the stored program data if needed
+    let programData = program.program_data;
+    if (typeof programData === "string") {
+      try {
+        programData = JSON.parse(programData); // Parse it as JSON if it's a string
+      } catch (error) {
+        console.error("Failed to parse program_data:", error);
+        programData = {}; // fallback to empty object if parsing fails
+      }
+    }
 
     navigate("/program-tracker", {
       state: {
-        workout: parsedProgramData,
+        workout: programData,
         progress: {
           currentWeek: program.current_week,
-          completedWeeks: program.completed_weeks
-            ? JSON.parse(program.completed_weeks)
-            : [],
+          completedWeeks: program.completed_weeks || [],
         },
       },
     });
@@ -112,9 +118,7 @@ function SavedWorkouts() {
           <FaCheckCircle className="text-green-500" />
           <span>
             Completed Weeks:{" "}
-            {program.completed_weeks
-              ? JSON.parse(program.completed_weeks).length
-              : 0}
+            {program.completed_weeks ? program.completed_weeks.length : 0}
           </span>
         </div>
         <button
@@ -169,8 +173,16 @@ function SavedWorkouts() {
                 </div>
                 <div className="space-y-3">
                   {savedPrograms.map((program) => {
-                    // Parse the program data
-                    const programData = JSON.parse(program.program_data);
+                    let programData = program.program_data;
+                    if (typeof programData === "string") {
+                      try {
+                        programData = JSON.parse(programData);
+                      } catch (error) {
+                        console.error("Failed to parse program_data:", error);
+                        programData = {}; // fallback
+                      }
+                    }
+
                     return (
                       <div
                         key={program.id}
@@ -254,11 +266,21 @@ function SavedWorkouts() {
                     <button
                       onClick={() =>
                         startProgram(
-                          savedPrograms.find(
-                            (p) =>
-                              JSON.parse(p.program_data).id ===
-                              selectedWorkout.id
-                          )
+                          savedPrograms.find((p) => {
+                            let programData = p.program_data;
+                            if (typeof programData === "string") {
+                              try {
+                                programData = JSON.parse(programData);
+                              } catch (error) {
+                                console.error(
+                                  "Failed to parse program_data:",
+                                  error
+                                );
+                                return false;
+                              }
+                            }
+                            return programData.id === selectedWorkout.id;
+                          })
                         )
                       }
                       className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center justify-center"
@@ -291,4 +313,4 @@ function SavedWorkouts() {
   );
 }
 
-export default SavedWorkouts;
+export default SavedPrograms;

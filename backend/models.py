@@ -1,5 +1,6 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Float, Boolean, JSON
 from sqlalchemy.orm import relationship
+from sqlalchemy.dialects.postgresql import JSON
 from database import Base
 from datetime import datetime, timezone
 

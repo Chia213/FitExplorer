@@ -253,7 +253,7 @@ function Navbar() {
                           Profile
                         </Link>
                         <Link
-                          to="/saved-workouts"
+                          to="/saved-programs"
                           className="block p-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center"
                         >
                           <FaSave className="mr-2 text-indigo-500" /> Saved
