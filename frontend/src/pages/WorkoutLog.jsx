@@ -685,6 +685,16 @@ function WorkoutLog() {
 
       <div className="w-full max-w-lg bg-white dark:bg-gray-800 p-4 rounded-lg mt-4 space-y-4">
         <div className="flex justify-between items-center">
+          <p className="text-gray-700 dark:text-gray-300">Start Time</p>
+          <input
+            type="datetime-local"
+            value={startTime}
+            onChange={(e) => setStartTime(e.target.value)}
+            className="bg-gray-200 dark:bg-gray-600 p-2 rounded-lg"
+          />
+        </div>
+
+        <div className="flex justify-between items-center">
           <p className="text-gray-700 dark:text-gray-300">End Time</p>
           <input
             type="datetime-local"
