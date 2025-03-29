@@ -747,33 +747,51 @@ const allExercises = {
 
   // CHEST DUMBBELL EXERCISES
   "Dumbbell Bench Press": {
-    type: "animation",
-    src: "/src/assets/exercises/dumbbell-bench-press.gif",
-    description:
-      "Lie on a bench, hold a dumbbell in each hand, lower them to chest level, then press up.",
-    muscleWorked: "Chest, Triceps, Shoulders",
-    equipment: ["Dumbbells", "Bench"],
-    difficulty: {
-      novice: "Dumbbell Chest Press with Low Weight",
-      beginner: "Standard Dumbbell Chest Press",
-      intermediate: "Incline Dumbbell Chest Press",
-      advanced: "Heavy Dumbbell Chest Press",
+  type: "animation",
+  description:
+    "Lie on a bench, hold a dumbbell in each hand, lower them to chest level, then press up.",
+  muscleWorked: "Chest, Triceps, Shoulders",
+  equipment: ["Dumbbells", "Bench"],
+  difficulty: {
+    novice: {
+      name: "Dumbbell Chest Press with Low Weight",
+      src: "/src/assets/exercises/dumbbell/novice-dumbbell-bench-press.gif",
+      description:
+        "Perform with lighter dumbbells to develop proper form and muscle activation patterns."
     },
-    variations: {
-      "Weight Loss": { sets: 3, reps: "12-15", intensity: "moderate" },
-      "Muscle Building": { sets: 4, reps: "8-12", intensity: "high" },
-      "Gain Strength": { sets: 5, reps: "3-6", intensity: "very high" },
-      Endurance: { sets: 3, reps: "15-20", intensity: "low" },
+    beginner: {
+      name: "Standard Dumbbell Chest Press",
+      src: "/src/assets/exercises/dumbbell/dumbbell-bench-press.gif",
+      description: "Lie flat on a bench, press dumbbells from chest level to full arm extension."
     },
-    ageModifications: {
-      "13-18": { notes: "Focus on lighter weights and proper form" },
-      "65+": { notes: "Use light weights, avoid overhead movements" },
+    intermediate: {
+      name: "Incline Dumbbell Chest Press",
+      src: "/src/assets/exercises/dumbbell/incline-dumbbell-bench-press.gif",
+      description:
+        "Press dumbbells while on an inclined bench to target upper chest and increase difficulty."
+    },
+    advanced: {
+      name: "Heavy Dumbbell Chest Press",
+      src: "/src/assets/exercises/dumbbell/advanced-dumbbell-bench-press.gif",
+      description:
+        "Use heavier dumbbells with controlled movement for maximum chest and tricep development."
     },
   },
+  variations: {
+    "Weight Loss": { sets: 3, reps: "12-15", intensity: "moderate" },
+    "Muscle Building": { sets: 4, reps: "8-12", intensity: "high" },
+    "Gain Strength": { sets: 5, reps: "3-6", intensity: "very high" },
+    Endurance: { sets: 3, reps: "15-20", intensity: "low" },
+  },
+  ageModifications: {
+    "13-18": { notes: "Focus on lighter weights and proper form" },
+    "65+": { notes: "Use light weights, avoid overhead movements" },
+  },
+},
 
   "Dumbbell Chest Fly": {
     type: "animation",
-    src: "/src/assets/exercises/dumbbell-chest-fly.gif",
+    src: "/src/assets/exercises/dumbell/dumbbell-chest-fly.gif",
     description:
       "Lie on a bench, holding dumbbells in each hand, arms outstretched, then bring the dumbbells together in front of your chest.",
     muscleWorked: "Chest, Shoulders",
