@@ -14,24 +14,1708 @@ import {
   FaCalendarAlt,
 } from "react-icons/fa";
 
-const exerciseAssets = {
-  "Shoulder Press": {
+const allExercises = {
+  // CHEST BODYWEIGHT EXERCISES
+  "Push-ups": {
     type: "animation",
-    src: "/src/assets/exercises/shoulder-press.gif",
     description:
-      "Sit with back supported, press dumbbells upward until arms are extended. Lower weights to shoulder level and repeat.",
-    muscleWorked: "Shoulders",
-    equipment: ["Dumbbells", "Barbell", "Machine"],
-    difficulty: "Intermediate",
+      "Start in position, lower body until chest nearly touches the ground, then push back up.",
+    muscleWorked: "Chest, Triceps, Shoulders",
+    equipment: ["Bodyweight"],
+    difficulty: {
+      novice: {
+        name: "Knee Push-ups",
+        src: "/src/assets/exercises/bodyweight/knee-pushup.gif",
+        description:
+          "Perform push-ups with knees on the ground to reduce resistance.",
+      },
+      beginner: {
+        name: "Standard Push-ups",
+        src: "/src/assets/exercises/bodyweight/standard-pushup.gif",
+        description: "Standard push-ups with a full plank position.",
+      },
+      intermediate: {
+        name: "Wide Push-ups",
+        src: "/src/assets/exercises/bodyweight/wide-pushup.gif",
+        description:
+          "Push-ups with hands placed wider than shoulders for greater chest engagement.",
+      },
+      advanced: {
+        name: "Plyometric Push-ups",
+        src: "/src/assets/exercises/bodyweight/plyo-pushup.gif",
+        description:
+          "Explosive push-ups where hands leave the ground at the top of the movement.",
+      },
+    },
+    variations: {
+      "Weight Loss": { sets: 3, reps: "12-15", intensity: "moderate" },
+      "Muscle Building": { sets: 4, reps: "8-12", intensity: "high" },
+      "Gain Strength": { sets: 5, reps: "3-6", intensity: "very high" },
+      Endurance: { sets: 3, reps: "15-20", intensity: "low" },
+    },
+    ageModifications: {
+      "13-18": { notes: "Focus on proper form, avoid max intensity" },
+      "65+": { notes: "Use wall or incline push-ups, reduce range of motion" },
+    },
   },
+
+  "Diamond Push-ups": {
+    type: "animation",
+    description:
+      "Perform push-ups with hands close together, forming a diamond shape with thumbs and index fingers.",
+    muscleWorked: "Triceps, Chest",
+    equipment: ["Bodyweight"],
+    difficulty: {
+      novice: {
+        name: "Knee Diamond Push-ups",
+        src: "/src/assets/exercises/bodyweight/knee-diamond-pushup.gif",
+        description:
+          "Perform diamond push-ups with knees on the ground to reduce resistance while maintaining tricep focus.",
+      },
+      beginner: {
+        name: "Standard Diamond Push-ups",
+        src: "/src/assets/exercises/bodyweight/standard-diamond-pushup.gif",
+        description:
+          "Hands form a diamond shape under chest, elbows stay close to body for maximum tricep activation.",
+      },
+      intermediate: {
+        name: "Decline Diamond Push-ups",
+        src: "/src/assets/exercises/bodyweight/decline-diamond-pushup.gif",
+        description:
+          "Diamond push-ups with feet elevated to increase upper body load and difficulty.",
+      },
+      advanced: {
+        name: "Plyometric Diamond Push-ups",
+        src: "/src/assets/exercises/bodyweight/plyo-diamond-pushup.gif",
+        description:
+          "Explosive diamond push-ups where hands leave the ground at the top, emphasizing power and tricep strength.",
+      },
+    },
+    variations: {
+      "Weight Loss": { sets: 3, reps: "10-12", intensity: "moderate" },
+      "Muscle Building": { sets: 3, reps: "6-10", intensity: "high" },
+      "Gain Strength": { sets: 4, reps: "3-5", intensity: "very high" },
+      Endurance: { sets: 3, reps: "12-15", intensity: "low" },
+    },
+    ageModifications: {
+      "13-18": { notes: "Modify hand placement, focus on tricep engagement" },
+      "65+": { notes: "Use wall support, reduce range of motion" },
+    },
+  },
+
+  "Decline Push-ups": {
+    type: "animation",
+    description:
+      "Perform push-ups with feet elevated, increasing difficulty and upper chest engagement.",
+    muscleWorked: "Upper Chest, Shoulders",
+    equipment: ["Bodyweight"],
+    difficulty: {
+      novice: {
+        name: "Elevated Knee Push-ups",
+        src: "/src/assets/exercises/bodyweight/elevated-knee-pushup.gif",
+        description:
+          "Perform push-ups with knees on the ground and hands on an elevated surface to reduce resistance while targeting upper chest.",
+      },
+      beginner: {
+        name: "Low Decline Push-ups",
+        src: "/src/assets/exercises/bodyweight/low-decline-pushup.gif",
+        description:
+          "Push-ups with feet slightly elevated on a low platform for gentle upper chest activation.",
+      },
+      intermediate: {
+        name: "Stability Ball Decline Push-ups",
+        src: "/src/assets/exercises/bodyweight/stability-ball-decline-push-ups.gif",
+        description:
+          "Perform push-ups with feet or shins on a stability ball, creating an unstable surface that increases core engagement.",
+      },
+      advanced: {
+        name: "Feet High Decline Push-ups",
+        src: "/src/assets/exercises/bodyweight/feet-high-decline-pushup.gif",
+        description:
+          "Push-ups with feet elevated to maximum height, creating a steep angle for extreme upper chest and shoulder emphasis.",
+      },
+    },
+    variations: {
+      "Weight Loss": { sets: 3, reps: "10-12", intensity: "moderate" },
+      "Muscle Building": { sets: 3, reps: "8-10", intensity: "high" },
+      "Gain Strength": { sets: 4, reps: "4-6", intensity: "very high" },
+      Endurance: { sets: 3, reps: "12-15", intensity: "low" },
+    },
+    ageModifications: {
+      "13-18": { notes: "Gradual elevation, maintain proper form" },
+      "65+": { notes: "Use very low elevation, focus on shoulder health" },
+    },
+  },
+
+  // BACK BODYWEIGHT EXERCISES
+  "Pull-ups": {
+    type: "animation",
+    description:
+      "Hang from a bar, pull your body up until chin is above the bar, then lower down with control.",
+    muscleWorked: "Back, Biceps",
+    equipment: ["Bodyweight", "Pull-up Bar"],
+    difficulty: {
+      novice: {
+        name: "Assisted Pull-ups",
+        src: "/src/assets/exercises/bodyweight/assisted-pullup.gif",
+        description:
+          "Use a resistance band or assisted pull-up machine to reduce body weight and build initial strength.",
+      },
+      beginner: {
+        name: "Negative Pull-ups",
+        src: "/src/assets/exercises/bodyweight/negative-pullup.gif",
+        description:
+          "Jump to the top position and slowly lower yourself down, focusing on control during the descent.",
+      },
+      intermediate: {
+        name: "Standard Pull-ups",
+        src: "/src/assets/exercises/bodyweight/standard-pullup.gif",
+        description:
+          "Complete pull-ups with full range of motion, pulling chin above the bar with proper form.",
+      },
+      advanced: {
+        name: "Weighted Pull-ups",
+        src: "/src/assets/exercises/bodyweight/weighted-pullup.gif",
+        description:
+          "Perform pull-ups with additional weight attached via belt or held between feet for increased resistance.",
+      },
+    },
+    variations: {
+      "Weight Loss": { sets: 3, reps: "6-8", intensity: "moderate" },
+      "Muscle Building": { sets: 4, reps: "5-7", intensity: "high" },
+      "Gain Strength": { sets: 5, reps: "3-5", intensity: "very high" },
+      Endurance: { sets: 3, reps: "8-10", intensity: "low" },
+    },
+    ageModifications: {
+      "13-18": { notes: "Use assistance, focus on proper technique" },
+      "65+": { notes: "Use resistance bands, shorter range of motion" },
+    },
+  },
+
+  "Inverted Rows": {
+    type: "animation",
+    description:
+      "Hang underneath a bar or table, pull your chest up to the bar while keeping body straight.",
+    muscleWorked: "Back, Biceps",
+    equipment: ["Bodyweight", "Pull-up Bar"],
+    difficulty: {
+      novice: {
+        name: "Bent Knee Inverted Rows",
+        src: "/src/assets/exercises/bodyweight/bent-knee-inverted-row.gif",
+        description:
+          "Perform inverted rows with knees bent at 90 degrees to reduce resistance and make the exercise more accessible.",
+      },
+      beginner: {
+        name: "Feet on Ground Rows",
+        src: "/src/assets/exercises/bodyweight/feet-ground-inverted-row.gif",
+        description:
+          "Inverted rows with feet on the floor, body at an angle to provide moderate resistance.",
+      },
+      intermediate: {
+        name: "Ring Inverted Row",
+        src: "/src/assets/exercises/bodyweight/ring-inverted-row .gif",
+        description:
+          "Grip gymnastics rings while hanging underneath, pull your chest up towards the rings while maintaining a straight body position.",
+      },
+      advanced: {
+        name: "Elevated Feet Inverted Rows",
+        src: "/src/assets/exercises/bodyweight/elevated-feet-inverted-row.gif",
+        description:
+          "Inverted rows with feet elevated on a platform, increasing difficulty and targeting upper back more intensely.",
+      },
+    },
+    variations: {
+      "Weight Loss": { sets: 3, reps: "10-12", intensity: "moderate" },
+      "Muscle Building": { sets: 3, reps: "8-10", intensity: "high" },
+      "Gain Strength": { sets: 4, reps: "5-7", intensity: "very high" },
+      Endurance: { sets: 3, reps: "12-15", intensity: "low" },
+    },
+    ageModifications: {
+      "13-18": { notes: "Adjust bar height, maintain straight body" },
+      "65+": { notes: "Use higher bar, shorter range of motion" },
+    },
+  },
+
+  // SHOULDERS BODYWEIGHT EXERCISES
+  "Pike Push-ups": {
+    type: "animation",
+    description:
+      "Form an inverted V-shape, lower head towards ground between hands.",
+    muscleWorked: "Shoulders, Upper Chest",
+    equipment: ["Bodyweight"],
+    difficulty: {
+      novice: {
+        name: "Wall Pike Push-ups",
+        src: "/src/assets/exercises/bodyweight/wall-pike-pushup.gif",
+        description:
+          "Perform pike push-ups with hands on the floor and feet against a wall, reducing the weight load while maintaining shoulder focus.",
+      },
+      beginner: {
+        name: "Elevated Pike Push-ups",
+        src: "/src/assets/exercises/bodyweight/elevated-pike-pushup.gif",
+        description:
+          "Pike push-ups with feet elevated on a bench or box to create a more vertical angle and moderate shoulder load.",
+      },
+      intermediate: {
+        name: "Standard Pike Push-ups",
+        src: "/src/assets/exercises/bodyweight/standard-pike-pushup.gif",
+        description:
+          "Full pike position with hips high, forming an inverted V-shape while lowering head between hands for deep shoulder work.",
+      },
+      advanced: {
+        name: "Handstand Push-up Progression",
+        src: "/src/assets/exercises/bodyweight/handstand-pushup-progression.gif",
+        description:
+          "Near-vertical pike position or wall-supported handstand push-ups to maximize shoulder strength development.",
+      },
+    },
+    variations: {
+      "Weight Loss": { sets: 3, reps: "8-10", intensity: "moderate" },
+      "Muscle Building": { sets: 3, reps: "6-8", intensity: "high" },
+      "Gain Strength": { sets: 4, reps: "3-5", intensity: "very high" },
+      Endurance: { sets: 3, reps: "10-12", intensity: "low" },
+    },
+    ageModifications: {
+      "13-18": { notes: "Gradual progression, avoid full shoulder load" },
+      "65+": { notes: "Use wall support, limit range of motion" },
+    },
+  },
+
+  // BICEPS BODYWEIGHT EXERCISES
+  "Chin-ups": {
+    type: "animation",
+    description:
+      "Similar to pull-ups, but with palms facing towards you, emphasizing biceps.",
+    muscleWorked: "Biceps, Back",
+    equipment: ["Bodyweight", "Pull-up Bar"],
+    difficulty: {
+      novice: {
+        name: "Assisted Chin-ups",
+        src: "/src/assets/exercises/bodyweight/assisted-chinup.gif",
+        description:
+          "Use resistance bands or assisted machine to reduce body weight, allowing for proper form development.",
+      },
+      beginner: {
+        name: "Negative Chin-ups",
+        src: "/src/assets/exercises/bodyweight/negative-chinup.gif",
+        description:
+          "Jump to the top position and slowly lower yourself down, focusing on controlled eccentric movement.",
+      },
+      intermediate: {
+        name: "Standard Chin-ups",
+        src: "/src/assets/exercises/bodyweight/standard-chinup.gif",
+        description:
+          "Full chin-ups with palms facing your body, pulling your chest to the bar with controlled movement.",
+      },
+      advanced: {
+        name: "Weighted Chin-ups",
+        src: "/src/assets/exercises/bodyweight/weighted-chinup.gif",
+        description:
+          "Standard chin-ups with additional weight attached to a belt or held between the legs for increased resistance.",
+      },
+    },
+    variations: {
+      "Weight Loss": { sets: 3, reps: "5-7", intensity: "moderate" },
+      "Muscle Building": { sets: 3, reps: "4-6", intensity: "high" },
+      "Gain Strength": { sets: 4, reps: "2-4", intensity: "very high" },
+      Endurance: { sets: 3, reps: "6-8", intensity: "low" },
+    },
+    ageModifications: {
+      "13-18": { notes: "Use assistance, focus on form" },
+      "65+": { notes: "Use resistance bands, shorter range" },
+    },
+  },
+
+  // TRICEPS BODYWEIGHT EXERCISES
+  Dips: {
+    type: "animation",
+    description:
+      "Using parallel bars or chairs, lower body by bending elbows, then push back up.",
+    muscleWorked: "Triceps, Chest",
+    equipment: ["Bodyweight", "Parallel Bars"],
+    difficulty: {
+      novice: {
+        name: "Bench Dips",
+        src: "/src/assets/exercises/bodyweight/bench-dips.gif",
+        description:
+          "Perform dips using a bench with feet on the floor to reduce resistance while building tricep strength.",
+      },
+      beginner: {
+        name: "Assisted Dips",
+        src: "/src/assets/exercises/bodyweight/assisted-dips.gif",
+        description:
+          "Use resistance bands or machine assistance to help perform dips with proper form and reduced body weight.",
+      },
+      intermediate: {
+        name: "Standard Dips",
+        src: "/src/assets/exercises/bodyweight/standard-dips.gif",
+        description:
+          "Full body dips on parallel bars, lowering until upper arms are parallel with the ground.",
+      },
+      advanced: {
+        name: "Ring Dips",
+        src: "/src/assets/exercises/bodyweight/ring-dips.gif",
+        description:
+          "Perform dips on gymnastic rings for increased instability and greater muscle recruitment.",
+      },
+    },
+    variations: {
+      "Weight Loss": { sets: 3, reps: "10-12", intensity: "moderate" },
+      "Muscle Building": { sets: 3, reps: "8-10", intensity: "high" },
+      "Gain Strength": { sets: 4, reps: "5-7", intensity: "very high" },
+      Endurance: { sets: 3, reps: "12-15", intensity: "low" },
+    },
+    ageModifications: {
+      "13-18": { notes: "Limited range, focus on technique" },
+      "65+": { notes: "Use chair support, minimal depth" },
+    },
+  },
+
+  // CORE/ABS BODYWEIGHT EXERCISES
+  Planks: {
+    type: "animation",
+    description:
+      "Hold a straight body position supported on forearms and toes.",
+    muscleWorked: "Core, Shoulders",
+    equipment: ["Bodyweight"],
+    difficulty: {
+      novice: {
+        name: "Knee Planks",
+        src: "/src/assets/exercises/bodyweight/knee-plank.gif",
+        description:
+          "Modified plank with knees on the ground for reduced difficulty while still engaging the core.",
+      },
+      beginner: {
+        name: "Standard Plank",
+        src: "/src/assets/exercises/bodyweight/standard-plank.gif",
+        description:
+          "Classic forearm plank position maintaining a straight line from head to heels.",
+      },
+      intermediate: {
+        name: "Side Planks",
+        src: "/src/assets/exercises/bodyweight/side-plank.gif",
+        description:
+          "Rotate to the side supported by one forearm, challenging obliques and lateral stability.",
+      },
+      advanced: {
+        name: "Plank Variations",
+        src: "/src/assets/exercises/bodyweight/advanced-plank.gif",
+        description:
+          "Advanced variations including arm/leg raises, plank jacks, or plank reaches for increased challenge.",
+      },
+    },
+    variations: {
+      "Weight Loss": {
+        duration: "30-45 seconds",
+        sets: 3,
+        intensity: "moderate",
+      },
+      "Muscle Building": {
+        duration: "45-60 seconds",
+        sets: 4,
+        intensity: "high",
+      },
+      "Gain Strength": {
+        duration: "60-90 seconds",
+        sets: 5,
+        intensity: "very high",
+      },
+      Endurance: { duration: "45-60 seconds", sets: 3, intensity: "low" },
+    },
+    ageModifications: {
+      "13-18": { notes: "Progressive duration, focus on form" },
+      "65+": { notes: "Shorter holds, use support" },
+    },
+  },
+
+  // CHEST BARBELL EXERCISES
+  "Barbell Bench Press": {
+    type: "animation",
+    description:
+      "Lie on a bench with your feet flat on the floor, grip the barbell wider than shoulder-width, and lower the barbell to your chest before pressing back up.",
+    muscleWorked: "Chest, Shoulders, Triceps",
+    equipment: ["Barbell", "Bench"],
+    difficulty: {
+      novice: {
+        name: "Barbell Chest Press with Light Weight",
+        src: "/src/assets/exercises/barbell/light-bench-press.gif",
+        description:
+          "Use a lighter barbell to learn proper form and movement pattern with less resistance.",
+      },
+      beginner: {
+        name: "Standard Barbell Bench Press",
+        src: "/src/assets/exercises/barbell/standard-bench-press.gif",
+        description:
+          "Lie flat on a bench, grip barbell wider than shoulders, lower to mid-chest and press upward with control.",
+      },
+      intermediate: {
+        name: "Incline Barbell Bench Press",
+        src: "/src/assets/exercises/barbell/incline-bench-press.gif",
+        description:
+          "Bench press performed on an inclined bench to target upper chest and provide a new challenge.",
+      },
+      advanced: {
+        name: "Heavy Barbell Bench Press",
+        src: "/src/assets/exercises/barbell/heavy-bench-press.gif",
+        description:
+          "Higher weight bench press with proper form, emphasizing power and strength development.",
+      },
+    },
+    variations: {
+      "Weight Loss": { sets: 3, reps: "12-15", intensity: "moderate" },
+      "Muscle Building": { sets: 4, reps: "8-12", intensity: "high" },
+      "Gain Strength": { sets: 5, reps: "3-6", intensity: "very high" },
+      Endurance: { sets: 3, reps: "15-20", intensity: "low" },
+    },
+    ageModifications: {
+      "13-18": { notes: "Start with light weights and focus on form" },
+      "65+": {
+        notes: "Use light weights, avoid excessive strain on shoulders",
+      },
+    },
+  },
+
+  // BACK BARBELL EXERCISES
+  "Barbell Row": {
+    type: "animation",
+    description:
+      "Bend at the waist with a straight back, grip the barbell with hands just wider than shoulder-width, and pull it towards your waist.",
+    muscleWorked: "Back, Biceps, Shoulders",
+    equipment: ["Barbell"],
+    difficulty: {
+      novice: {
+        name: "Barbell Row with Light Weight",
+        src: "/src/assets/exercises/barbell/light-barbell-row.gif",
+        description:
+          "Barbell row with lighter weight focusing on proper form and back engagement.",
+      },
+      beginner: {
+        name: "Standard Barbell Row",
+        src: "/src/assets/exercises/barbell/standard-barbell-row.gif",
+        description:
+          "Conventional barbell row with moderate weight and controlled movement.",
+      },
+      intermediate: {
+        name: "Bent-Over Barbell Row",
+        src: "/src/assets/exercises/barbell/bent-over-barbell-row.gif",
+        description:
+          "Full bent-over position with increased weight and strict form for maximum back development.",
+      },
+      advanced: {
+        name: "Heavy Barbell Row",
+        src: "/src/assets/exercises/barbell/heavy-barbell-row.gif",
+        description:
+          "Barbell row with challenging weight, maintaining strict form and powerful pull.",
+      },
+    },
+    variations: {
+      "Weight Loss": { sets: 3, reps: "12-15", intensity: "moderate" },
+      "Muscle Building": { sets: 4, reps: "8-12", intensity: "high" },
+      "Gain Strength": { sets: 5, reps: "3-6", intensity: "very high" },
+      Endurance: { sets: 3, reps: "15-20", intensity: "low" },
+    },
+    ageModifications: {
+      "13-18": {
+        notes: "Focus on maintaining a straight back, use light weights",
+      },
+      "65+": { notes: "Use lighter weights, avoid bending too much" },
+    },
+  },
+
+  "Barbell Deadlift": {
+    type: "animation",
+    description:
+      "Stand with feet hip-width apart, grip the barbell with your hands shoulder-width apart, and lift the barbell while maintaining a straight back.",
+    muscleWorked: "Hamstrings, Glutes, Lower Back",
+    equipment: ["Barbell"],
+    difficulty: {
+      novice: {
+        name: "Light Barbell Deadlift",
+        src: "/src/assets/exercises/barbell/light-barbell-deadlift.gif",
+        description:
+          "Perform deadlifts with light barbell to learn proper form with less weight and risk.",
+      },
+      beginner: {
+        name: "Standard Barbell Deadlift",
+        src: "/src/assets/exercises/barbell/standard-deadlift.gif",
+        description:
+          "Basic barbell deadlift focusing on proper hip hinge and back position.",
+      },
+      intermediate: {
+        name: "Romanian Barbell Deadlift",
+        src: "/src/assets/exercises/barbell/romanian-deadlift.gif",
+        description:
+          "Emphasizes hamstring stretch and glute activation with a partial range of motion.",
+      },
+      advanced: {
+        name: "Heavy Barbell Deadlift",
+        src: "/src/assets/exercises/barbell/heavy-deadlift.gif",
+        description:
+          "High-weight deadlifts with strict form for maximum strength development.",
+      },
+    },
+    variations: {
+      "Weight Loss": { sets: 3, reps: "12-15", intensity: "moderate" },
+      "Muscle Building": { sets: 4, reps: "8-12", intensity: "high" },
+      "Gain Strength": { sets: 5, reps: "3-6", intensity: "very high" },
+      Endurance: { sets: 3, reps: "15-20", intensity: "low" },
+    },
+    ageModifications: {
+      "13-18": { notes: "Start with lighter weights, focus on form" },
+      "65+": { notes: "Use light weights, avoid bending too much" },
+    },
+  },
+
+  // SHOULDERS BARBELL EXERCISES
+  "Barbell Shoulder Press": {
+    type: "animation",
+    description:
+      "Stand or sit with a barbell at shoulder height, press it overhead until arms are fully extended, then lower back down.",
+    muscleWorked: "Shoulders, Triceps",
+    equipment: ["Barbell"],
+    difficulty: {
+      novice: {
+        name: "Seated Barbell Shoulder Press",
+        src: "/src/assets/exercises/barbell/seated-barbell-shoulder-press.gif",
+        description:
+          "Perform shoulder press while seated for back support and increased stability, ideal for beginners.",
+      },
+      beginner: {
+        name: "Barbell Frontal Raise",
+        src: "/src/assets/exercises/barbell/barbell-frontal-raise.gif",
+        description:
+          "Classic barbell shoulder press with proper form and moderate weight.",
+      },
+      intermediate: {
+        name: "Standing Barbell Shoulder Press",
+        src: "/src/assets/exercises/barbell/standing-barbell-shoulder-press.gif",
+        description:
+          "Perform overhead press while standing to engage core and improve full-body stability.",
+      },
+      advanced: {
+        name: "Push Press with Barbell",
+        src: "/src/assets/exercises/barbell/push-press-barbell.gif",
+        description:
+          "Use slight leg drive to lift heavier weight overhead, transitioning seamlessly from dip to press motion.",
+      },
+    },
+    variations: {
+      "Weight Loss": { sets: 3, reps: "12-15", intensity: "moderate" },
+      "Muscle Building": { sets: 4, reps: "8-12", intensity: "high" },
+      "Gain Strength": { sets: 5, reps: "3-6", intensity: "very high" },
+      Endurance: { sets: 3, reps: "15-20", intensity: "low" },
+    },
+    ageModifications: {
+      "13-18": { notes: "Focus on light weights and proper form" },
+      "65+": { notes: "Use light weights, avoid excessive overhead movement" },
+    },
+  },
+
+  // LEGS BARBELL EXERCISES
+  "Barbell Squat": {
+    type: "animation",
+    description:
+      "Stand with feet shoulder-width apart, place the barbell on your upper back, and squat down until thighs are parallel to the ground, then rise back up.",
+    muscleWorked: "Quads, Glutes, Hamstrings",
+    equipment: ["Barbell", "Squat Rack"],
+    difficulty: {
+      novice: {
+        name: "Bodyweight Squats",
+        src: "/src/assets/exercises/barbell/bodyweight-squat.gif",
+        description:
+          "Perform squats without weight to master form and movement pattern.",
+      },
+      beginner: {
+        name: "Barbell Back Squats with Light Weight",
+        src: "/src/assets/exercises/barbell/light-barbell-squat.gif",
+        description:
+          "Use light weight to learn barbell positioning and proper squat mechanics.",
+      },
+      intermediate: {
+        name: "Standard Barbell Squat",
+        src: "/src/assets/exercises/barbell/standard-barbell-squat.gif",
+        description:
+          "Full barbell squats with moderate weight, focusing on depth and form.",
+      },
+      advanced: {
+        name: "Heavy Barbell Squat",
+        src: "/src/assets/exercises/barbell/heavy-barbell-squat.gif",
+        description:
+          "Heavy load barbell squats with proper form, emphasizing power and strength.",
+      },
+    },
+    variations: {
+      "Weight Loss": { sets: 3, reps: "12-15", intensity: "moderate" },
+      "Muscle Building": { sets: 4, reps: "8-12", intensity: "high" },
+      "Gain Strength": { sets: 5, reps: "3-6", intensity: "very high" },
+      Endurance: { sets: 3, reps: "15-20", intensity: "low" },
+    },
+    ageModifications: {
+      "13-18": { notes: "Start with bodyweight, focus on form" },
+      "65+": { notes: "Use light weights, focus on controlled movement" },
+    },
+  },
+
+  "Barbell Front Squat": {
+    type: "animation",
+    description:
+      "Holding a barbell across front shoulders, perform a squat by bending at knees and hips while maintaining an upright torso.",
+    muscleWorked: "Quads, Glutes, Core",
+    equipment: ["Barbell", "Squat Rack"],
+    difficulty: {
+      novice: {
+        name: "Bodyweight Front Squat",
+        src: "/src/assets/exercises/barbell/bodyweight-front-squat.gif",
+        description:
+          "Perform a front squat with arms extended forward to prepare for barbell position without using weight.",
+      },
+      beginner: {
+        name: "Barbell Front Squat with Light Weight",
+        src: "/src/assets/exercises/barbell/light-front-squat.gif",
+        description:
+          "Front squat using light weight to perfect form and bar position across shoulders.",
+      },
+      intermediate: {
+        name: "Standard Barbell Front Squat",
+        src: "/src/assets/exercises/barbell/standard-front-squat.gif",
+        description:
+          "Full front squat with moderate weight, maintaining upright torso and proper elbow position.",
+      },
+      advanced: {
+        name: "Heavy Barbell Front Squat",
+        src: "/src/assets/exercises/barbell/heavy-front-squat.gif",
+        description:
+          "Front squat with challenging weight, focusing on depth, speed control, and perfect bar path.",
+      },
+    },
+    variations: {
+      "Weight Loss": { sets: 3, reps: "12-15", intensity: "moderate" },
+      "Muscle Building": { sets: 4, reps: "8-12", intensity: "high" },
+      "Gain Strength": { sets: 5, reps: "3-6", intensity: "very high" },
+      Endurance: { sets: 3, reps: "15-20", intensity: "low" },
+    },
+    ageModifications: {
+      "13-18": { notes: "Use light weights, focus on form" },
+      "65+": { notes: "Use light weights, focus on controlled movements" },
+    },
+  },
+
+  // CALVES BARBELL EXERCISES
+  "Barbell Calf Raise": {
+    type: "animation",
+    description:
+      "Place the barbell on your shoulders, raise your heels off the ground, and lower them back down.",
+    muscleWorked: "Calves",
+    equipment: ["Barbell"],
+    difficulty: {
+      novice: {
+        name: "Seated Barbell Calf Raise",
+        src: "/src/assets/exercises/barbell/seated-barbell-calf-raise.gif",
+        description:
+          "Perform calf raises while seated with a barbell across your knees to reduce overall resistance.",
+      },
+      beginner: {
+        name: "Standard Barbell Calf Raise",
+        src: "/src/assets/exercises/barbell/standard-barbell-calf-raise.gif",
+        description:
+          "Place barbell on shoulders, stand on flat ground, raise heels up and down with controlled motion.",
+      },
+      intermediate: {
+        name: "Single-Leg Barbell Calf Raise",
+        src: "/src/assets/exercises/barbell/single-leg-barbell-calf-raise.gif",
+        description:
+          "Perform calf raises on one leg at a time with barbell on shoulders for increased challenge.",
+      },
+      advanced: {
+        name: "Heavy Barbell Calf Raise",
+        src: "/src/assets/exercises/barbell/heavy-barbell-calf-raise.gif",
+        description:
+          "Perform calf raises with substantial weight, focusing on maximum contraction and full range of motion.",
+      },
+    },
+    variations: {
+      "Weight Loss": { sets: 3, reps: "15-20", intensity: "moderate" },
+      "Muscle Building": { sets: 4, reps: "10-15", intensity: "high" },
+      "Gain Strength": { sets: 5, reps: "6-8", intensity: "very high" },
+      Endurance: { sets: 3, reps: "20-25", intensity: "low" },
+    },
+    ageModifications: {
+      "13-18": { notes: "Focus on controlled movements" },
+      "65+": { notes: "Use light weights, reduce range of motion" },
+    },
+  },
+
+  // CHEST DUMBBELL EXERCISES
+  "Dumbbell Bench Press": {
+    type: "animation",
+    src: "/src/assets/exercises/dumbbell-bench-press.gif",
+    description:
+      "Lie on a bench, hold a dumbbell in each hand, lower them to chest level, then press up.",
+    muscleWorked: "Chest, Triceps, Shoulders",
+    equipment: ["Dumbbells", "Bench"],
+    difficulty: {
+      novice: "Dumbbell Chest Press with Low Weight",
+      beginner: "Standard Dumbbell Chest Press",
+      intermediate: "Incline Dumbbell Chest Press",
+      advanced: "Heavy Dumbbell Chest Press",
+    },
+    variations: {
+      "Weight Loss": { sets: 3, reps: "12-15", intensity: "moderate" },
+      "Muscle Building": { sets: 4, reps: "8-12", intensity: "high" },
+      "Gain Strength": { sets: 5, reps: "3-6", intensity: "very high" },
+      Endurance: { sets: 3, reps: "15-20", intensity: "low" },
+    },
+    ageModifications: {
+      "13-18": { notes: "Focus on lighter weights and proper form" },
+      "65+": { notes: "Use light weights, avoid overhead movements" },
+    },
+  },
+
+  "Dumbbell Chest Fly": {
+    type: "animation",
+    src: "/src/assets/exercises/dumbbell-chest-fly.gif",
+    description:
+      "Lie on a bench, holding dumbbells in each hand, arms outstretched, then bring the dumbbells together in front of your chest.",
+    muscleWorked: "Chest, Shoulders",
+    equipment: ["Dumbbells", "Bench"],
+    difficulty: {
+      novice: "Dumbbell Chest Fly with Light Weight",
+      beginner: "Standard Dumbbell Chest Fly",
+      intermediate: "Incline Dumbbell Chest Fly",
+      advanced: "Heavy Dumbbell Chest Fly",
+    },
+    variations: {
+      "Weight Loss": { sets: 3, reps: "12-15", intensity: "moderate" },
+      "Muscle Building": { sets: 4, reps: "8-12", intensity: "high" },
+      "Gain Strength": { sets: 5, reps: "3-6", intensity: "very high" },
+      Endurance: { sets: 3, reps: "15-20", intensity: "low" },
+    },
+    ageModifications: {
+      "13-18": { notes: "Focus on lighter weights and proper form" },
+      "65+": { notes: "Use light weights, avoid excessive strain" },
+    },
+  },
+
+  // BACK DUMBBELL EXERCISES
+  "Dumbbell Row": {
+    type: "animation",
+    src: "/src/assets/exercises/dumbbell-row.gif",
+    description:
+      "With one knee and hand on a bench, pull a dumbbell towards your waist while keeping your back flat.",
+    muscleWorked: "Back, Biceps",
+    equipment: ["Dumbbells", "Bench"],
+    difficulty: {
+      novice: "Seated Dumbbell Row",
+      beginner: "Standard Dumbbell Row",
+      intermediate: "Bent-Over Dumbbell Row",
+      advanced: "Single-Arm Dumbbell Row",
+    },
+    variations: {
+      "Weight Loss": { sets: 3, reps: "12-15", intensity: "moderate" },
+      "Muscle Building": { sets: 4, reps: "8-10", intensity: "high" },
+      "Gain Strength": { sets: 5, reps: "3-5", intensity: "very high" },
+      Endurance: { sets: 3, reps: "15-20", intensity: "low" },
+    },
+    ageModifications: {
+      "13-18": { notes: "Start with moderate weight and focus on form" },
+      "65+": { notes: "Use lighter weights, avoid full range of motion" },
+    },
+  },
+
+  "Dumbbell Pullover": {
+    type: "animation",
+    src: "/src/assets/exercises/dumbbell-pullover.gif",
+    description:
+      "Lie on a bench with your upper back and shoulders supported, holding a dumbbell with both hands, then lower it behind your head and pull it back up.",
+    muscleWorked: "Chest, Lats, Triceps",
+    equipment: ["Dumbbells", "Bench"],
+    difficulty: {
+      novice: "Dumbbell Pullover with Light Weight",
+      beginner: "Standard Dumbbell Pullover",
+      intermediate: "Heavy Dumbbell Pullover",
+      advanced: "Dumbbell Pullover with Full Range of Motion",
+    },
+    variations: {
+      "Weight Loss": { sets: 3, reps: "12-15", intensity: "moderate" },
+      "Muscle Building": { sets: 4, reps: "8-12", intensity: "high" },
+      "Gain Strength": { sets: 5, reps: "3-6", intensity: "very high" },
+      Endurance: { sets: 3, reps: "15-20", intensity: "low" },
+    },
+    ageModifications: {
+      "13-18": { notes: "Focus on light weights and proper form" },
+      "65+": {
+        notes: "Use light weights, avoid excessive strain on shoulders",
+      },
+    },
+  },
+
+  // SHOULDERS DUMBBELL EXERCISES
+  "Dumbbell Shoulder Press": {
+    type: "animation",
+    src: "/src/assets/exercises/dumbbell-shoulder-press.gif",
+    description:
+      "Sit or stand with dumbbells at shoulder height, press them overhead until your arms are fully extended.",
+    muscleWorked: "Shoulders, Triceps",
+    equipment: ["Dumbbells"],
+    difficulty: {
+      novice: "Seated Dumbbell Shoulder Press with Light Weight",
+      beginner: "Standard Dumbbell Shoulder Press",
+      intermediate: "Alternating Dumbbell Shoulder Press",
+      advanced: "Arnold Press",
+    },
+    variations: {
+      "Weight Loss": { sets: 3, reps: "12-15", intensity: "moderate" },
+      "Muscle Building": { sets: 4, reps: "8-12", intensity: "high" },
+      "Gain Strength": { sets: 5, reps: "3-6", intensity: "very high" },
+      Endurance: { sets: 3, reps: "15-20", intensity: "low" },
+    },
+    ageModifications: {
+      "13-18": { notes: "Avoid heavy weights, focus on shoulder health" },
+      "65+": { notes: "Use light weights, avoid excessive overhead motion" },
+    },
+  },
+
   "Lateral Raise": {
     type: "animation",
     src: "/src/assets/exercises/lateral-raise.gif",
     description:
-      "Stand with dumbbells at sides, raise arms out to sides until parallel with floor, then lower and repeat.",
+      "Hold a dumbbell in each hand at your sides, raise the dumbbells out to the sides until your arms are parallel to the ground.",
     muscleWorked: "Shoulders",
-    equipment: ["Dumbbells", "Cables"],
-    difficulty: "Beginner",
+    equipment: ["Dumbbells"],
+    difficulty: {
+      novice: "Lateral Raise with Light Weight",
+      beginner: "Standard Lateral Raise",
+      intermediate: "Heavy Lateral Raise",
+      advanced: "Alternating Dumbbell Lateral Raise",
+    },
+    variations: {
+      "Weight Loss": { sets: 3, reps: "12-15", intensity: "moderate" },
+      "Muscle Building": { sets: 4, reps: "8-12", intensity: "high" },
+      "Gain Strength": { sets: 5, reps: "3-6", intensity: "very high" },
+      Endurance: { sets: 3, reps: "15-20", intensity: "low" },
+    },
+    ageModifications: {
+      "13-18": { notes: "Focus on light weights and proper form" },
+      "65+": { notes: "Use light weights, avoid excessive shoulder strain" },
+    },
+  },
+
+  // BICEPS DUMBBELL EXERCISES
+  "Dumbbell Bicep Curl": {
+    type: "animation",
+    src: "/src/assets/exercises/dumbbell-bicep-curl.gif",
+    description:
+      "Stand tall, holding a dumbbell in each hand, curl the weights towards your shoulders, then lower slowly.",
+    muscleWorked: "Biceps",
+    equipment: ["Dumbbells"],
+    difficulty: {
+      novice: "Seated Dumbbell Bicep Curl",
+      beginner: "Standard Dumbbell Bicep Curl",
+      intermediate: "Hammer Curl",
+      advanced: "Concentration Curl",
+    },
+    variations: {
+      "Weight Loss": { sets: 3, reps: "12-15", intensity: "moderate" },
+      "Muscle Building": { sets: 4, reps: "8-12", intensity: "high" },
+      "Gain Strength": { sets: 5, reps: "3-6", intensity: "very high" },
+      Endurance: { sets: 3, reps: "15-20", intensity: "low" },
+    },
+    ageModifications: {
+      "13-18": { notes: "Focus on controlled movement and form" },
+      "65+": { notes: "Use light weights, avoid heavy curls" },
+    },
+  },
+
+  // TRICEPS DUMBBELL EXERCISES
+  "Dumbbell Tricep Kickback": {
+    type: "animation",
+    src: "/src/assets/exercises/dumbbell-tricep-kickback.gif",
+    description:
+      "Bend forward at the waist, hold a dumbbell in each hand, and extend your arms behind you to work the triceps.",
+    muscleWorked: "Triceps",
+    equipment: ["Dumbbells"],
+    difficulty: {
+      novice: "Seated Dumbbell Tricep Kickback",
+      beginner: "Standard Dumbbell Tricep Kickback",
+      intermediate: "Alternating Dumbbell Tricep Kickback",
+      advanced: "Single-Arm Dumbbell Tricep Kickback",
+    },
+    variations: {
+      "Weight Loss": { sets: 3, reps: "12-15", intensity: "moderate" },
+      "Muscle Building": { sets: 4, reps: "8-12", intensity: "high" },
+      "Gain Strength": { sets: 5, reps: "3-6", intensity: "very high" },
+      Endurance: { sets: 3, reps: "15-20", intensity: "low" },
+    },
+    ageModifications: {
+      "13-18": { notes: "Use lighter weights to focus on muscle engagement" },
+      "65+": { notes: "Use light weights, perform slowly and controlled" },
+    },
+  },
+
+  // LEGS DUMBBELL EXERCISES
+  "Dumbbell Lunges": {
+    type: "animation",
+    src: "/src/assets/exercises/dumbbell-lunge.gif",
+    description:
+      "Step forward with one leg into a lunge, lowering the back knee toward the ground while holding dumbbells at your sides.",
+    muscleWorked: "Quads, Glutes, Hamstrings",
+    equipment: ["Dumbbells"],
+    difficulty: {
+      novice: "Bodyweight Lunges",
+      beginner: "Standard Dumbbell Lunges",
+      intermediate: "Walking Dumbbell Lunges",
+      advanced: "Bulgarian Split Squats with Dumbbells",
+    },
+    variations: {
+      "Weight Loss": { sets: 3, reps: "12-15", intensity: "moderate" },
+      "Muscle Building": { sets: 4, reps: "8-12", intensity: "high" },
+      "Gain Strength": { sets: 5, reps: "3-6", intensity: "very high" },
+      Endurance: { sets: 3, reps: "15-20", intensity: "low" },
+    },
+    ageModifications: {
+      "13-18": { notes: "Start with lighter weights, focus on form" },
+      "65+": { notes: "Use support if needed, reduce depth of lunge" },
+    },
+  },
+
+  "Dumbbell Deadlift": {
+    type: "animation",
+    src: "/src/assets/exercises/dumbbell-deadlift.gif",
+    description:
+      "Stand with feet hip-width apart, hold dumbbells in front of thighs, hinge at hips and lower dumbbells towards the floor, then stand back up.",
+    muscleWorked: "Hamstrings, Glutes, Lower Back",
+    equipment: ["Dumbbells"],
+    difficulty: {
+      novice: "Dumbbell Deadlift with Light Weight",
+      beginner: "Standard Dumbbell Deadlift",
+      intermediate: "Romanian Deadlifts",
+      advanced: "Single-Leg Dumbbell Deadlifts",
+    },
+    variations: {
+      "Weight Loss": { sets: 3, reps: "12-15", intensity: "moderate" },
+      "Muscle Building": { sets: 4, reps: "8-12", intensity: "high" },
+      "Gain Strength": { sets: 5, reps: "3-6", intensity: "very high" },
+      Endurance: { sets: 3, reps: "15-20", intensity: "low" },
+    },
+    ageModifications: {
+      "13-18": { notes: "Focus on form, avoid heavy loads" },
+      "65+": { notes: "Use light weights, avoid bending too much" },
+    },
+  },
+  // CHEST MACHINE EXERCISES
+  "Machine Chest Press": {
+    type: "animation",
+    src: "/src/assets/exercises/machine-chest-press.gif",
+    description:
+      "Sit down on the machine with handles at chest level, press them forward until your arms are fully extended, then return slowly.",
+    muscleWorked: "Chest, Shoulders, Triceps",
+    equipment: ["Chest Press Machine"],
+    difficulty: {
+      novice: "Low Weight Machine Chest Press",
+      beginner: "Standard Machine Chest Press",
+      intermediate: "Incline Machine Chest Press",
+      advanced: "Heavy Machine Chest Press",
+    },
+    variations: {
+      "Weight Loss": { sets: 3, reps: "12-15", intensity: "moderate" },
+      "Muscle Building": { sets: 4, reps: "8-12", intensity: "high" },
+      "Gain Strength": { sets: 5, reps: "3-6", intensity: "very high" },
+      Endurance: { sets: 3, reps: "15-20", intensity: "low" },
+    },
+    ageModifications: {
+      "13-18": { notes: "Start with low weight and focus on form" },
+      "65+": { notes: "Use light weights, avoid excessive strain" },
+    },
+  },
+
+  "Machine Chest Fly": {
+    type: "animation",
+    src: "/src/assets/exercises/machine-chest-fly.gif",
+    description:
+      "Sit down on the chest fly machine, grasp the handles with your arms slightly bent, and bring the handles together in front of your chest.",
+    muscleWorked: "Chest, Shoulders",
+    equipment: ["Chest Fly Machine"],
+    difficulty: {
+      novice: "Light Weight Chest Fly",
+      beginner: "Standard Machine Chest Fly",
+      intermediate: "Incline Machine Chest Fly",
+      advanced: "Heavy Machine Chest Fly",
+    },
+    variations: {
+      "Weight Loss": { sets: 3, reps: "12-15", intensity: "moderate" },
+      "Muscle Building": { sets: 4, reps: "8-12", intensity: "high" },
+      "Gain Strength": { sets: 5, reps: "3-6", intensity: "very high" },
+      Endurance: { sets: 3, reps: "15-20", intensity: "low" },
+    },
+    ageModifications: {
+      "13-18": { notes: "Focus on lighter weights and proper form" },
+      "65+": { notes: "Use light weights, avoid excessive chest strain" },
+    },
+  },
+
+  // BACK MACHINE EXERCISES
+  "Lat Pulldown Machine": {
+    type: "animation",
+    src: "/src/assets/exercises/lat-pulldown-machine.gif",
+    description:
+      "Sit on the machine and grip the bar with your hands wider than shoulder-width, pull the bar down towards your chest, then release it slowly.",
+    muscleWorked: "Back, Biceps, Shoulders",
+    equipment: ["Lat Pulldown Machine"],
+    difficulty: {
+      novice: "Assisted Lat Pulldown",
+      beginner: "Standard Lat Pulldown",
+      intermediate: "Wide Grip Lat Pulldown",
+      advanced: "Heavy Lat Pulldown",
+    },
+    variations: {
+      "Weight Loss": { sets: 3, reps: "12-15", intensity: "moderate" },
+      "Muscle Building": { sets: 4, reps: "8-12", intensity: "high" },
+      "Gain Strength": { sets: 5, reps: "3-6", intensity: "very high" },
+      Endurance: { sets: 3, reps: "15-20", intensity: "low" },
+    },
+    ageModifications: {
+      "13-18": { notes: "Focus on controlled movements and form" },
+      "65+": { notes: "Use light weight, avoid pulling too hard" },
+    },
+  },
+
+  "Seated Row Machine": {
+    type: "animation",
+    src: "/src/assets/exercises/seated-row-machine.gif",
+    description:
+      "Sit on the machine with feet flat, grip the handles, and pull them towards your torso, squeezing your shoulder blades together before releasing.",
+    muscleWorked: "Back, Biceps",
+    equipment: ["Seated Row Machine"],
+    difficulty: {
+      novice: "Light Weight Seated Row",
+      beginner: "Standard Seated Row",
+      intermediate: "Wide Grip Seated Row",
+      advanced: "Heavy Seated Row",
+    },
+    variations: {
+      "Weight Loss": { sets: 3, reps: "12-15", intensity: "moderate" },
+      "Muscle Building": { sets: 4, reps: "8-12", intensity: "high" },
+      "Gain Strength": { sets: 5, reps: "3-6", intensity: "very high" },
+      Endurance: { sets: 3, reps: "15-20", intensity: "low" },
+    },
+    ageModifications: {
+      "13-18": { notes: "Focus on proper form and light weight" },
+      "65+": { notes: "Use light weight and avoid jerking movements" },
+    },
+  },
+
+  // LEGS MACHINE EXERCISES
+  "Leg Press Machine": {
+    type: "animation",
+    src: "/src/assets/exercises/leg-press-machine.gif",
+    description:
+      "Sit on the machine with your feet placed shoulder-width apart on the platform, then press the weight upward by extending your legs and return slowly.",
+    muscleWorked: "Quads, Hamstrings, Glutes",
+    equipment: ["Leg Press Machine"],
+    difficulty: {
+      novice: "Light Weight Leg Press",
+      beginner: "Standard Leg Press",
+      intermediate: "Heavy Leg Press",
+      advanced: "Single Leg Press",
+    },
+    variations: {
+      "Weight Loss": { sets: 3, reps: "12-15", intensity: "moderate" },
+      "Muscle Building": { sets: 4, reps: "8-12", intensity: "high" },
+      "Gain Strength": { sets: 5, reps: "3-6", intensity: "very high" },
+      Endurance: { sets: 3, reps: "15-20", intensity: "low" },
+    },
+    ageModifications: {
+      "13-18": { notes: "Focus on light weight and controlled movement" },
+      "65+": { notes: "Use low weight and avoid locking knees" },
+    },
+  },
+
+  "Leg Curl Machine": {
+    type: "animation",
+    src: "/src/assets/exercises/leg-curl-machine.gif",
+    description:
+      "Sit or lie on the machine with legs extended, then curl the weight by bringing your heels toward your glutes, and return slowly.",
+    muscleWorked: "Hamstrings",
+    equipment: ["Leg Curl Machine"],
+    difficulty: {
+      novice: "Light Weight Leg Curl",
+      beginner: "Standard Leg Curl",
+      intermediate: "Heavy Leg Curl",
+      advanced: "Single Leg Curl",
+    },
+    variations: {
+      "Weight Loss": { sets: 3, reps: "12-15", intensity: "moderate" },
+      "Muscle Building": { sets: 4, reps: "8-12", intensity: "high" },
+      "Gain Strength": { sets: 5, reps: "3-6", intensity: "very high" },
+      Endurance: { sets: 3, reps: "15-20", intensity: "low" },
+    },
+    ageModifications: {
+      "13-18": { notes: "Use light weight and focus on form" },
+      "65+": { notes: "Use low weight, avoid overstretching" },
+    },
+  },
+
+  // SHOULDERS MACHINE EXERCISES
+  "Machine Shoulder Press": {
+    type: "animation",
+    src: "/src/assets/exercises/machine-shoulder-press.gif",
+    description:
+      "Sit on the machine, grip the handles, and press them overhead until arms are fully extended, then return to the starting position.",
+    muscleWorked: "Shoulders, Triceps",
+    equipment: ["Shoulder Press Machine"],
+    difficulty: {
+      novice: "Light Weight Machine Shoulder Press",
+      beginner: "Standard Machine Shoulder Press",
+      intermediate: "Heavy Machine Shoulder Press",
+      advanced: "Seated Machine Shoulder Press",
+    },
+    variations: {
+      "Weight Loss": { sets: 3, reps: "12-15", intensity: "moderate" },
+      "Muscle Building": { sets: 4, reps: "8-12", intensity: "high" },
+      "Gain Strength": { sets: 5, reps: "3-6", intensity: "very high" },
+      Endurance: { sets: 3, reps: "15-20", intensity: "low" },
+    },
+    ageModifications: {
+      "13-18": { notes: "Focus on light weight and controlled movement" },
+      "65+": { notes: "Use light weight and avoid overhead strain" },
+    },
+  },
+
+  // TRICEPS MACHINE EXERCISES
+  "Machine Tricep Pushdown": {
+    type: "animation",
+    src: "/src/assets/exercises/machine-tricep-pushdown.gif",
+    description:
+      "Stand facing the machine, grip the rope attachment, and press the rope down towards your thighs, keeping elbows stationary.",
+    muscleWorked: "Triceps",
+    equipment: ["Cable Machine", "Rope Attachment"],
+    difficulty: {
+      novice: "Light Weight Tricep Pushdown",
+      beginner: "Standard Tricep Pushdown",
+      intermediate: "Heavy Tricep Pushdown",
+      advanced: "Single Arm Tricep Pushdown",
+    },
+    variations: {
+      "Weight Loss": { sets: 3, reps: "12-15", intensity: "moderate" },
+      "Muscle Building": { sets: 4, reps: "8-12", intensity: "high" },
+      "Gain Strength": { sets: 5, reps: "3-6", intensity: "very high" },
+      Endurance: { sets: 3, reps: "15-20", intensity: "low" },
+    },
+    ageModifications: {
+      "13-18": { notes: "Use light weights, focus on form" },
+      "65+": { notes: "Use light weight, avoid locking elbows" },
+    },
+  },
+
+  // CALVES MACHINE EXERCISES
+  "Seated Calf Raise Machine": {
+    type: "animation",
+    src: "/src/assets/exercises/seated-calf-raise-machine.gif",
+    description:
+      "Sit on the calf raise machine with feet on the footplate, raise your heels as high as possible, then lower them back down.",
+    muscleWorked: "Calves",
+    equipment: ["Seated Calf Raise Machine"],
+    difficulty: {
+      novice: "Low Weight Seated Calf Raise",
+      beginner: "Standard Seated Calf Raise",
+      intermediate: "Heavy Seated Calf Raise",
+      advanced: "Single Leg Seated Calf Raise",
+    },
+    variations: {
+      "Weight Loss": { sets: 3, reps: "15-20", intensity: "moderate" },
+      "Muscle Building": { sets: 4, reps: "10-15", intensity: "high" },
+      "Gain Strength": { sets: 5, reps: "6-8", intensity: "very high" },
+      Endurance: { sets: 3, reps: "20-25", intensity: "low" },
+    },
+    ageModifications: {
+      "13-18": { notes: "Use light weight, focus on controlled motion" },
+      "65+": { notes: "Use light weight, reduce range of motion" },
+    },
+  },
+  // CHEST CABLE EXERCISES
+  "Cable Chest Fly": {
+    type: "animation",
+    src: "/src/assets/exercises/cable-chest-fly.gif",
+    description:
+      "Stand between two cable machines, grip the handles with your arms slightly bent, and bring the cables together in front of your chest.",
+    muscleWorked: "Chest, Shoulders",
+    equipment: ["Cable Machine", "Handles"],
+    difficulty: {
+      novice: "Light Weight Cable Chest Fly",
+      beginner: "Standard Cable Chest Fly",
+      intermediate: "Incline Cable Chest Fly",
+      advanced: "Heavy Cable Chest Fly",
+    },
+    variations: {
+      "Weight Loss": { sets: 3, reps: "12-15", intensity: "moderate" },
+      "Muscle Building": { sets: 4, reps: "8-12", intensity: "high" },
+      "Gain Strength": { sets: 5, reps: "3-6", intensity: "very high" },
+      Endurance: { sets: 3, reps: "15-20", intensity: "low" },
+    },
+    ageModifications: {
+      "13-18": { notes: "Focus on controlled movement and proper form" },
+      "65+": { notes: "Use light weights, avoid excessive strain on chest" },
+    },
+  },
+
+  "Cable Crossovers": {
+    type: "animation",
+    src: "/src/assets/exercises/cable-crossover.gif",
+    description:
+      "Stand between two cable machines, pull the cables down and across your body, and bring your hands together in front of your chest.",
+    muscleWorked: "Chest, Shoulders",
+    equipment: ["Cable Machine", "Handles"],
+    difficulty: {
+      novice: "Light Cable Crossovers",
+      beginner: "Standard Cable Crossovers",
+      intermediate: "High Cable Crossovers",
+      advanced: "Heavy Cable Crossovers",
+    },
+    variations: {
+      "Weight Loss": { sets: 3, reps: "12-15", intensity: "moderate" },
+      "Muscle Building": { sets: 4, reps: "8-12", intensity: "high" },
+      "Gain Strength": { sets: 5, reps: "3-6", intensity: "very high" },
+      Endurance: { sets: 3, reps: "15-20", intensity: "low" },
+    },
+    ageModifications: {
+      "13-18": { notes: "Use light weights and focus on form" },
+      "65+": { notes: "Use light weights, avoid excessive chest strain" },
+    },
+  },
+
+  // BACK CABLE EXERCISES
+  "Cable Rows": {
+    type: "animation",
+    src: "/src/assets/exercises/cable-row.gif",
+    description:
+      "Sit on the machine, grip the handles, and pull them towards your torso, keeping your back straight and shoulders engaged.",
+    muscleWorked: "Back, Biceps, Shoulders",
+    equipment: ["Cable Machine", "Handles"],
+    difficulty: {
+      novice: "Light Weight Cable Rows",
+      beginner: "Standard Cable Rows",
+      intermediate: "Wide Grip Cable Rows",
+      advanced: "Heavy Cable Rows",
+    },
+    variations: {
+      "Weight Loss": { sets: 3, reps: "12-15", intensity: "moderate" },
+      "Muscle Building": { sets: 4, reps: "8-12", intensity: "high" },
+      "Gain Strength": { sets: 5, reps: "3-6", intensity: "very high" },
+      Endurance: { sets: 3, reps: "15-20", intensity: "low" },
+    },
+    ageModifications: {
+      "13-18": { notes: "Focus on controlled movement, use light weights" },
+      "65+": { notes: "Use light weights, avoid jerky movements" },
+    },
+  },
+
+  "Cable Pulldowns": {
+    type: "animation",
+    src: "/src/assets/exercises/cable-pulldown.gif",
+    description:
+      "Sit at the machine, grip the bar wider than shoulder-width, and pull the bar down towards your chest.",
+    muscleWorked: "Back, Biceps",
+    equipment: ["Cable Machine", "Bar Attachment"],
+    difficulty: {
+      novice: "Assisted Cable Pulldowns",
+      beginner: "Standard Cable Pulldowns",
+      intermediate: "Wide Grip Cable Pulldowns",
+      advanced: "Heavy Cable Pulldowns",
+    },
+    variations: {
+      "Weight Loss": { sets: 3, reps: "12-15", intensity: "moderate" },
+      "Muscle Building": { sets: 4, reps: "8-12", intensity: "high" },
+      "Gain Strength": { sets: 5, reps: "3-6", intensity: "very high" },
+      Endurance: { sets: 3, reps: "15-20", intensity: "low" },
+    },
+    ageModifications: {
+      "13-18": { notes: "Focus on proper form and use light weight" },
+      "65+": { notes: "Use light weight, avoid pulling too hard" },
+    },
+  },
+
+  // SHOULDERS CABLE EXERCISES
+  "Cable Lateral Raise": {
+    type: "animation",
+    src: "/src/assets/exercises/cable-lateral-raise.gif",
+    description:
+      "Stand with your side to the cable machine, hold the handle with one hand, and raise your arm out to the side until it’s parallel with the floor.",
+    muscleWorked: "Shoulders",
+    equipment: ["Cable Machine", "Handle"],
+    difficulty: {
+      novice: "Light Weight Cable Lateral Raise",
+      beginner: "Standard Cable Lateral Raise",
+      intermediate: "Heavy Cable Lateral Raise",
+      advanced: "Alternating Cable Lateral Raise",
+    },
+    variations: {
+      "Weight Loss": { sets: 3, reps: "12-15", intensity: "moderate" },
+      "Muscle Building": { sets: 4, reps: "8-12", intensity: "high" },
+      "Gain Strength": { sets: 5, reps: "3-6", intensity: "very high" },
+      Endurance: { sets: 3, reps: "15-20", intensity: "low" },
+    },
+    ageModifications: {
+      "13-18": { notes: "Use light weights and avoid swinging" },
+      "65+": { notes: "Use light weights, avoid lifting too high" },
+    },
+  },
+
+  "Cable Face Pulls": {
+    type: "animation",
+    src: "/src/assets/exercises/cable-face-pull.gif",
+    description:
+      "Attach a rope to the cable machine, stand facing the machine, pull the rope towards your face while keeping your elbows high.",
+    muscleWorked: "Shoulders, Upper Back",
+    equipment: ["Cable Machine", "Rope Attachment"],
+    difficulty: {
+      novice: "Light Cable Face Pulls",
+      beginner: "Standard Cable Face Pulls",
+      intermediate: "Heavy Cable Face Pulls",
+      advanced: "Single Arm Cable Face Pulls",
+    },
+    variations: {
+      "Weight Loss": { sets: 3, reps: "12-15", intensity: "moderate" },
+      "Muscle Building": { sets: 4, reps: "8-12", intensity: "high" },
+      "Gain Strength": { sets: 5, reps: "3-6", intensity: "very high" },
+      Endurance: { sets: 3, reps: "15-20", intensity: "low" },
+    },
+    ageModifications: {
+      "13-18": { notes: "Focus on proper form and light weights" },
+      "65+": { notes: "Use light weights, avoid jerking motions" },
+    },
+  },
+
+  // BICEPS CABLE EXERCISES
+  "Cable Bicep Curl": {
+    type: "animation",
+    src: "/src/assets/exercises/cable-bicep-curl.gif",
+    description:
+      "Stand facing the cable machine, grip the handle with both hands, and curl the cable towards your face, keeping elbows close to your body.",
+    muscleWorked: "Biceps",
+    equipment: ["Cable Machine", "Handle"],
+    difficulty: {
+      novice: "Light Cable Bicep Curl",
+      beginner: "Standard Cable Bicep Curl",
+      intermediate: "Heavy Cable Bicep Curl",
+      advanced: "Alternating Cable Bicep Curl",
+    },
+    variations: {
+      "Weight Loss": { sets: 3, reps: "12-15", intensity: "moderate" },
+      "Muscle Building": { sets: 4, reps: "8-12", intensity: "high" },
+      "Gain Strength": { sets: 5, reps: "3-6", intensity: "very high" },
+      Endurance: { sets: 3, reps: "15-20", intensity: "low" },
+    },
+    ageModifications: {
+      "13-18": { notes: "Use light weights, focus on controlled motion" },
+      "65+": { notes: "Use light weights, avoid excessive strain" },
+    },
+  },
+
+  // TRICEPS CABLE EXERCISES
+  "Cable Tricep Pushdown": {
+    type: "animation",
+    src: "/src/assets/exercises/cable-tricep-pushdown.gif",
+    description:
+      "Stand facing the cable machine with a rope attachment, pull the rope down towards your thighs while keeping elbows stationary.",
+    muscleWorked: "Triceps",
+    equipment: ["Cable Machine", "Rope Attachment"],
+    difficulty: {
+      novice: "Light Cable Tricep Pushdown",
+      beginner: "Standard Cable Tricep Pushdown",
+      intermediate: "Heavy Cable Tricep Pushdown",
+      advanced: "Single Arm Cable Tricep Pushdown",
+    },
+    variations: {
+      "Weight Loss": { sets: 3, reps: "12-15", intensity: "moderate" },
+      "Muscle Building": { sets: 4, reps: "8-12", intensity: "high" },
+      "Gain Strength": { sets: 5, reps: "3-6", intensity: "very high" },
+      Endurance: { sets: 3, reps: "15-20", intensity: "low" },
+    },
+    ageModifications: {
+      "13-18": { notes: "Use light weights, avoid jerking movements" },
+      "65+": { notes: "Use light weights, focus on controlled motion" },
+    },
+  },
+
+  // LEGS CABLE EXERCISES
+  "Cable Leg Curl": {
+    type: "animation",
+    src: "/src/assets/exercises/cable-leg-curl.gif",
+    description:
+      "Attach an ankle strap to the low pulley, curl your leg upwards towards your glutes, and return slowly.",
+    muscleWorked: "Hamstrings",
+    equipment: ["Cable Machine", "Ankle Strap"],
+    difficulty: {
+      novice: "Light Cable Leg Curl",
+      beginner: "Standard Cable Leg Curl",
+      intermediate: "Heavy Cable Leg Curl",
+      advanced: "Single Leg Cable Leg Curl",
+    },
+    variations: {
+      "Weight Loss": { sets: 3, reps: "12-15", intensity: "moderate" },
+      "Muscle Building": { sets: 4, reps: "8-12", intensity: "high" },
+      "Gain Strength": { sets: 5, reps: "3-6", intensity: "very high" },
+      Endurance: { sets: 3, reps: "15-20", intensity: "low" },
+    },
+    ageModifications: {
+      "13-18": { notes: "Focus on light weight and controlled movements" },
+      "65+": { notes: "Use light weight, avoid excessive leg strain" },
+    },
+  },
+  // CHEST KETTLEBELL EXERCISES
+  "Kettlebell Chest Press": {
+    type: "animation",
+    src: "/src/assets/exercises/kettlebell-chest-press.gif",
+    description:
+      "Lie on a bench, holding a kettlebell in each hand, lower the kettlebells to chest level, and then press them up.",
+    muscleWorked: "Chest, Shoulders, Triceps",
+    equipment: ["Kettlebells", "Bench"],
+    difficulty: {
+      novice: "Light Weight Kettlebell Chest Press",
+      beginner: "Standard Kettlebell Chest Press",
+      intermediate: "Incline Kettlebell Chest Press",
+      advanced: "Heavy Kettlebell Chest Press",
+    },
+    variations: {
+      "Weight Loss": { sets: 3, reps: "12-15", intensity: "moderate" },
+      "Muscle Building": { sets: 4, reps: "8-12", intensity: "high" },
+      "Gain Strength": { sets: 5, reps: "3-6", intensity: "very high" },
+      Endurance: { sets: 3, reps: "15-20", intensity: "low" },
+    },
+    ageModifications: {
+      "13-18": { notes: "Focus on light weights and controlled movement" },
+      "65+": { notes: "Use light weights, avoid excessive overhead movements" },
+    },
+  },
+
+  "Kettlebell Fly": {
+    type: "animation",
+    src: "/src/assets/exercises/kettlebell-fly.gif",
+    description:
+      "Lie on a bench, holding a kettlebell in each hand with arms extended, lower the kettlebells to your sides, and bring them back up.",
+    muscleWorked: "Chest, Shoulders",
+    equipment: ["Kettlebells", "Bench"],
+    difficulty: {
+      novice: "Light Kettlebell Fly",
+      beginner: "Standard Kettlebell Fly",
+      intermediate: "Incline Kettlebell Fly",
+      advanced: "Heavy Kettlebell Fly",
+    },
+    variations: {
+      "Weight Loss": { sets: 3, reps: "12-15", intensity: "moderate" },
+      "Muscle Building": { sets: 4, reps: "8-12", intensity: "high" },
+      "Gain Strength": { sets: 5, reps: "3-6", intensity: "very high" },
+      Endurance: { sets: 3, reps: "15-20", intensity: "low" },
+    },
+    ageModifications: {
+      "13-18": { notes: "Use light weights and focus on form" },
+      "65+": { notes: "Use light weights, avoid excessive chest strain" },
+    },
+  },
+
+  // BACK KETTLEBELL EXERCISES
+  "Kettlebell Row": {
+    type: "animation",
+    src: "/src/assets/exercises/kettlebell-row.gif",
+    description:
+      "Bend at the waist with a straight back, grip the kettlebell, and pull it towards your waist, squeezing your shoulder blades together.",
+    muscleWorked: "Back, Biceps",
+    equipment: ["Kettlebell"],
+    difficulty: {
+      novice: "Light Weight Kettlebell Row",
+      beginner: "Standard Kettlebell Row",
+      intermediate: "Single-Arm Kettlebell Row",
+      advanced: "Heavy Kettlebell Row",
+    },
+    variations: {
+      "Weight Loss": { sets: 3, reps: "12-15", intensity: "moderate" },
+      "Muscle Building": { sets: 4, reps: "8-12", intensity: "high" },
+      "Gain Strength": { sets: 5, reps: "3-6", intensity: "very high" },
+      Endurance: { sets: 3, reps: "15-20", intensity: "low" },
+    },
+    ageModifications: {
+      "13-18": { notes: "Focus on controlled movements and proper form" },
+      "65+": { notes: "Use light weights and avoid jerky movements" },
+    },
+  },
+
+  "Kettlebell Deadlift": {
+    type: "animation",
+    src: "/src/assets/exercises/kettlebell-deadlift.gif",
+    description:
+      "Stand with feet hip-width apart, grip the kettlebell with both hands, and hinge at the hips, lowering the kettlebell towards the floor while maintaining a straight back.",
+    muscleWorked: "Hamstrings, Glutes, Lower Back",
+    equipment: ["Kettlebell"],
+    difficulty: {
+      novice: "Light Weight Kettlebell Deadlift",
+      beginner: "Standard Kettlebell Deadlift",
+      intermediate: "Single-Leg Kettlebell Deadlift",
+      advanced: "Heavy Kettlebell Deadlift",
+    },
+    variations: {
+      "Weight Loss": { sets: 3, reps: "12-15", intensity: "moderate" },
+      "Muscle Building": { sets: 4, reps: "8-12", intensity: "high" },
+      "Gain Strength": { sets: 5, reps: "3-6", intensity: "very high" },
+      Endurance: { sets: 3, reps: "15-20", intensity: "low" },
+    },
+    ageModifications: {
+      "13-18": { notes: "Focus on form and light weight" },
+      "65+": { notes: "Use light weights and avoid overextending" },
+    },
+  },
+
+  // SHOULDERS KETTLEBELL EXERCISES
+  "Kettlebell Shoulder Press": {
+    type: "animation",
+    src: "/src/assets/exercises/kettlebell-shoulder-press.gif",
+    description:
+      "Hold a kettlebell in each hand at shoulder height, press the kettlebells overhead until your arms are fully extended, and then lower them back down.",
+    muscleWorked: "Shoulders, Triceps",
+    equipment: ["Kettlebells"],
+    difficulty: {
+      novice: "Seated Kettlebell Shoulder Press",
+      beginner: "Standard Kettlebell Shoulder Press",
+      intermediate: "Alternating Kettlebell Shoulder Press",
+      advanced: "Heavy Kettlebell Shoulder Press",
+    },
+    variations: {
+      "Weight Loss": { sets: 3, reps: "12-15", intensity: "moderate" },
+      "Muscle Building": { sets: 4, reps: "8-12", intensity: "high" },
+      "Gain Strength": { sets: 5, reps: "3-6", intensity: "very high" },
+      Endurance: { sets: 3, reps: "15-20", intensity: "low" },
+    },
+    ageModifications: {
+      "13-18": { notes: "Focus on light weights and proper form" },
+      "65+": { notes: "Use light weights, avoid overhead strain" },
+    },
+  },
+
+  "Kettlebell Lateral Raise": {
+    type: "animation",
+    src: "/src/assets/exercises/kettlebell-lateral-raise.gif",
+    description:
+      "Hold a kettlebell in each hand at your sides, then raise the kettlebells out to the sides until your arms are parallel to the floor.",
+    muscleWorked: "Shoulders",
+    equipment: ["Kettlebells"],
+    difficulty: {
+      novice: "Light Weight Kettlebell Lateral Raise",
+      beginner: "Standard Kettlebell Lateral Raise",
+      intermediate: "Heavy Kettlebell Lateral Raise",
+      advanced: "Alternating Kettlebell Lateral Raise",
+    },
+    variations: {
+      "Weight Loss": { sets: 3, reps: "12-15", intensity: "moderate" },
+      "Muscle Building": { sets: 4, reps: "8-12", intensity: "high" },
+      "Gain Strength": { sets: 5, reps: "3-6", intensity: "very high" },
+      Endurance: { sets: 3, reps: "15-20", intensity: "low" },
+    },
+    ageModifications: {
+      "13-18": { notes: "Use light weights and focus on controlled movement" },
+      "65+": { notes: "Use light weights, avoid excessive shoulder strain" },
+    },
+  },
+
+  // BICEPS KETTLEBELL EXERCISES
+  "Kettlebell Bicep Curl": {
+    type: "animation",
+    src: "/src/assets/exercises/kettlebell-bicep-curl.gif",
+    description:
+      "Stand tall, holding a kettlebell in each hand, curl the weights towards your shoulders, then lower slowly.",
+    muscleWorked: "Biceps",
+    equipment: ["Kettlebells"],
+    difficulty: {
+      novice: "Light Weight Kettlebell Bicep Curl",
+      beginner: "Standard Kettlebell Bicep Curl",
+      intermediate: "Hammer Curl with Kettlebells",
+      advanced: "Concentration Curl with Kettlebell",
+    },
+    variations: {
+      "Weight Loss": { sets: 3, reps: "12-15", intensity: "moderate" },
+      "Muscle Building": { sets: 4, reps: "8-12", intensity: "high" },
+      "Gain Strength": { sets: 5, reps: "3-6", intensity: "very high" },
+      Endurance: { sets: 3, reps: "15-20", intensity: "low" },
+    },
+    ageModifications: {
+      "13-18": { notes: "Use light weights and focus on form" },
+      "65+": { notes: "Use light weights, avoid excessive strain" },
+    },
+  },
+
+  // TRICEPS KETTLEBELL EXERCISES
+  "Kettlebell Tricep Extension": {
+    type: "animation",
+    src: "/src/assets/exercises/kettlebell-tricep-extension.gif",
+    description:
+      "Hold a kettlebell with both hands overhead, lower the kettlebell behind your head by bending the elbows, and extend back up.",
+    muscleWorked: "Triceps",
+    equipment: ["Kettlebell"],
+    difficulty: {
+      novice: "Light Weight Kettlebell Tricep Extension",
+      beginner: "Standard Kettlebell Tricep Extension",
+      intermediate: "Heavy Kettlebell Tricep Extension",
+      advanced: "Single Arm Kettlebell Tricep Extension",
+    },
+    variations: {
+      "Weight Loss": { sets: 3, reps: "12-15", intensity: "moderate" },
+      "Muscle Building": { sets: 4, reps: "8-12", intensity: "high" },
+      "Gain Strength": { sets: 5, reps: "3-6", intensity: "very high" },
+      Endurance: { sets: 3, reps: "15-20", intensity: "low" },
+    },
+    ageModifications: {
+      "13-18": { notes: "Focus on proper form and light weight" },
+      "65+": { notes: "Use light weights, avoid overhead strain" },
+    },
+  },
+
+  // LEGS KETTLEBELL EXERCISES
+  "Kettlebell Goblet Squat": {
+    type: "animation",
+    src: "/src/assets/exercises/kettlebell-goblet-squat.gif",
+    description:
+      "Hold a kettlebell close to your chest with both hands, squat down, keeping your chest up and back straight.",
+    muscleWorked: "Quads, Glutes, Hamstrings",
+    equipment: ["Kettlebell"],
+    difficulty: {
+      novice: "Light Weight Kettlebell Goblet Squat",
+      beginner: "Standard Kettlebell Goblet Squat",
+      intermediate: "Heavy Kettlebell Goblet Squat",
+      advanced: "Single Leg Kettlebell Squat",
+    },
+    variations: {
+      "Weight Loss": { sets: 3, reps: "12-15", intensity: "moderate" },
+      "Muscle Building": { sets: 4, reps: "8-12", intensity: "high" },
+      "Gain Strength": { sets: 5, reps: "3-6", intensity: "very high" },
+      Endurance: { sets: 3, reps: "15-20", intensity: "low" },
+    },
+    ageModifications: {
+      "13-18": { notes: "Focus on light weights and form" },
+      "65+": { notes: "Use light weights, focus on squat depth" },
+    },
+  },
+
+  "Kettlebell Lunge": {
+    type: "animation",
+    src: "/src/assets/exercises/kettlebell-lunge.gif",
+    description:
+      "Hold a kettlebell in each hand, step forward with one leg into a lunge, then push back to the starting position.",
+    muscleWorked: "Quads, Glutes, Hamstrings",
+    equipment: ["Kettlebells"],
+    difficulty: {
+      novice: "Bodyweight Lunges",
+      beginner: "Light Weight Kettlebell Lunges",
+      intermediate: "Standard Kettlebell Lunges",
+      advanced: "Heavy Kettlebell Lunges",
+    },
+    variations: {
+      "Weight Loss": { sets: 3, reps: "12-15", intensity: "moderate" },
+      "Muscle Building": { sets: 4, reps: "8-12", intensity: "high" },
+      "Gain Strength": { sets: 5, reps: "3-6", intensity: "very high" },
+      Endurance: { sets: 3, reps: "15-20", intensity: "low" },
+    },
+    ageModifications: {
+      "13-18": { notes: "Focus on balance and light weights" },
+      "65+": { notes: "Use light weights and avoid deep lunges" },
+    },
   },
 };
 
@@ -44,6 +1728,10 @@ const exercisesByMuscle = {
     "Incline Press",
     "Decline Push-ups",
     "Cable Crossover",
+    "Machine Chest Press",
+    "Machine Chest Fly",
+    "Kettlebell Chest Press",
+    "Kettlebell Fly",
   ],
   Back: [
     "Pull-ups",
@@ -53,6 +1741,12 @@ const exercisesByMuscle = {
     "Deadlifts",
     "T-Bar Rows",
     "Pullovers",
+    "Cable Rows",
+    "Cable Pulldowns",
+    "Machine Lat Pulldown",
+    "Machine Seated Row",
+    "Kettlebell Row",
+    "Kettlebell Deadlift",
   ],
   Shoulders: [
     "Shoulder Press",
@@ -62,6 +1756,10 @@ const exercisesByMuscle = {
     "Upright Rows",
     "Reverse Fly",
     "Arnold Press",
+    "Cable Lateral Raise",
+    "Cable Face Pulls",
+    "Machine Shoulder Press",
+    "Kettlebell Shoulder Press",
   ],
   Biceps: [
     "Bicep Curl",
@@ -71,6 +1769,8 @@ const exercisesByMuscle = {
     "Chin-ups",
     "EZ Bar Curls",
     "Incline Dumbbell Curls",
+    "Cable Bicep Curl",
+    "Kettlebell Bicep Curl",
   ],
   Triceps: [
     "Tricep Extensions",
@@ -80,6 +1780,8 @@ const exercisesByMuscle = {
     "Close-Grip Bench Press",
     "Overhead Tricep Extension",
     "Diamond Push-ups",
+    "Machine Tricep Pushdown",
+    "Kettlebell Tricep Extension",
   ],
   Abs: [
     "Crunches",
@@ -98,6 +1800,9 @@ const exercisesByMuscle = {
     "Hack Squats",
     "Wall Sits",
     "Step-ups",
+    "Machine Leg Press",
+    "Kettlebell Goblet Squat",
+    "Kettlebell Lunge",
   ],
   Hamstrings: [
     "Romanian Deadlifts",
@@ -107,6 +1812,8 @@ const exercisesByMuscle = {
     "Nordic Curls",
     "Stiff-Legged Deadlifts",
     "Sliding Leg Curls",
+    "Machine Leg Curl",
+    "Kettlebell Deadlift",
   ],
   Glutes: [
     "Hip Thrusts",
@@ -116,6 +1823,9 @@ const exercisesByMuscle = {
     "Donkey Kicks",
     "Sumo Squats",
     "Curtsy Lunges",
+    "Machine Hip Thrust",
+    "Kettlebell Hip Thrusts",
+    "Kettlebell Glute Bridges",
   ],
   Calves: [
     "Calf Raises",
@@ -125,12 +1835,14 @@ const exercisesByMuscle = {
     "Calf Press on Leg Press Machine",
     "Seated Dumbbell Calf Raise",
     "Standing Barbell Calf Raise",
+    "Machine Seated Calf Raise",
+    "Kettlebell Calf Raise",
   ],
 };
 
 const getExerciseAsset = (exerciseName) => {
   return (
-    exerciseAssets[exerciseName] || {
+    allExercises[exerciseName] || {
       type: "image",
       src: "/src/assets/placeholder-exercise.png",
       description: "Demonstration for this exercise will be added soon.",
@@ -327,18 +2039,63 @@ function WorkoutGenerator() {
     }
   };
 
-  const getExercisesForEquipment = (muscle, equipmentList) => {
+  const getExercisesForEquipment = (muscle, equipmentList, age) => {
+    // If no specific equipment is selected, return all exercises for the muscle
     if (equipmentList.length === 0 || equipmentList.includes("Select all")) {
       return exercisesByMuscle[muscle] || [];
     }
 
     const allExercises = exercisesByMuscle[muscle] || [];
-    return allExercises.filter((exercise) => {
-      const exerciseEquipment = exerciseAssets[exercise]?.equipment || [
-        "Bodyweight",
-      ];
-      return exerciseEquipment.some((eq) => equipmentList.includes(eq));
+
+    // Strictly filter exercises based on selected equipment
+    const equipmentFilteredExercises = allExercises.filter((exercise) => {
+      // Get the equipment for this specific exercise
+      const exerciseEquipment = allExercises[exercise]?.equipment || [];
+
+      // Check if ANY of the exercise's equipment matches the selected equipment
+      return exerciseEquipment.some(
+        (eq) =>
+          equipmentList.includes(eq) || equipmentList.includes("Bodyweight") // Include bodyweight for ALL equipment types
+      );
     });
+
+    // Age-based exercise modifications
+    const ageAdjustedExercises = equipmentFilteredExercises.map((exercise) => {
+      const exerciseAsset = allExercises[exercise] || {};
+
+      // Beginner-friendly alternatives for younger and older users
+      if (age < 18) {
+        // For younger users, prefer lower-intensity variations
+        if (exerciseAsset.difficulty === "Advanced") {
+          // Add a more technique-focused alternative
+          return `Modified ${exercise}`;
+        }
+      } else if (age > 65) {
+        // For older users, add joint-friendly variations
+        if (exerciseAsset.difficulty === "Advanced") {
+          // Add a lower-impact version
+          return `Low-Impact ${exercise}`;
+        }
+      }
+
+      return exercise;
+    });
+
+    // If no exercises match after filtering, fall back to bodyweight exercises
+    const finalExercises =
+      ageAdjustedExercises.length > 0
+        ? ageAdjustedExercises
+        : exercisesByMuscle[muscle].filter((ex) =>
+            allExercises[ex]?.equipment?.includes("Bodyweight")
+          );
+
+    // Add console log for debugging
+    console.log(
+      `Exercises for ${muscle} with equipment ${equipmentList}:`,
+      finalExercises
+    );
+
+    return finalExercises;
   };
 
   const generateWorkoutPlan = (prefs) => {
@@ -409,7 +2166,8 @@ function WorkoutGenerator() {
     targetMuscles.forEach((muscle) => {
       let availableExercises = getExercisesForEquipment(
         muscle,
-        prefs.equipment
+        prefs.equipment,
+        prefs.age
       );
 
       if (availableExercises.length === 0) {
@@ -765,65 +2523,93 @@ function WorkoutGenerator() {
   };
 
   const generateWorkoutHandler = () => {
-    // Check if we already have 3 workout versions
-    if (workoutVersions.length < 3) {
-      // Generate a new workout plan
-      const workoutPlan = generateWorkoutPlan(preferences);
+    console.log("Starting generateWorkoutHandler");
+    console.log("Current preferences:", preferences);
+    console.log("Current workoutVersions:", workoutVersions);
 
-      // Generate training schedule
-      const trainingSchedule = generateTrainingSchedule(
-        workoutPlan.targetMuscles,
-        workoutPlan.workoutsPerWeek
-      );
+    try {
+      // Validate preferences before generation
+      if (!preferences.gender) {
+        console.error("Missing gender");
+        return;
+      }
+      if (!preferences.fitnessGoal) {
+        console.error("Missing fitness goal");
+        return;
+      }
+      if (!preferences.fitnessLevel) {
+        console.error("Missing fitness level");
+        return;
+      }
+      if (!preferences.equipment || preferences.equipment.length === 0) {
+        console.error("No equipment selected");
+        return;
+      }
+      if (
+        !preferences.targetMuscles ||
+        preferences.targetMuscles.length === 0
+      ) {
+        console.error("No target muscles selected");
+        return;
+      }
 
-      // Add schedule to workout plan
-      workoutPlan.trainingSchedule = trainingSchedule;
+      if (workoutVersions.length < 3) {
+        console.log("Generating new workout plan");
+        const workoutPlan = generateWorkoutPlan(preferences);
+        console.log("Generated workoutPlan:", workoutPlan);
 
-      // Use the existing generateSixWeekProgram function
-      // but we need to modify it slightly to work with our structure
-      const sixWeekProgram = [];
-      const basePlan = { ...workoutPlan };
+        const trainingSchedule = generateTrainingSchedule(
+          workoutPlan.targetMuscles,
+          workoutPlan.workoutsPerWeek
+        );
+        console.log("Generated trainingSchedule:", trainingSchedule);
 
-      for (let week = 1; week <= 6; week++) {
-        // Clone the workout plan for each week
-        const weeklyPlan = { ...basePlan, week };
+        workoutPlan.trainingSchedule = trainingSchedule;
 
-        // For progressive overload
-        if (week > 1) {
-          weeklyPlan.exercises = weeklyPlan.exercises.map((ex) => ({
-            ...ex,
-            sets: Math.min(ex.sets + Math.floor((week - 1) / 2), 6),
-            intensity: `${Math.min(
-              parseInt(ex.intensity.split("-")[0] || "70") + (week - 1) * 5,
-              95
-            )}%`,
-          }));
+        const sixWeekProgram = [];
+        const basePlan = { ...workoutPlan };
+
+        for (let week = 1; week <= 6; week++) {
+          const weeklyPlan = { ...basePlan, week };
+
+          if (week > 1) {
+            weeklyPlan.exercises = weeklyPlan.exercises.map((ex) => ({
+              ...ex,
+              sets: Math.min(ex.sets + Math.floor((week - 1) / 2), 6),
+              intensity: `${Math.min(
+                parseInt(ex.intensity.split("-")[0] || "70") + (week - 1) * 5,
+                95
+              )}%`,
+            }));
+          }
+
+          sixWeekProgram.push(weeklyPlan);
         }
 
-        sixWeekProgram.push(weeklyPlan);
+        workoutPlan.sixWeekProgram = sixWeekProgram;
+
+        const updatedVersions = [...workoutVersions, workoutPlan];
+        console.log("Updated workout versions:", updatedVersions);
+
+        setWorkoutVersions(updatedVersions);
+        setCurrentVersionIndex(updatedVersions.length - 1);
+        setWorkout(workoutPlan);
+      } else {
+        console.log("Cycling to next workout version");
+        const nextIndex = (currentVersionIndex + 1) % workoutVersions.length;
+        setCurrentVersionIndex(nextIndex);
+        setWorkout(workoutVersions[nextIndex]);
       }
 
-      // Add the full program to the workout
-      workoutPlan.sixWeekProgram = sixWeekProgram;
-
-      // Add to versions array
-      const updatedVersions = [...workoutVersions, workoutPlan];
-      setWorkoutVersions(updatedVersions);
-      setCurrentVersionIndex(updatedVersions.length - 1);
-      setWorkout(workoutPlan);
-    } else {
-      // Rotate to the next version
-      const nextIndex = (currentVersionIndex + 1) % workoutVersions.length;
-      setCurrentVersionIndex(nextIndex);
-      setWorkout(workoutVersions[nextIndex]);
+      setTimeout(() => {
+        const workoutResults = document.getElementById("workout-results");
+        if (workoutResults) {
+          workoutResults.scrollIntoView({ behavior: "smooth" });
+        }
+      }, 100);
+    } catch (error) {
+      console.error("Error in generateWorkoutHandler:", error);
     }
-
-    setTimeout(() => {
-      const workoutResults = document.getElementById("workout-results");
-      if (workoutResults) {
-        workoutResults.scrollIntoView({ behavior: "smooth" });
-      }
-    }, 100);
   };
 
   const cycleWorkoutVersion = () => {
@@ -877,25 +2663,22 @@ function WorkoutGenerator() {
       return;
     }
 
-    if (preferences.equipment.includes("Select all")) {
-      setPreferences({
-        ...preferences,
-        equipment: preferences.equipment
-          .filter((e) => e !== "Select all")
-          .concat(equipment),
-      });
-      return;
-    }
+    // Remove 'Select all' if it's present
+    const currentEquipment = preferences.equipment.filter(
+      (e) => e !== "Select all"
+    );
 
-    if (preferences.equipment.includes(equipment)) {
+    // If the equipment is already selected, remove it
+    if (currentEquipment.includes(equipment)) {
       setPreferences({
         ...preferences,
-        equipment: preferences.equipment.filter((e) => e !== equipment),
+        equipment: currentEquipment.filter((e) => e !== equipment),
       });
     } else {
+      // Add the new equipment
       setPreferences({
         ...preferences,
-        equipment: [...preferences.equipment, equipment],
+        equipment: [...currentEquipment, equipment],
       });
     }
   };
