@@ -116,9 +116,28 @@ class Routine(Base):
         "users.id", ondelete="CASCADE"), nullable=False)
     workout_id = Column(Integer, ForeignKey(
         "workouts.id", ondelete="CASCADE"), nullable=True)
+    folder_id = Column(Integer, ForeignKey(
+        "routine_folders.id", ondelete="SET NULL"), nullable=True)
 
+    folder = relationship("RoutineFolder", back_populates="routines")
     user = relationship("User", back_populates="routines")
     workout = relationship("Workout", back_populates="routines")
+
+
+class RoutineFolder(Base):
+    __tablename__ = "routine_folders"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    user_id = Column(Integer, ForeignKey(
+        "users.id", ondelete="CASCADE"), nullable=False)
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))
+
+    user = relationship("User", back_populates="routine_folders")
+    routines = relationship("Routine", back_populates="folder")
+
+    User.routine_folders = relationship(
+        "RoutineFolder", back_populates="user", cascade="all, delete-orphan")
 
 
 class SavedWorkoutProgram(Base):
