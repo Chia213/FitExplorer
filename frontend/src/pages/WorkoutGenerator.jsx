@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { resolveExercisePath } from "../utils/exerciseAssetResolver";
 import { createSavedProgram } from "../api/savedProgramsApi";
 import {
   FaDumbbell,
@@ -747,60 +748,80 @@ const allExercises = {
 
   // CHEST DUMBBELL EXERCISES
   "Dumbbell Bench Press": {
-  type: "animation",
-  description:
-    "Lie on a bench, hold a dumbbell in each hand, lower them to chest level, then press up.",
-  muscleWorked: "Chest, Triceps, Shoulders",
-  equipment: ["Dumbbells", "Bench"],
-  difficulty: {
-    novice: {
-      name: "Dumbbell Chest Press with Low Weight",
-      src: "/src/assets/exercises/dumbbell/novice-dumbbell-bench-press.gif",
-      description:
-        "Perform with lighter dumbbells to develop proper form and muscle activation patterns."
+    type: "animation",
+    description:
+      "Lie on a bench, hold a dumbbell in each hand, lower them to chest level, then press up.",
+    muscleWorked: "Chest, Triceps, Shoulders",
+    equipment: ["Dumbbells", "Bench"],
+    difficulty: {
+      novice: {
+        name: "Dumbbell Chest Press with Low Weight",
+        src: "/src/assets/exercises/dumbbell/novice-dumbbell-bench-press.gif",
+        description:
+          "Perform with lighter dumbbells to develop proper form and muscle activation patterns.",
+      },
+      beginner: {
+        name: "Standard Dumbbell Chest Press",
+        src: "/src/assets/exercises/dumbbell/dumbbell-bench-press.gif",
+        description:
+          "Lie flat on a bench, press dumbbells from chest level to full arm extension.",
+      },
+      intermediate: {
+        name: "Incline Dumbbell Chest Press",
+        src: "/src/assets/exercises/dumbbell/incline-dumbbell-bench-press.gif",
+        description:
+          "Press dumbbells while on an inclined bench to target upper chest and increase difficulty.",
+      },
+      advanced: {
+        name: "Heavy Dumbbell Chest Press",
+        src: "/src/assets/exercises/dumbbell/advanced-dumbbell-bench-press.gif",
+        description:
+          "Use heavier dumbbells with controlled movement for maximum chest and tricep development.",
+      },
     },
-    beginner: {
-      name: "Standard Dumbbell Chest Press",
-      src: "/src/assets/exercises/dumbbell/dumbbell-bench-press.gif",
-      description: "Lie flat on a bench, press dumbbells from chest level to full arm extension."
+    variations: {
+      "Weight Loss": { sets: 3, reps: "12-15", intensity: "moderate" },
+      "Muscle Building": { sets: 4, reps: "8-12", intensity: "high" },
+      "Gain Strength": { sets: 5, reps: "3-6", intensity: "very high" },
+      Endurance: { sets: 3, reps: "15-20", intensity: "low" },
     },
-    intermediate: {
-      name: "Incline Dumbbell Chest Press",
-      src: "/src/assets/exercises/dumbbell/incline-dumbbell-bench-press.gif",
-      description:
-        "Press dumbbells while on an inclined bench to target upper chest and increase difficulty."
-    },
-    advanced: {
-      name: "Heavy Dumbbell Chest Press",
-      src: "/src/assets/exercises/dumbbell/advanced-dumbbell-bench-press.gif",
-      description:
-        "Use heavier dumbbells with controlled movement for maximum chest and tricep development."
+    ageModifications: {
+      "13-18": { notes: "Focus on lighter weights and proper form" },
+      "65+": { notes: "Use light weights, avoid overhead movements" },
     },
   },
-  variations: {
-    "Weight Loss": { sets: 3, reps: "12-15", intensity: "moderate" },
-    "Muscle Building": { sets: 4, reps: "8-12", intensity: "high" },
-    "Gain Strength": { sets: 5, reps: "3-6", intensity: "very high" },
-    Endurance: { sets: 3, reps: "15-20", intensity: "low" },
-  },
-  ageModifications: {
-    "13-18": { notes: "Focus on lighter weights and proper form" },
-    "65+": { notes: "Use light weights, avoid overhead movements" },
-  },
-},
 
   "Dumbbell Chest Fly": {
     type: "animation",
-    src: "/src/assets/exercises/dumbell/dumbbell-chest-fly.gif",
     description:
       "Lie on a bench, holding dumbbells in each hand, arms outstretched, then bring the dumbbells together in front of your chest.",
     muscleWorked: "Chest, Shoulders",
     equipment: ["Dumbbells", "Bench"],
     difficulty: {
-      novice: "Dumbbell Chest Fly with Light Weight",
-      beginner: "Standard Dumbbell Chest Fly",
-      intermediate: "Incline Dumbbell Chest Fly",
-      advanced: "Heavy Dumbbell Chest Fly",
+      novice: {
+        name: "Dumbbell Chest Fly with Light Weight",
+        src: "/src/assets/exercises/dumbell/novice-dumbbell-chest-fly.gif",
+        description:
+          "Perform chest flies with light dumbbells to learn proper form and muscle engagement without strain.",
+      },
+      beginner: {
+        name: "Standard Dumbbell Chest Fly",
+        src: "/src/assets/exercises/dumbell/standard-dumbbell-chest-fly.gif",
+        description:
+          "Lie on a flat bench with dumbbells extended above chest, lower arms out to sides in arc motion, then return to center.",
+      },
+      intermediate: {
+        name: "Incline Dumbbell Chest Fly",
+        src: "/src/assets/exercises/dumbell/incline-dumbbell-chest-fly.gif",
+        description:
+          "Perform chest flies on an incline bench to target upper chest fibers and increase overall chest development.",
+      },
+      advanced: {
+        name: "Heavy Dumbbell Chest Fly",
+        src: "/src/assets/exercises/dumbell/heavy-dumbbell-chest-fly.gif",
+        description:
+          "Execute chest flies with substantial weight, emphasizing controlled eccentric phase and full range of motion.",
+      },
     },
     variations: {
       "Weight Loss": { sets: 3, reps: "12-15", intensity: "moderate" },
@@ -817,16 +838,35 @@ const allExercises = {
   // BACK DUMBBELL EXERCISES
   "Dumbbell Row": {
     type: "animation",
-    src: "/src/assets/exercises/dumbbell-row.gif",
     description:
       "With one knee and hand on a bench, pull a dumbbell towards your waist while keeping your back flat.",
     muscleWorked: "Back, Biceps",
     equipment: ["Dumbbells", "Bench"],
     difficulty: {
-      novice: "Seated Dumbbell Row",
-      beginner: "Standard Dumbbell Row",
-      intermediate: "Bent-Over Dumbbell Row",
-      advanced: "Single-Arm Dumbbell Row",
+      novice: {
+        name: "Seated Dumbbell Row",
+        src: "/src/assets/exercises/dumbbell/seated-dumbbell-row.gif",
+        description:
+          "Perform rows while bending 90 degress on a bench with back supported to maintain proper form and reduce strain.",
+      },
+      beginner: {
+        name: "Standard Dumbbell Row",
+        src: "/src/assets/exercises/dumbbell/standard-dumbbell-row.gif",
+        description:
+          "One knee and hand on bench, pull dumbbell toward hip with elbow close to body, maintaining flat back.",
+      },
+      intermediate: {
+        name: "Bent-Over Dumbbell Row",
+        src: "/src/assets/exercises/dumbbell/bent-over-dumbbell-row.gif",
+        description:
+          "Perform rows while standing with torso bent forward, engaging more core stability and back muscles.",
+      },
+      advanced: {
+        name: "Single-Arm Dumbbell Row",
+        src: "/src/assets/exercises/dumbbell/single-arm-dumbbell-row-heavy.gif",
+        description:
+          "Single-arm row with heavier weight, focusing on maximum back activation and controlled movement.",
+      },
     },
     variations: {
       "Weight Loss": { sets: 3, reps: "12-15", intensity: "moderate" },
@@ -842,16 +882,35 @@ const allExercises = {
 
   "Dumbbell Pullover": {
     type: "animation",
-    src: "/src/assets/exercises/dumbbell-pullover.gif",
     description:
       "Lie on a bench with your upper back and shoulders supported, holding a dumbbell with both hands, then lower it behind your head and pull it back up.",
     muscleWorked: "Chest, Lats, Triceps",
     equipment: ["Dumbbells", "Bench"],
     difficulty: {
-      novice: "Dumbbell Pullover with Light Weight",
-      beginner: "Standard Dumbbell Pullover",
-      intermediate: "Heavy Dumbbell Pullover",
-      advanced: "Dumbbell Pullover with Full Range of Motion",
+      novice: {
+        name: "Dumbbell Pullover with Light Weight",
+        src: "/src/assets/exercises/dumbbell/light-dumbbell-pullover.gif",
+        description:
+          "Perform the pullover motion using a light dumbbell to learn proper form and reduce risk of injury.",
+      },
+      beginner: {
+        name: "Standard Dumbbell Pullover",
+        src: "/src/assets/exercises/dumbbell/standard-dumbbell-pullover.gif",
+        description:
+          "Lie perpendicular on bench with shoulders supported, lower dumbbell behind head with slight elbow bend, then pull back up.",
+      },
+      intermediate: {
+        name: "Heavy Dumbbell Pullover",
+        src: "/src/assets/exercises/dumbbell/heavy-dumbbell-pullover.gif",
+        description:
+          "Perform pullover with challenging weight, focusing on controlled movement and lat engagement.",
+      },
+      advanced: {
+        name: "Dumbbell Pullover with Full Range of Motion",
+        src: "/src/assets/exercises/dumbbell/full-rom-dumbbell-pullover.gif",
+        description:
+          "Maximize stretch and contraction with full range of motion, using appropriate weight for complete muscle activation.",
+      },
     },
     variations: {
       "Weight Loss": { sets: 3, reps: "12-15", intensity: "moderate" },
@@ -866,20 +925,38 @@ const allExercises = {
       },
     },
   },
-
   // SHOULDERS DUMBBELL EXERCISES
   "Dumbbell Shoulder Press": {
     type: "animation",
-    src: "/src/assets/exercises/dumbbell-shoulder-press.gif",
     description:
       "Sit or stand with dumbbells at shoulder height, press them overhead until your arms are fully extended.",
     muscleWorked: "Shoulders, Triceps",
     equipment: ["Dumbbells"],
     difficulty: {
-      novice: "Seated Dumbbell Shoulder Press with Light Weight",
-      beginner: "Standard Dumbbell Shoulder Press",
-      intermediate: "Alternating Dumbbell Shoulder Press",
-      advanced: "Arnold Press",
+      novice: {
+        name: "Seated Dumbbell Shoulder Press with Light Weight",
+        src: "/src/assets/exercises/dumbbell/seated-light-dumbbell-shoulder-press.gif",
+        description:
+          "Perform shoulder press while seated with back support using lighter weights to develop proper form.",
+      },
+      beginner: {
+        name: "Standard Dumbbell Shoulder Press",
+        src: "/src/assets/exercises/dumbbell/standard-dumbbell-shoulder-press.gif",
+        description:
+          "Press dumbbells from shoulder height to full extension overhead while seated or standing.",
+      },
+      intermediate: {
+        name: "Alternating Dumbbell Shoulder Press",
+        src: "/src/assets/exercises/dumbbell/alternating-dumbbell-shoulder-press.gif",
+        description:
+          "Press one dumbbell at a time overhead, alternating arms to increase core engagement and unilateral strength.",
+      },
+      advanced: {
+        name: "Arnold Press",
+        src: "/src/assets/exercises/dumbbell/arnold-press.gif",
+        description:
+          "Start with dumbbells at shoulders with palms facing you, rotate palms outward as you press upward for greater shoulder activation.",
+      },
     },
     variations: {
       "Weight Loss": { sets: 3, reps: "12-15", intensity: "moderate" },
@@ -895,16 +972,35 @@ const allExercises = {
 
   "Lateral Raise": {
     type: "animation",
-    src: "/src/assets/exercises/lateral-raise.gif",
     description:
       "Hold a dumbbell in each hand at your sides, raise the dumbbells out to the sides until your arms are parallel to the ground.",
     muscleWorked: "Shoulders",
     equipment: ["Dumbbells"],
     difficulty: {
-      novice: "Lateral Raise with Light Weight",
-      beginner: "Standard Lateral Raise",
-      intermediate: "Heavy Lateral Raise",
-      advanced: "Alternating Dumbbell Lateral Raise",
+      novice: {
+        name: "Lateral Raise with Light Weight",
+        src: "/src/assets/exercises/dumbbell/light-lateral-raise.gif",
+        description:
+          "Perform lateral raises with very light dumbbells to learn proper form and movement pattern.",
+      },
+      beginner: {
+        name: "Standard Lateral Raise",
+        src: "/src/assets/exercises/dumbbell/standard-lateral-raise.gif",
+        description:
+          "Raise dumbbells to shoulder height with slight bend in elbows, controlling the movement throughout.",
+      },
+      intermediate: {
+        name: "Heavy Lateral Raise",
+        src: "/src/assets/exercises/dumbbell/heavy-lateral-raise.gif",
+        description:
+          "Perform lateral raises with moderate to heavy weights, focusing on maintaining form while increasing resistance.",
+      },
+      advanced: {
+        name: "Alternating Dumbbell Lateral Raise",
+        src: "/src/assets/exercises/dumbbell/alternating-lateral-raise.gif",
+        description:
+          "Raise one dumbbell at a time with heavier weight, focusing on complete shoulder isolation and control.",
+      },
     },
     variations: {
       "Weight Loss": { sets: 3, reps: "12-15", intensity: "moderate" },
@@ -921,16 +1017,35 @@ const allExercises = {
   // BICEPS DUMBBELL EXERCISES
   "Dumbbell Bicep Curl": {
     type: "animation",
-    src: "/src/assets/exercises/dumbbell-bicep-curl.gif",
     description:
       "Stand tall, holding a dumbbell in each hand, curl the weights towards your shoulders, then lower slowly.",
     muscleWorked: "Biceps",
     equipment: ["Dumbbells"],
     difficulty: {
-      novice: "Seated Dumbbell Bicep Curl",
-      beginner: "Standard Dumbbell Bicep Curl",
-      intermediate: "Hammer Curl",
-      advanced: "Concentration Curl",
+      novice: {
+        name: "Seated Dumbbell Bicep Curl",
+        src: "/src/assets/exercises/dumbbell/seated-dumbbell-bicep-curl.gif",
+        description:
+          "Perform bicep curls while seated to remove momentum and focus on proper form with lighter weights.",
+      },
+      beginner: {
+        name: "Standard Dumbbell Bicep Curl",
+        src: "/src/assets/exercises/dumbbell/standard-dumbbell-bicep-curl.gif",
+        description:
+          "Stand with dumbbells at sides, palms facing forward, curl weights to shoulders while keeping elbows fixed.",
+      },
+      intermediate: {
+        name: "Hammer Curl",
+        src: "/src/assets/exercises/dumbbell/hammer-curl.gif",
+        description:
+          "Perform curls with palms facing each other throughout the movement to target the brachialis and brachioradialis.",
+      },
+      advanced: {
+        name: "Concentration Curl",
+        src: "/src/assets/exercises/dumbbell/concentration-curl.gif",
+        description:
+          "Seated with elbow braced against inner thigh, perform single-arm curls with strict form and maximum contraction.",
+      },
     },
     variations: {
       "Weight Loss": { sets: 3, reps: "12-15", intensity: "moderate" },
@@ -1739,136 +1854,127 @@ const allExercises = {
 
 const exercisesByMuscle = {
   Chest: [
-    "Bench Press",
     "Push-ups",
-    "Chest Fly",
-    "Dumbbell Press",
-    "Incline Press",
+    "Diamond Push-ups",
     "Decline Push-ups",
-    "Cable Crossover",
+    "Barbell Bench Press",
+    "Dumbbell Bench Press",
+    "Kettlebell Chest Press",
+    "Dumbbell Chest Fly",
+    "Kettlebell Fly",
+    "Cable Chest Fly",
+    "Cable Crossovers",
     "Machine Chest Press",
     "Machine Chest Fly",
-    "Kettlebell Chest Press",
-    "Kettlebell Fly",
   ],
   Back: [
     "Pull-ups",
-    "Lat Pulldowns",
-    "Rows",
-    "Face Pulls",
-    "Deadlifts",
-    "T-Bar Rows",
-    "Pullovers",
-    "Cable Rows",
-    "Cable Pulldowns",
-    "Machine Lat Pulldown",
-    "Machine Seated Row",
+    "Chin-ups",
+    "Inverted Rows",
+    "Barbell Row",
+    "Barbell Deadlift",
+    "Dumbbell Row",
+    "Dumbbell Pullover",
     "Kettlebell Row",
     "Kettlebell Deadlift",
+    "Cable Rows",
+    "Cable Pulldowns",
+    "Lat Pulldown Machine",
+    "Seated Row Machine",
   ],
   Shoulders: [
-    "Shoulder Press",
+    "Pike Push-ups",
+    "Barbell Shoulder Press",
+    "Dumbbell Shoulder Press",
+    "Kettlebell Shoulder Press",
     "Lateral Raise",
-    "Front Raise",
-    "Shrugs",
-    "Upright Rows",
-    "Reverse Fly",
-    "Arnold Press",
+    "Kettlebell Lateral Raise",
     "Cable Lateral Raise",
     "Cable Face Pulls",
     "Machine Shoulder Press",
-    "Kettlebell Shoulder Press",
   ],
   Biceps: [
-    "Bicep Curl",
-    "Hammer Curl",
-    "Preacher Curls",
-    "Concentration Curls",
     "Chin-ups",
-    "EZ Bar Curls",
-    "Incline Dumbbell Curls",
-    "Cable Bicep Curl",
+    "Dumbbell Bicep Curl",
     "Kettlebell Bicep Curl",
+    "Cable Bicep Curl",
   ],
   Triceps: [
-    "Tricep Extensions",
     "Dips",
-    "Skull Crushers",
-    "Cable Pushdowns",
-    "Close-Grip Bench Press",
-    "Overhead Tricep Extension",
     "Diamond Push-ups",
-    "Machine Tricep Pushdown",
+    "Dumbbell Tricep Kickback",
     "Kettlebell Tricep Extension",
+    "Cable Tricep Pushdown",
+    "Machine Tricep Pushdown",
   ],
-  Abs: [
-    "Crunches",
-    "Planks",
-    "Leg Raises",
-    "Russian Twists",
-    "Mountain Climbers",
-    "Hanging Knee Raises",
-    "Ab Rollouts",
-  ],
+  Abs: ["Planks"],
   Quads: [
-    "Squats",
-    "Leg Press",
-    "Leg Extensions",
-    "Lunges",
-    "Hack Squats",
-    "Wall Sits",
-    "Step-ups",
-    "Machine Leg Press",
+    "Barbell Squat",
+    "Barbell Front Squat",
+    "Dumbbell Lunges",
+    "Kettlebell Goblet Squat",
+    "Kettlebell Lunge",
+    "Leg Press Machine",
+    "Leg Curl Machine",
+  ],
+  Hamstrings: [
+    "Barbell Deadlift",
+    "Dumbbell Deadlift",
+    "Kettlebell Deadlift",
+    "Leg Curl Machine",
+    "Cable Leg Curl",
+  ],
+  Glutes: [
+    "Barbell Squat",
+    "Barbell Deadlift",
+    "Dumbbell Lunges",
     "Kettlebell Goblet Squat",
     "Kettlebell Lunge",
   ],
-  Hamstrings: [
-    "Romanian Deadlifts",
-    "Leg Curls",
-    "Good Mornings",
-    "Glute-Ham Raises",
-    "Nordic Curls",
-    "Stiff-Legged Deadlifts",
-    "Sliding Leg Curls",
-    "Machine Leg Curl",
-    "Kettlebell Deadlift",
-  ],
-  Glutes: [
-    "Hip Thrusts",
-    "Glute Bridges",
-    "Bulgarian Split Squats",
-    "Kickbacks",
-    "Donkey Kicks",
-    "Sumo Squats",
-    "Curtsy Lunges",
-    "Machine Hip Thrust",
-    "Kettlebell Hip Thrusts",
-    "Kettlebell Glute Bridges",
-  ],
-  Calves: [
-    "Calf Raises",
-    "Seated Calf Press",
-    "Jump Rope",
-    "Box Jumps",
-    "Calf Press on Leg Press Machine",
-    "Seated Dumbbell Calf Raise",
-    "Standing Barbell Calf Raise",
-    "Machine Seated Calf Raise",
-    "Kettlebell Calf Raise",
-  ],
+  Calves: ["Barbell Calf Raise", "Seated Calf Raise Machine"],
 };
 
-const getExerciseAsset = (exerciseName) => {
-  return (
-    allExercises[exerciseName] || {
+const getExerciseAsset = (exerciseName, fitnessLevel = "beginner") => {
+  const asset = allExercises[exerciseName];
+
+  if (!asset) {
+    return {
       type: "image",
-      src: "/src/assets/placeholder-exercise.png",
+      src: resolveExercisePath(exerciseName),
       description: "Demonstration for this exercise will be added soon.",
       muscleWorked: "Multiple",
       equipment: ["Various"],
       difficulty: "Varies",
-    }
-  );
+    };
+  }
+
+  // Prioritize getting the correct difficulty level information
+  const levelInfo =
+    asset.difficulty[fitnessLevel] ||
+    asset.difficulty.beginner ||
+    Object.values(asset.difficulty)[0];
+
+  return {
+    ...asset,
+    // Use the specific level's src or fallback to resolveExercisePath
+    src:
+      levelInfo.src ||
+      resolveExercisePath(exerciseName, asset.type) ||
+      asset.src,
+
+    // Use the specific level's description or fallback to main description
+    description:
+      levelInfo.description || asset.description || "No description available.",
+
+    // Use the specific level's name or fallback to exercise name
+    name: levelInfo.name || exerciseName,
+
+    // Always use the main asset's muscleWorked
+    muscleWorked: asset.muscleWorked || "Multiple Muscles",
+
+    // Use the specific level's difficulty or fallback
+    difficulty: levelInfo.name || "Varies",
+  };
 };
 
 const fitnessGoalInfo = {
@@ -2057,41 +2163,97 @@ function WorkoutGenerator() {
     }
   };
 
-  const getExercisesForEquipment = (muscle, equipmentList, age) => {
+  const getExercisesForEquipment = (
+    muscle,
+    equipmentList,
+    age,
+    fitnessLevel,
+    fitnessGoal
+  ) => {
+    console.log(`Selecting exercises for: 
+        Muscle: ${muscle}
+        Equipment: ${equipmentList}
+        Age: ${age}
+        Fitness Level: ${fitnessLevel}
+        Fitness Goal: ${fitnessGoal}`);
+
     // If no specific equipment is selected, return all exercises for the muscle
     if (equipmentList.length === 0 || equipmentList.includes("Select all")) {
       return exercisesByMuscle[muscle] || [];
     }
 
-    const allExercises = exercisesByMuscle[muscle] || [];
+    const muscleExercises = exercisesByMuscle[muscle] || [];
+    console.log(`Initial muscle exercises: ${muscleExercises}`);
 
-    // Strictly filter exercises based on selected equipment
-    const equipmentFilteredExercises = allExercises.filter((exercise) => {
-      // Get the equipment for this specific exercise
-      const exerciseEquipment = allExercises[exercise]?.equipment || [];
+    // Expanded filtering with detailed logging
+    const equipmentFilteredExercises = muscleExercises.filter((exercise) => {
+      const exerciseInfo = allExercises[exercise];
 
-      // Check if ANY of the exercise's equipment matches the selected equipment
-      return exerciseEquipment.some(
-        (eq) =>
-          equipmentList.includes(eq) || equipmentList.includes("Bodyweight") // Include bodyweight for ALL equipment types
+      if (!exerciseInfo) {
+        console.warn(`No exercise info found for: ${exercise}`);
+        return false;
+      }
+
+      // Check equipment match
+      const equipmentMatch = exerciseInfo.equipment?.some(
+        (eq) => equipmentList.includes(eq) || eq === "Bodyweight"
       );
+
+      // Check goal variations exist
+      const goalVariationExists =
+        exerciseInfo.variations?.[fitnessGoal] !== undefined;
+
+      if (!equipmentMatch) {
+        console.log(`Equipment mismatch for ${exercise}. 
+                Required: ${equipmentList}
+                Exercise Equipment: ${exerciseInfo.equipment}`);
+      }
+
+      if (!goalVariationExists) {
+        console.log(`Goal variation mismatch for ${exercise}. 
+                Required Goal: ${fitnessGoal}
+                Available Variations: ${Object.keys(
+                  exerciseInfo.variations || {}
+                )}`);
+      }
+
+      return equipmentMatch && goalVariationExists;
     });
 
-    // Age-based exercise modifications
-    const ageAdjustedExercises = equipmentFilteredExercises.map((exercise) => {
-      const exerciseAsset = allExercises[exercise] || {};
+    console.log(
+      `Filtered exercises after equipment and goal check: ${equipmentFilteredExercises}`
+    );
 
-      // Beginner-friendly alternatives for younger and older users
-      if (age < 18) {
-        // For younger users, prefer lower-intensity variations
-        if (exerciseAsset.difficulty === "Advanced") {
-          // Add a more technique-focused alternative
+    // Fallback strategies with logging
+    if (equipmentFilteredExercises.length === 0) {
+      console.warn(
+        `No exercises found for ${muscle} with current filters. Attempting fallbacks.`
+      );
+
+      // Fallback 1: Bodyweight exercises
+      const bodyweightExercises = muscleExercises.filter((exercise) =>
+        allExercises[exercise]?.equipment?.includes("Bodyweight")
+      );
+
+      if (bodyweightExercises.length > 0) {
+        console.log(`Falling back to bodyweight exercises for ${muscle}`);
+        return bodyweightExercises;
+      }
+
+      // Fallback 2: All muscle exercises
+      console.log(`Falling back to all exercises for ${muscle}`);
+      return muscleExercises;
+    }
+
+    // Age and fitness level-based modifications
+    const ageAdjustedExercises = equipmentFilteredExercises.map((exercise) => {
+      const exerciseInfo = allExercises[exercise];
+
+      // Age and difficulty modifications
+      if (exerciseInfo.difficulty) {
+        if (age < 18 && exerciseInfo.difficulty.advanced) {
           return `Modified ${exercise}`;
-        }
-      } else if (age > 65) {
-        // For older users, add joint-friendly variations
-        if (exerciseAsset.difficulty === "Advanced") {
-          // Add a lower-impact version
+        } else if (age > 65 && exerciseInfo.difficulty.advanced) {
           return `Low-Impact ${exercise}`;
         }
       }
@@ -2099,21 +2261,10 @@ function WorkoutGenerator() {
       return exercise;
     });
 
-    // If no exercises match after filtering, fall back to bodyweight exercises
-    const finalExercises =
-      ageAdjustedExercises.length > 0
-        ? ageAdjustedExercises
-        : exercisesByMuscle[muscle].filter((ex) =>
-            allExercises[ex]?.equipment?.includes("Bodyweight")
-          );
-
-    // Add console log for debugging
     console.log(
-      `Exercises for ${muscle} with equipment ${equipmentList}:`,
-      finalExercises
+      `Final selected exercises after age adjustment: ${ageAdjustedExercises}`
     );
-
-    return finalExercises;
+    return ageAdjustedExercises;
   };
 
   const generateWorkoutPlan = (prefs) => {
@@ -2185,7 +2336,9 @@ function WorkoutGenerator() {
       let availableExercises = getExercisesForEquipment(
         muscle,
         prefs.equipment,
-        prefs.age
+        prefs.age,
+        prefs.fitnessLevel, // New parameter
+        prefs.fitnessGoal // New parameter
       );
 
       if (availableExercises.length === 0) {
@@ -2214,9 +2367,23 @@ function WorkoutGenerator() {
           const sets = setsReps[prefs.fitnessGoal]?.sets || 3;
           const reps = setsReps[prefs.fitnessGoal]?.reps || "10-12";
           const rest = setsReps[prefs.fitnessGoal]?.rest || 60;
+          const exerciseInfo = allExercises[exercise];
+
+          // Handle difficulty correctly
+          let displayName = exercise;
+          let difficultyLevel = prefs.fitnessLevel;
+
+          // If the exercise has a structured difficulty object
+          if (exerciseInfo && typeof exerciseInfo.difficulty === "object") {
+            // Get the appropriate variant for the user's fitness level
+            const levelInfo = exerciseInfo.difficulty[difficultyLevel];
+            if (levelInfo) {
+              displayName = levelInfo.name || exercise;
+            }
+          }
 
           muscleExercises.push({
-            name: exercise,
+            name: displayName,
             muscle: muscle,
             sets: sets,
             reps: reps,
@@ -3638,7 +3805,7 @@ function WorkoutGenerator() {
 
                 {workout.trainingSchedule &&
                   Object.entries(workout.trainingSchedule).map(
-                    ([day, muscles], dayIndex) => (
+                    ([day, muscles]) => (
                       <div
                         key={day}
                         className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-4"
@@ -3730,7 +3897,6 @@ function WorkoutGenerator() {
               </div>
             )}
 
-            {/* Exercise Modal */}
             {selectedDayExercises && (
               <div
                 className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4"
@@ -3740,12 +3906,20 @@ function WorkoutGenerator() {
                   }
                 }}
               >
-                <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-xl font-bold">Day Exercises</h3>
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto relative">
+                  <div className="sticky top-0 bg-white dark:bg-gray-800 z-10 mb-4">
+                    <h3 className="text-xl font-bold text-center">
+                      {/* Find the exact day name */}
+                      {Object.entries(workout.trainingSchedule).find(
+                        ([day, muscles]) =>
+                          selectedDayExercises.every((ex) =>
+                            muscles.includes(ex.muscle)
+                          )
+                      )?.[0] || "Day Exercises"}
+                    </h3>
                     <button
                       onClick={() => setSelectedDayExercises(null)}
-                      className="text-gray-500 hover:text-gray-700 focus:outline-none"
+                      className="absolute top-0 right-0 text-gray-500 hover:text-gray-700 focus:outline-none"
                     >
                       <span className="text-2xl">×</span>
                     </button>
@@ -3871,14 +4045,7 @@ function WorkoutGenerator() {
       )}
 
       {viewingExercise && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setViewingExercise(null);
-            }
-          }}
-        >
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-lg w-full">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-bold">{viewingExercise}</h3>
@@ -3890,38 +4057,40 @@ function WorkoutGenerator() {
               </button>
             </div>
 
-            <div className="mb-4 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
-              {getExerciseAsset(viewingExercise).type === "animation" ? (
-                <img
-                  src={getExerciseAsset(viewingExercise).src}
-                  alt={`${viewingExercise} demonstration`}
-                  className="w-full object-contain max-h-80"
-                />
-              ) : (
-                <img
-                  src={getExerciseAsset(viewingExercise).src}
-                  alt={`${viewingExercise} demonstration`}
-                  className="w-full object-contain max-h-80"
-                />
-              )}
-            </div>
+            {(() => {
+              const asset = getExerciseAsset(
+                viewingExercise,
+                preferences.fitnessLevel || "beginner"
+              );
 
-            <div className="mb-4">
-              <div className="flex gap-2 mb-4">
-                <span className="text-sm bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 px-2 py-1 rounded">
-                  {getExerciseAsset(viewingExercise).muscleWorked ||
-                    "Multiple Muscles"}
-                </span>
-                <span className="text-sm bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 px-2 py-1 rounded">
-                  {getExerciseAsset(viewingExercise).difficulty || "Varies"}
-                </span>
-              </div>
+              return (
+                <>
+                  <div className="mb-4 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
+                    <img
+                      src={asset.src}
+                      alt={`${viewingExercise} demonstration`}
+                      className="w-full object-contain max-h-80"
+                    />
+                  </div>
 
-              <h4 className="font-bold mb-2">How to perform:</h4>
-              <p className="text-gray-700 dark:text-gray-300">
-                {getExerciseAsset(viewingExercise).description}
-              </p>
-            </div>
+                  <div className="mb-4">
+                    <div className="flex gap-2 mb-4">
+                      <span className="text-sm bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 px-2 py-1 rounded">
+                        {asset.muscleWorked}
+                      </span>
+                      <span className="text-sm bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 px-2 py-1 rounded">
+                        {asset.difficulty}
+                      </span>
+                    </div>
+
+                    <h4 className="font-bold mb-2">How to perform:</h4>
+                    <p className="text-gray-700 dark:text-gray-300">
+                      {asset.description}
+                    </p>
+                  </div>
+                </>
+              );
+            })()}
 
             <button
               onClick={() => setViewingExercise(null)}
