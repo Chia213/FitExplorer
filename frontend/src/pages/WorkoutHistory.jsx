@@ -146,15 +146,6 @@ function WorkoutHistory() {
       return;
     }
 
-    if (
-      !selectedWorkout ||
-      !selectedWorkout.exercises ||
-      selectedWorkout.exercises.length === 0
-    ) {
-      alert("Cannot save an empty workout as a routine.");
-      return;
-    }
-
     setSavingRoutine(true);
 
     try {
@@ -167,19 +158,85 @@ function WorkoutHistory() {
 
       const routineData = {
         name: routineName,
-        weight_unit: weightUnit,
+        weight_unit: selectedWorkout.weight_unit || "kg",
         exercises: selectedWorkout.exercises.map((exercise) => ({
           name: exercise.name,
           category: exercise.category || "Uncategorized",
           is_cardio: Boolean(exercise.is_cardio),
-          initial_sets:
-            exercise.sets && Array.isArray(exercise.sets)
-              ? exercise.sets.length
-              : 1,
-          sets: exercise.sets,
+          initial_sets: exercise.sets?.length || 1,
+          sets:
+            exercise.sets?.map((set) => {
+              if (exercise.is_cardio) {
+                return {
+                  distance: set.distance || null,
+                  duration: set.duration || null,
+                  intensity: set.intensity || "",
+                  notes: set.notes || "",
+                };
+              } else {
+                return {
+                  weight: set.weight || null,
+                  reps: set.reps || null,
+                  notes: set.notes || "",
+                };
+              }
+            }) || [],
         })),
       };
 
+      // Use the dedicated endpoint to check for duplicates
+      const checkResponse = await fetch(`${API_BASE_URL}/routines/check-name`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ name: routineName }),
+      });
+
+      if (!checkResponse.ok) {
+        throw new Error("Failed to check existing routines");
+      }
+
+      const { exists, id, name } = await checkResponse.json();
+
+      // If a duplicate exists, ask user to confirm overwrite
+      if (exists) {
+        const confirmed = window.confirm(
+          `A routine named "${name}" already exists. Do you want to overwrite it?`
+        );
+
+        if (confirmed) {
+          // Use the existing PUT endpoint to update the routine
+          const updateResponse = await fetch(`${API_BASE_URL}/routines/${id}`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify(routineData),
+          });
+
+          if (!updateResponse.ok) {
+            const errorText = await updateResponse.text();
+            console.error("Server response:", errorText);
+            throw new Error(
+              `Failed to update routine: ${updateResponse.status}`
+            );
+          }
+
+          alert("Routine updated successfully!");
+          setShowSaveRoutineModal(false);
+          return;
+        } else {
+          alert("Operation cancelled. Routine was not overwritten.");
+          setShowSaveRoutineModal(false);
+          setSavingRoutine(false);
+          return;
+        }
+      }
+
+      // If no duplicate exists, create a new routine
       const response = await fetch(`${API_BASE_URL}/routines`, {
         method: "POST",
         headers: {
@@ -189,6 +246,7 @@ function WorkoutHistory() {
         body: JSON.stringify(routineData),
       });
 
+      // Handle server-side conflict detection as a fallback
       if (response.status === 409) {
         const data = await response.json();
         const confirmed = window.confirm(
@@ -197,7 +255,7 @@ function WorkoutHistory() {
 
         if (confirmed) {
           const overwriteResponse = await fetch(
-            `${API_BASE_URL}/routines/${data.routine_id}/overwrite`,
+            `${API_BASE_URL}/routines/${data.routine_id}`,
             {
               method: "PUT",
               headers: {
@@ -217,14 +275,13 @@ function WorkoutHistory() {
           }
 
           alert("Routine updated successfully!");
-          setShowSaveRoutineModal(false);
-          return;
         } else {
           alert("Operation cancelled. Routine was not overwritten.");
-          setShowSaveRoutineModal(false);
-          setSavingRoutine(false);
-          return;
         }
+
+        setShowSaveRoutineModal(false);
+        setSavingRoutine(false);
+        return;
       }
 
       if (!response.ok) {
@@ -233,9 +290,7 @@ function WorkoutHistory() {
         throw new Error(`Server error: ${response.status}`);
       }
 
-      const savedRoutine = await response.json();
-      console.log("Routine saved successfully:", savedRoutine);
-
+      // Successfully created a new routine
       alert("Routine saved successfully!");
       setShowSaveRoutineModal(false);
     } catch (error) {

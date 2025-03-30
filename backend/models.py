@@ -53,6 +53,7 @@ class Workout(Base):
     bodyweight = Column(Integer, nullable=True)
     weight_unit = Column(String, default="kg")
     notes = Column(String, nullable=True)
+    is_template = Column(Boolean, default=False, nullable=False)
     user_id = Column(Integer, ForeignKey(
         "users.id", ondelete="CASCADE"), nullable=False)
 

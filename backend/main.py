@@ -1,7 +1,8 @@
 import uuid
 import os
-from fastapi import FastAPI, Depends, HTTPException, File, UploadFile, BackgroundTasks
+from fastapi import FastAPI, Depends, HTTPException, File, UploadFile, BackgroundTasks, Body
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from background_task import send_summary_emails
 from email_service import send_summary_email, send_security_alert
 from fastapi.staticfiles import StaticFiles
@@ -103,7 +104,7 @@ async def send_summaries(background_tasks: BackgroundTasks, db: Session = Depend
 def get_workouts(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     workouts = db.query(Workout)\
         .options(joinedload(Workout.exercises).joinedload(Exercise.sets))\
-        .filter(Workout.user_id == user.id)\
+        .filter(Workout.user_id == user.id, Workout.is_template == False)\
         .all()
 
     return workouts
@@ -443,11 +444,26 @@ def create_routine(
     db: Session = Depends(get_db)
 ):
     try:
+        # Check if routine with this name already exists for this user
+        existing_routine = db.query(Routine).filter(
+            Routine.user_id == user.id,
+            func.lower(Routine.name) == func.lower(routine.name)
+        ).first()
+
+        if existing_routine:
+            return JSONResponse(
+                status_code=409,
+                content={"detail": "Routine with this name already exists",
+                         "routine_id": existing_routine.id}
+            )
+
         new_workout = Workout(
             name=routine.name,
             user_id=user.id,
             date=datetime.now(timezone.utc),
-            weight_unit=routine.weight_unit
+            weight_unit=routine.weight_unit if hasattr(
+                routine, 'weight_unit') else "kg",
+            is_template=True
         )
         db.add(new_workout)
         db.commit()
@@ -457,7 +473,8 @@ def create_routine(
             name=routine.name,
             user_id=user.id,
             workout_id=new_workout.id,
-            weight_unit=routine.weight_unit
+            weight_unit=routine.weight_unit if hasattr(
+                routine, 'weight_unit') else "kg"
         )
         db.add(new_routine)
 
@@ -768,3 +785,32 @@ def clear_saved_programs(
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# In main.py
+@app.post("/routines/check-name")
+def check_routine_name(
+    data: dict = Body(..., example={"name": "My Routine"}),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    try:
+        name = data.get("name", "")
+        if not name:
+            raise HTTPException(
+                status_code=400, detail="Routine name is required")
+
+        existing_routine = db.query(Routine).filter(
+            Routine.user_id == user.id,
+            func.lower(Routine.name) == func.lower(name)
+        ).first()
+
+        return {
+            "exists": existing_routine is not None,
+            "id": existing_routine.id if existing_routine else None,
+            "name": existing_routine.name if existing_routine else name
+        }
+    except Exception as e:
+        print(f"Error checking routine name: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error checking routine name: {str(e)}")

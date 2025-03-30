@@ -470,7 +470,6 @@ function WorkoutLog() {
           category: exercise.category || "Uncategorized",
           is_cardio: Boolean(exercise.is_cardio),
           initial_sets: exercise.sets?.length || 1,
-          // Include the sets information to preserve cardio-specific data
           sets:
             exercise.sets?.map((set) => {
               if (exercise.is_cardio) {
@@ -491,65 +490,78 @@ function WorkoutLog() {
         })),
       };
 
-      console.log("Saving routine:", routineData); // For debugging
+      console.log("Saving routine:", routineData);
 
-      const response = await fetch(`${API_BASE_URL}/routines`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(routineData),
-      });
+      try {
+        const response = await fetch(`${API_BASE_URL}/routines`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(routineData),
+        });
 
-      if (response.status === 409) {
-        const data = await response.json();
-        const confirmed = window.confirm(
-          `A routine named "${routineName}" already exists. Do you want to overwrite it?`
-        );
+        // Handle duplicate routine name (409 Conflict)
+        if (response.status === 409) {
+          const data = await response.json();
+          console.log("Duplicate routine detected:", data);
 
-        if (confirmed) {
-          const overwriteResponse = await fetch(
-            `${API_BASE_URL}/routines/${data.routine_id}/overwrite`,
-            {
-              method: "PUT",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-              },
-              body: JSON.stringify(routineData),
-            }
+          const confirmed = window.confirm(
+            `A routine named "${routineName}" already exists. Do you want to overwrite it?`
           );
 
-          if (!overwriteResponse.ok) {
-            const errorText = await overwriteResponse.text();
-            console.error("Server response:", errorText);
-            throw new Error(
-              `Failed to overwrite routine: ${overwriteResponse.status}`
+          if (confirmed) {
+            // Get the routine ID from the response
+            const routineId = data.routine_id;
+
+            if (!routineId) {
+              throw new Error("Failed to identify existing routine");
+            }
+
+            // Update the existing routine
+            const updateResponse = await fetch(
+              `${API_BASE_URL}/routines/${routineId}`,
+              {
+                method: "PUT",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify(routineData),
+              }
             );
+
+            if (!updateResponse.ok) {
+              const errorText = await updateResponse.text();
+              console.error("Server response:", errorText);
+              throw new Error(
+                `Failed to update routine: ${updateResponse.status}`
+              );
+            }
+
+            alert("Routine updated successfully!");
+          } else {
+            alert("Operation cancelled. Routine was not overwritten.");
           }
 
-          alert("Routine updated successfully!");
-          setShowSaveRoutineModal(false);
-          return;
-        } else {
-          alert("Operation cancelled. Routine was not overwritten.");
           setShowSaveRoutineModal(false);
           return;
         }
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error("Server response:", errorText);
+          throw new Error(`Server error: ${response.status}`);
+        }
+
+        // Successfully created a new routine
+        alert("Routine saved successfully!");
+        setShowSaveRoutineModal(false);
+      } catch (error) {
+        console.error("Error in fetch operation:", error);
+        throw error;
       }
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Server response:", errorText);
-        throw new Error(`Server error: ${response.status}`);
-      }
-
-      // Fetch the updated list of routines
-      fetchRoutines(token);
-
-      alert("Routine saved successfully!");
-      setShowSaveRoutineModal(false);
     } catch (error) {
       console.error("Error saving routine:", error);
       alert(`Error saving routine: ${error.message}. Please try again.`);
