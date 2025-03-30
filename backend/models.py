@@ -51,6 +51,7 @@ class Workout(Base):
     start_time = Column(DateTime, nullable=True)
     end_time = Column(DateTime, nullable=True)
     bodyweight = Column(Integer, nullable=True)
+    weight_unit = Column(String, default="kg")
     notes = Column(String, nullable=True)
     user_id = Column(Integer, ForeignKey(
         "users.id", ondelete="CASCADE"), nullable=False)
