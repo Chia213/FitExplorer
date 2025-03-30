@@ -452,7 +452,10 @@ function Routines() {
                                       <>
                                         <td className="py-2 text-center">
                                           {set.weight
-                                            ? `${set.weight} kg`
+                                            ? `${set.weight} ${
+                                                routine.workout?.weight_unit ||
+                                                "kg"
+                                              }`
                                             : "-"}
                                         </td>
                                         <td className="py-2 text-center">

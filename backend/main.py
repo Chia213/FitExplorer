@@ -117,6 +117,7 @@ def add_workout(workout: WorkoutCreate, user: User = Depends(get_current_user), 
         start_time=workout.start_time,
         end_time=workout.end_time,
         bodyweight=workout.bodyweight,
+        weight_unit=workout.weight_unit,
         notes=workout.notes,
         user_id=user.id
     )

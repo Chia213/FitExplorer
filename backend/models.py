@@ -110,6 +110,7 @@ class Routine(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
+    weight_unit = Column(String, default="kg")
     user_id = Column(Integer, ForeignKey(
         "users.id", ondelete="CASCADE"), nullable=False)
     workout_id = Column(Integer, ForeignKey(

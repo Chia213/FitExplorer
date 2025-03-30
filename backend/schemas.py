@@ -1,7 +1,6 @@
 from pydantic import BaseModel, EmailStr, Field
 from datetime import datetime
 from typing import Optional, List
-import json
 
 
 class UserCreate(BaseModel):
@@ -64,6 +63,7 @@ class WorkoutBase(BaseModel):
     start_time: Optional[datetime] = None
     end_time: Optional[datetime] = None
     bodyweight: Optional[int] = None
+    weight_unit: Optional[str] = "kg"
     notes: Optional[str] = None
 
 

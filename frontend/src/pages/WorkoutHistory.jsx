@@ -157,6 +157,7 @@ function WorkoutHistory() {
 
       const routineData = {
         name: routineName,
+        weight_unit: weightUnit,
         exercises: selectedWorkout.exercises.map((exercise) => ({
           name: exercise.name,
           category: exercise.category || "Uncategorized",
@@ -282,6 +283,11 @@ function WorkoutHistory() {
       ...prev,
       [workoutId]: !prev[workoutId],
     }));
+  };
+
+  const formatWeight = (weight, unit = "kg") => {
+    if (!weight) return "-";
+    return `${weight} ${unit}`;
   };
 
   const formatDate = (dateString) => {
@@ -533,7 +539,7 @@ function WorkoutHistory() {
                       {workout.bodyweight && (
                         <div className="flex items-center">
                           <FaWeight className="mr-1" />
-                          {workout.bodyweight} kg
+                          {workout.bodyweight} {workout.weight_unit || "kg"}
                         </div>
                       )}
                       <div className="flex items-center">
@@ -698,7 +704,12 @@ function WorkoutHistory() {
                                         ) : (
                                           <>
                                             <td className="py-2 pr-4">
-                                              {set.weight || "-"}
+                                              {set.weight
+                                                ? formatWeight(
+                                                    set.weight,
+                                                    workout.weight_unit || "kg"
+                                                  )
+                                                : "-"}
                                             </td>
                                             <td className="py-2 pr-4">
                                               {set.reps || "-"}

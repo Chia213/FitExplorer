@@ -59,43 +59,45 @@ function WorkoutLog() {
     return localStorage.getItem("weightUnit") || "kg";
   });
   const navigate = useNavigate();
-  
+
   const toggleWeightUnit = () => {
     const newUnit = weightUnit === "kg" ? "lbs" : "kg";
     setWeightUnit(newUnit);
     localStorage.setItem("weightUnit", newUnit);
-    
+
     // Convert existing bodyweight
     if (bodyweight) {
       const numValue = parseFloat(bodyweight);
       if (!isNaN(numValue)) {
-        const convertedValue = newUnit === "kg" 
-          ? (numValue / 2.20462).toFixed(1) // lbs to kg
-          : (numValue * 2.20462).toFixed(1); // kg to lbs
+        const convertedValue =
+          newUnit === "kg"
+            ? (numValue / 2.20462).toFixed(1) // lbs to kg
+            : (numValue * 2.20462).toFixed(1); // kg to lbs
         setBodyweight(convertedValue);
       }
     }
-    
+
     // Convert all exercise weights
-    setWorkoutExercises(prev => 
-      prev.map(exercise => {
+    setWorkoutExercises((prev) =>
+      prev.map((exercise) => {
         if (!exercise.is_cardio) {
           return {
             ...exercise,
-            sets: exercise.sets.map(set => {
+            sets: exercise.sets.map((set) => {
               if (set.weight) {
                 const weight = parseFloat(set.weight);
                 if (!isNaN(weight)) {
                   return {
                     ...set,
-                    weight: newUnit === "kg" 
-                      ? (weight / 2.20462).toFixed(1) // lbs to kg
-                      : (weight * 2.20462).toFixed(1) // kg to lbs
+                    weight:
+                      newUnit === "kg"
+                        ? (weight / 2.20462).toFixed(1) // lbs to kg
+                        : (weight * 2.20462).toFixed(1), // kg to lbs
                   };
                 }
               }
               return set;
-            })
+            }),
           };
         }
         return exercise;
@@ -118,7 +120,7 @@ function WorkoutLog() {
     }
     return workout;
   };
-  
+
   const handleMoveExercise = (exerciseIndex, direction) => {
     if (
       (direction === "up" && exerciseIndex === 0) ||
@@ -224,7 +226,7 @@ function WorkoutLog() {
       alert("This routine doesn't have any exercises.");
       return;
     }
-  
+
     // Confirm with user if they're about to replace existing exercises
     if (workoutExercises.length > 0) {
       if (
@@ -233,41 +235,41 @@ function WorkoutLog() {
         return;
       }
     }
-  
+
     // Set the workout name
     setWorkoutName(routine.name);
-  
+
     // Convert routine exercises to workout exercises
     const newExercises = routine.workout.exercises.map((exercise) => {
       // Ensure is_cardio is properly set as a boolean
       const isCardio = Boolean(exercise.is_cardio);
       const initialSets = exercise.initial_sets || exercise.sets?.length || 1;
-  
+
       // If the exercise has existing sets, use those
       if (Array.isArray(exercise.sets) && exercise.sets.length > 0) {
         return {
           name: exercise.name,
           category: exercise.category || "Uncategorized",
           is_cardio: isCardio,
-          sets: exercise.sets.map(set => {
+          sets: exercise.sets.map((set) => {
             if (isCardio) {
               return {
                 distance: set.distance || "",
                 duration: set.duration || "",
                 intensity: set.intensity || "",
-                notes: set.notes || ""
+                notes: set.notes || "",
               };
             } else {
               return {
                 weight: set.weight || "",
                 reps: set.reps || "",
-                notes: set.notes || ""
+                notes: set.notes || "",
               };
             }
-          })
+          }),
         };
       }
-  
+
       // Otherwise create new empty sets
       if (isCardio) {
         const cardioSets = Array(initialSets)
@@ -278,7 +280,7 @@ function WorkoutLog() {
             intensity: "",
             notes: "",
           }));
-  
+
         return {
           name: exercise.name,
           category: exercise.category || "Uncategorized",
@@ -293,7 +295,7 @@ function WorkoutLog() {
             reps: "",
             notes: "",
           }));
-  
+
         return {
           name: exercise.name,
           category: exercise.category || "Uncategorized",
@@ -302,7 +304,7 @@ function WorkoutLog() {
         };
       }
     });
-  
+
     setWorkoutExercises(newExercises);
     setShowRoutinesSelector(false);
   };
@@ -380,6 +382,7 @@ function WorkoutLog() {
         ? new Date(endTime).toISOString()
         : new Date().toISOString(),
       bodyweight: bodyweight ? parseFloat(bodyweight) : null,
+      weight_unit: weightUnit,
       notes,
       exercises: cleanedExercises,
     };
@@ -450,7 +453,7 @@ function WorkoutLog() {
       alert("Please enter a routine name.");
       return;
     }
-  
+
     try {
       const token = localStorage.getItem("token");
       if (!token) {
@@ -458,36 +461,38 @@ function WorkoutLog() {
         navigate("/login");
         return;
       }
-  
+
       const routineData = {
         name: routineName,
+        weight_unit: weightUnit,
         exercises: workoutExercises.map((exercise) => ({
           name: exercise.name,
           category: exercise.category || "Uncategorized",
           is_cardio: Boolean(exercise.is_cardio),
           initial_sets: exercise.sets?.length || 1,
           // Include the sets information to preserve cardio-specific data
-          sets: exercise.sets?.map(set => {
-            if (exercise.is_cardio) {
-              return {
-                distance: set.distance || null,
-                duration: set.duration || null,
-                intensity: set.intensity || "",
-                notes: set.notes || ""
-              };
-            } else {
-              return {
-                weight: set.weight || null,
-                reps: set.reps || null,
-                notes: set.notes || ""
-              };
-            }
-          }) || []
+          sets:
+            exercise.sets?.map((set) => {
+              if (exercise.is_cardio) {
+                return {
+                  distance: set.distance || null,
+                  duration: set.duration || null,
+                  intensity: set.intensity || "",
+                  notes: set.notes || "",
+                };
+              } else {
+                return {
+                  weight: set.weight || null,
+                  reps: set.reps || null,
+                  notes: set.notes || "",
+                };
+              }
+            }) || [],
         })),
       };
-  
+
       console.log("Saving routine:", routineData); // For debugging
-  
+
       const response = await fetch(`${API_BASE_URL}/routines`, {
         method: "POST",
         headers: {
@@ -496,13 +501,13 @@ function WorkoutLog() {
         },
         body: JSON.stringify(routineData),
       });
-  
+
       if (response.status === 409) {
         const data = await response.json();
         const confirmed = window.confirm(
           `A routine named "${routineName}" already exists. Do you want to overwrite it?`
         );
-  
+
         if (confirmed) {
           const overwriteResponse = await fetch(
             `${API_BASE_URL}/routines/${data.routine_id}/overwrite`,
@@ -515,7 +520,7 @@ function WorkoutLog() {
               body: JSON.stringify(routineData),
             }
           );
-  
+
           if (!overwriteResponse.ok) {
             const errorText = await overwriteResponse.text();
             console.error("Server response:", errorText);
@@ -523,7 +528,7 @@ function WorkoutLog() {
               `Failed to overwrite routine: ${overwriteResponse.status}`
             );
           }
-  
+
           alert("Routine updated successfully!");
           setShowSaveRoutineModal(false);
           return;
@@ -533,16 +538,16 @@ function WorkoutLog() {
           return;
         }
       }
-  
+
       if (!response.ok) {
         const errorText = await response.text();
         console.error("Server response:", errorText);
         throw new Error(`Server error: ${response.status}`);
       }
-  
+
       // Fetch the updated list of routines
       fetchRoutines(token);
-  
+
       alert("Routine saved successfully!");
       setShowSaveRoutineModal(false);
     } catch (error) {
@@ -705,7 +710,9 @@ function WorkoutLog() {
         </div>
 
         <div className="flex justify-between items-center">
-          <p className="text-gray-700 dark:text-gray-300">Bodyweight ({weightUnit})</p>
+          <p className="text-gray-700 dark:text-gray-300">
+            Bodyweight ({weightUnit})
+          </p>
           <input
             type="number"
             value={bodyweight}
