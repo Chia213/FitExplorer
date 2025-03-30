@@ -10,6 +10,7 @@ import {
   FaSave,
   FaSearch,
   FaTrash,
+  FaBalanceScale,
 } from "react-icons/fa";
 
 const API_BASE_URL = "http://localhost:8000";
@@ -45,6 +46,9 @@ function WorkoutHistory() {
   const [savingRoutine, setSavingRoutine] = useState(false);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [workoutToDelete, setWorkoutToDelete] = useState(null);
+  const [weightUnit, setWeightUnit] = useState(() => {
+    return localStorage.getItem("weightUnit") || "kg";
+  });
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -56,6 +60,12 @@ function WorkoutHistory() {
 
     fetchWorkoutHistory(token);
   }, [navigate]);
+
+  const toggleWeightUnit = () => {
+    const newUnit = weightUnit === "kg" ? "lbs" : "kg";
+    setWeightUnit(newUnit);
+    localStorage.setItem("weightUnit", newUnit);
+  };
 
   async function fetchWorkoutHistory(token) {
     setLoading(true);
@@ -285,9 +295,25 @@ function WorkoutHistory() {
     }));
   };
 
-  const formatWeight = (weight, unit = "kg") => {
+  const formatWeight = (weight, originalUnit = "kg") => {
     if (!weight) return "-";
-    return `${weight} ${unit}`;
+
+    // No conversion needed if display unit matches stored unit
+    if (weightUnit === originalUnit) {
+      return `${weight} ${weightUnit}`;
+    }
+
+    // Convert between units
+    if (weightUnit === "lbs" && originalUnit === "kg") {
+      // Convert kg to lbs
+      return `${(parseFloat(weight) * 2.20462).toFixed(1)} lbs`;
+    } else if (weightUnit === "kg" && originalUnit === "lbs") {
+      // Convert lbs to kg
+      return `${(parseFloat(weight) / 2.20462).toFixed(1)} kg`;
+    }
+
+    // Fallback
+    return `${weight} ${originalUnit}`;
   };
 
   const formatDate = (dateString) => {
@@ -423,6 +449,13 @@ function WorkoutHistory() {
             Workout History
           </h1>
           <button
+            onClick={toggleWeightUnit}
+            className="flex items-center bg-gray-200 dark:bg-gray-700 px-3 py-2 rounded-lg text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+          >
+            <FaBalanceScale className="mr-2" />
+            <span>{weightUnit.toUpperCase()}</span>
+          </button>
+          <button
             onClick={() => navigate("/workout-log")}
             className="flex items-center text-teal-500 hover:text-teal-400"
           >
@@ -539,7 +572,10 @@ function WorkoutHistory() {
                       {workout.bodyweight && (
                         <div className="flex items-center">
                           <FaWeight className="mr-1" />
-                          {workout.bodyweight} {workout.weight_unit || "kg"}
+                          {formatWeight(
+                            workout.bodyweight,
+                            workout.weight_unit || "kg"
+                          )}
                         </div>
                       )}
                       <div className="flex items-center">

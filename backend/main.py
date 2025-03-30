@@ -446,7 +446,8 @@ def create_routine(
         new_workout = Workout(
             name=routine.name,
             user_id=user.id,
-            date=datetime.now(timezone.utc)
+            date=datetime.now(timezone.utc),
+            weight_unit=routine.weight_unit
         )
         db.add(new_workout)
         db.commit()
@@ -455,7 +456,8 @@ def create_routine(
         new_routine = Routine(
             name=routine.name,
             user_id=user.id,
-            workout_id=new_workout.id
+            workout_id=new_workout.id,
+            weight_unit=routine.weight_unit
         )
         db.add(new_routine)
 

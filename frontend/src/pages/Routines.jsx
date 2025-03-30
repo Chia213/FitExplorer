@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTheme } from "../hooks/useTheme";
 import {
   FaPlay,
   FaEdit,
@@ -9,6 +10,7 @@ import {
   FaTimes,
   FaPlus,
   FaSave,
+  FaBalanceScale,
 } from "react-icons/fa";
 import AddExercise from "./AddExercise"; // Import the AddExercise component
 
@@ -23,8 +25,12 @@ function Routines() {
   const [editedRoutineName, setEditedRoutineName] = useState("");
   const [editedExercises, setEditedExercises] = useState([]);
   const [showAddExerciseModal, setShowAddExerciseModal] = useState(false);
+  const [weightUnit, setWeightUnit] = useState(() => {
+    return localStorage.getItem("weightUnit") || "kg";
+  });
 
   const navigate = useNavigate();
+  const { theme } = useTheme(); // Use the theme context
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -35,6 +41,12 @@ function Routines() {
 
     fetchRoutines(token);
   }, [navigate]);
+
+  const toggleWeightUnit = () => {
+    const newUnit = weightUnit === "kg" ? "lbs" : "kg";
+    setWeightUnit(newUnit);
+    localStorage.setItem("weightUnit", newUnit);
+  };
 
   const fetchRoutines = async (token) => {
     try {
@@ -112,6 +124,7 @@ function Routines() {
           },
           body: JSON.stringify({
             name: editedRoutineName,
+            weight_unit: weightUnit,
             exercises: editedExercises.map((exercise) => ({
               name: exercise.name,
               category: exercise.category || "Uncategorized",
@@ -288,37 +301,65 @@ function Routines() {
     setShowAddExerciseModal(false);
   };
 
+  // Format weight with the correct unit
+  const formatWeight = (weight, routineUnit = "kg") => {
+    if (!weight) return "-";
+
+    // If viewing unit matches stored unit, no conversion needed
+    if (weightUnit === routineUnit) {
+      return `${weight} ${weightUnit}`;
+    }
+
+    // Convert between units
+    if (weightUnit === "lbs") {
+      return `${(parseFloat(weight) * 2.20462).toFixed(1)} lbs`;
+    } else {
+      return `${(parseFloat(weight) / 2.20462).toFixed(1)} kg`;
+    }
+  };
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#1E293B] flex items-center justify-center text-white">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center text-gray-900 dark:text-white">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-500"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#1E293B] text-white">
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white">
       <div className="max-w-4xl mx-auto p-6">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">My Routines</h1>
-          <button
-            onClick={() => navigate("/workout-log")}
-            className="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded"
-          >
-            Create New Routine
-          </button>
+          <div className="flex space-x-3">
+            <button
+              onClick={toggleWeightUnit}
+              className="flex items-center bg-gray-200 dark:bg-gray-700 px-3 py-2 rounded-lg text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+            >
+              <FaBalanceScale className="mr-2" />
+              <span>{weightUnit.toUpperCase()}</span>
+            </button>
+            <button
+              onClick={() => navigate("/workout-log")}
+              className="bg-teal-500 hover:bg-teal-600 px-4 py-2 text-white rounded"
+            >
+              Create New Routine
+            </button>
+          </div>
         </div>
 
         {error && (
-          <div className="bg-red-600 text-white p-3 rounded mb-4">{error}</div>
+          <div className="bg-red-500 text-white p-3 rounded mb-4">{error}</div>
         )}
 
         {routines.length === 0 ? (
-          <div className="bg-[#334155] p-6 rounded-lg text-center">
-            <p className="text-gray-400">No routines saved yet</p>
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg text-center shadow">
+            <p className="text-gray-500 dark:text-gray-400">
+              No routines saved yet
+            </p>
             <button
               onClick={() => navigate("/workout-log")}
-              className="mt-4 bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded"
+              className="mt-4 bg-teal-500 hover:bg-teal-600 px-4 py-2 text-white rounded"
             >
               Create First Routine
             </button>
@@ -328,15 +369,15 @@ function Routines() {
             {routines.map((routine) => (
               <div
                 key={routine.id}
-                className="bg-[#334155] rounded-lg overflow-hidden"
+                className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow"
               >
                 <div
-                  className="p-4 flex justify-between items-center cursor-pointer"
+                  className="p-4 flex justify-between items-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
                   onClick={() => toggleRoutineExpand(routine.id)}
                 >
                   <div>
                     <h2 className="text-xl font-semibold">{routine.name}</h2>
-                    <p className="text-sm text-gray-400">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
                       {routine.workout && routine.workout.exercises
                         ? `${routine.workout.exercises.length} Exercise${
                             routine.workout.exercises.length !== 1 ? "s" : ""
@@ -350,7 +391,7 @@ function Routines() {
                         e.stopPropagation();
                         handleStartWorkout(routine);
                       }}
-                      className="text-blue-400 hover:text-blue-300"
+                      className="text-teal-500 hover:text-teal-400"
                       title="Start this routine"
                     >
                       <FaPlay />
@@ -360,7 +401,7 @@ function Routines() {
                         e.stopPropagation();
                         handleStartEditRoutine(routine);
                       }}
-                      className="text-green-400 hover:text-green-300"
+                      className="text-blue-500 hover:text-blue-400"
                       title="Edit routine"
                     >
                       <FaEdit />
@@ -370,15 +411,15 @@ function Routines() {
                         e.stopPropagation();
                         handleDeleteRoutine(routine.id);
                       }}
-                      className="text-red-400 hover:text-red-300"
+                      className="text-red-500 hover:text-red-400"
                       title="Delete routine"
                     >
                       <FaTrash />
                     </button>
                     {expandedRoutines[routine.id] ? (
-                      <FaChevronUp className="text-gray-400" />
+                      <FaChevronUp className="text-gray-500 dark:text-gray-400" />
                     ) : (
-                      <FaChevronDown className="text-gray-400" />
+                      <FaChevronDown className="text-gray-500 dark:text-gray-400" />
                     )}
                   </div>
                 </div>
@@ -386,19 +427,19 @@ function Routines() {
                 {expandedRoutines[routine.id] &&
                   routine.workout &&
                   routine.workout.exercises && (
-                    <div className="bg-[#2C3E50] p-4">
+                    <div className="bg-gray-50 dark:bg-gray-700 p-4">
                       {routine.workout.exercises.map((exercise, index) => (
                         <div key={index} className="mb-4 last:mb-0">
-                          <h3 className="text-lg font-medium text-white mb-2 border-b border-gray-700 pb-2">
+                          <h3 className="text-lg font-medium mb-2 border-b border-gray-300 dark:border-gray-600 pb-2">
                             {exercise.name}
-                            <span className="ml-2 text-sm text-gray-400">
+                            <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">
                               {exercise.is_cardio ? "(Cardio)" : "(Strength)"}
                             </span>
                           </h3>
 
                           <table className="w-full table-fixed mb-4">
                             <thead>
-                              <tr className="text-left border-b border-gray-700">
+                              <tr className="text-left border-b border-gray-300 dark:border-gray-600">
                                 <th className="pb-2 w-1/8">Set</th>
                                 {exercise.is_cardio ? (
                                   <>
@@ -429,7 +470,7 @@ function Routines() {
                                 exercise.sets.map((set, setIndex) => (
                                   <tr
                                     key={setIndex}
-                                    className="border-b border-gray-700 last:border-b-0"
+                                    className="border-b border-gray-300 dark:border-gray-600 last:border-b-0"
                                   >
                                     <td className="py-2">{setIndex + 1}</td>
                                     {exercise.is_cardio ? (
@@ -452,10 +493,10 @@ function Routines() {
                                       <>
                                         <td className="py-2 text-center">
                                           {set.weight
-                                            ? `${set.weight} ${
-                                                routine.workout?.weight_unit ||
-                                                "kg"
-                                              }`
+                                            ? formatWeight(
+                                                set.weight,
+                                                routine.weight_unit
+                                              )
                                             : "-"}
                                         </td>
                                         <td className="py-2 text-center">
@@ -469,7 +510,7 @@ function Routines() {
                                 <tr>
                                   <td
                                     colSpan={exercise.is_cardio ? 4 : 3}
-                                    className="py-2 text-center text-gray-400"
+                                    className="py-2 text-center text-gray-500 dark:text-gray-400"
                                   >
                                     {exercise.is_cardio
                                       ? "No cardio data recorded"
@@ -492,12 +533,12 @@ function Routines() {
       {/* Edit Routine Modal */}
       {editingRoutine && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-[#334155] rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center p-4 border-b border-gray-700">
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center p-4 border-b border-gray-300 dark:border-gray-700">
               <h2 className="text-xl font-bold">Edit Routine</h2>
               <button
                 onClick={() => setEditingRoutine(null)}
-                className="text-gray-400 hover:text-white"
+                className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
               >
                 <FaTimes />
               </button>
@@ -510,7 +551,7 @@ function Routines() {
                   type="text"
                   value={editedRoutineName}
                   onChange={(e) => setEditedRoutineName(e.target.value)}
-                  className="w-full bg-[#2C3E50] rounded p-2 text-white"
+                  className="w-full bg-gray-100 dark:bg-gray-700 rounded p-2 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600"
                   placeholder="Enter routine name"
                 />
               </div>
@@ -520,14 +561,14 @@ function Routines() {
                   <h3 className="text-lg font-semibold">Exercises</h3>
                   <button
                     onClick={handleAddExerciseClick}
-                    className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded flex items-center"
+                    className="bg-teal-500 hover:bg-teal-600 text-white px-3 py-1 rounded flex items-center"
                   >
                     <FaPlus className="mr-2" /> Add Exercise
                   </button>
                 </div>
 
                 {editedExercises.length === 0 ? (
-                  <div className="text-center text-gray-400 py-4">
+                  <div className="text-center text-gray-500 dark:text-gray-400 py-4 bg-gray-100 dark:bg-gray-700 rounded">
                     No exercises in this routine
                   </div>
                 ) : (
@@ -535,17 +576,17 @@ function Routines() {
                     {editedExercises.map((exercise, index) => (
                       <div
                         key={index}
-                        className="bg-[#2C3E50] p-3 rounded flex justify-between items-center"
+                        className="bg-gray-100 dark:bg-gray-700 p-3 rounded flex justify-between items-center"
                       >
                         <div>
                           <span className="font-medium">{exercise.name}</span>
-                          <span className="ml-2 text-sm text-gray-400">
+                          <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">
                             {exercise.is_cardio ? "Cardio" : "Strength"}
                           </span>
                         </div>
                         <button
                           onClick={() => handleRemoveExercise(index)}
-                          className="text-red-400 hover:text-red-500"
+                          className="text-red-500 hover:text-red-400"
                         >
                           <FaTrash />
                         </button>
@@ -558,7 +599,7 @@ function Routines() {
               <div className="flex space-x-2">
                 <button
                   onClick={handleSaveEditedRoutine}
-                  className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 rounded flex items-center justify-center"
+                  className="flex-1 bg-teal-500 hover:bg-teal-600 text-white py-2 rounded flex items-center justify-center"
                 >
                   <FaSave className="mr-2" /> Save Routine
                 </button>

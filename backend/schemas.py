@@ -179,6 +179,7 @@ class RoutineExerciseCreate(BaseModel):
 
 class RoutineCreate(BaseModel):
     name: str
+    weight_unit: Optional[str] = "kg"
     exercises: List[RoutineExerciseCreate] = []
 
 
