@@ -907,10 +907,12 @@ def delete_routine_folder(
 @app.put("/routines/{routine_id}/move-to-folder", response_model=RoutineResponse)
 def move_routine_to_folder(
     routine_id: int,
-    folder_id: Optional[int] = None,
+    request: dict,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    folder_id = request.get("folder_id")
+
     routine = db.query(Routine).filter(
         Routine.id == routine_id,
         Routine.user_id == user.id
@@ -919,8 +921,16 @@ def move_routine_to_folder(
     if not routine:
         raise HTTPException(status_code=404, detail="Routine not found")
 
+    # Ensure folder_id is properly typed
     if folder_id is not None:
-        # Verify folder exists and belongs to user
+        try:
+            # Convert to integer if it came in as string
+            folder_id = int(folder_id)
+        except (ValueError, TypeError):
+            raise HTTPException(
+                status_code=400, detail="Invalid folder_id format")
+
+        # Verify folder exists
         folder = db.query(RoutineFolder).filter(
             RoutineFolder.id == folder_id,
             RoutineFolder.user_id == user.id
@@ -932,4 +942,19 @@ def move_routine_to_folder(
     routine.folder_id = folder_id
     db.commit()
     db.refresh(routine)
-    return routine
+
+    # Prepare response
+    if folder_id is not None:
+        folder_name = db.query(RoutineFolder).filter(
+            RoutineFolder.id == folder_id).first().name
+    else:
+        folder_name = "Unassigned"
+
+    return {
+        "id": routine.id,
+        "name": routine.name,
+        "workout_id": routine.workout_id,
+        "folder_id": routine.folder_id,
+        "folder_name": folder_name,
+        "workout": routine.workout
+    }

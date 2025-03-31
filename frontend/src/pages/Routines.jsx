@@ -22,6 +22,7 @@ const backendURL = "http://localhost:8000";
 function Routines() {
   const [routines, setRoutines] = useState([]);
   const [folders, setFolders] = useState([]);
+  const [successMessage, setSuccessMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [expandedRoutines, setExpandedRoutines] = useState({});
@@ -340,9 +341,24 @@ function Routines() {
     setShowFolderModal(true);
   };
 
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => {
+        setSuccessMessage("");
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage]);
+
   const handleAssignToFolder = async (routineId, folderId) => {
     try {
       const token = localStorage.getItem("token");
+
+      // Make sure folderId is treated as a proper number or null
+      const payload = {
+        folder_id: folderId === null ? null : Number(folderId),
+      };
+
       const response = await fetch(
         `${backendURL}/routines/${routineId}/move-to-folder`,
         {
@@ -351,7 +367,7 @@ function Routines() {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ folder_id: folderId }),
+          body: JSON.stringify(payload),
         }
       );
 
@@ -360,15 +376,23 @@ function Routines() {
         throw new Error(`Failed to assign routine to folder: ${errorData}`);
       }
 
-      // Update local state
+      const updatedRoutine = await response.json();
+
+      // Update local state with the updated routine
       setRoutines((prevRoutines) =>
         prevRoutines.map((routine) =>
-          routine.id === routineId
-            ? { ...routine, folder_id: folderId }
-            : routine
+          routine.id === routineId ? updatedRoutine : routine
         )
       );
 
+      // Set success message
+      setSuccessMessage(
+        `Routine successfully moved to "${
+          updatedRoutine.folder_name || "Unassigned"
+        }"!`
+      );
+
+      // Close folder modal
       setShowFolderModal(false);
     } catch (err) {
       console.error("Error assigning routine to folder:", err);
@@ -441,6 +465,17 @@ function Routines() {
         theme === "dark" ? "bg-gray-900" : "bg-gray-100"
       } ${theme === "dark" ? "text-white" : "text-gray-900"}`}
     >
+      {successMessage && (
+        <div className="bg-green-500 text-white p-3 rounded mb-4">
+          {successMessage}
+        </div>
+      )}
+
+      {/* Error message */}
+      {error && (
+        <div className="bg-red-500 text-white p-3 rounded mb-4">{error}</div>
+      )}
+
       <div className="max-w-4xl mx-auto p-6">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">My Routines</h1>
