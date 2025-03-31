@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useTheme } from "../hooks/useTheme";
+import BodyTypeToggle from "../components/BodyTypeToggle";
 
 const exerciseAssets = {
   "Shoulder Press": {
@@ -577,14 +578,9 @@ function ExploreMuscleGuide() {
         Interactive Muscle Guide
       </h1>
 
-      {/* Body Type Toggle Button */}
+      {/* Body Type Toggle */}
       <div className="flex justify-center mb-4">
-        <button
-          onClick={toggleBodyType}
-          className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-        >
-          Switch to {bodyType === "male" ? "Female" : "Male"} Body
-        </button>
+        <BodyTypeToggle bodyType={bodyType} onToggle={toggleBodyType} />
       </div>
 
       <div className="mb-4 bg-gray-100 dark:bg-gray-800 px-4 py-2 rounded-lg w-full max-w-4xl mx-auto text-center">
@@ -596,7 +592,11 @@ function ExploreMuscleGuide() {
             </span>
           </p>
         ) : (
-          <p>Hover over or click on any muscle area to explore exercises</p>
+          <p>
+            {bodyType === "female"
+              ? "Hover over or click on any muscle area to explore exercises"
+              : "Hover over or click on any muscle area to explore exercises"}
+          </p>
         )}
       </div>
 
@@ -611,11 +611,11 @@ function ExploreMuscleGuide() {
             ></div>
 
             <img
-              key={bodyType} // This ensures the image reloads when body type changes
+              key={bodyType}
               src={bodyImages[bodyType]}
-              alt={`Muscle Groups - ${
+              alt={`${
                 bodyType.charAt(0).toUpperCase() + bodyType.slice(1)
-              } View`}
+              } Muscle Anatomy`}
               className="w-full max-h-[500px] object-contain"
             />
 
