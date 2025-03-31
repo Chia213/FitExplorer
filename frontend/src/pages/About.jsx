@@ -51,23 +51,23 @@ function About() {
 
           <div className="mb-12">
             <h2 className="text-3xl font-bold mb-8 text-gray-900 dark:text-white text-center">
-              Key Features
+              Choose a guide
             </h2>
             <div className="grid md:grid-cols-2 gap-6">
               {[
+                {
+                  icon: FaRandom,
+                  color: "green",
+                  title: "Workout Generator",
+                  description:
+                    "Don't know where to start? Use our generator to customize workout routines based on your fitness level, available equipment, time constraints, and personal goals. Each workout comes with detailed exercise instructions and visual guides.",
+                },
                 {
                   icon: FaDumbbell,
                   color: "blue",
                   title: "Interactive Muscle Guide",
                   description:
                     "Explore muscle groups and learn proper exercise techniques with our interactive anatomy guide. Click on specific muscle groups to view targeted exercises with detailed instructions and visual demonstrations.",
-                },
-                {
-                  icon: FaRandom,
-                  color: "green",
-                  title: "Workout Generator",
-                  description:
-                    "Generate customized workout routines based on your fitness level, available equipment, time constraints, and personal goals. Each workout comes with detailed exercise instructions and visual guides.",
                 },
                 {
                   icon: FaBook,

@@ -13,6 +13,8 @@ import {
   FaBalanceScale,
   FaFolder,
   FaFolderOpen,
+  FaArrowUp,
+  FaArrowDown,
 } from "react-icons/fa";
 import AddExercise from "./AddExercise";
 import FolderModal from "./FolderModal";
@@ -692,26 +694,32 @@ function Routines() {
                                     : "border-gray-300"
                                 }`}
                               >
-                                <th className="pb-2 w-1/8">Set</th>
+                                <th className="pb-2 w-1/12">Set</th>
                                 {exercise.is_cardio ? (
                                   <>
-                                    <th className="pb-2 w-1/4 text-center">
+                                    <th className="pb-2 w-1/5 text-center">
                                       Distance
                                     </th>
-                                    <th className="pb-2 w-1/4 text-center">
+                                    <th className="pb-2 w-1/5 text-center">
                                       Duration
                                     </th>
-                                    <th className="pb-2 w-1/4 text-center">
+                                    <th className="pb-2 w-1/5 text-center">
                                       Intensity
+                                    </th>
+                                    <th className="pb-2 w-2/5 text-center">
+                                      Notes
                                     </th>
                                   </>
                                 ) : (
                                   <>
-                                    <th className="pb-2 w-3/8 text-center">
+                                    <th className="pb-2 w-1/5 text-center">
                                       Weight
                                     </th>
-                                    <th className="pb-2 w-3/8 text-center">
+                                    <th className="pb-2 w-1/5 text-center">
                                       Reps
+                                    </th>
+                                    <th className="pb-2 w-1/5 text-center">
+                                      Notes
                                     </th>
                                   </>
                                 )}
@@ -744,6 +752,9 @@ function Routines() {
                                         <td className="py-2 text-center">
                                           {set.intensity || "-"}
                                         </td>
+                                        <td className="py-2 text-center break-words px-2">
+                                          {set.notes || "-"}
+                                        </td>
                                       </>
                                     ) : (
                                       <>
@@ -758,6 +769,9 @@ function Routines() {
                                         <td className="py-2 text-center">
                                           {set.reps || "-"}
                                         </td>
+                                        <td className="py-2 text-center break-words px-2">
+                                          {set.notes || "-"}
+                                        </td>
                                       </>
                                     )}
                                   </tr>
@@ -765,7 +779,7 @@ function Routines() {
                               ) : (
                                 <tr>
                                   <td
-                                    colSpan={exercise.is_cardio ? 4 : 3}
+                                    colSpan={exercise.is_cardio ? 5 : 4}
                                     className={`py-2 text-center ${
                                       theme === "dark"
                                         ? "text-gray-400"
@@ -1054,32 +1068,349 @@ function Routines() {
                     No exercises in this routine
                   </div>
                 ) : (
-                  <div className="space-y-2">
-                    {editedExercises.map((exercise, index) => (
+                  <div className="space-y-4">
+                    {editedExercises.map((exercise, exerciseIndex) => (
                       <div
-                        key={index}
+                        key={exerciseIndex}
                         className={`${
                           theme === "dark" ? "bg-gray-700" : "bg-gray-100"
-                        } p-3 rounded flex justify-between items-center`}
+                        } p-3 rounded`}
                       >
-                        <div>
-                          <span className="font-medium">{exercise.name}</span>
-                          <span
-                            className={`ml-2 text-sm ${
-                              theme === "dark"
-                                ? "text-gray-400"
-                                : "text-gray-500"
-                            }`}
-                          >
-                            {exercise.is_cardio ? "Cardio" : "Strength"}
-                          </span>
+                        <div className="flex justify-between items-center mb-2 pb-2 border-b border-gray-600">
+                          <div className="flex items-center">
+                            <span className="font-medium">{exercise.name}</span>
+                            <span
+                              className={`ml-2 text-sm ${
+                                theme === "dark"
+                                  ? "text-gray-400"
+                                  : "text-gray-500"
+                              }`}
+                            >
+                              {exercise.is_cardio ? "Cardio" : "Strength"}
+                            </span>
+                          </div>
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() => {
+                                // Handle move up
+                                if (exerciseIndex > 0) {
+                                  const newExercises = [...editedExercises];
+                                  [
+                                    newExercises[exerciseIndex],
+                                    newExercises[exerciseIndex - 1],
+                                  ] = [
+                                    newExercises[exerciseIndex - 1],
+                                    newExercises[exerciseIndex],
+                                  ];
+                                  setEditedExercises(newExercises);
+                                }
+                              }}
+                              disabled={exerciseIndex === 0}
+                              className={`${
+                                exerciseIndex === 0
+                                  ? "text-gray-400"
+                                  : "text-teal-500 hover:text-teal-400"
+                              }`}
+                            >
+                              <FaArrowUp />
+                            </button>
+                            <button
+                              onClick={() => {
+                                // Handle move down
+                                if (
+                                  exerciseIndex <
+                                  editedExercises.length - 1
+                                ) {
+                                  const newExercises = [...editedExercises];
+                                  [
+                                    newExercises[exerciseIndex],
+                                    newExercises[exerciseIndex + 1],
+                                  ] = [
+                                    newExercises[exerciseIndex + 1],
+                                    newExercises[exerciseIndex],
+                                  ];
+                                  setEditedExercises(newExercises);
+                                }
+                              }}
+                              disabled={
+                                exerciseIndex === editedExercises.length - 1
+                              }
+                              className={`${
+                                exerciseIndex === editedExercises.length - 1
+                                  ? "text-gray-400"
+                                  : "text-teal-500 hover:text-teal-400"
+                              }`}
+                            >
+                              <FaArrowDown />
+                            </button>
+                            <button
+                              onClick={() =>
+                                handleRemoveExercise(exerciseIndex)
+                              }
+                              className="text-red-500 hover:text-red-400"
+                            >
+                              <FaTrash />
+                            </button>
+                          </div>
                         </div>
-                        <button
-                          onClick={() => handleRemoveExercise(index)}
-                          className="text-red-500 hover:text-red-400"
-                        >
-                          <FaTrash />
-                        </button>
+
+                        {/* Sets Table */}
+                        <div className="mt-2">
+                          <table className="w-full table-fixed">
+                            <thead>
+                              <tr
+                                className={`border-b ${
+                                  theme === "dark"
+                                    ? "border-gray-600"
+                                    : "border-gray-300"
+                                }`}
+                              >
+                                <th className="pb-2 text-left w-1/12">Set</th>
+                                {exercise.is_cardio ? (
+                                  <>
+                                    <th className="pb-2 text-center w-1/5">
+                                      Distance
+                                    </th>
+                                    <th className="pb-2 text-center w-1/5">
+                                      Duration
+                                    </th>
+                                    <th className="pb-2 text-center w-1/5">
+                                      Intensity
+                                    </th>
+                                    <th className="pb-2 text-center w-2/5">
+                                      Notes
+                                    </th>
+                                  </>
+                                ) : (
+                                  <>
+                                    <th className="pb-2 text-center w-1/5">
+                                      Weight
+                                    </th>
+                                    <th className="pb-2 text-center w-1/5">
+                                      Reps
+                                    </th>
+                                    <th className="pb-2 text-center w-2/5">
+                                      Notes
+                                    </th>
+                                  </>
+                                )}
+                                <th className="pb-2 w-1/12"></th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {exercise.sets.map((set, setIndex) => (
+                                <tr
+                                  key={setIndex}
+                                  className={`border-b ${
+                                    theme === "dark"
+                                      ? "border-gray-600"
+                                      : "border-gray-300"
+                                  } last:border-b-0`}
+                                >
+                                  <td className="py-2">{setIndex + 1}</td>
+                                  {exercise.is_cardio ? (
+                                    <>
+                                      <td className="py-2 px-1">
+                                        <input
+                                          type="number"
+                                          value={set.distance || ""}
+                                          onChange={(e) => {
+                                            const newExercises = [
+                                              ...editedExercises,
+                                            ];
+                                            newExercises[exerciseIndex].sets[
+                                              setIndex
+                                            ].distance = e.target.value;
+                                            setEditedExercises(newExercises);
+                                          }}
+                                          className={`w-full text-center ${
+                                            theme === "dark"
+                                              ? "bg-gray-600 text-white"
+                                              : "bg-white text-gray-800"
+                                          } rounded p-1 text-sm`}
+                                          placeholder="km"
+                                        />
+                                      </td>
+                                      <td className="py-2 px-1">
+                                        <input
+                                          type="number"
+                                          value={set.duration || ""}
+                                          onChange={(e) => {
+                                            const newExercises = [
+                                              ...editedExercises,
+                                            ];
+                                            newExercises[exerciseIndex].sets[
+                                              setIndex
+                                            ].duration = e.target.value;
+                                            setEditedExercises(newExercises);
+                                          }}
+                                          className={`w-full text-center ${
+                                            theme === "dark"
+                                              ? "bg-gray-600 text-white"
+                                              : "bg-white text-gray-800"
+                                          } rounded p-1 text-sm`}
+                                          placeholder="min"
+                                        />
+                                      </td>
+                                      <td className="py-2 px-1">
+                                        <select
+                                          value={set.intensity || ""}
+                                          onChange={(e) => {
+                                            const newExercises = [
+                                              ...editedExercises,
+                                            ];
+                                            newExercises[exerciseIndex].sets[
+                                              setIndex
+                                            ].intensity = e.target.value;
+                                            setEditedExercises(newExercises);
+                                          }}
+                                          className={`w-full text-center ${
+                                            theme === "dark"
+                                              ? "bg-gray-600 text-white"
+                                              : "bg-white text-gray-800"
+                                          } rounded p-1 text-sm`}
+                                        >
+                                          <option value="">Select</option>
+                                          <option value="Low">Low</option>
+                                          <option value="Medium">Medium</option>
+                                          <option value="High">High</option>
+                                          <option value="Very High">
+                                            Very High
+                                          </option>
+                                        </select>
+                                      </td>
+                                      <td className="py-2 px-1">
+                                        <input
+                                          type="text"
+                                          value={set.notes || ""}
+                                          onChange={(e) => {
+                                            const newExercises = [
+                                              ...editedExercises,
+                                            ];
+                                            newExercises[exerciseIndex].sets[
+                                              setIndex
+                                            ].notes = e.target.value;
+                                            setEditedExercises(newExercises);
+                                          }}
+                                          className={`w-full ${
+                                            theme === "dark"
+                                              ? "bg-gray-600 text-white"
+                                              : "bg-white text-gray-800"
+                                          } rounded p-1 text-sm`}
+                                          placeholder="Notes"
+                                        />
+                                      </td>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <td className="py-2 px-1">
+                                        <input
+                                          type="number"
+                                          value={set.weight || ""}
+                                          onChange={(e) => {
+                                            const newExercises = [
+                                              ...editedExercises,
+                                            ];
+                                            newExercises[exerciseIndex].sets[
+                                              setIndex
+                                            ].weight = e.target.value;
+                                            setEditedExercises(newExercises);
+                                          }}
+                                          className={`w-full text-center ${
+                                            theme === "dark"
+                                              ? "bg-gray-600 text-white"
+                                              : "bg-white text-gray-800"
+                                          } rounded p-1 text-sm`}
+                                          placeholder={weightUnit}
+                                        />
+                                      </td>
+                                      <td className="py-2 px-1">
+                                        <input
+                                          type="number"
+                                          value={set.reps || ""}
+                                          onChange={(e) => {
+                                            const newExercises = [
+                                              ...editedExercises,
+                                            ];
+                                            newExercises[exerciseIndex].sets[
+                                              setIndex
+                                            ].reps = e.target.value;
+                                            setEditedExercises(newExercises);
+                                          }}
+                                          className={`w-full text-center ${
+                                            theme === "dark"
+                                              ? "bg-gray-600 text-white"
+                                              : "bg-white text-gray-800"
+                                          } rounded p-1 text-sm`}
+                                          placeholder="reps"
+                                        />
+                                      </td>
+                                      <td className="py-2 px-1">
+                                        <input
+                                          type="text"
+                                          value={set.notes || ""}
+                                          onChange={(e) => {
+                                            const newExercises = [
+                                              ...editedExercises,
+                                            ];
+                                            newExercises[exerciseIndex].sets[
+                                              setIndex
+                                            ].notes = e.target.value;
+                                            setEditedExercises(newExercises);
+                                          }}
+                                          className={`w-full ${
+                                            theme === "dark"
+                                              ? "bg-gray-600 text-white"
+                                              : "bg-white text-gray-800"
+                                          } rounded p-1 text-sm`}
+                                          placeholder="Notes"
+                                        />
+                                      </td>
+                                    </>
+                                  )}
+                                  <td className="py-2 text-center">
+                                    <button
+                                      onClick={() => {
+                                        const newExercises = [
+                                          ...editedExercises,
+                                        ];
+                                        newExercises[exerciseIndex].sets.splice(
+                                          setIndex,
+                                          1
+                                        );
+                                        setEditedExercises(newExercises);
+                                      }}
+                                      className="text-red-500 hover:text-red-400"
+                                      disabled={exercise.sets.length <= 1}
+                                    >
+                                      <FaTrash />
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+
+                          {/* Add Set Button */}
+                          <button
+                            onClick={() => {
+                              const newExercises = [...editedExercises];
+                              const newSet = exercise.is_cardio
+                                ? {
+                                    distance: "",
+                                    duration: "",
+                                    intensity: "",
+                                    notes: "",
+                                  }
+                                : { weight: "", reps: "", notes: "" };
+                              newExercises[exerciseIndex].sets.push(newSet);
+                              setEditedExercises(newExercises);
+                            }}
+                            className="mt-2 text-teal-500 hover:text-teal-400 flex items-center text-sm"
+                          >
+                            <FaPlus className="mr-1" /> Add Set
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
