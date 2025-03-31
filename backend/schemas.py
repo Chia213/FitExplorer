@@ -180,6 +180,7 @@ class RoutineExerciseCreate(BaseModel):
 class RoutineCreate(BaseModel):
     name: str
     weight_unit: Optional[str] = "kg"
+    folder_id: Optional[int] = None
     exercises: List[RoutineExerciseCreate] = []
 
 
@@ -187,10 +188,16 @@ class RoutineResponse(BaseModel):
     id: int
     name: str
     workout_id: Optional[int] = None
+    folder_id: Optional[int] = None
+    folder_name: Optional[str] = None
     workout: Optional[WorkoutResponse] = None
 
     class Config:
         from_attributes = True
+
+    @property
+    def folder_name(self) -> Optional[str]:
+        return self.folder.name if self.folder else None
 
     @property
     def exercises(self) -> List[ExerciseResponse]:
@@ -219,6 +226,19 @@ class SavedWorkoutProgramResponse(BaseModel):
     created_at: datetime
     current_week: int
     completed_weeks: Optional[List[int]] = []
+
+    class Config:
+        from_attributes = True
+
+
+class RoutineFolderCreate(BaseModel):
+    name: str
+
+
+class RoutineFolderResponse(BaseModel):
+    id: int
+    name: str
+    created_at: datetime
 
     class Config:
         from_attributes = True

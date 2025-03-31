@@ -12,8 +12,8 @@ from database import engine, Base, get_db
 from datetime import datetime, timezone
 from auth import router as auth_router
 from dependencies import get_current_user
-from typing import List, Dict, Any
-from models import Workout, User, Exercise, Set, UserPreferences, Routine, CustomExercise, SavedWorkoutProgram
+from typing import List, Dict, Any, Optional
+from models import Workout, User, Exercise, Set, UserPreferences, Routine, CustomExercise, SavedWorkoutProgram, RoutineFolder
 from schemas import (
     WorkoutCreate,
     WorkoutResponse,
@@ -24,7 +24,9 @@ from schemas import (
     RoutineCreate,
     RoutineResponse,
     SavedWorkoutProgramCreate,
-    SavedWorkoutProgramResponse
+    SavedWorkoutProgramResponse,
+    RoutineFolderCreate,
+    RoutineFolderResponse
 )
 from security import hash_password, verify_password
 
@@ -814,3 +816,109 @@ def check_routine_name(
         print(f"Error checking routine name: {str(e)}")
         raise HTTPException(
             status_code=500, detail=f"Error checking routine name: {str(e)}")
+
+
+@app.post("/routine-folders", response_model=RoutineFolderResponse)
+def create_routine_folder(
+    folder: RoutineFolderCreate,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    new_folder = RoutineFolder(
+        name=folder.name,
+        user_id=user.id
+    )
+    db.add(new_folder)
+    db.commit()
+    db.refresh(new_folder)
+    return new_folder
+
+
+@app.get("/routine-folders", response_model=List[RoutineFolderResponse])
+def get_routine_folders(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    folders = db.query(RoutineFolder).filter(
+        RoutineFolder.user_id == user.id
+    ).order_by(RoutineFolder.name).all()
+    return folders
+
+
+@app.put("/routine-folders/{folder_id}", response_model=RoutineFolderResponse)
+def update_routine_folder(
+    folder_id: int,
+    folder_data: RoutineFolderCreate,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    folder = db.query(RoutineFolder).filter(
+        RoutineFolder.id == folder_id,
+        RoutineFolder.user_id == user.id
+    ).first()
+
+    if not folder:
+        raise HTTPException(status_code=404, detail="Folder not found")
+
+    folder.name = folder_data.name
+    db.commit()
+    db.refresh(folder)
+    return folder
+
+
+@app.delete("/routine-folders/{folder_id}")
+def delete_routine_folder(
+    folder_id: int,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    folder = db.query(RoutineFolder).filter(
+        RoutineFolder.id == folder_id,
+        RoutineFolder.user_id == user.id
+    ).first()
+
+    if not folder:
+        raise HTTPException(status_code=404, detail="Folder not found")
+
+    # Remove folder_id from associated routines
+    db.query(Routine).filter(
+        Routine.folder_id == folder_id,
+        Routine.user_id == user.id
+    ).update({"folder_id": None})
+
+    db.delete(folder)
+    db.commit()
+    return {"message": "Folder deleted successfully"}
+
+# Add endpoint to move routine to a folder
+
+
+@app.put("/routines/{routine_id}/move-to-folder", response_model=RoutineResponse)
+def move_routine_to_folder(
+    routine_id: int,
+    folder_id: Optional[int] = None,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    routine = db.query(Routine).filter(
+        Routine.id == routine_id,
+        Routine.user_id == user.id
+    ).first()
+
+    if not routine:
+        raise HTTPException(status_code=404, detail="Routine not found")
+
+    if folder_id is not None:
+        # Verify folder exists and belongs to user
+        folder = db.query(RoutineFolder).filter(
+            RoutineFolder.id == folder_id,
+            RoutineFolder.user_id == user.id
+        ).first()
+
+        if not folder:
+            raise HTTPException(status_code=404, detail="Folder not found")
+
+    routine.folder_id = folder_id
+    db.commit()
+    db.refresh(routine)
+    return routine
