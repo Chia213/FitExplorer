@@ -3,6 +3,7 @@ import Navbar from "./components/Navbar";
 import Layout from "./components/Layout";
 import ExploreMuscleGuide from "./pages/ExploreMuscleGuide";
 import About from "./pages/About";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 import WorkoutLog from "./pages/WorkoutLog";
 import WorkoutHistory from "./pages/WorkoutHistory";
 import WorkoutGenerator from "./pages/WorkoutGenerator";
@@ -41,6 +42,7 @@ function App() {
             <Route path="/saved-programs" element={<SavedPrograms />} />
             <Route path="/program-tracker" element={<ProgramTracker />} />
             <Route path="/change-password" element={<ChangePassword />} />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
           </Routes>
         </Layout>
       </Router>
