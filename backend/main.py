@@ -213,6 +213,7 @@ def profile(user: User = Depends(get_current_user), db: Session = Depends(get_db
         "username": user.username,
         "email": user.email,
         "profile_picture": user.profile_picture,
+        "created_at": user.created_at,
         "preferences": {
             "goal_weight": user_preferences.goal_weight if user_preferences else None,
             "email_notifications": user_preferences.email_notifications if user_preferences else False,

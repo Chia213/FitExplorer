@@ -1,7 +1,14 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "../hooks/useTheme";
-import { FaEdit, FaTrash, FaSave, FaTimes, FaCamera } from "react-icons/fa";
+import {
+  FaEdit,
+  FaTrash,
+  FaSave,
+  FaTimes,
+  FaCamera,
+  FaCalendarAlt,
+} from "react-icons/fa";
 
 const backendURL = "http://localhost:8000";
 
@@ -128,6 +135,35 @@ function Profile() {
     setPreferencesChanged(true);
 
     localStorage.setItem("cardColor", newColor);
+  };
+
+  const formatJoinDate = (dateString) => {
+    if (!dateString) return "Unknown";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  };
+
+  const getMembershipDuration = (dateString) => {
+    if (!dateString) return "";
+    const joinDate = new Date(dateString);
+    const now = new Date();
+
+    const diffTime = Math.abs(now - joinDate);
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays < 30) {
+      return `(${diffDays} days)`;
+    } else if (diffDays < 365) {
+      const months = Math.floor(diffDays / 30);
+      return `(${months} ${months === 1 ? "month" : "months"})`;
+    } else {
+      const years = Math.floor(diffDays / 365);
+      return `(${years} ${years === 1 ? "year" : "years"})`;
+    }
   };
 
   const getGreeting = () => {
@@ -425,6 +461,18 @@ function Profile() {
                   <span className="font-semibold">Email:</span> {user.email}
                   <span className="text-sm text-gray-500 ml-2"></span>
                 </p>
+                <div className="mt-2">
+                  <p>
+                    <span className="font-semibold flex items-center">
+                      <FaCalendarAlt className="mr-2 text-blue-500" /> Member
+                      since:
+                    </span>{" "}
+                    {formatJoinDate(user.created_at)}{" "}
+                    <span className="text-sm text-gray-500">
+                      {getMembershipDuration(user.created_at)}
+                    </span>
+                  </p>
+                </div>
               </div>
             ) : (
               <div className="space-y-4">

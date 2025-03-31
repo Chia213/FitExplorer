@@ -13,6 +13,7 @@ class User(Base):
     hashed_password = Column(String, nullable=False)
     username = Column(String, unique=True, nullable=False)
     profile_picture = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))
 
     saved_programs = relationship(
         "SavedWorkoutProgram",
