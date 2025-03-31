@@ -344,7 +344,7 @@ function Routines() {
     try {
       const token = localStorage.getItem("token");
       const response = await fetch(
-        `${backendURL}/routines/${routineId}/folder`,
+        `${backendURL}/routines/${routineId}/move-to-folder`,
         {
           method: "PUT",
           headers: {
