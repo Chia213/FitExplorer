@@ -661,7 +661,18 @@ def get_routines(user: User = Depends(get_current_user), db: Session = Depends(g
             .filter(Routine.user_id == user.id)\
             .all()
 
-        return routines
+        # Transform routines to include folder_name
+        return [
+            {
+                "id": routine.id,
+                "name": routine.name,
+                "workout_id": routine.workout_id,
+                "folder_id": routine.folder_id,
+                "folder_name": routine.folder.name if routine.folder else None,
+                "workout": routine.workout
+            }
+            for routine in routines
+        ]
     except Exception as e:
         print(f"Error fetching routines: {e}")
         raise HTTPException(status_code=500, detail="Error fetching routines")

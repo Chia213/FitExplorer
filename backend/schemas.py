@@ -195,16 +195,6 @@ class RoutineResponse(BaseModel):
     class Config:
         from_attributes = True
 
-    @property
-    def folder_name(self) -> Optional[str]:
-        return self.folder.name if self.folder else None
-
-    @property
-    def exercises(self) -> List[ExerciseResponse]:
-        if self.workout:
-            return self.workout.exercises
-        return []
-
 
 class GoogleTokenVerifyRequest(BaseModel):
     token: str
