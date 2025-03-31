@@ -96,6 +96,28 @@ function SavedPrograms() {
       }
     }
 
+    // Check if sixWeekProgram exists - if not, try to create it
+    if (!programData.sixWeekProgram && programData.exercises) {
+      // Create a sixWeekProgram array from the available data
+      const sixWeeks = [];
+
+      for (let week = 1; week <= 6; week++) {
+        sixWeeks.push({
+          week: week,
+          exercises: programData.exercises.map((ex) => ({
+            ...ex,
+            // Optionally increase intensity or weight for progressive weeks
+            intensity: `${Math.min(
+              parseInt(ex.intensity) + (week - 1) * 5,
+              95
+            )}%`,
+          })),
+        });
+      }
+
+      programData.sixWeekProgram = sixWeeks;
+    }
+
     // Check if the program has been started before
     const initialProgress =
       program.current_week === 1 &&
