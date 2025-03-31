@@ -56,7 +56,6 @@ class Workout(Base):
     is_template = Column(Boolean, default=False, nullable=False)
     user_id = Column(Integer, ForeignKey(
         "users.id", ondelete="CASCADE"), nullable=False)
-
     user = relationship("User", back_populates="workouts")
     exercises = relationship(
         "Exercise", back_populates="workout", cascade="all, delete-orphan")
