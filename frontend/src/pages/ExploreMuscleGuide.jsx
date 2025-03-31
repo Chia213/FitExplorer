@@ -198,7 +198,7 @@ const getExerciseAsset = (exerciseName) => {
   );
 };
 
-const frontMuscles = [
+const maleFrontMuscles = [
   {
     name: "Shoulders",
     positions: [
@@ -249,7 +249,7 @@ const frontMuscles = [
   },
 ];
 
-const backMuscles = [
+const maleBackMuscles = [
   {
     name: "Upper Back",
     positions: [
@@ -307,6 +307,115 @@ const backMuscles = [
   },
 ];
 
+const femaleFrontMuscles = [
+  {
+    name: "Shoulders",
+    positions: [
+      { top: "19%", left: "19%" },
+      { top: "19%", left: "36%" },
+    ],
+    exercises: ["Shoulder Press", "Lateral Raise", "Front Raise", "Shrugs"],
+  },
+  {
+    name: "Chest",
+    positions: [
+      { top: "23%", left: "24%" },
+      { top: "23%", left: "31%" },
+    ],
+    exercises: ["Bench Press", "Push-ups", "Chest Fly", "Dumbbell Press"],
+  },
+  {
+    name: "Biceps",
+    positions: [
+      { top: "27%", left: "18%" },
+      { top: "27%", left: "37%" },
+    ],
+    exercises: ["Bicep Curl", "Hammer Curl", "Chin-ups", "Preacher Curl"],
+  },
+  {
+    name: "Abs",
+    positions: [
+      { top: "31.5%", left: "29%" },
+      { top: "31.5%", left: "26%" },
+    ],
+    exercises: ["Crunches", "Planks", "Leg Raises", "Russian Twists"],
+  },
+  {
+    name: "Quads",
+    positions: [
+      { top: "53%", left: "21%" },
+      { top: "53%", left: "33%" },
+    ],
+    exercises: ["Squats", "Lunges", "Leg Press", "Leg Extensions"],
+  },
+  {
+    name: "Calves",
+    positions: [
+      { top: "75%", left: "61.5%" },
+      { top: "75%", left: "75%" },
+    ],
+    exercises: ["Calf Raises", "Seated Calf Press", "Jump Rope"],
+  },
+];
+
+const femaleBackMuscles = [
+  {
+    name: "Upper Back",
+    positions: [
+      { top: "16%", left: "66%" },
+      { top: "16%", left: "71.5%" },
+    ],
+    exercises: ["Pull-ups", "Lat Pulldowns", "Rows", "Face Pulls"],
+  },
+  {
+    name: "Triceps",
+    positions: [
+      { top: "26%", left: "59%" },
+      { top: "26%", left: "78%" },
+    ],
+    exercises: [
+      "Dips",
+      "Tricep Extensions",
+      "Close-Grip Bench Press",
+      "Skull Crushers",
+    ],
+  },
+  {
+    name: "Lower Back",
+    positions: [
+      { top: "30%", left: "65%" },
+      { top: "30%", left: "72%" },
+    ],
+    exercises: ["Deadlifts", "Back Extensions", "Good Mornings", "Superman"],
+  },
+  {
+    name: "Glutes",
+    positions: [
+      { top: "45%", left: "65%" },
+      { top: "45%", left: "72%" },
+    ],
+    exercises: [
+      "Hip Thrusts",
+      "Glute Bridges",
+      "Kickbacks",
+      "Bulgarian Split Squats",
+    ],
+  },
+  {
+    name: "Hamstrings",
+    positions: [
+      { top: "59%", left: "63%" },
+      { top: "59%", left: "74%" },
+    ],
+    exercises: [
+      "Romanian Deadlifts",
+      "Leg Curls",
+      "Good Mornings",
+      "Glute-Ham Raises",
+    ],
+  },
+];
+
 function ExploreMuscleGuide() {
   const { theme } = useTheme();
   const [selectedMuscle, setSelectedMuscle] = useState(null);
@@ -315,7 +424,19 @@ function ExploreMuscleGuide() {
   const [activeMuscleIndex, setActiveMuscleIndex] = useState(null);
   const [viewingExercise, setViewingExercise] = useState(null);
   const [highlightedAreas, setHighlightedAreas] = useState({});
+  // New state for body type
+  const [bodyType, setBodyType] = useState("male");
 
+  // Body images for different body types
+  const bodyImages = {
+    male: "/src/assets/titan.png",
+    female: "/src/assets/female-titan.png", // You'll need to add this image
+  };
+
+  // Determine which muscle data to use based on body type
+  const frontMuscles =
+    bodyType === "male" ? maleFrontMuscles : femaleFrontMuscles;
+  const backMuscles = bodyType === "male" ? maleBackMuscles : femaleBackMuscles;
   const allMuscles = [...frontMuscles, ...backMuscles];
 
   const getCurrentMuscleName = () => {
@@ -439,13 +560,32 @@ function ExploreMuscleGuide() {
     }
   };
 
-  // Removed popup positioning function as it's no longer needed
+  // Toggle body type method
+  const toggleBodyType = () => {
+    setBodyType((prevType) => (prevType === "male" ? "female" : "male"));
+    // Reset selection when switching body types
+    setSelectedMuscle(null);
+    setSelectedDotIndex(null);
+    setActiveMuscleIndex(null);
+    setHoveredMuscle(null);
+    setHighlightedAreas({});
+  };
 
   return (
     <div className="min-h-screen py-4 px-4">
       <h1 className="text-2xl md:text-3xl font-bold mb-4 text-center">
         Interactive Muscle Guide
       </h1>
+
+      {/* Body Type Toggle Button */}
+      <div className="flex justify-center mb-4">
+        <button
+          onClick={toggleBodyType}
+          className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+        >
+          Switch to {bodyType === "male" ? "Female" : "Male"} Body
+        </button>
+      </div>
 
       <div className="mb-4 bg-gray-100 dark:bg-gray-800 px-4 py-2 rounded-lg w-full max-w-4xl mx-auto text-center">
         {activeMuscleIndex !== null ? (
@@ -461,10 +601,8 @@ function ExploreMuscleGuide() {
       </div>
 
       <div className="flex flex-col md:flex-row gap-6 max-w-5xl mx-auto">
-        {/* Muscle Diagram - Reduced size with max-height */}
         <div className="md:w-3/5 relative">
           <div className="relative max-h-[500px] overflow-hidden mx-auto">
-            {/* Add a clickable transparent overlay - this handles all clicks and hover events */}
             <div
               className="absolute inset-0 z-20 cursor-pointer"
               onClick={handleImageClick}
@@ -473,8 +611,11 @@ function ExploreMuscleGuide() {
             ></div>
 
             <img
-              src="/src/assets/titan.png"
-              alt="Muscle Groups - Front and Back View"
+              key={bodyType} // This ensures the image reloads when body type changes
+              src={bodyImages[bodyType]}
+              alt={`Muscle Groups - ${
+                bodyType.charAt(0).toUpperCase() + bodyType.slice(1)
+              } View`}
               className="w-full max-h-[500px] object-contain"
             />
 
@@ -505,7 +646,7 @@ function ExploreMuscleGuide() {
                         left: position.left,
                         transition: "transform 0.2s ease",
                         zIndex: 10,
-                        pointerEvents: "none", // Prevent the dot from intercepting mouse events
+                        pointerEvents: "none",
                       }}
                     >
                       <div
@@ -542,7 +683,7 @@ function ExploreMuscleGuide() {
                           left: position.left,
                           transition: "transform 0.2s ease",
                           zIndex: 10,
-                          pointerEvents: "none", // Prevent the dot from intercepting mouse events
+                          pointerEvents: "none",
                         }}
                       >
                         <div
@@ -647,6 +788,7 @@ function ExploreMuscleGuide() {
         </div>
       </div>
 
+      {/* Exercise Modal */}
       {viewingExercise && (
         <div
           className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4"

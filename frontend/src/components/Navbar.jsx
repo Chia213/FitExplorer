@@ -15,7 +15,7 @@ import {
   FaAtlas,
 } from "react-icons/fa";
 import { LuBicepsFlexed, LuCalendarClock } from "react-icons/lu";
-import logo from "../assets/established-badge-logo.svg";
+import logo from "../assets/Ronjasdrawing.png";
 import ThemeToggle from "./ThemeToggle";
 import { useTheme } from "../hooks/useTheme";
 
@@ -125,7 +125,7 @@ function Navbar() {
               <img
                 src={logo}
                 alt="FitExplorer Logo"
-                className="w-20 md:w-40 hover:scale-105 transitigit on-all dark:invert"
+                className="w-20 md:w-64 hover:scale-105 transitigit on-all dark:invert"
               />
             </Link>
 
