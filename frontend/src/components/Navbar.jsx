@@ -410,14 +410,15 @@ function Navbar() {
                   </Link>
 
                   {/* Only show Admin Dashboard link if user is an admin */}
-                  {localStorage.getItem("isAdmin") === "true" && (
-                    <Link
-                      to="/admin"
-                      className="block p-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center"
-                    >
-                      <FaLock className="mr-2 text-red-500" /> Admin Dashboard
-                    </Link>
-                  )}
+                  {localStorage.getItem("token") &&
+                    localStorage.getItem("isAdmin") === "true" && (
+                      <Link
+                        to="/admin"
+                        className="block p-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center"
+                      >
+                        <FaLock className="mr-2 text-red-500" /> Admin Dashboard
+                      </Link>
+                    )}
 
                   <button
                     onClick={handleLogout}

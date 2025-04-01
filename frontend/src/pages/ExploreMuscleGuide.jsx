@@ -2,201 +2,481 @@ import { useState } from "react";
 import { useTheme } from "../hooks/useTheme";
 import BodyTypeToggle from "../components/BodyTypeToggle";
 
-const exerciseAssets = {
-  "Shoulder Press": {
+const exerciseAlternatives = {
+  // Shoulder Exercises Alternatives
+  "Arnold Press": {
     type: "animation",
-    src: "/src/assets/exercises/shoulder-press.gif",
-    description:
-      "Sit with back supported, press dumbbells upward until arms are extended. Lower weights to shoulder level and repeat.",
+    male: {
+      src: "/src/assets/exercises/male/arnold-press.gif",
+      description:
+        "Seated dumbbell press with a rotational movement, targeting shoulders from multiple angles.",
+    },
+    female: {
+      src: "/src/assets/exercises/female/arnold-press.gif",
+      description:
+        "Perform seated dumbbell press with a controlled rotational motion, focusing on shoulder muscle engagement.",
+    },
   },
-  "Lateral Raise": {
+  "Seated Dumbbell Press": {
     type: "animation",
-    src: "/src/assets/exercises/lateral-raise.gif",
-    description:
-      "Stand with dumbbells at sides, raise arms out to sides until parallel with floor, then lower and repeat.",
+    male: {
+      src: "/src/assets/exercises/male/seated-dumbbell-press.gif",
+      description:
+        "Seated press with dumbbells, providing more range of motion compared to barbell press.",
+    },
+    female: {
+      src: "/src/assets/exercises/female/seated-dumbbell-press.gif",
+      description:
+        "Seated dumbbell press with lighter weights, maintaining proper form and shoulder alignment.",
+    },
   },
-  "Front Raise": {
+  "Seated Machine Shoulder Press": {
     type: "animation",
-    src: "/src/assets/exercises/front-raise.gif",
-    description:
-      "Stand holding dumbbells in front of thighs, raise arms forward and up to shoulder height, then lower and repeat.",
+    male: {
+      src: "/src/assets/exercises/male/machine-shoulder-press.gif",
+      description:
+        "Controlled shoulder press using a machine, providing stability and consistent resistance.",
+    },
+    female: {
+      src: "/src/assets/exercises/female/machine-shoulder-press.gif",
+      description:
+        "Machine shoulder press with adjustable resistance, ideal for building shoulder strength safely.",
+    },
   },
-  Shrugs: {
+  "Resistance Band Shoulder Press": {
     type: "animation",
-    src: "/src/assets/exercises/shrugs.gif",
-    description:
-      "Stand holding weights at sides, lift shoulders up toward ears, hold briefly, then lower and repeat.",
+    male: {
+      src: "/src/assets/exercises/male/resistance-band-shoulder-press.gif",
+      description:
+        "Shoulder press using resistance bands, offering variable tension throughout the movement.",
+    },
+    female: {
+      src: "/src/assets/exercises/female/resistance-band-shoulder-press.gif",
+      description:
+        "Gentle shoulder press with resistance bands, great for building shoulder strength with low joint stress.",
+    },
   },
 
-  "Bench Press": {
-    type: "animation",
-    src: "/src/assets/exercises/bench-press.gif",
-    description:
-      "Lie on bench, lower barbell to chest, then press up until arms are extended. Repeat.",
-  },
-  "Push-ups": {
-    type: "animation",
-    src: "/src/assets/exercises/pushups.gif",
-    description:
-      "Start in plank position, lower chest to floor by bending elbows, then push back up. Repeat.",
-  },
-  "Chest Fly": {
-    type: "animation",
-    src: "/src/assets/exercises/chest-fly.gif",
-    description:
-      "Lie on bench with dumbbells extended above chest, lower weights out to sides in arc motion, then bring back together.",
-  },
-  "Dumbbell Press": {
-    type: "animation",
-    src: "/src/assets/exercises/dumbbell-press.gif",
-    description:
-      "Lie on bench, press dumbbells up from shoulder level until arms are extended, then lower and repeat.",
-  },
-
-  "Bicep Curl": {
-    type: "animation",
-    src: "/src/assets/exercises/bicep-curl.gif",
-    description:
-      "Stand with dumbbells at sides, curl weights up while keeping elbows close to torso, then lower and repeat.",
-  },
+  // Bicep Curl Alternatives
   "Hammer Curl": {
     type: "animation",
-    src: "/src/assets/exercises/hammer-curl.gif",
-    description:
-      "Similar to bicep curl but with palms facing each other throughout movement.",
+    male: {
+      src: "/src/assets/exercises/male/hammer-curl.gif",
+      description:
+        "Curl with palms facing each other, targeting biceps and forearms with a neutral grip.",
+    },
+    female: {
+      src: "/src/assets/exercises/female/hammer-curl.gif",
+      description:
+        "Perform curls with a neutral grip, focusing on controlled movement and bicep engagement.",
+    },
   },
-  "Chin-ups": {
+  "Cable Curls": {
     type: "animation",
-    src: "/src/assets/exercises/chinups.gif",
-    description:
-      "Hang from bar with palms facing you, pull body up until chin is over bar, then lower and repeat.",
+    male: {
+      src: "/src/assets/exercises/male/cable-curls.gif",
+      description:
+        "Bicep curls using cable machine, providing constant tension throughout the movement.",
+    },
+    female: {
+      src: "/src/assets/exercises/female/cable-curls.gif",
+      description:
+        "Cable curls with lighter weight, maintaining proper form and muscle control.",
+    },
   },
-  "Preacher Curl": {
+  "Preacher Curls": {
     type: "animation",
-    src: "/src/assets/exercises/preacher-curl.gif",
-    description:
-      "Sit at preacher bench, curl weight up while keeping upper arms on pad, then lower and repeat.",
-  },
-
-  Crunches: {
-    type: "animation",
-    src: "/src/assets/exercises/crunches.gif",
-    description:
-      "Lie on back with knees bent, contract abs to lift shoulders off floor, then lower and repeat.",
-  },
-  Planks: {
-    type: "animation",
-    src: "/src/assets/exercises/planks.gif",
-    description:
-      "Hold push-up position with weight on forearms, keeping body straight from head to heels.",
-  },
-  "Leg Raises": {
-    type: "animation",
-    src: "/src/assets/exercises/leg-raises.gif",
-    description:
-      "Lie on back, keep legs straight and lift them up toward ceiling, then lower and repeat.",
-  },
-  "Russian Twists": {
-    type: "animation",
-    src: "/src/assets/exercises/russian-twists.gif",
-    description:
-      "Sit with knees bent and torso leaned back, twist torso side to side while holding weight.",
+    male: {
+      src: "/src/assets/exercises/male/preacher-curls.gif",
+      description:
+        "Bicep curls performed on a preacher bench, isolating bicep muscles and reducing body momentum.",
+    },
+    female: {
+      src: "/src/assets/exercises/female/preacher-curls.gif",
+      description:
+        "Seated preacher curls with focus on bicep isolation and controlled movement.",
+    },
   },
 
-  Squats: {
+  // Push-up Alternatives
+  "Knee Push-ups": {
     type: "animation",
-    src: "/src/assets/exercises/squats.gif",
-    description:
-      "Stand with feet shoulder-width apart, bend knees to lower body as if sitting, then stand back up.",
+    male: {
+      src: "/src/assets/exercises/male/knee-pushups.gif",
+      description:
+        "Modified push-ups performed on knees, reducing body weight and helping build strength.",
+    },
+    female: {
+      src: "/src/assets/exercises/female/knee-pushups.gif",
+      description:
+        "Knee push-ups providing a modified approach to building upper body strength.",
+    },
   },
-  Lunges: {
+  "Wall Push-ups": {
     type: "animation",
-    src: "/src/assets/exercises/lunges.gif",
-    description:
-      "Step forward with one leg, lower body until both knees are bent 90 degrees, then push back up.",
+    male: {
+      src: "/src/assets/exercises/male/wall-pushups.gif",
+      description:
+        "Push-ups performed against a wall, great for beginners or rehabilitation.",
+    },
+    female: {
+      src: "/src/assets/exercises/female/wall-pushups.gif",
+      description:
+        "Gentle push-ups against a wall, ideal for building initial upper body strength.",
+    },
   },
-  "Leg Press": {
+  "Incline Push-ups": {
     type: "animation",
-    src: "/src/assets/exercises/leg-press.gif",
-    description:
-      "Sit in leg press machine, push platform away by extending knees, then return to starting position.",
-  },
-  "Leg Extensions": {
-    type: "animation",
-    src: "/src/assets/exercises/leg-extensions.gif",
-    description:
-      "Sit in machine, extend knees to lift weight, then lower and repeat.",
-  },
-
-  "Calf Raises": {
-    type: "animation",
-    src: "/src/assets/exercises/calf-raises.gif",
-    description:
-      "Stand with balls of feet on edge of step, raise heels up as high as possible, then lower and repeat.",
-  },
-
-  "Pull-ups": {
-    type: "animation",
-    src: "/src/assets/exercises/pullups.gif",
-    description:
-      "Hang from bar with palms facing away, pull body up until chin is over bar, then lower and repeat.",
-  },
-  "Lat Pulldowns": {
-    type: "animation",
-    src: "/src/assets/exercises/lat-pulldowns.gif",
-    description:
-      "Sit at machine, pull bar down to upper chest while keeping back straight, then return to start.",
+    male: {
+      src: "/src/assets/exercises/male/incline-pushups.gif",
+      description:
+        "Push-ups performed with hands elevated, reducing difficulty and targeting chest muscles.",
+    },
+    female: {
+      src: "/src/assets/exercises/female/incline-pushups.gif",
+      description:
+        "Elevated push-ups providing a modified approach to chest and arm strengthening.",
+    },
   },
 
-  Dips: {
+  // Squat Alternatives
+  "Bodyweight Squats": {
     type: "animation",
-    src: "/src/assets/exercises/dips.gif",
-    description:
-      "Support body between parallel bars, lower body by bending elbows, then push back up.",
+    male: {
+      src: "/src/assets/exercises/male/bodyweight-squats.gif",
+      description:
+        "Squats performed without additional weight, focusing on form and lower body engagement.",
+    },
+    female: {
+      src: "/src/assets/exercises/female/bodyweight-squats.gif",
+      description:
+        "Controlled bodyweight squats emphasizing proper form and muscle activation.",
+    },
   },
-  "Tricep Extensions": {
+  "Wall Squats": {
     type: "animation",
-    src: "/src/assets/exercises/tricep-extensions.gif",
-    description:
-      "Hold weight overhead, lower behind head by bending elbows, then extend arms back up.",
+    male: {
+      src: "/src/assets/exercises/male/wall-squats.gif",
+      description:
+        "Isometric squat hold against a wall, building endurance and leg strength.",
+    },
+    female: {
+      src: "/src/assets/exercises/female/wall-squats.gif",
+      description:
+        "Wall squats with focus on maintaining proper alignment and building lower body endurance.",
+    },
+  },
+  "Sumo Squats": {
+    type: "animation",
+    male: {
+      src: "/src/assets/exercises/male/sumo-squats.gif",
+      description:
+        "Wide-stance squats targeting inner thighs and providing variation to traditional squats.",
+    },
+    female: {
+      src: "/src/assets/exercises/female/sumo-squats.gif",
+      description:
+        "Sumo squats with emphasis on inner thigh and glute engagement.",
+    },
   },
 
-  Deadlifts: {
+  // Plank Alternatives
+  "Knee Planks": {
     type: "animation",
-    src: "/src/assets/exercises/deadlifts.gif",
-    description:
-      "Stand with barbell at feet, bend at hips and knees to grasp bar, then stand up straight lifting the bar.",
+    male: {
+      src: "/src/assets/exercises/male/knee-planks.gif",
+      description:
+        "Modified plank performed on knees, reducing body weight and helping build core strength.",
+    },
+    female: {
+      src: "/src/assets/exercises/female/knee-planks.gif",
+      description:
+        "Knee planks providing a gentler approach to core strengthening.",
+    },
   },
-
-  "Hip Thrusts": {
+  "Side Planks": {
     type: "animation",
-    src: "/src/assets/exercises/hip-thrusts.gif",
-    description:
-      "Sit with upper back against bench, barbell across hips, thrust hips upward, then lower and repeat.",
+    male: {
+      src: "/src/assets/exercises/male/side-planks.gif",
+      description:
+        "Plank variation focusing on obliques and lateral core muscles.",
+    },
+    female: {
+      src: "/src/assets/exercises/female/side-planks.gif",
+      description:
+        "Side planks targeting core stability and lateral muscle groups.",
+    },
   },
-
-  "Romanian Deadlifts": {
+  "Plank with Shoulder Taps": {
     type: "animation",
-    src: "/src/assets/exercises/romanian-deadlifts.gif",
-    description:
-      "Stand holding barbell, bend at hips while keeping legs nearly straight, then return to standing.",
-  },
-  "Leg Curls": {
-    type: "animation",
-    src: "/src/assets/exercises/leg-curls.gif",
-    description:
-      "Lie face down on machine, curl legs up by bending knees, then lower and repeat.",
+    male: {
+      src: "/src/assets/exercises/male/plank-shoulder-taps.gif",
+      description:
+        "Plank position with alternating shoulder taps, adding dynamic core engagement.",
+    },
+    female: {
+      src: "/src/assets/exercises/female/plank-shoulder-taps.gif",
+      description:
+        "Shoulder tap planks providing additional core challenge and stability work.",
+    },
   },
 };
 
-const getExerciseAsset = (exerciseName) => {
-  return (
-    exerciseAssets[exerciseName] || {
+const exerciseAssets = {
+  "Shoulder Press": {
+    type: "animation",
+    male: {
+      src: "/src/assets/exercises/male/shoulder-press.gif",
+      description:
+        "Sit with back supported, press dumbbells upward until arms are extended. Lower weights to shoulder level and repeat.",
+      alternatives: ["Arnold Press", "Seated Dumbbell Press"],
+    },
+    female: {
+      src: "/src/assets/exercises/female/shoulder-press.gif", // Placeholder
+      description:
+        "Sit with back supported, press dumbbells upward with slightly adjusted form. Lower weights to shoulder level and repeat.",
+      alternatives: [
+        "Seated Machine Shoulder Press",
+        "Resistance Band Shoulder Press",
+      ],
+    },
+  },
+  "Lateral Raise": {
+    type: "animation",
+    male: {
+      src: "/src/assets/exercises/lateral-raise.gif",
+      description:
+        "Stand with dumbbells at sides, raise arms out to sides until parallel with floor, then lower and repeat.",
+      alternatives: ["Cable Lateral Raises", "Machine Lateral Raises"],
+    },
+    female: {
+      src: "/src/assets/exercises/female/lateral-raise.gif", // Placeholder
+      description:
+        "Stand with lighter weights, raise arms out to sides with controlled motion, keeping core engaged.",
+      alternatives: [
+        "Resistance Band Lateral Raises",
+        "Single-Arm Lateral Raises",
+      ],
+    },
+  },
+  "Front Raise": {
+    type: "animation",
+    male: {
+      src: "/src/assets/exercises/front-raise.gif",
+      description:
+        "Stand holding dumbbells in front of thighs, raise arms forward and up to shoulder height, then lower and repeat.",
+      alternatives: ["Plate Front Raises", "Cable Front Raises"],
+    },
+    female: {
+      src: "/src/assets/exercises/female/front-raise.gif", // Placeholder
+      description:
+        "Stand with lighter weights, raise arms forward to shoulder height with controlled movement.",
+      alternatives: ["Resistance Band Front Raises", "Plate Front Raises"],
+    },
+  },
+  Shrugs: {
+    type: "animation",
+    male: {
+      src: "/src/assets/exercises/shrugs.gif",
+      description:
+        "Stand holding weights at sides, lift shoulders up toward ears, hold briefly, then lower and repeat.",
+      alternatives: ["Barbell Shrugs", "Dumbbell Shrugs"],
+    },
+    female: {
+      src: "/src/assets/exercises/female/shrugs.gif", // Placeholder
+      description:
+        "Stand with lighter weights, lift shoulders up toward ears with controlled motion.",
+      alternatives: ["Machine Shrugs", "Resistance Band Shrugs"],
+    },
+  },
+  "Bench Press": {
+    type: "animation",
+    male: {
+      src: "/src/assets/exercises/bench-press.gif",
+      description:
+        "Lie on bench, lower barbell to chest, then press up until arms are extended. Repeat.",
+      alternatives: ["Dumbbell Bench Press", "Incline Bench Press"],
+    },
+    female: {
+      src: "/src/assets/exercises/female/bench-press.gif", // Placeholder
+      description:
+        "Lie on bench with adjusted grip width, lower barbell to chest, then press up with controlled motion.",
+      alternatives: ["Push-ups", "Dumbbell Chest Press", "Machine Chest Press"],
+    },
+  },
+  "Push-ups": {
+    type: "animation",
+    male: {
+      src: "/src/assets/exercises/pushups.gif",
+      description:
+        "Start in plank position, lower chest to floor by bending elbows, then push back up. Repeat.",
+      alternatives: ["Knee Push-ups", "Incline Push-ups"],
+    },
+    female: {
+      src: "/src/assets/exercises/female/pushups.gif", // Placeholder
+      description:
+        "Start in modified plank or knee position, lower chest to floor with proper form, then push back up.",
+      alternatives: ["Wall Push-ups", "Assisted Push-ups", "Bench Push-ups"],
+    },
+  },
+  "Bicep Curl": {
+    type: "animation",
+    male: {
+      src: "/src/assets/exercises/bicep-curl.gif",
+      description:
+        "Stand with dumbbells at sides, curl weights up while keeping elbows close to torso, then lower and repeat.",
+      alternatives: ["Hammer Curls", "Barbell Curls"],
+    },
+    female: {
+      src: "/src/assets/exercises/female/bicep-curl.gif", // Placeholder
+      description:
+        "Stand with lighter weights, curl up with controlled motion, focusing on muscle contraction.",
+      alternatives: ["Resistance Band Curls", "Preacher Curls", "Cable Curls"],
+    },
+  },
+  Crunches: {
+    type: "animation",
+    male: {
+      src: "/src/assets/exercises/crunches.gif",
+      description:
+        "Lie on back with knees bent, contract abs to lift shoulders off floor, then lower and repeat.",
+      alternatives: ["Bicycle Crunches", "Reverse Crunches"],
+    },
+    female: {
+      src: "/src/assets/exercises/female/crunches.gif", // Placeholder
+      description:
+        "Lie on back with knees bent, engage core to lift shoulders, focusing on controlled movement.",
+      alternatives: ["Planks", "Leg Raises", "Russian Twists"],
+    },
+  },
+  Squats: {
+    type: "animation",
+    male: {
+      src: "/src/assets/exercises/squats.gif",
+      description:
+        "Stand with feet shoulder-width apart, bend knees to lower body as if sitting, then stand back up.",
+      alternatives: ["Barbell Squats", "Goblet Squats"],
+    },
+    female: {
+      src: "/src/assets/exercises/female/squats.gif", // Placeholder
+      description:
+        "Stand with feet shoulder-width apart, lower body with proper form, keeping knees aligned with toes.",
+      alternatives: ["Bodyweight Squats", "Wall Squats", "Sumo Squats"],
+    },
+  },
+  Lunges: {
+    type: "animation",
+    male: {
+      src: "/src/assets/exercises/lunges.gif",
+      description:
+        "Step forward with one leg, lower body until both knees are bent 90 degrees, then push back up.",
+      alternatives: ["Walking Lunges", "Reverse Lunges"],
+    },
+    female: {
+      src: "/src/assets/exercises/female/lunges.gif", // Placeholder
+      description:
+        "Step forward with controlled motion, lower body with balance and stability, focusing on proper alignment.",
+      alternatives: ["Stationary Lunges", "Reverse Lunges", "Step-ups"],
+    },
+  },
+  Plank: {
+    type: "animation",
+    male: {
+      src: "/src/assets/exercises/planks.gif",
+      description:
+        "Hold push-up position with weight on forearms, keeping body straight from head to heels.",
+      alternatives: ["Side Planks", "Plank with Leg Lifts"],
+    },
+    female: {
+      src: "/src/assets/exercises/female/planks.gif", // Placeholder
+      description:
+        "Hold push-up position with focus on core engagement, maintaining a straight line from head to heels.",
+      alternatives: ["Knee Planks", "Side Planks", "Plank with Shoulder Taps"],
+    },
+  },
+  Deadlifts: {
+    type: "animation",
+    male: {
+      src: "/src/assets/exercises/deadlifts.gif",
+      description:
+        "Stand with barbell at feet, bend at hips and knees to grasp bar, then stand up straight lifting the bar.",
+      alternatives: ["Romanian Deadlifts", "Sumo Deadlifts"],
+    },
+    female: {
+      src: "/src/assets/exercises/female/deadlifts.gif", // Placeholder
+      description:
+        "Lift with proper form, focusing on hip hinge and maintaining a neutral spine.",
+      alternatives: [
+        "Kettlebell Deadlifts",
+        "Single-Leg Deadlifts",
+        "Dumbbell Deadlifts",
+      ],
+    },
+  },
+  "Tricep Extensions": {
+    type: "animation",
+    male: {
+      src: "/src/assets/exercises/tricep-extensions.gif",
+      description:
+        "Hold weight overhead, lower behind head by bending elbows, then extend arms back up.",
+      alternatives: ["Skull Crushers", "Cable Tricep Pushdowns"],
+    },
+    female: {
+      src: "/src/assets/exercises/female/tricep-extensions.gif", // Placeholder
+      description:
+        "Perform with lighter weight, focusing on controlled movement and proper form.",
+      alternatives: [
+        "Resistance Band Tricep Extensions",
+        "Overhead Tricep Dips",
+      ],
+    },
+  },
+  "Hip Thrusts": {
+    type: "animation",
+    male: {
+      src: "/src/assets/exercises/hip-thrusts.gif",
+      description:
+        "Sit with upper back against bench, barbell across hips, thrust hips upward, then lower and repeat.",
+      alternatives: ["Glute Bridges", "Single-Leg Hip Thrusts"],
+    },
+    female: {
+      src: "/src/assets/exercises/female/hip-thrusts.gif", // Placeholder
+      description:
+        "Perform with focus on glute activation, using bodyweight or light resistance.",
+      alternatives: ["Glute Bridges", "Banded Hip Thrusts", "Step-Ups"],
+    },
+  },
+};
+
+const getExerciseAsset = (exerciseName, bodyType = "male") => {
+  const exerciseData = exerciseAssets[exerciseName];
+
+  if (!exerciseData) {
+    return {
       type: "image",
       src: "/src/assets/placeholder-exercise.png",
       description: "Demonstration for this exercise will be added soon.",
-    }
-  );
+      alternatives: [], // Ensure this is always an array
+    };
+  }
+
+  // If gender-specific asset exists, use it
+  if (exerciseData[bodyType]) {
+    return {
+      type: "animation",
+      src: exerciseData[bodyType].src,
+      description: exerciseData[bodyType].description,
+      alternatives: exerciseData[bodyType].alternatives || [], // Fallback to empty array
+    };
+  }
+
+  // Fallback to male representation if no specific gender asset
+  return {
+    type: "animation",
+    src: exerciseData.src || "/src/assets/placeholder-exercise.png",
+    description: exerciseData.description || "Demonstration for this exercise.",
+    alternatives: exerciseData.alternatives || [], // Fallback to empty array
+  };
 };
 
 const maleFrontMuscles = [
@@ -424,6 +704,8 @@ function ExploreMuscleGuide() {
   const [selectedDotIndex, setSelectedDotIndex] = useState(null);
   const [activeMuscleIndex, setActiveMuscleIndex] = useState(null);
   const [viewingExercise, setViewingExercise] = useState(null);
+  const [viewingAlternativeExercise, setViewingAlternativeExercise] =
+    useState(null);
   const [highlightedAreas, setHighlightedAreas] = useState({});
   // New state for body type
   const [bodyType, setBodyType] = useState("male");
@@ -445,6 +727,10 @@ function ExploreMuscleGuide() {
       return allMuscles[activeMuscleIndex].name;
     }
     return null;
+  };
+
+  const handleViewAlternative = (alternativeName) => {
+    setViewingAlternativeExercise(alternativeName);
   };
 
   const handleDotClick = (muscle, muscleIndex, posIndex) => {
@@ -583,7 +869,7 @@ function ExploreMuscleGuide() {
         <BodyTypeToggle bodyType={bodyType} onToggle={toggleBodyType} />
       </div>
 
-      <div className="mb-4 bg-transparent dark:bg-transparent px-4 py-2 rounded-lg w-full max-w-4xl mx-auto text-center">
+      <div className="bg-transparent dark:bg-transparent px-4 py-2 rounded-lg w-full max-w-4xl mx-auto text-center">
         {activeMuscleIndex !== null ? (
           <p className="font-medium">
             Currently Exploring:{" "}
@@ -786,7 +1072,70 @@ function ExploreMuscleGuide() {
         </div>
       </div>
 
-      {/* Exercise Modal */}
+      <div className="flex-grow overflow-y-auto">
+        <div className="flex flex-col md:flex-row gap-6 max-w-5xl mx-auto px-4 py-6">
+          {/* Muscle Image Section */}
+          <div className="md:w-3/5 relative">
+            <div className="relative max-h-[500px] overflow-hidden mx-auto">
+              {/* (Keep existing image and interaction logic) */}
+            </div>
+          </div>
+
+          {/* Exercise Details Panel */}
+          <div className="md:w-2/5 sticky top-[calc(100vh/4)] self-start">
+            {/* (Keep existing exercise panel logic) */}
+          </div>
+        </div>
+      </div>
+      {viewingAlternativeExercise && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center"
+          onClick={() => setViewingAlternativeExercise(null)}
+        >
+          <div
+            className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-xl w-full max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-2xl font-bold">
+                {viewingAlternativeExercise}
+              </h3>
+              <button
+                onClick={() => setViewingAlternativeExercise(null)}
+                className="text-gray-500 hover:text-gray-700 dark:hover:text-white focus:outline-none"
+              >
+                <span className="text-2xl">×</span>
+              </button>
+            </div>
+            <div className="mb-4 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
+              {(() => {
+                const alternativeAsset =
+                  exerciseAlternatives[viewingAlternativeExercise];
+                const variantAsset = alternativeAsset[bodyType];
+                return (
+                  <img
+                    src={variantAsset.src}
+                    alt={`${viewingAlternativeExercise} demonstration`}
+                    className="w-full object-contain max-h-60"
+                  />
+                );
+              })()}
+            </div>
+            <div>
+              <h4 className="text-lg font-bold mb-2">How to Perform:</h4>
+              <p className="text-gray-700 dark:text-gray-300">
+                {(() => {
+                  const alternativeAsset =
+                    exerciseAlternatives[viewingAlternativeExercise];
+                  const variantAsset = alternativeAsset[bodyType];
+                  return variantAsset.description;
+                })()}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {viewingExercise && (
         <div
           className="fixed inset-0 bg-black bg-opacity-70 z-50"
@@ -796,7 +1145,7 @@ function ExploreMuscleGuide() {
             right: 0,
             bottom: 0,
             left: 0,
-            width: "00%",
+            width: "100%",
             height: "100%",
             margin: 0,
             padding: 0,
@@ -826,24 +1175,41 @@ function ExploreMuscleGuide() {
             </div>
 
             <div className="mb-3 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
-              {getExerciseAsset(viewingExercise).type === "animation" ? (
-                <img
-                  src={getExerciseAsset(viewingExercise).src}
-                  alt={`${viewingExercise} demonstration`}
-                  className="w-full object-contain max-h-60"
-                />
-              ) : (
-                <img
-                  src={getExerciseAsset(viewingExercise).src}
-                  alt={`${viewingExercise} demonstration`}
-                  className="w-full object-contain max-h-60"
-                />
-              )}
+              {(() => {
+                const exerciseAsset = getExerciseAsset(
+                  viewingExercise,
+                  bodyType
+                );
+                return (
+                  <img
+                    src={exerciseAsset.src}
+                    alt={`${viewingExercise} demonstration`}
+                    className="w-full object-contain max-h-60"
+                  />
+                );
+              })()}
             </div>
 
             <div className="text-gray-700 dark:text-gray-300">
               <h4 className="font-bold mb-1">How to perform:</h4>
-              <p>{getExerciseAsset(viewingExercise).description}</p>
+              <p>{getExerciseAsset(viewingExercise, bodyType).description}</p>
+            </div>
+
+            {/* New Alternatives Section */}
+            <div className="mt-4">
+              <h4 className="font-bold mb-2">Alternative Exercises:</h4>
+              <div className="flex flex-wrap gap-2">
+                {getExerciseAsset(viewingExercise, bodyType).alternatives.map(
+                  (alt, index) => (
+                    <span
+                      key={index}
+                      className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-sm"
+                    >
+                      {alt}
+                    </span>
+                  )
+                )}
+              </div>
             </div>
 
             <button

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import LoadingSpinner from "../components/LoadingSpinner";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
@@ -7,6 +7,7 @@ const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 const AdminRoute = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const verifyAdminStatus = async () => {
@@ -18,25 +19,39 @@ const AdminRoute = ({ children }) => {
       }
 
       try {
-        // We'll ping the admin stats endpoint to check if the user has admin access
         const response = await fetch(`${API_URL}/admin/stats/users`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
 
-        if (response.ok) {
+        if (response.status === 200) {
+          // Successful admin access
           setIsAdmin(true);
+          localStorage.setItem("isAdmin", "true");
+        } else if (response.status === 403) {
+          // Explicitly handle forbidden access
+          setIsAdmin(false);
+          localStorage.setItem("isAdmin", "false");
+          navigate("/");
+        } else {
+          // Any other unexpected response
+          setIsAdmin(false);
+          localStorage.setItem("isAdmin", "false");
+          navigate("/");
         }
       } catch (error) {
         console.error("Admin verification error:", error);
+        setIsAdmin(false);
+        localStorage.setItem("isAdmin", "false");
+        navigate("/");
       } finally {
         setLoading(false);
       }
     };
 
     verifyAdminStatus();
-  }, []);
+  }, [navigate]);
 
   if (loading) {
     return <LoadingSpinner />;

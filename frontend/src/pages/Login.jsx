@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { GoogleLogin } from "@react-oauth/google";
 import { useNavigate } from "react-router-dom";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
-import { loginUser } from "../api/auth";
+import { loginUser, checkAdminStatus } from "../api/auth";
 
 function Login() {
   const [formData, setFormData] = useState({
