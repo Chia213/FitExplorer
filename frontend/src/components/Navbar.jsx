@@ -13,6 +13,7 @@ import {
   FaListAlt,
   FaRunning,
   FaAtlas,
+  FaLock,
 } from "react-icons/fa";
 import { LuBicepsFlexed, LuCalendarClock } from "react-icons/lu";
 import logo from "../assets/Ronjasdrawing.png";
@@ -260,6 +261,15 @@ function Navbar() {
                         >
                           <FaSave className="mr-2 text-indigo-500" /> Saved
                           Programs
+                        </Link>
+
+                        {/* Add this new Admin Dashboard link */}
+                        <Link
+                          to="/admin"
+                          className="block p-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center"
+                        >
+                          <FaLock className="mr-2 text-red-500" /> Admin
+                          Dashboard
                         </Link>
 
                         <button

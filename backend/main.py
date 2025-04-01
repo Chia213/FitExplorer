@@ -12,7 +12,8 @@ from database import engine, Base, get_db
 from datetime import datetime, timezone
 from auth import router as auth_router
 from dependencies import get_current_user
-from typing import List, Dict, Any, Optional
+from admin import router as admin_router
+from typing import List, Dict, Any
 from models import Workout, User, Exercise, Set, UserPreferences, Routine, CustomExercise, SavedWorkoutProgram, RoutineFolder
 from schemas import (
     WorkoutCreate,
@@ -69,6 +70,7 @@ app.add_middleware(
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 app.include_router(auth_router)
+app.include_router(admin_router)
 
 
 @app.get("/protected-route")

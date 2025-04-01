@@ -19,6 +19,13 @@ import ChangePassword from "./pages/ChangePassword";
 import ScrollToTop from "./components/ScrollToTop";
 import { ThemeProvider } from "./hooks/useTheme";
 
+// Import Admin pages
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminUsers from "./pages/admin/AdminUsers";
+import AdminExercises from "./pages/admin/AdminExercises";
+import AdminWorkouts from "./pages/admin/AdminWorkouts";
+import AdminRoute from "./components/AdminRoute";
+
 // Import all CSS files
 import "./styles/design-system.css";
 import "./styles/navHover.css";
@@ -53,6 +60,40 @@ function App() {
               <Route path="/program-tracker" element={<ProgramTracker />} />
               <Route path="/change-password" element={<ChangePassword />} />
               <Route path="/privacy" element={<PrivacyPolicy />} />
+
+              {/* Admin Routes with Protection */}
+              <Route
+                path="/admin"
+                element={
+                  <AdminRoute>
+                    <AdminDashboard />
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="/admin/users"
+                element={
+                  <AdminRoute>
+                    <AdminUsers />
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="/admin/exercises"
+                element={
+                  <AdminRoute>
+                    <AdminExercises />
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="/admin/workouts"
+                element={
+                  <AdminRoute>
+                    <AdminWorkouts />
+                  </AdminRoute>
+                }
+              />
             </Routes>
           </PageTransition>
         </Layout>
