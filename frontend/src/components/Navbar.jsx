@@ -398,17 +398,32 @@ function Navbar() {
                 <>
                   <Link
                     to="/profile"
-                    className="nav-item flex items-center p-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
+                    className="block p-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                   >
-                    <FaUser className="nav-icon mr-3" size={18} />
-                    <span className="nav-text">Profile ({username})</span>
+                    Profile
                   </Link>
+                  <Link
+                    to="/saved-programs"
+                    className="block p-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center"
+                  >
+                    <FaSave className="mr-2 text-indigo-500" /> Saved Programs
+                  </Link>
+
+                  {/* Only show Admin Dashboard link if user is an admin */}
+                  {localStorage.getItem("isAdmin") === "true" && (
+                    <Link
+                      to="/admin"
+                      className="block p-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center"
+                    >
+                      <FaLock className="mr-2 text-red-500" /> Admin Dashboard
+                    </Link>
+                  )}
+
                   <button
                     onClick={handleLogout}
-                    className="flex items-center w-full p-3 rounded-md hover:bg-red-500 hover:text-white text-left"
+                    className="block w-full text-left p-3 hover:bg-red-500 hover:text-white transition-colors flex items-center"
                   >
-                    <FaSignOutAlt className="mr-3" size={18} />
-                    <span>Logout</span>
+                    <FaSignOutAlt className="mr-2" /> Logout
                   </button>
                 </>
               ) : (

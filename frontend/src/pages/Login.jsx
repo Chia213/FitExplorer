@@ -30,6 +30,18 @@ function Login() {
 
       if (response.access_token) {
         localStorage.setItem("token", response.access_token);
+
+        try {
+          // Try to check admin status, but don't let it block login if it fails
+          await checkAdminStatus();
+        } catch (adminErr) {
+          console.error(
+            "Error checking admin status, continuing as regular user:",
+            adminErr
+          );
+          localStorage.setItem("isAdmin", "false");
+        }
+
         navigate("/");
       } else {
         setError("Invalid credentials");
