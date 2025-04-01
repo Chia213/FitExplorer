@@ -203,48 +203,48 @@ const maleFrontMuscles = [
   {
     name: "Shoulders",
     positions: [
-      { top: "19%", left: "13%" },
-      { top: "19%", left: "36%" },
+      { top: "19%", left: "16%" },
+      { top: "19%", left: "35%" },
     ],
     exercises: ["Shoulder Press", "Lateral Raise", "Front Raise", "Shrugs"],
   },
   {
     name: "Chest",
     positions: [
-      { top: "23%", left: "20%" },
-      { top: "23%", left: "28%" },
+      { top: "23%", left: "22%" },
+      { top: "23%", left: "29%" },
     ],
     exercises: ["Bench Press", "Push-ups", "Chest Fly", "Dumbbell Press"],
   },
   {
     name: "Biceps",
     positions: [
-      { top: "29%", left: "13%" },
-      { top: "29%", left: "36%" },
+      { top: "29%", left: "14%" },
+      { top: "29%", left: "37%" },
     ],
     exercises: ["Bicep Curl", "Hammer Curl", "Chin-ups", "Preacher Curl"],
   },
   {
     name: "Abs",
     positions: [
-      { top: "36%", left: "26%" },
-      { top: "36%", left: "22%" },
+      { top: "35.5%", left: "27.5%" },
+      { top: "35.5%", left: "23.5%" },
     ],
     exercises: ["Crunches", "Planks", "Leg Raises", "Russian Twists"],
   },
   {
     name: "Quads",
     positions: [
-      { top: "58%", left: "18%" },
-      { top: "58%", left: "29%" },
+      { top: "58%", left: "20%" },
+      { top: "58%", left: "31%" },
     ],
     exercises: ["Squats", "Lunges", "Leg Press", "Leg Extensions"],
   },
   {
     name: "Calves",
     positions: [
-      { top: "78%", left: "68%" },
-      { top: "78%", left: "77%" },
+      { top: "78%", left: "67%" },
+      { top: "78%", left: "75%" },
     ],
     exercises: ["Calf Raises", "Seated Calf Press", "Jump Rope"],
   },
@@ -254,16 +254,16 @@ const maleBackMuscles = [
   {
     name: "Upper Back",
     positions: [
-      { top: "15%", left: "69%" },
-      { top: "15%", left: "75%" },
+      { top: "15%", left: "67.5%" },
+      { top: "15%", left: "74%" },
     ],
     exercises: ["Pull-ups", "Lat Pulldowns", "Rows", "Face Pulls"],
   },
   {
     name: "Triceps",
     positions: [
-      { top: "26%", left: "61%" },
-      { top: "26%", left: "83%" },
+      { top: "26%", left: "60%" },
+      { top: "26%", left: "81.5%" },
     ],
     exercises: [
       "Dips",
@@ -275,16 +275,16 @@ const maleBackMuscles = [
   {
     name: "Lower Back",
     positions: [
-      { top: "34%", left: "68%" },
-      { top: "34%", left: "76%" },
+      { top: "31%", left: "66.5%" },
+      { top: "31%", left: "75%" },
     ],
     exercises: ["Deadlifts", "Back Extensions", "Good Mornings", "Superman"],
   },
   {
     name: "Glutes",
     positions: [
-      { top: "47%", left: "68%" },
-      { top: "47%", left: "76%" },
+      { top: "47%", left: "67%" },
+      { top: "47%", left: "74%" },
     ],
     exercises: [
       "Hip Thrusts",
@@ -296,8 +296,8 @@ const maleBackMuscles = [
   {
     name: "Hamstrings",
     positions: [
-      { top: "62%", left: "67%" },
-      { top: "62%", left: "77%" },
+      { top: "62%", left: "65.5%" },
+      { top: "62%", left: "75.5%" },
     ],
     exercises: [
       "Romanian Deadlifts",
@@ -312,48 +312,48 @@ const femaleFrontMuscles = [
   {
     name: "Shoulders",
     positions: [
-      { top: "19%", left: "19%" },
-      { top: "19%", left: "36%" },
+      { top: "19%", left: "21%" },
+      { top: "19%", left: "37%" },
     ],
     exercises: ["Shoulder Press", "Lateral Raise", "Front Raise", "Shrugs"],
   },
   {
     name: "Chest",
     positions: [
-      { top: "23%", left: "24%" },
-      { top: "23%", left: "31%" },
+      { top: "23%", left: "25%" },
+      { top: "23%", left: "32%" },
     ],
     exercises: ["Bench Press", "Push-ups", "Chest Fly", "Dumbbell Press"],
   },
   {
     name: "Biceps",
     positions: [
-      { top: "27%", left: "18%" },
-      { top: "27%", left: "37%" },
+      { top: "27%", left: "20%" },
+      { top: "27%", left: "37.5%" },
     ],
     exercises: ["Bicep Curl", "Hammer Curl", "Chin-ups", "Preacher Curl"],
   },
   {
     name: "Abs",
     positions: [
-      { top: "31.5%", left: "29%" },
-      { top: "31.5%", left: "26%" },
+      { top: "31.5%", left: "30.5%" },
+      { top: "31.5%", left: "27.3%" },
     ],
     exercises: ["Crunches", "Planks", "Leg Raises", "Russian Twists"],
   },
   {
     name: "Quads",
     positions: [
-      { top: "53%", left: "21%" },
-      { top: "53%", left: "33%" },
+      { top: "53%", left: "23.5%" },
+      { top: "53%", left: "33.5%" },
     ],
     exercises: ["Squats", "Lunges", "Leg Press", "Leg Extensions"],
   },
   {
     name: "Calves",
     positions: [
-      { top: "75%", left: "61.5%" },
-      { top: "75%", left: "75%" },
+      { top: "75%", left: "60.5%" },
+      { top: "75%", left: "73.5%" },
     ],
     exercises: ["Calf Raises", "Seated Calf Press", "Jump Rope"],
   },
@@ -363,16 +363,16 @@ const femaleBackMuscles = [
   {
     name: "Upper Back",
     positions: [
-      { top: "16%", left: "66%" },
-      { top: "16%", left: "71.5%" },
+      { top: "16%", left: "65.5%" },
+      { top: "16%", left: "70%" },
     ],
     exercises: ["Pull-ups", "Lat Pulldowns", "Rows", "Face Pulls"],
   },
   {
     name: "Triceps",
     positions: [
-      { top: "26%", left: "59%" },
-      { top: "26%", left: "78%" },
+      { top: "26%", left: "58.5%" },
+      { top: "26%", left: "76.5%" },
     ],
     exercises: [
       "Dips",
@@ -384,16 +384,16 @@ const femaleBackMuscles = [
   {
     name: "Lower Back",
     positions: [
-      { top: "30%", left: "65%" },
-      { top: "30%", left: "72%" },
+      { top: "30%", left: "64%" },
+      { top: "30%", left: "70.9%" },
     ],
     exercises: ["Deadlifts", "Back Extensions", "Good Mornings", "Superman"],
   },
   {
     name: "Glutes",
     positions: [
-      { top: "45%", left: "65%" },
-      { top: "45%", left: "72%" },
+      { top: "45%", left: "64%" },
+      { top: "45%", left: "71%" },
     ],
     exercises: [
       "Hip Thrusts",
@@ -405,8 +405,8 @@ const femaleBackMuscles = [
   {
     name: "Hamstrings",
     positions: [
-      { top: "59%", left: "63%" },
-      { top: "59%", left: "74%" },
+      { top: "59%", left: "62%" },
+      { top: "59%", left: "72%" },
     ],
     exercises: [
       "Romanian Deadlifts",
@@ -583,7 +583,7 @@ function ExploreMuscleGuide() {
         <BodyTypeToggle bodyType={bodyType} onToggle={toggleBodyType} />
       </div>
 
-      <div className="mb-4 bg-gray-100 dark:bg-gray-800 px-4 py-2 rounded-lg w-full max-w-4xl mx-auto text-center">
+      <div className="mb-4 bg-transparent dark:bg-transparent px-4 py-2 rounded-lg w-full max-w-4xl mx-auto text-center">
         {activeMuscleIndex !== null ? (
           <p className="font-medium">
             Currently Exploring:{" "}
@@ -592,10 +592,8 @@ function ExploreMuscleGuide() {
             </span>
           </p>
         ) : (
-          <p>
-            {bodyType === "female"
-              ? "Hover over or click on any muscle area to explore exercises"
-              : "Hover over or click on any muscle area to explore exercises"}
+          <p className="text-black dark:text-gray-300 opacity-80">
+            Hover over or click on any muscle area to explore exercises
           </p>
         )}
       </div>

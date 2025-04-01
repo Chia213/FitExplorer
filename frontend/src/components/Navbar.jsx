@@ -117,7 +117,7 @@ function Navbar() {
       className={`w-full ${
         theme === "dark"
           ? "bg-gray-900 text-white"
-          : "bg-gradient-to-r from-blue-400 to-emerald-400 text-black"
+          : "bg-gradient-to-r from-green-400 to-blue-500 text-black"
       } shadow-md z-50 sticky top-0`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
