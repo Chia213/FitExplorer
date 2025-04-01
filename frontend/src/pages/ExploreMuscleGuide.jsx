@@ -4,10 +4,12 @@ import BodyTypeToggle from "../components/BodyTypeToggle";
 
 const exerciseAlternatives = {
   // Shoulder Exercises Alternatives
-  "Arnold Press": {
+  "Arnold Dumbbell Press": {
     type: "animation",
+    equipment: "Dumbbells",
+    difficulty: "Intermediate",
     male: {
-      src: "/src/assets/exercises/male/arnold-press.gif",
+      src: "/src/assets/exercises/male/alternatives/arnold-dumbbell-press.gif",
       description:
         "Seated dumbbell press with a rotational movement, targeting shoulders from multiple angles.",
     },
@@ -17,10 +19,13 @@ const exerciseAlternatives = {
         "Perform seated dumbbell press with a controlled rotational motion, focusing on shoulder muscle engagement.",
     },
   },
-  "Seated Dumbbell Press": {
+
+  "Seated Dumbbell Shoulder Press": {
     type: "animation",
+    equipment: "Dumbbells",
+    difficulty: "Beginner",
     male: {
-      src: "/src/assets/exercises/male/seated-dumbbell-press.gif",
+      src: "/src/assets/exercises/male/alternatives/seated-dumbbell-shoulder-press.gif",
       description:
         "Seated press with dumbbells, providing more range of motion compared to barbell press.",
     },
@@ -30,15 +35,112 @@ const exerciseAlternatives = {
         "Seated dumbbell press with lighter weights, maintaining proper form and shoulder alignment.",
     },
   },
-  "Seated Machine Shoulder Press": {
+
+  "Cable Lateral Raise": {
+    type: "animation",
+    equipment: "Cable Machine",
+    difficulty: "Intermediate",
+    male: {
+      src: "/src/assets/exercises/male/cable-lateral-raise.gif",
+      description:
+        "Raise your arm to the side using a cable machine, focusing on controlled movement for shoulder isolation.",
+    },
+    female: {
+      src: "/src/assets/exercises/female/female-cable-lateral-raise.gif",
+      description:
+        "Cable lateral raise with smooth tension, targeting the side delts for balanced shoulder development.",
+    },
+  },
+
+  "Lateral Raise Machine": {
+    type: "animation",
+    equipment: "Lateral Raise Machine",
+    difficulty: "Beginner",
+    male: {
+      src: "/src/assets/exercises/male/lateral-raise-machine.gif",
+      description:
+        "Use a lateral raise machine to lift arms outward, keeping the motion slow and controlled for side delts.",
+    },
+    female: {
+      src: "/src/assets/exercises/female/female-machine-lateral-raise.gif",
+      description:
+        "Perform lateral raises on a machine for stable, consistent tension that isolates the side shoulder muscles.",
+    },
+  },
+
+  "Plate Shoulder Press": {
+    type: "animation",
+    equipment: "Weight Plate",
+    difficulty: "Beginner",
+    male: {
+      src: "/src/assets/exercises/male/alternatives/plate-shoulder-press.gif",
+      description:
+        "Hold a weight plate with both hands and raise it in front of your body to shoulder height, then lower it with control.",
+    },
+    female: {
+      src: "/src/assets/exercises/female/plate-front-raise.gif",
+      description:
+        "Front raise using a plate for focused shoulder activation, maintaining steady movement throughout.",
+    },
+  },
+
+  "Cable Front Raise": {
+    type: "animation",
+    equipment: "Cable Machine",
+    difficulty: "Intermediate",
+    male: {
+      src: "/src/assets/exercises/male/alternatives/cable-front-raise.gif",
+      description:
+        "Raise the cable handle in front of you to shoulder height, keeping a controlled pace and straight arms.",
+    },
+    female: {
+      src: "/src/assets/exercises/female/cable-front-raise.gif",
+      description:
+        "Perform front raises using a cable machine to target shoulders with constant tension and control.",
+    },
+  },
+
+  "Barbell Shrugs": {
+    type: "animation",
+    equipment: "Barbell",
+    difficulty: "Beginner",
+    male: {
+      src: "/src/assets/exercises/male/alternatives/barbell-shrugs.gif",
+      description:
+        "Stand holding a barbell in front of your body, lift your shoulders straight up, then lower and repeat.",
+    },
+    female: {
+      src: "/src/assets/exercises/female/barbell-shrugs.gif",
+      description:
+        "Perform shrugs with a barbell in front, lifting shoulders up and lowering with control.",
+    },
+  },
+
+  "Smith Machine Shrug": {
+    type: "animation",
+    equipment: "Smith Machine",
+    difficulty: "Intermediate",
+    male: {
+      src: "/src/assets/exercises/male/alternatives/smith-machine-shrug.gif",
+      description:
+        "Stand inside a Smith machine, grip the bar and shrug shoulders upward, then lower back down slowly.",
+    },
+    female: {
+      src: "/src/assets/exercises/female/smith-machine-shrug.gif",
+      description:
+        "Use a Smith machine for controlled shrugs, focusing on slow upward and downward shoulder motion.",
+    },
+  },
+
+  "Lever Seated Shoulder Press": {
     type: "animation",
     male: {
-      src: "/src/assets/exercises/male/machine-shoulder-press.gif",
+      src: "/src/assets/exercises/male/lever-seated-shoulder-press.gif",
       description:
         "Controlled shoulder press using a machine, providing stability and consistent resistance.",
     },
     female: {
-      src: "/src/assets/exercises/female/machine-shoulder-press.gif",
+      src: "/src/assets/exercises/female/female-lever-seated-shoulder-press.gif",
       description:
         "Machine shoulder press with adjustable resistance, ideal for building shoulder strength safely.",
     },
@@ -51,7 +153,7 @@ const exerciseAlternatives = {
         "Shoulder press using resistance bands, offering variable tension throughout the movement.",
     },
     female: {
-      src: "/src/assets/exercises/female/resistance-band-shoulder-press.gif",
+      src: "/src/assets/exercises/female/female-resistance-band-shoulder-press.gif",
       description:
         "Gentle shoulder press with resistance bands, great for building shoulder strength with low joint stress.",
     },
@@ -223,31 +325,35 @@ const exerciseAlternatives = {
 };
 
 const exerciseAssets = {
-  "Shoulder Press": {
+  "Seated Barbell Shoulder Press": {
     type: "animation",
+    equipment: "Barbell",
+    difficulty: "Intermediate",
     male: {
-      src: "/src/assets/exercises/male/shoulder-press.gif",
+      src: "/src/assets/exercises/male/seated-barbell-shoulder-press.gif",
       description:
-        "Sit with back supported, press dumbbells upward until arms are extended. Lower weights to shoulder level and repeat.",
-      alternatives: ["Arnold Press", "Seated Dumbbell Press"],
+        "Sit on a bench with back support, grip the bar, press it overhead, and lower it back to shoulder height. Repeat.",
+      alternatives: ["Arnold Dumbbell Press", "Seated Dumbbell Shoulder Press"],
     },
     female: {
-      src: "/src/assets/exercises/female/shoulder-press.gif", // Placeholder
+      src: "/src/assets/exercises/female/female-seated-barbell-shoulder-press.gif", // Placeholder
       description:
         "Sit with back supported, press dumbbells upward with slightly adjusted form. Lower weights to shoulder level and repeat.",
       alternatives: [
-        "Seated Machine Shoulder Press",
+        "Lever Seated Shoulder Press",
         "Resistance Band Shoulder Press",
       ],
     },
   },
-  "Lateral Raise": {
+  "Dumbbell Lateral Raise": {
     type: "animation",
+    equipment: "Barbell",
+    difficulty: "Intermediate",
     male: {
       src: "/src/assets/exercises/lateral-raise.gif",
       description:
         "Stand with dumbbells at sides, raise arms out to sides until parallel with floor, then lower and repeat.",
-      alternatives: ["Cable Lateral Raises", "Machine Lateral Raises"],
+      alternatives: ["Cable Lateral Raise", "Lateral Raise Machine"],
     },
     female: {
       src: "/src/assets/exercises/female/lateral-raise.gif", // Placeholder
@@ -259,28 +365,32 @@ const exerciseAssets = {
       ],
     },
   },
-  "Front Raise": {
+  "Dumbbell Front Raise": {
     type: "animation",
+    equipment: "Dumbbell",
+    difficulty: "Intermediate",
     male: {
-      src: "/src/assets/exercises/front-raise.gif",
+      src: "/src/assets/exercises/male/dumbbell-front-raise.gif",
       description:
         "Stand holding dumbbells in front of thighs, raise arms forward and up to shoulder height, then lower and repeat.",
-      alternatives: ["Plate Front Raises", "Cable Front Raises"],
+      alternatives: ["Plate Shoulder Press", "Cable Front Raise"],
     },
     female: {
       src: "/src/assets/exercises/female/front-raise.gif", // Placeholder
       description:
         "Stand with lighter weights, raise arms forward to shoulder height with controlled movement.",
-      alternatives: ["Resistance Band Front Raises", "Plate Front Raises"],
+      alternatives: ["Resistance Band Front Raises", "Plate Shoulder Press"],
     },
   },
-  Shrugs: {
+  "Dumbbell Shrug": {
     type: "animation",
+    equipment: "Dumbbell",
+    difficulty: "Beginner",
     male: {
-      src: "/src/assets/exercises/shrugs.gif",
+      src: "/src/assets/exercises/male/dumbbell-shrug.gif",
       description:
         "Stand holding weights at sides, lift shoulders up toward ears, hold briefly, then lower and repeat.",
-      alternatives: ["Barbell Shrugs", "Dumbbell Shrugs"],
+      alternatives: ["Barbell Shrugs", "Smith Machine Shrug"],
     },
     female: {
       src: "/src/assets/exercises/female/shrugs.gif", // Placeholder
@@ -456,26 +566,33 @@ const getExerciseAsset = (exerciseName, bodyType = "male") => {
       type: "image",
       src: "/src/assets/placeholder-exercise.png",
       description: "Demonstration for this exercise will be added soon.",
-      alternatives: [], // Ensure this is always an array
+      alternatives: [],
+      equipment: null,
+      difficulty: null,
     };
   }
 
-  // If gender-specific asset exists, use it
-  if (exerciseData[bodyType]) {
+  const genderAsset = exerciseData[bodyType];
+
+  if (genderAsset) {
     return {
-      type: "animation",
-      src: exerciseData[bodyType].src,
-      description: exerciseData[bodyType].description,
-      alternatives: exerciseData[bodyType].alternatives || [], // Fallback to empty array
+      type: exerciseData.type || "animation",
+      src: genderAsset.src,
+      description: genderAsset.description,
+      alternatives: genderAsset.alternatives || [],
+      equipment: exerciseData.equipment || null,
+      difficulty: exerciseData.difficulty || null,
     };
   }
 
-  // Fallback to male representation if no specific gender asset
+  // Fallback (should rarely be used)
   return {
-    type: "animation",
+    type: exerciseData.type || "animation",
     src: exerciseData.src || "/src/assets/placeholder-exercise.png",
     description: exerciseData.description || "Demonstration for this exercise.",
-    alternatives: exerciseData.alternatives || [], // Fallback to empty array
+    alternatives: exerciseData.alternatives || [],
+    equipment: exerciseData.equipment || null,
+    difficulty: exerciseData.difficulty || null,
   };
 };
 
@@ -486,7 +603,12 @@ const maleFrontMuscles = [
       { top: "19%", left: "16%" },
       { top: "19%", left: "35%" },
     ],
-    exercises: ["Shoulder Press", "Lateral Raise", "Front Raise", "Shrugs"],
+    exercises: [
+      "Seated Barbell Shoulder Press",
+      "Dumbbell Lateral Raise",
+      "Dumbbell Front Raise",
+      "Dumbbell Shrug",
+    ],
   },
   {
     name: "Chest",
@@ -595,7 +717,12 @@ const femaleFrontMuscles = [
       { top: "19%", left: "21%" },
       { top: "19%", left: "37%" },
     ],
-    exercises: ["Shoulder Press", "Lateral Raise", "Front Raise", "Shrugs"],
+    exercises: [
+      "Seated Barbell Shoulder Press",
+      "Lateral Raise",
+      "Front Raise",
+      "Dumbbell Shrug",
+    ],
   },
   {
     name: "Chest",
@@ -707,6 +834,7 @@ function ExploreMuscleGuide() {
   const [viewingAlternativeExercise, setViewingAlternativeExercise] =
     useState(null);
   const [highlightedAreas, setHighlightedAreas] = useState({});
+  const [parentExercise, setParentExercise] = useState(null);
   // New state for body type
   const [bodyType, setBodyType] = useState("male");
 
@@ -729,8 +857,10 @@ function ExploreMuscleGuide() {
     return null;
   };
 
-  const handleViewAlternative = (alternativeName) => {
-    setViewingAlternativeExercise(alternativeName);
+  const handleViewAlternative = (alternativeName, parentExerciseName) => {
+    setParentExercise(parentExerciseName); // Store the parent exercise
+    setViewingExercise(null); // Close the current exercise modal
+    setViewingAlternativeExercise(alternativeName); // Open the alternative exercise modal
   };
 
   const handleDotClick = (muscle, muscleIndex, posIndex) => {
@@ -1131,6 +1261,55 @@ function ExploreMuscleGuide() {
                   return variantAsset.description;
                 })()}
               </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {exerciseAlternatives[viewingAlternativeExercise]
+                  ?.equipment && (
+                  <div className="inline-flex items-center rounded-full bg-blue-100 dark:bg-blue-900 px-3 py-1">
+                    <span className="text-xs font-medium text-blue-800 dark:text-blue-200">
+                      Equipment:{" "}
+                      {
+                        exerciseAlternatives[viewingAlternativeExercise]
+                          .equipment
+                      }
+                    </span>
+                  </div>
+                )}
+                {exerciseAlternatives[viewingAlternativeExercise]
+                  ?.difficulty && (
+                  <div className="inline-flex items-center rounded-full bg-purple-100 dark:bg-purple-900 px-3 py-1">
+                    <span className="text-xs font-medium text-purple-800 dark:text-purple-200">
+                      Difficulty:{" "}
+                      {
+                        exerciseAlternatives[viewingAlternativeExercise]
+                          .difficulty
+                      }
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex space-x-2 mt-4">
+              {parentExercise && (
+                <button
+                  onClick={() => {
+                    setViewingAlternativeExercise(null);
+                    setViewingExercise(parentExercise);
+                    setParentExercise(null);
+                  }}
+                  className="w-1/2 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                >
+                  Back to {parentExercise}
+                </button>
+              )}
+              <button
+                onClick={() => setViewingAlternativeExercise(null)}
+                className={`py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors ${
+                  parentExercise ? "w-1/2" : "w-full"
+                }`}
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>
@@ -1193,6 +1372,25 @@ function ExploreMuscleGuide() {
             <div className="text-gray-700 dark:text-gray-300">
               <h4 className="font-bold mb-1">How to perform:</h4>
               <p>{getExerciseAsset(viewingExercise, bodyType).description}</p>
+
+              <div className="mt-3 flex flex-wrap gap-2">
+                {getExerciseAsset(viewingExercise, bodyType).equipment && (
+                  <div className="inline-flex items-center rounded-full bg-blue-100 dark:bg-blue-900 px-3 py-1">
+                    <span className="text-xs font-medium text-blue-800 dark:text-blue-200">
+                      Equipment:{" "}
+                      {getExerciseAsset(viewingExercise, bodyType).equipment}
+                    </span>
+                  </div>
+                )}
+                {getExerciseAsset(viewingExercise, bodyType).difficulty && (
+                  <div className="inline-flex items-center rounded-full bg-purple-100 dark:bg-purple-900 px-3 py-1">
+                    <span className="text-xs font-medium text-purple-800 dark:text-purple-200">
+                      Difficulty:{" "}
+                      {getExerciseAsset(viewingExercise, bodyType).difficulty}
+                    </span>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* New Alternatives Section */}
@@ -1203,7 +1401,10 @@ function ExploreMuscleGuide() {
                   (alt, index) => (
                     <span
                       key={index}
-                      className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-sm"
+                      className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-sm cursor-pointer hover:bg-blue-100 dark:hover:bg-gray-600"
+                      onClick={() =>
+                        handleViewAlternative(alt, viewingExercise)
+                      }
                     >
                       {alt}
                     </span>
