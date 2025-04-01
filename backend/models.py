@@ -14,6 +14,7 @@ class User(Base):
     username = Column(String, unique=True, nullable=False)
     profile_picture = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.now(timezone.utc))
+    is_admin = Column(Boolean, default=False)
 
     saved_programs = relationship(
         "SavedWorkoutProgram",

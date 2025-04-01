@@ -789,15 +789,33 @@ function ExploreMuscleGuide() {
       {/* Exercise Modal */}
       {viewingExercise && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setViewingExercise(null);
-            }
+          className="fixed inset-0 bg-black bg-opacity-70 z-50"
+          style={{
+            position: "fixed",
+            top: 0,
+            right: 0,
+            bottom: 0,
+            left: 0,
+            width: "00%",
+            height: "100%",
+            margin: 0,
+            padding: 0,
+            zIndex: 9999,
+            transform: "translateX(0)",
+            boxSizing: "border-box",
           }}
+          onClick={() => setViewingExercise(null)}
         >
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-lg w-full">
-            <div className="flex justify-between items-center mb-4">
+          <div
+            className="absolute bg-white dark:bg-gray-800 rounded-lg p-4 max-w-md w-full"
+            style={{
+              top: "40%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-2">
               <h3 className="text-xl font-bold">{viewingExercise}</h3>
               <button
                 onClick={() => setViewingExercise(null)}
@@ -807,30 +825,30 @@ function ExploreMuscleGuide() {
               </button>
             </div>
 
-            <div className="mb-4 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
+            <div className="mb-3 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
               {getExerciseAsset(viewingExercise).type === "animation" ? (
                 <img
                   src={getExerciseAsset(viewingExercise).src}
                   alt={`${viewingExercise} demonstration`}
-                  className="w-full object-contain max-h-80"
+                  className="w-full object-contain max-h-60"
                 />
               ) : (
                 <img
                   src={getExerciseAsset(viewingExercise).src}
                   alt={`${viewingExercise} demonstration`}
-                  className="w-full object-contain max-h-80"
+                  className="w-full object-contain max-h-60"
                 />
               )}
             </div>
 
             <div className="text-gray-700 dark:text-gray-300">
-              <h4 className="font-bold mb-2">How to perform:</h4>
+              <h4 className="font-bold mb-1">How to perform:</h4>
               <p>{getExerciseAsset(viewingExercise).description}</p>
             </div>
 
             <button
               onClick={() => setViewingExercise(null)}
-              className="mt-6 w-full py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+              className="mt-4 w-full py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
             >
               Close
             </button>
