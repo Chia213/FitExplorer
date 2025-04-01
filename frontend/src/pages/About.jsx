@@ -32,12 +32,6 @@ function About() {
               >
                 Start Your Journey
               </Link>
-              <Link
-                to="/explore-muscle-guide"
-                className="bg-green-600 hover:bg-green-700 text-white py-3 px-6 rounded-full text-lg font-semibold transition-all shadow-lg hover:shadow-xl"
-              >
-                Explore Muscles
-              </Link>
             </div>
           </div>
         </div>
