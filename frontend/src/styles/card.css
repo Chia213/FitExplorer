@@ -1,0 +1,98 @@
+/* Modern card component styling */
+.fe-card {
+    background-color: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+}
+
+.fe-card-elevated {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.fe-card-interactive {
+    cursor: pointer;
+}
+
+.fe-card-interactive:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.fe-card-header {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.fe-card-header-left {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.fe-card-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background-color: rgba(59, 130, 246, 0.1);
+    color: #3b82f6;
+}
+
+.fe-card-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0;
+    color: #1f2937;
+}
+
+.fe-card-content {
+    padding: 1.5rem;
+    flex: 1;
+}
+
+.fe-card-footer {
+    padding: 1rem 1.5rem;
+    background-color: #f9fafb;
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+/* Dark mode */
+.dark .fe-card {
+    background-color: #1f2937;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -1px rgba(0, 0, 0, 0.12);
+}
+
+.dark .fe-card-elevated {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2), 0 4px 6px -2px rgba(0, 0, 0, 0.1);
+}
+
+.dark .fe-card-interactive:hover {
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.25), 0 10px 10px -5px rgba(0, 0, 0, 0.15);
+}
+
+.dark .fe-card-header {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.dark .fe-card-icon {
+    background-color: rgba(96, 165, 250, 0.1);
+    color: #60a5fa;
+}
+
+.dark .fe-card-title {
+    color: #f3f4f6;
+}
+
+.dark .fe-card-footer {
+    background-color: #111827;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}

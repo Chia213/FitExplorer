@@ -18,6 +18,8 @@ import { LuBicepsFlexed, LuCalendarClock } from "react-icons/lu";
 import logo from "../assets/Ronjasdrawing.png";
 import ThemeToggle from "./ThemeToggle";
 import { useTheme } from "../hooks/useTheme";
+// Import the new CSS styles
+import "../styles/navHover.css";
 
 const pages = [
   { name: "Workout Generator", path: "/" },
@@ -171,10 +173,10 @@ function Navbar() {
                       workout: !showDropdown.workout,
                     })
                   }
-                  className="flex flex-col items-center p-3 hover:bg-sky-700/20 dark:hover:bg-sky-700/40 rounded-md transition-all"
+                  className="nav-item flex flex-col items-center p-3 hover:bg-sky-700/20 dark:hover:bg-sky-700/40 rounded-md transition-all"
                 >
-                  <FaDumbbell size={20} />
-                  <span className="text-sm mt-1">Workouts</span>
+                  <FaDumbbell className="nav-icon" size={20} />
+                  <span className="nav-text text-sm mt-1">Workouts</span>
                 </button>
 
                 {showDropdown.workout && (
@@ -212,18 +214,18 @@ function Navbar() {
 
               <Link
                 to="/explore-muscle-guide"
-                className="flex flex-col items-center p-3 hover:bg-sky-700/20 dark:hover:bg-sky-700/40 rounded-md transition-all"
+                className="nav-item flex flex-col items-center p-3 hover:bg-sky-700/20 dark:hover:bg-sky-700/40 rounded-md transition-all"
               >
-                <FaAtlas size={20} />
-                <span className="text-sm mt-1">Muscle Guide</span>
+                <FaAtlas className="nav-icon" size={20} />
+                <span className="nav-text text-sm mt-1">Muscle Guide</span>
               </Link>
 
               <Link
                 to="/about"
-                className="flex flex-col items-center p-3 hover:bg-sky-700/20 dark:hover:bg-sky-700/40 rounded-md transition-all"
+                className="nav-item flex flex-col items-center p-3 rounded-md transition-all"
               >
-                <FaInfoCircle size={20} />
-                <span className="text-sm mt-1">About</span>
+                <FaInfoCircle className="nav-icon" size={20} />
+                <span className="nav-text text-sm mt-1">About</span>
               </Link>
 
               <div ref={authDropdownRef} className="relative">
@@ -234,10 +236,10 @@ function Navbar() {
                       auth: !showDropdown.auth,
                     })
                   }
-                  className="flex flex-col items-center p-3 hover:bg-sky-700/20 dark:hover:bg-sky-700/40 rounded-md transition-all"
+                  className="nav-item flex flex-col items-center p-3 rounded-md transition-all"
                 >
-                  <FaUser size={20} />
-                  <span className="text-sm mt-1">
+                  <FaUser className="nav-icon" size={20} />
+                  <span className="nav-text text-sm mt-1">
                     {isAuthenticated ? username : "Account"}
                   </span>
                 </button>
@@ -322,24 +324,24 @@ function Navbar() {
             <nav className="space-y-2">
               <Link
                 to="/"
-                className="flex items-center p-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
+                className="nav-item flex items-center p-3 rounded-md"
               >
-                <FaRunning className="mr-3" size={18} />
-                <span>Workout Generator</span>
+                <FaRunning className="nav-icon mr-3" size={18} />
+                <span className="nav-text">Workout Generator</span>
               </Link>
 
               <div className="mb-2">
                 <button
-                  className="flex items-center w-full p-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 text-left"
                   onClick={() =>
                     setShowDropdown({
                       ...showDropdown,
                       workout: !showDropdown.workout,
                     })
                   }
+                  className="nav-item flex flex-col items-center p-3 rounded-md transition-all"
                 >
-                  <FaDumbbell className="mr-3" size={18} />
-                  <span>Workouts</span>
+                  <FaDumbbell className="nav-icon" size={20} />
+                  <span className="nav-text text-sm mt-1">Workouts</span>
                 </button>
 
                 {showDropdown.workout && (
@@ -368,28 +370,28 @@ function Navbar() {
 
               <Link
                 to="/explore-muscle-guide"
-                className="flex items-center p-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
+                className="nav-item flex flex-col items-center p-3 rounded-md transition-all"
               >
-                <FaAtlas className="mr-3" size={18} />
-                <span>Explore Muscle Guide</span>
+                <FaAtlas className="nav-icon" size={20} />
+                <span className="nav-text text-sm mt-1">Muscle Guide</span>
               </Link>
 
               <Link
                 to="/about"
-                className="flex items-center p-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
+                className="nav-item flex flex-col items-center p-3 rounded-md transition-all"
               >
-                <FaInfoCircle className="mr-3" size={18} />
-                <span>About</span>
+                <FaInfoCircle className="nav-icon" size={20} />
+                <span className="nav-text text-sm mt-1">About</span>
               </Link>
 
               {isAuthenticated ? (
                 <>
                   <Link
                     to="/profile"
-                    className="flex items-center p-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
+                    className="nav-item flex items-center p-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
                   >
-                    <FaUser className="mr-3" size={18} />
-                    <span>Profile ({username})</span>
+                    <FaUser className="nav-icon mr-3" size={18} />
+                    <span className="nav-text">Profile ({username})</span>
                   </Link>
                   <button
                     onClick={handleLogout}
@@ -403,17 +405,17 @@ function Navbar() {
                 <>
                   <Link
                     to="/login"
-                    className="flex items-center p-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
+                    className="nav-item flex items-center p-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
                   >
-                    <FaUser className="mr-3" size={18} />
-                    <span>Login</span>
+                    <FaUser className="nav-icon mr-3" size={18} />
+                    <span className="nav-text">Login</span>
                   </Link>
                   <Link
                     to="/signup"
-                    className="flex items-center p-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
+                    className="nav-item flex items-center p-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
                   >
-                    <FaUser className="mr-3" size={18} />
-                    <span>Signup</span>
+                    <FaUser className="nav-icon mr-3" size={18} />
+                    <span className="nav-text">Signup</span>
                   </Link>
                 </>
               )}

@@ -1,0 +1,101 @@
+/* Custom loading spinner with fitness theme */
+.loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    min-height: 200px;
+}
+
+.loading-spinner {
+    position: relative;
+    width: 60px;
+    height: 60px;
+    margin-bottom: 20px;
+}
+
+.spinner-circle {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 60px;
+    height: 60px;
+    border: 4px solid rgba(59, 130, 246, 0.1);
+    border-top: 4px solid #3b82f6;
+    border-radius: 50%;
+    animation: spin 1.5s linear infinite;
+}
+
+.spinner-dumbbell-left,
+.spinner-dumbbell-right {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    background-color: #3b82f6;
+    border-radius: 50%;
+    top: 24px;
+}
+
+.spinner-dumbbell-left {
+    left: 10px;
+    animation: pump 1.5s ease-in-out infinite alternate;
+}
+
+.spinner-dumbbell-right {
+    right: 10px;
+    animation: pump 1.5s ease-in-out infinite alternate-reverse;
+}
+
+.loading-text {
+    font-size: 14px;
+    color: #6b7280;
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes pump {
+    0% {
+        transform: scale(1);
+    }
+
+    100% {
+        transform: scale(1.3);
+    }
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 0.6;
+    }
+
+    50% {
+        opacity: 1;
+    }
+}
+
+/* Dark mode */
+.dark .spinner-circle {
+    border-color: rgba(96, 165, 250, 0.1);
+    border-top-color: #60a5fa;
+}
+
+.dark .spinner-dumbbell-left,
+.dark .spinner-dumbbell-right {
+    background-color: #60a5fa;
+}
+
+.dark .loading-text {
+    color: #9ca3af;
+}

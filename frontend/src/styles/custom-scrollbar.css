@@ -1,0 +1,37 @@
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 10px;
+}
+
+/* Light mode */
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #dcdcdc;
+    border-radius: 10px;
+    border: 2px solid #f1f1f1;
+    transition: background 0.3s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #3b82f6;
+}
+
+/* Dark mode */
+.dark ::-webkit-scrollbar-track {
+    background: #2d3748;
+    border-radius: 10px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+    background: #4a5568;
+    border-radius: 10px;
+    border: 2px solid #2d3748;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+    background: #3b82f6;
+}
