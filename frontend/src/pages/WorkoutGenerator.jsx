@@ -3285,7 +3285,7 @@ function WorkoutGenerator() {
                     className="absolute top-[20%] left-[10%] w-[10%] h-[10%] rounded-full cursor-pointer hover:bg-red-400 hover:bg-opacity-30"
                   >
                     {preferences.targetMuscles.includes("Chest") && (
-                      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-red-600 border-2 border-white shadow-md"></div>
+                      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-red-600 border-2 border-white shadow-md"></div>
                     )}
                   </div>
 
@@ -3295,7 +3295,7 @@ function WorkoutGenerator() {
                     className="absolute top-[20%] left-[21%] w-[10%] h-[10%] rounded-full cursor-pointer hover:bg-red-400 hover:bg-opacity-30"
                   >
                     {preferences.targetMuscles.includes("Chest") && (
-                      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-red-600 border-2 border-white shadow-md"></div>
+                      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-red-600 border-2 border-white shadow-md"></div>
                     )}
                   </div>
 
@@ -3305,7 +3305,7 @@ function WorkoutGenerator() {
                     className="absolute top-[29%] left-[68%] w-[10%] h-[10%] rounded-full cursor-pointer hover:bg-red-400 hover:bg-opacity-30"
                   >
                     {preferences.targetMuscles.includes("Back") && (
-                      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-red-600 border-2 border-white shadow-md"></div>
+                      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-red-600 border-2 border-white shadow-md"></div>
                     )}
                   </div>
 
@@ -3315,7 +3315,7 @@ function WorkoutGenerator() {
                     className="absolute top-[29%] left-[78%] w-[10%] h-[10%] rounded-full cursor-pointer hover:bg-red-400 hover:bg-opacity-30"
                   >
                     {preferences.targetMuscles.includes("Back") && (
-                      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-red-600 border-2 border-white shadow-md"></div>
+                      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-red-600 border-2 border-white shadow-md"></div>
                     )}
                   </div>
 
@@ -3325,7 +3325,7 @@ function WorkoutGenerator() {
                     className="absolute top-[15%] left-[30%] w-[10%] h-[10%] rounded-full cursor-pointer hover:bg-red-400 hover:bg-opacity-30"
                   >
                     {preferences.targetMuscles.includes("Shoulders") && (
-                      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-red-600 border-2 border-white shadow-md"></div>
+                      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-red-600 border-2 border-white shadow-md"></div>
                     )}
                   </div>
 
@@ -3335,7 +3335,7 @@ function WorkoutGenerator() {
                     className="absolute top-[15%] left-[2%] w-[10%] h-[10%] rounded-full cursor-pointer hover:bg-red-400 hover:bg-opacity-30"
                   >
                     {preferences.targetMuscles.includes("Shoulders") && (
-                      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-red-600 border-2 border-white shadow-md"></div>
+                      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-red-600 border-2 border-white shadow-md"></div>
                     )}
                   </div>
 
@@ -3345,7 +3345,7 @@ function WorkoutGenerator() {
                     className="absolute top-[15%] left-[60%] w-[10%] h-[10%] rounded-full cursor-pointer hover:bg-red-400 hover:bg-opacity-30"
                   >
                     {preferences.targetMuscles.includes("Shoulders") && (
-                      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-red-600 border-2 border-white shadow-md"></div>
+                      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-red-600 border-2 border-white shadow-md"></div>
                     )}
                   </div>
 
@@ -3355,7 +3355,7 @@ function WorkoutGenerator() {
                     className="absolute top-[15%] left-[88%] w-[10%] h-[10%] rounded-full cursor-pointer hover:bg-red-400 hover:bg-opacity-30"
                   >
                     {preferences.targetMuscles.includes("Shoulders") && (
-                      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-red-600 border-2 border-white shadow-md"></div>
+                      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-red-600 border-2 border-white shadow-md"></div>
                     )}
                   </div>
 
@@ -3365,7 +3365,7 @@ function WorkoutGenerator() {
                     className="absolute top-[26%] left-[3%] w-[8%] h-[10%] rounded-full cursor-pointer hover:bg-red-400 hover:bg-opacity-30"
                   >
                     {preferences.targetMuscles.includes("Biceps") && (
-                      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-red-600 border-2 border-white shadow-md"></div>
+                      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-red-600 border-2 border-white shadow-md"></div>
                     )}
                   </div>
 
@@ -3375,7 +3375,7 @@ function WorkoutGenerator() {
                     className="absolute top-[26%] left-[30%] w-[8%] h-[10%] rounded-full cursor-pointer hover:bg-red-400 hover:bg-opacity-30"
                   >
                     {preferences.targetMuscles.includes("Biceps") && (
-                      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-red-600 border-2 border-white shadow-md"></div>
+                      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-red-600 border-2 border-white shadow-md"></div>
                     )}
                   </div>
 
@@ -3385,7 +3385,7 @@ function WorkoutGenerator() {
                     className="absolute top-[23%] left-[60%] w-[8%] h-[10%] rounded-full cursor-pointer hover:bg-red-400 hover:bg-opacity-30"
                   >
                     {preferences.targetMuscles.includes("Triceps") && (
-                      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-red-600 border-2 border-white shadow-md"></div>
+                      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-red-600 border-2 border-white shadow-md"></div>
                     )}
                   </div>
 
@@ -3395,17 +3395,17 @@ function WorkoutGenerator() {
                     className="absolute top-[23%] left-[88%] w-[8%] h-[10%] rounded-full cursor-pointer hover:bg-red-400 hover:bg-opacity-30"
                   >
                     {preferences.targetMuscles.includes("Triceps") && (
-                      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-red-600 border-2 border-white shadow-md"></div>
+                      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-red-600 border-2 border-white shadow-md"></div>
                     )}
                   </div>
 
-                  {/* Abs Dot */}
+                  {/* Abs Area */}
                   <div
                     onClick={() => handleMuscleChange("Abs")}
-                    className="absolute top-[33%] left-[16%] w-[8%] h-[10%] rounded-full cursor-pointer hover:bg-red-400 hover:bg-opacity-30"
+                    className="absolute top-[25%] left-[13%] w-[15%] h-[29%] rounded-full cursor-pointer hover:bg-red-400 hover:bg-opacity-30"
                   >
                     {preferences.targetMuscles.includes("Abs") && (
-                      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-red-600 border-2 border-white shadow-md"></div>
+                      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[70%] h-[70%] rounded-full bg-red-600 border-2 border-white shadow-md"></div>
                     )}
                   </div>
 
@@ -3415,7 +3415,7 @@ function WorkoutGenerator() {
                     className="absolute top-[52%] left-[8%] w-[10%] h-[12%] rounded-full cursor-pointer hover:bg-red-400 hover:bg-opacity-30"
                   >
                     {preferences.targetMuscles.includes("Quads") && (
-                      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-red-600 border-2 border-white shadow-md"></div>
+                      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-red-600 border-2 border-white shadow-md"></div>
                     )}
                   </div>
 
@@ -3425,7 +3425,7 @@ function WorkoutGenerator() {
                     className="absolute top-[52%] left-[23%] w-[10%] h-[12%] rounded-full cursor-pointer hover:bg-red-400 hover:bg-opacity-30"
                   >
                     {preferences.targetMuscles.includes("Quads") && (
-                      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-red-600 border-2 border-white shadow-md"></div>
+                      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-red-600 border-2 border-white shadow-md"></div>
                     )}
                   </div>
 
@@ -3435,7 +3435,7 @@ function WorkoutGenerator() {
                     className="absolute top-[56%] left-[67%] w-[10%] h-[12%] rounded-full cursor-pointer hover:bg-red-400 hover:bg-opacity-30"
                   >
                     {preferences.targetMuscles.includes("Hamstrings") && (
-                      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-red-600 border-2 border-white shadow-md"></div>
+                      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-red-600 border-2 border-white shadow-md"></div>
                     )}
                   </div>
 
@@ -3445,7 +3445,7 @@ function WorkoutGenerator() {
                     className="absolute top-[56%] left-[80%] w-[10%] h-[12%] rounded-full cursor-pointer hover:bg-red-400 hover:bg-opacity-30"
                   >
                     {preferences.targetMuscles.includes("Hamstrings") && (
-                      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-red-600 border-2 border-white shadow-md"></div>
+                      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-red-600 border-2 border-white shadow-md"></div>
                     )}
                   </div>
 
@@ -3455,7 +3455,7 @@ function WorkoutGenerator() {
                     className="absolute top-[43%] left-[69%] w-[10%] h-[12%] rounded-full cursor-pointer hover:bg-red-400 hover:bg-opacity-30"
                   >
                     {preferences.targetMuscles.includes("Glutes") && (
-                      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-red-600 border-2 border-white shadow-md"></div>
+                      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-red-600 border-2 border-white shadow-md"></div>
                     )}
                   </div>
 
@@ -3465,7 +3465,7 @@ function WorkoutGenerator() {
                     className="absolute top-[43%] left-[77%] w-[10%] h-[12%] rounded-full cursor-pointer hover:bg-red-400 hover:bg-opacity-30"
                   >
                     {preferences.targetMuscles.includes("Glutes") && (
-                      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-red-600 border-2 border-white shadow-md"></div>
+                      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-red-600 border-2 border-white shadow-md"></div>
                     )}
                   </div>
                   {/* Left Calves - First Dot */}
@@ -3474,7 +3474,7 @@ function WorkoutGenerator() {
                     className="absolute top-[75%] left-[68%] w-[8%] h-[10%] rounded-full cursor-pointer hover:bg-red-400 hover:bg-opacity-30"
                   >
                     {preferences.targetMuscles.includes("Calves") && (
-                      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-red-600 border-2 border-white shadow-md"></div>
+                      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-red-600 border-2 border-white shadow-md"></div>
                     )}
                   </div>
 
@@ -3484,7 +3484,7 @@ function WorkoutGenerator() {
                     className="absolute top-[75%] left-[80%] w-[8%] h-[10%] rounded-full cursor-pointer hover:bg-red-400 hover:bg-opacity-30"
                   >
                     {preferences.targetMuscles.includes("Calves") && (
-                      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-red-600 border-2 border-white shadow-md"></div>
+                      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-red-600 border-2 border-white shadow-md"></div>
                     )}
                   </div>
                 </div>
@@ -3580,7 +3580,7 @@ function WorkoutGenerator() {
                       preferences.targetMuscles.includes(muscle)
                     )
                       ? "bg-red-500 hover:bg-red-600 text-white" // Red when "Deselect All Muscles"
-                      : "bg-gray-200 dark:bg-gray-300 text-gray-950 dark:text-gray-300 hover:bg-blue-600 dark:hover:bg-gray-600"
+                      : "bg-gray-300 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
 
                     // Blue when "Select All Muscles"
                   }`}
