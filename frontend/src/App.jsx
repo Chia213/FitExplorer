@@ -5,6 +5,7 @@ import PageTransition from "./components/PageTransition";
 import ExploreMuscleGuide from "./pages/ExploreMuscleGuide";
 import About from "./pages/About";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
+import ProgressTracker from "./pages/ProgressTracker";
 import WorkoutLog from "./pages/WorkoutLog";
 import WorkoutHistory from "./pages/WorkoutHistory";
 import WorkoutGenerator from "./pages/WorkoutGenerator";
@@ -77,6 +78,7 @@ function App() {
                   element={<ExploreMuscleGuide />}
                 />
                 <Route path="/about" element={<About />} />
+                <Route path="/progress-tracker" element={<ProgressTracker />} />
                 <Route path="/workout-log" element={<WorkoutLog />} />
                 <Route path="/workout-history" element={<WorkoutHistory />} />
                 <Route path="/routines" element={<Routines />} />

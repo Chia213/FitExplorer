@@ -14,6 +14,7 @@ import {
   FaRunning,
   FaAtlas,
   FaLock,
+  FaChartLine,
 } from "react-icons/fa";
 import { LuBicepsFlexed, LuCalendarClock } from "react-icons/lu";
 import logo from "../assets/Ronjasdrawing.png";
@@ -225,6 +226,13 @@ function Navbar() {
                   </div>
                 )}
               </div>
+              <Link
+                to="/progress-tracker"
+                className="nav-item flex flex-col items-center p-3 hover:bg-sky-700/20 dark:hover:bg-sky-700/40 rounded-md transition-all"
+              >
+                <FaChartLine className="nav-icon" size={20} />
+                <span className="nav-text text-sm mt-1">Progress</span>
+              </Link>
 
               <Link
                 to="/explore-muscle-guide"
