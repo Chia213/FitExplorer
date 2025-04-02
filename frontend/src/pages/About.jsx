@@ -135,11 +135,8 @@ function About() {
               </Link>
 
               {/* Added Progress Tracking Card */}
-              <Link to="/workout-history" className="block hover:no-underline">
+              <Link to="/progress-tracker" className="block hover:no-underline">
                 <div className="bg-indigo-50 dark:bg-gray-700 p-6 rounded-lg hover:scale-105 hover:shadow-xl transition-all duration-300 ease-in-out h-full relative">
-                  <div className="absolute top-0 right-0 bg-blue-600 text-white px-4 py-1 font-bold text-sm rounded-bl-lg">
-                    Coming Soon
-                  </div>
                   <div className="flex items-center mb-3">
                     <FaChartLine
                       className="text-indigo-500 dark:text-indigo-400 mr-3"
