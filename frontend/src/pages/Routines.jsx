@@ -70,11 +70,9 @@ function Routines() {
       if (!response.ok) throw new Error("Failed to fetch routines");
 
       const data = await response.json();
-      console.log("Fetched Routines:", data);
       setRoutines(data);
       setLoading(false);
     } catch (err) {
-      console.error("Error fetching routines:", err);
       setError("Failed to load routines. Please try again.");
       setLoading(false);
     }
@@ -89,12 +87,8 @@ function Routines() {
       if (!response.ok) throw new Error("Failed to fetch folders");
 
       const data = await response.json();
-      console.log("Fetched Folders:", data);
       setFolders(data);
-    } catch (err) {
-      console.error("Error fetching folders:", err);
-      // Don't set error state as this is a secondary fetch
-    }
+    } catch (err) {}
   };
 
   const toggleFolderExpand = (folderId) => {
@@ -126,7 +120,6 @@ function Routines() {
 
       setRoutines(routines.filter((r) => r.id !== routineId));
     } catch (err) {
-      console.error("Error deleting routine:", err);
       setError("Failed to delete routine. Please try again.");
     }
   };
@@ -193,24 +186,20 @@ function Routines() {
 
       if (!response.ok) throw new Error("Failed to update routine");
 
-      // Update the routine in the list
       const updatedRoutine = await response.json();
       setRoutines((prev) =>
         prev.map((r) => (r.id === editingRoutine.id ? updatedRoutine : r))
       );
 
-      // Close the editing modal
       setEditingRoutine(null);
       setEditedRoutineName("");
       setEditedExercises([]);
     } catch (err) {
-      console.error("Error updating routine:", err);
       alert("Failed to update routine. Please try again.");
     }
   };
 
   const handleStartWorkout = (routine) => {
-    // Prepare the workout data from the routine
     if (
       !routine ||
       !routine.workout ||
@@ -397,7 +386,6 @@ function Routines() {
       // Close folder modal
       setShowFolderModal(false);
     } catch (err) {
-      console.error("Error assigning routine to folder:", err);
       setError("Failed to assign routine to folder. Please try again.");
     }
   };

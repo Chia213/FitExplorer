@@ -1,10 +1,8 @@
 venv/
-.env
 env/
+.env
 uploads/
 uploads/profile_pictures/
 __pycache__/
 *.pyc
 node_modules/
-
-

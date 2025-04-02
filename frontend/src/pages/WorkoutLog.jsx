@@ -147,7 +147,6 @@ function WorkoutLog() {
       navigate("/login");
       return;
     }
-    console.log("Auth token:", token);
     fetchWorkoutHistory(token);
     fetchRoutines(token);
 
@@ -169,9 +168,7 @@ function WorkoutLog() {
         // Clear the preloaded data
         localStorage.removeItem("preloadedWorkoutExercises");
         localStorage.removeItem("preloadedWorkoutName");
-      } catch (error) {
-        console.error("Error parsing preloaded exercises:", error);
-      }
+      } catch (error) {}
     }
   }, [navigate]);
 
@@ -197,11 +194,8 @@ function WorkoutLog() {
       });
       if (!response.ok) throw new Error("Failed to fetch workouts");
       const data = await response.json();
-      console.log("Fetched workout history:", data);
       setWorkoutHistory(data);
-    } catch (error) {
-      console.error("Error fetching workouts:", error);
-    }
+    } catch (error) {}
   }
 
   async function fetchRoutines(token) {
@@ -212,10 +206,8 @@ function WorkoutLog() {
       });
       if (!response.ok) throw new Error("Failed to fetch routines");
       const data = await response.json();
-      console.log("Fetched routines:", data);
       setRoutines(data);
     } catch (error) {
-      console.error("Error fetching routines:", error);
     } finally {
       setLoadingRoutines(false);
     }
@@ -387,8 +379,6 @@ function WorkoutLog() {
       exercises: cleanedExercises,
     };
 
-    console.log("Saving workout:", JSON.stringify(newWorkout, null, 2));
-
     try {
       const response = await fetch(`${API_BASE_URL}/workouts`, {
         method: "POST",
@@ -401,16 +391,13 @@ function WorkoutLog() {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error("Server rejected workout with error:", errorText);
         try {
           const errorJson = JSON.parse(errorText);
-          console.error("Detailed validation errors:", errorJson);
         } catch (e) {}
         throw new Error("Failed to save workout");
       }
 
       const savedWorkout = await response.json();
-      console.log("Server response:", savedWorkout);
 
       const workoutWithExercises = {
         ...savedWorkout,
@@ -428,7 +415,6 @@ function WorkoutLog() {
 
       alert("Workout saved successfully!");
     } catch (error) {
-      console.error("Error saving workout:", error);
       alert("Error saving workout. Please try again.");
     }
   };
@@ -490,8 +476,6 @@ function WorkoutLog() {
         })),
       };
 
-      console.log("Saving routine:", routineData);
-
       try {
         const response = await fetch(`${API_BASE_URL}/routines`, {
           method: "POST",
@@ -505,7 +489,6 @@ function WorkoutLog() {
         // Handle duplicate routine name (409 Conflict)
         if (response.status === 409) {
           const data = await response.json();
-          console.log("Duplicate routine detected:", data);
 
           const confirmed = window.confirm(
             `A routine named "${routineName}" already exists. Do you want to overwrite it?`
@@ -534,7 +517,6 @@ function WorkoutLog() {
 
             if (!updateResponse.ok) {
               const errorText = await updateResponse.text();
-              console.error("Server response:", errorText);
               throw new Error(
                 `Failed to update routine: ${updateResponse.status}`
               );
@@ -551,7 +533,6 @@ function WorkoutLog() {
 
         if (!response.ok) {
           const errorText = await response.text();
-          console.error("Server response:", errorText);
           throw new Error(`Server error: ${response.status}`);
         }
 
@@ -559,11 +540,9 @@ function WorkoutLog() {
         alert("Routine saved successfully!");
         setShowSaveRoutineModal(false);
       } catch (error) {
-        console.error("Error in fetch operation:", error);
         throw error;
       }
     } catch (error) {
-      console.error("Error saving routine:", error);
       alert(`Error saving routine: ${error.message}. Please try again.`);
     }
   };

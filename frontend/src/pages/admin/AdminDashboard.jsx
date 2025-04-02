@@ -70,7 +70,6 @@ function AdminDashboard() {
         setExerciseStats(exerciseStatsData);
         setWorkoutStats(workoutStatsData);
       } catch (err) {
-        console.error("Error fetching admin data:", err);
         setError(err.message || "An error occurred while fetching data");
       } finally {
         setLoading(false);

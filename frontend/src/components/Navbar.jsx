@@ -66,11 +66,7 @@ function Navbar() {
         } else {
           localStorage.setItem("isAdmin", "false");
         }
-
-        console.log("Decoded Token:", decodedToken);
-        console.log("Is Admin from Token:", decodedToken.is_admin);
       } catch (error) {
-        console.error("Token decoding error:", error);
         localStorage.setItem("isAdmin", "false");
       }
     } else {

@@ -38,10 +38,6 @@ function Login() {
           // Try to check admin status, but don't let it block login if it fails
           await checkAdminStatus();
         } catch (adminErr) {
-          console.error(
-            "Error checking admin status, continuing as regular user:",
-            adminErr
-          );
           localStorage.setItem("isAdmin", "false");
         }
         navigate("/");
@@ -49,8 +45,6 @@ function Login() {
         setError("Invalid credentials");
       }
     } catch (err) {
-      console.error("Login error:", err);
-
       // Check if it's a verification issue
       if (err.message && err.message.includes("not verified")) {
         setError(
@@ -84,7 +78,6 @@ function Login() {
         setResendStatus("error");
       }
     } catch (error) {
-      console.error("Resend verification error:", error);
       setResendStatus("error");
     }
   };
@@ -114,11 +107,9 @@ function Login() {
         navigate("/");
       } else {
         const errorData = await response.text();
-        console.error("Google login failed:", response.status, errorData);
         setError(`Google login failed: ${response.status}`);
       }
     } catch (error) {
-      console.error("Authentication error:", error);
       setError("Network error during authentication");
     }
   };
@@ -143,7 +134,6 @@ function Login() {
         setForgotStatus("error");
       }
     } catch (error) {
-      console.error("Forgot password error:", error);
       setForgotStatus("error");
     }
   };

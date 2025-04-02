@@ -77,7 +77,6 @@ function WorkoutHistory() {
       if (!response.ok) throw new Error("Failed to fetch workouts");
 
       const data = await response.json();
-      console.log("Fetched workout data:", data);
 
       const processedWorkouts = data.map((workout) => {
         if (!workout.exercises) {
@@ -89,7 +88,6 @@ function WorkoutHistory() {
           try {
             workout.exercises = JSON.parse(workout.exercises);
           } catch (e) {
-            console.error("Error parsing exercises JSON:", e);
             workout.exercises = [];
           }
         }
@@ -122,7 +120,6 @@ function WorkoutHistory() {
       setWorkoutHistory(processedWorkouts);
       setError(null);
     } catch (error) {
-      console.error("Error fetching workouts:", error);
       setError("Failed to load workout history. Please try again later.");
     } finally {
       setLoading(false);
@@ -219,7 +216,6 @@ function WorkoutHistory() {
 
           if (!updateResponse.ok) {
             const errorText = await updateResponse.text();
-            console.error("Server response:", errorText);
             throw new Error(
               `Failed to update routine: ${updateResponse.status}`
             );
@@ -268,7 +264,6 @@ function WorkoutHistory() {
 
           if (!overwriteResponse.ok) {
             const errorText = await overwriteResponse.text();
-            console.error("Server response:", errorText);
             throw new Error(
               `Failed to overwrite routine: ${overwriteResponse.status}`
             );
@@ -286,7 +281,6 @@ function WorkoutHistory() {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error("Server response:", errorText);
         throw new Error(`Server error: ${response.status}`);
       }
 
@@ -294,7 +288,6 @@ function WorkoutHistory() {
       alert("Routine saved successfully!");
       setShowSaveRoutineModal(false);
     } catch (error) {
-      console.error("Error saving routine:", error);
       alert(`Error saving routine: ${error.message}. Please try again.`);
     } finally {
       setSavingRoutine(false);
@@ -338,7 +331,6 @@ function WorkoutHistory() {
 
       alert("Workout deleted successfully!");
     } catch (error) {
-      console.error("Error deleting workout:", error);
       alert(`Error deleting workout: ${error.message}. Please try again.`);
     }
   };
