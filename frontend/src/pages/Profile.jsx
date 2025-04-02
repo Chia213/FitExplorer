@@ -328,6 +328,35 @@ function Profile() {
     }
   };
 
+  const handleInitiateAccountDeletion = async () => {
+    setShowDeleteConfirmation(false);
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(
+        "http://localhost:8000/request-account-deletion",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.ok) {
+        // Show a confirmation message
+        alert(
+          "A confirmation email has been sent. Please check your inbox to complete account deletion."
+        );
+      } else {
+        const errorData = await response.json();
+        setError(errorData.detail || "Failed to initiate account deletion");
+      }
+    } catch (err) {
+      console.error("Account deletion request error:", err);
+      setError("Something went wrong. Please try again.");
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen text-lg">
@@ -630,8 +659,8 @@ function Profile() {
                   Delete Account
                 </h2>
                 <p className="mb-4">
-                  Are you sure you want to delete your account? This action
-                  cannot be undone.
+                  Are you sure you want to delete your account? We'll send you
+                  an email with a confirmation link to complete the deletion.
                 </p>
                 <div className="flex justify-between">
                   <button
@@ -641,10 +670,10 @@ function Profile() {
                     Cancel
                   </button>
                   <button
-                    onClick={handleAccountDeletion}
+                    onClick={handleInitiateAccountDeletion}
                     className="bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600"
                   >
-                    Confirm Delete
+                    Send Confirmation Email
                   </button>
                 </div>
               </div>

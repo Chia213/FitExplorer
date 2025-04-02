@@ -11,6 +11,12 @@ function Login() {
   });
   const [error, setError] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotStatus, setForgotStatus] = useState(null);
+  const [showResendVerification, setShowResendVerification] = useState(false);
+  const [resendEmail, setResendEmail] = useState("");
+  const [resendStatus, setResendStatus] = useState(null);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -24,13 +30,10 @@ function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
-
     try {
       const response = await loginUser(formData.email, formData.password);
-
       if (response.access_token) {
         localStorage.setItem("token", response.access_token);
-
         try {
           // Try to check admin status, but don't let it block login if it fails
           await checkAdminStatus();
@@ -41,14 +44,48 @@ function Login() {
           );
           localStorage.setItem("isAdmin", "false");
         }
-
         navigate("/");
       } else {
         setError("Invalid credentials");
       }
     } catch (err) {
-      setError("Something went wrong. Try again.");
       console.error("Login error:", err);
+
+      // Check if it's a verification issue
+      if (err.message && err.message.includes("not verified")) {
+        setError(
+          "Account not verified. Please check your email for verification link."
+        );
+
+        // Add resend verification link
+        setShowResendVerification(true);
+        setResendEmail(formData.email);
+      } else {
+        setError("Invalid credentials or server error. Try again.");
+      }
+    }
+  };
+
+  const handleResendVerification = async () => {
+    setResendStatus("submitting");
+
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+      const response = await fetch(`${API_URL}/auth/resend-verification`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email: resendEmail }),
+      });
+      if (response.ok) {
+        setResendStatus("success");
+      } else {
+        setResendStatus("error");
+      }
+    } catch (error) {
+      console.error("Resend verification error:", error);
+      setResendStatus("error");
     }
   };
 
@@ -86,6 +123,31 @@ function Login() {
     }
   };
 
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    setForgotStatus("submitting");
+
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+      const response = await fetch(`${API_URL}/auth/forgot-password`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email: forgotEmail }),
+      });
+
+      if (response.ok) {
+        setForgotStatus("success");
+      } else {
+        setForgotStatus("error");
+      }
+    } catch (error) {
+      console.error("Forgot password error:", error);
+      setForgotStatus("error");
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
       <div className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg w-full max-w-md mx-auto text-gray-900 dark:text-gray-100">
@@ -94,6 +156,38 @@ function Login() {
         </h1>
 
         {error && <p className="text-red-500 text-center mb-4">{error}</p>}
+
+        {showResendVerification && (
+          <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+            <p className="text-sm text-blue-800 dark:text-blue-300 mb-2">
+              Need a new verification email?
+            </p>
+            {resendStatus === "success" ? (
+              <p className="text-green-600 dark:text-green-400 text-sm">
+                Verification email resent! Please check your inbox.
+              </p>
+            ) : (
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={handleResendVerification}
+                  disabled={resendStatus === "submitting"}
+                  className={`text-white bg-blue-500 px-3 py-1 rounded text-sm ${
+                    resendStatus === "submitting"
+                      ? "opacity-70"
+                      : "hover:bg-blue-600"
+                  }`}
+                >
+                  {resendStatus === "submitting"
+                    ? "Sending..."
+                    : "Resend Email"}
+                </button>
+                {resendStatus === "error" && (
+                  <span className="text-red-500 text-sm">Failed to resend</span>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>
@@ -115,9 +209,18 @@ function Login() {
           </div>
 
           <div className="relative">
-            <label className="block text-gray-700 dark:text-gray-300 font-medium">
-              Password
-            </label>
+            <div className="flex justify-between items-center">
+              <label className="block text-gray-700 dark:text-gray-300 font-medium">
+                Password
+              </label>
+              <button
+                type="button"
+                onClick={() => setShowForgotPassword(true)}
+                className="text-sm text-blue-500 dark:text-blue-400 hover:underline"
+              >
+                Forgot password?
+              </button>
+            </div>
             <input
               type={showPassword ? "text" : "password"}
               name="password"
@@ -166,6 +269,72 @@ function Login() {
             onError={() => setError("Google login failed.")}
           />
         </div>
+
+        {showForgotPassword && (
+          <div className="mt-6 bg-gray-50 dark:bg-gray-700 p-6 rounded-lg">
+            <h2 className="text-xl font-semibold mb-4">Reset Password</h2>
+            {forgotStatus === "success" ? (
+              <div className="text-green-600 dark:text-green-400">
+                <p>
+                  If an account with this email exists, a password reset link
+                  has been sent.
+                </p>
+                <p className="mt-2">
+                  Please check your email inbox and follow the instructions.
+                </p>
+                <button
+                  onClick={() => setShowForgotPassword(false)}
+                  className="mt-4 w-full bg-blue-500 hover:bg-blue-600 text-white py-2 rounded"
+                >
+                  Back to Login
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleForgotPassword}>
+                <div className="mb-4">
+                  <label className="block text-gray-700 dark:text-gray-300 font-medium mb-1">
+                    Email Address
+                  </label>
+                  <input
+                    type="email"
+                    value={forgotEmail}
+                    onChange={(e) => setForgotEmail(e.target.value)}
+                    required
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    placeholder="Enter your email"
+                  />
+                </div>
+                <div className="flex space-x-2">
+                  <button
+                    type="submit"
+                    disabled={forgotStatus === "submitting"}
+                    className={`flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-lg transition ${
+                      forgotStatus === "submitting"
+                        ? "opacity-70 cursor-not-allowed"
+                        : ""
+                    }`}
+                  >
+                    {forgotStatus === "submitting"
+                      ? "Sending..."
+                      : "Send Reset Link"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowForgotPassword(false)}
+                    className="flex-1 bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 text-gray-800 dark:text-white py-2 rounded-lg"
+                  >
+                    Cancel
+                  </button>
+                </div>
+                {forgotStatus === "error" && (
+                  <p className="mt-2 text-red-500">
+                    Something went wrong. Please try again.
+                  </p>
+                )}
+              </form>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

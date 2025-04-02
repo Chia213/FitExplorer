@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta, timezone
 from passlib.context import CryptContext
 import jwt
+import secrets
 from fastapi import HTTPException
 from config import settings
 
@@ -15,6 +16,11 @@ def hash_password(password: str) -> str:
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
+
+
+def generate_verification_token():
+    """Generate a random token for email verification"""
+    return secrets.token_urlsafe(32)
 
 
 def create_access_token(data: dict, expires_delta: timedelta = None):

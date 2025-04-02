@@ -1,20 +1,5 @@
-import uuid
-import os
-from fastapi import FastAPI, Depends, HTTPException, File, UploadFile, BackgroundTasks, Body
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-from background_task import send_summary_emails
-from email_service import send_summary_email, send_security_alert
-from fastapi.staticfiles import StaticFiles
-from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import func, desc
-from database import engine, Base, get_db
-from datetime import datetime, timezone
-from auth import router as auth_router
-from dependencies import get_current_user
-from admin import router as admin_router
-from typing import List, Dict, Any
-from models import Workout, User, Exercise, Set, UserPreferences, Routine, CustomExercise, SavedWorkoutProgram, RoutineFolder
+from security import hash_password, verify_password, generate_verification_token
+from config import settings
 from schemas import (
     WorkoutCreate,
     WorkoutResponse,
@@ -29,7 +14,25 @@ from schemas import (
     RoutineFolderCreate,
     RoutineFolderResponse
 )
-from security import hash_password, verify_password
+from models import Workout, User, Exercise, Set, UserPreferences, Routine, CustomExercise, SavedWorkoutProgram, RoutineFolder
+from typing import List, Dict, Any
+from admin import router as admin_router
+from dependencies import get_current_user
+from auth import router as auth_router
+from datetime import datetime, timezone, timedelta
+from database import engine, Base, get_db
+from sqlalchemy import func, desc
+from sqlalchemy.orm import Session, joinedload
+from fastapi.staticfiles import StaticFiles
+import uuid
+import os
+import secrets
+from fastapi import FastAPI, Depends, HTTPException, File, UploadFile, BackgroundTasks, Body
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from background_task import send_summary_emails
+from email_service import (send_summary_email, send_security_alert, send_verification_email, send_password_reset_email,
+                           send_password_changed_email, send_account_deletion_email, notify_admin_new_registration)
 
 
 Base.metadata.create_all(bind=engine)
@@ -961,3 +964,184 @@ def move_routine_to_folder(
         "folder_name": folder_name,
         "workout": routine.workout
     }
+
+
+@app.post("/auth/verify-email")
+async def verify_email(token: str, db: Session = Depends(get_db)):
+    user = db.query(User).filter(
+        User.verification_token == token,
+        User.verification_token_expires_at > datetime.now(timezone.utc)
+    ).first()
+
+    if not user:
+        raise HTTPException(status_code=400, detail="Invalid or expired token")
+
+    user.is_verified = True
+    user.verification_token = None
+    user.verification_token_expires_at = None
+    db.commit()
+
+    return {"message": "Email verified successfully"}
+
+
+@app.post("/auth/resend-verification")
+async def resend_verification(email: str, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == email).first()
+
+    if not user:
+        # Return success to prevent email enumeration
+        return {"message": "Verification email sent if account exists"}
+
+    if user.is_verified:
+        return {"message": "Account already verified"}
+
+    # Generate new token
+    token = generate_verification_token()
+    expires = datetime.now(timezone.utc) + timedelta(hours=24)
+
+    user.verification_token = token
+    user.verification_token_expires_at = expires
+    db.commit()
+
+    # Send verification email
+    verification_url = f"{settings.FRONTEND_URL}/verify-email?token={token}"
+    background_tasks.add_task(
+        send_verification_email,
+        user.email,
+        verification_url
+    )
+
+    return {"message": "Verification email sent"}
+
+
+@app.post("/auth/forgot-password")
+async def forgot_password(email: str, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+    """Send password reset link to user's email"""
+    user = db.query(User).filter(User.email == email).first()
+
+    # Always return success to prevent email enumeration
+    if not user:
+        return {"message": "If an account with this email exists, a password reset link has been sent."}
+
+    # Generate reset token
+    reset_token = generate_verification_token()
+    expires = datetime.now(timezone.utc) + timedelta(hours=1)
+
+    user.reset_token = reset_token
+    user.reset_token_expires_at = expires
+    db.commit()
+
+    # Send password reset email
+    reset_url = f"{settings.FRONTEND_URL}/reset-password?token={reset_token}"
+    background_tasks.add_task(
+        send_password_reset_email,
+        user.email,
+        reset_url
+    )
+
+    return {"message": "If an account with this email exists, a password reset link has been sent."}
+
+
+@app.post("/auth/reset-password")
+async def reset_password(token: str, new_password: str, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+    """Reset password using token"""
+    user = db.query(User).filter(
+        User.reset_token == token,
+        User.reset_token_expires_at > datetime.now(timezone.utc)
+    ).first()
+
+    if not user:
+        raise HTTPException(
+            status_code=400, detail="Invalid or expired reset token")
+
+    # Update password
+    user.hashed_password = hash_password(new_password)
+    user.reset_token = None
+    user.reset_token_expires_at = None
+    db.commit()
+
+    # Send confirmation email
+    background_tasks.add_task(
+        send_password_changed_email,
+        user.email
+    )
+
+    return {"message": "Password has been reset successfully"}
+
+
+@app.post("/request-account-deletion")
+async def request_account_deletion(
+    background_tasks: BackgroundTasks,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Send account deletion confirmation email"""
+    token = generate_verification_token()
+    expires = datetime.now(timezone.utc) + timedelta(hours=1)
+
+    user.deletion_token = token
+    user.deletion_token_expires_at = expires
+    db.commit()
+
+    # Send confirmation email
+    deletion_url = f"{settings.FRONTEND_URL}/confirm-deletion?token={token}"
+    background_tasks.add_task(
+        send_account_deletion_email,
+        user.email,
+        deletion_url
+    )
+
+    return {"message": "Account deletion request received. Please check your email to confirm."}
+
+
+@app.post("/confirm-account-deletion")
+async def confirm_account_deletion(
+    token: str,
+    db: Session = Depends(get_db)
+):
+    """Confirm and execute account deletion"""
+    user = db.query(User).filter(
+        User.deletion_token == token,
+        User.deletion_token_expires_at > datetime.now(timezone.utc)
+    ).first()
+
+    if not user:
+        raise HTTPException(status_code=400, detail="Invalid or expired token")
+
+    try:
+        # Delete user data - reusing existing deletion logic
+        user_data = db.query(User).filter(User.id == user.id).first()
+        if not user_data:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        db.query(Set).filter(Set.exercise_id.in_(
+            db.query(Exercise.id).filter(Exercise.workout_id.in_(
+                db.query(Workout.id).filter(Workout.user_id == user.id)
+            ))
+        )).delete(synchronize_session=False)
+
+        db.query(Exercise).filter(Exercise.workout_id.in_(
+            db.query(Workout.id).filter(Workout.user_id == user.id)
+        )).delete(synchronize_session=False)
+
+        db.query(Workout).filter(Workout.user_id ==
+                                 user.id).delete(synchronize_session=False)
+        db.query(UserPreferences).filter(UserPreferences.user_id ==
+                                         user.id).delete(synchronize_session=False)
+
+        if user.profile_picture:
+            try:
+                file_path = os.path.join(".", user.profile_picture.lstrip("/"))
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+            except Exception as e:
+                print(f"Failed to delete profile picture: {str(e)}")
+
+        db.delete(user)
+        db.commit()
+
+        return {"message": "Account deleted successfully"}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=500, detail=f"Error deleting account: {str(e)}")

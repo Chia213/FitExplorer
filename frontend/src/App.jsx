@@ -11,6 +11,9 @@ import WorkoutGenerator from "./pages/WorkoutGenerator";
 import Routines from "./pages/Routines";
 import AddExercise from "./pages/AddExercise";
 import Login from "./pages/Login";
+import VerifyEmail from "./pages/VerifyEmail";
+import ResetPassword from "./pages/ResetPassword";
+import ConfirmDeletion from "./pages/ConfirmDeletion";
 import Signup from "./pages/Signup";
 import Profile from "./pages/Profile";
 import SavedPrograms from "./pages/SavedPrograms";
@@ -54,6 +57,9 @@ function App() {
               <Route path="/routines" element={<Routines />} />
               <Route path="/add-exercise" element={<AddExercise />} />
               <Route path="/login" element={<Login />} />
+              <Route path="/verify-email" element={<VerifyEmail />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/confirm-deletion" element={<ConfirmDeletion />} />
               <Route path="/signup" element={<Signup />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/saved-programs" element={<SavedPrograms />} />

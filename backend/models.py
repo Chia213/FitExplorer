@@ -15,6 +15,13 @@ class User(Base):
     profile_picture = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.now(timezone.utc))
     is_admin = Column(Boolean, default=False)
+    is_verified = Column(Boolean, default=False)
+    verification_token = Column(String, nullable=True)
+    verification_token_expires_at = Column(DateTime, nullable=True)
+    reset_token = Column(String, nullable=True)
+    reset_token_expires_at = Column(DateTime, nullable=True)
+    deletion_token = Column(String, nullable=True)
+    deletion_token_expires_at = Column(DateTime, nullable=True)
 
     saved_programs = relationship(
         "SavedWorkoutProgram",

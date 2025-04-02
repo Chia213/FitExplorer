@@ -11,9 +11,9 @@ class Settings:
     ACCESS_TOKEN_EXPIRE_MINUTES: int = int(
         os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 1000000))
 
-    MAIL_USERNAME = os.getenv("MAIL_USERNAME", "your-email@gmail.com")
-    MAIL_PASSWORD = os.getenv("MAIL_PASSWORD", "your-email-password")
-    MAIL_FROM = os.getenv("MAIL_FROM", "your-email@gmail.com")
+    MAIL_USERNAME = os.getenv("MAIL_USERNAME", "chiaranchber@gmail.com")
+    MAIL_PASSWORD = os.getenv("MAIL_PASSWORD", "qsygjsqmeihwateh")
+    MAIL_FROM = os.getenv("MAIL_FROM", "chiaranchber@gmail.com")
     MAIL_PORT = int(os.getenv("MAIL_PORT", 587))
     MAIL_SERVER = os.getenv("MAIL_SERVER", "smtp.gmail.com")
     MAIL_STARTTLS = os.getenv("MAIL_TLS", "true").lower() == "true"
@@ -27,6 +27,19 @@ class Settings:
     ENABLE_EMAIL_NOTIFICATIONS = os.getenv(
         "ENABLE_EMAIL_NOTIFICATIONS", "true").lower() == "true"
     SUMMARY_FREQUENCY = os.getenv("SUMMARY_FREQUENCY", "weekly")
+
+    # Frontend URL for email verification links
+    FRONTEND_URL: str = os.getenv("FRONTEND_URL", "http://localhost:5173")
+    DEFAULT_ADMIN_EMAIL: str = os.getenv(
+        "DEFAULT_ADMIN_EMAIL", "chiaranchber@gmail.com")
+
+    # Security token settings
+    VERIFICATION_TOKEN_EXPIRE_HOURS: int = int(
+        os.getenv("VERIFICATION_TOKEN_EXPIRE_HOURS", 24))
+    RESET_TOKEN_EXPIRE_HOURS: int = int(
+        os.getenv("RESET_TOKEN_EXPIRE_HOURS", 1))
+    DELETION_TOKEN_EXPIRE_HOURS: int = int(
+        os.getenv("DELETION_TOKEN_EXPIRE_HOURS", 1))
 
 
 settings = Settings()
@@ -47,3 +60,8 @@ GOOGLE_CLIENT_SECRET = settings.GOOGLE_CLIENT_SECRET
 GOOGLE_REDIRECT_URI = settings.GOOGLE_REDIRECT_URI
 ENABLE_EMAIL_NOTIFICATIONS = settings.ENABLE_EMAIL_NOTIFICATIONS
 SUMMARY_FREQUENCY = settings.SUMMARY_FREQUENCY
+FRONTEND_URL = settings.FRONTEND_URL
+DEFAULT_ADMIN_EMAIL = settings.DEFAULT_ADMIN_EMAIL
+VERIFICATION_TOKEN_EXPIRE_HOURS = settings.VERIFICATION_TOKEN_EXPIRE_HOURS
+RESET_TOKEN_EXPIRE_HOURS = settings.RESET_TOKEN_EXPIRE_HOURS
+DELETION_TOKEN_EXPIRE_HOURS = settings.DELETION_TOKEN_EXPIRE_HOURS

@@ -41,9 +41,11 @@ function Signup() {
         formData.username
       );
 
-      if (response.message === "User registered successfully") {
-        setSuccess("Account created! Redirecting to login...");
-        setTimeout(() => navigate("/login"), 2000);
+      if (response.message && response.message.includes("successfully")) {
+        setSuccess(
+          "Account created! Please check your email to verify your account before logging in."
+        );
+        // Don't redirect automatically, let them read the message first
       } else {
         setError(response.detail || "Failed to register.");
       }

@@ -2,7 +2,7 @@ from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 from email_validator import validate_email, EmailNotValidError
 import os
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
@@ -12,6 +12,8 @@ from database import get_db
 from models import User
 from schemas import UserCreate, UserLogin, Token, GoogleTokenVerifyRequest, GoogleAuthResponse
 from config import settings
+from security import generate_verification_token
+from email_service import send_verification_email, notify_admin_new_registration
 
 from requests_oauthlib import OAuth2Session
 from dotenv import load_dotenv
@@ -39,17 +41,47 @@ def create_access_token(data: dict, expires_delta: timedelta):
 
 
 @router.post("/register")
-def register(user: UserCreate, db: Session = Depends(get_db)):
+def register(user: UserCreate, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     existing_user = db.query(User).filter(User.email == user.email).first()
     if existing_user:
         raise HTTPException(status_code=400, detail="Email already registered")
 
     hashed_password = pwd_context.hash(user.password)
-    new_user = User(email=user.email,
-                    hashed_password=hashed_password, username=user.username)
+
+    # Generate verification token
+    token = generate_verification_token()
+    expires = datetime.now(timezone.utc) + timedelta(hours=24)
+
+    new_user = User(
+        email=user.email,
+        hashed_password=hashed_password,
+        username=user.username,
+        verification_token=token,
+        verification_token_expires_at=expires,
+        is_verified=False,
+        created_at=datetime.now(timezone.utc)
+    )
     db.add(new_user)
     db.commit()
-    return {"message": "User registered successfully"}
+    db.refresh(new_user)
+
+    # Send verification email
+    verification_url = f"{settings.FRONTEND_URL}/verify-email?token={token}"
+    background_tasks.add_task(
+        send_verification_email,
+        user.email,
+        verification_url
+    )
+
+    # Notify admin about new registration
+    background_tasks.add_task(
+        notify_admin_new_registration,
+        new_user.id,
+        new_user.email,
+        new_user.username
+    )
+
+    return {"message": "User registered successfully. Please verify your email."}
 
 
 @router.post("/token", response_model=Token)
@@ -58,6 +90,10 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
 
     if not db_user or not pwd_context.verify(user.password, db_user.hashed_password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    if not db_user.is_verified:
+        raise HTTPException(
+            status_code=401, detail="Account not verified. Please check your email.")
 
     access_token = create_access_token(
         {"sub": db_user.username}, timedelta(
@@ -76,7 +112,7 @@ async def google_login():
 
 
 @router.get("/callback")
-async def google_callback(code: str, db: Session = Depends(get_db)):
+async def google_callback(code: str, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     try:
         google_oauth = OAuth2Session(
             GOOGLE_CLIENT_ID, redirect_uri=GOOGLE_REDIRECT_URI)
@@ -108,12 +144,30 @@ async def google_callback(code: str, db: Session = Depends(get_db)):
                 email=user_info["email"],
                 username=user_info["name"],
                 hashed_password="google_oauth",
+                is_verified=True,  # Google accounts are already verified
+                created_at=datetime.now(timezone.utc)
             )
             db.add(new_user)
             db.commit()
             db.refresh(new_user)
+
+            # Notify admin about new Google user registration
+            background_tasks.add_task(
+                notify_admin_new_registration,
+                new_user.id,
+                new_user.email,
+                new_user.username,
+                via_google=True
+            )
+
             user = new_user
         else:
+            # Make sure existing users who connect with Google are verified
+            if not existing_user.is_verified:
+                existing_user.is_verified = True
+                db.commit()
+                db.refresh(existing_user)
+
             user = existing_user
 
         access_token = create_access_token(
@@ -131,7 +185,11 @@ async def google_callback(code: str, db: Session = Depends(get_db)):
 
 
 @router.post("/google-verify", response_model=GoogleAuthResponse)
-async def verify_google_token(request_data: GoogleTokenVerifyRequest, db: Session = Depends(get_db)):
+async def verify_google_token(
+    request_data: GoogleTokenVerifyRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db)
+):
     try:
         request = google_requests.Request()
 
@@ -155,10 +213,25 @@ async def verify_google_token(request_data: GoogleTokenVerifyRequest, db: Sessio
                 email=email,
                 username=name,
                 hashed_password="google_oauth",
+                is_verified=True,  # Google accounts are already verified
+                created_at=datetime.now(timezone.utc)
             )
             db.add(user)
             db.commit()
             db.refresh(user)
+
+            # Notify admin about new Google user registration
+            background_tasks.add_task(
+                notify_admin_new_registration,
+                user.id,
+                user.email,
+                user.username,
+                via_google=True
+            )
+        elif not user.is_verified:
+            # If they had a regular account that wasn't verified, verify it now
+            user.is_verified = True
+            db.commit()
 
         access_token = create_access_token(
             {"sub": user.username},
@@ -168,9 +241,7 @@ async def verify_google_token(request_data: GoogleTokenVerifyRequest, db: Sessio
         return {"access_token": access_token, "token_type": "bearer"}
 
     except ValueError as e:
-
         raise HTTPException(status_code=401, detail=f"Invalid token: {str(e)}")
     except Exception as e:
-
         raise HTTPException(
             status_code=500, detail=f"Authentication error: {str(e)}")
