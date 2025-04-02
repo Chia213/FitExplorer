@@ -119,7 +119,6 @@ function Profile() {
         }
       })
       .catch((err) => {
-        console.error("Profile fetch error:", err);
         setError("Session expired. Please log in again.");
         localStorage.removeItem("token");
         navigate("/login");
@@ -203,7 +202,6 @@ function Profile() {
         setError(errorData.detail || "Failed to update profile");
       }
     } catch (err) {
-      console.error("Profile update error:", err);
       setError("Something went wrong. Please try again.");
     }
   };
@@ -245,7 +243,6 @@ function Profile() {
         setError(result.detail || "Failed to upload profile picture");
       }
     } catch (err) {
-      console.error("Profile picture upload error:", err);
       setError("Something went wrong. Please try again.");
     }
   };
@@ -271,7 +268,6 @@ function Profile() {
         setError(errorData.detail || "Failed to remove profile picture");
       }
     } catch (err) {
-      console.error("Profile picture removal error:", err);
       setError("Something went wrong. Please try again.");
     }
   };
@@ -306,7 +302,6 @@ function Profile() {
         alert("Preferences updated successfully!");
       }
     } catch (err) {
-      console.error("Preferences update error:", err);
       setError("Something went wrong. Please try again.");
     }
   };
@@ -329,7 +324,6 @@ function Profile() {
         setError(errorData.detail || "Failed to delete account");
       }
     } catch (err) {
-      console.error("Account deletion error:", err);
       setError("Something went wrong. Please try again.");
     }
   };
@@ -358,7 +352,6 @@ function Profile() {
         setError(errorData.detail || "Failed to initiate account deletion");
       }
     } catch (err) {
-      console.error("Account deletion request error:", err);
       setError("Something went wrong. Please try again.");
     }
   };

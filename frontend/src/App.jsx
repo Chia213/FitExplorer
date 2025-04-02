@@ -21,6 +21,9 @@ import ProgramTracker from "./pages/ProgramTracker";
 import ChangePassword from "./pages/ChangePassword";
 import ScrollToTop from "./components/ScrollToTop";
 import { ThemeProvider } from "./hooks/useTheme";
+import { WelcomeProvider } from "./contexts/WelcomeContext";
+import WelcomeBackModal from "./components/WelcomeBackModal";
+import { useWelcome } from "./contexts/WelcomeContext";
 
 // Import Admin pages
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -37,73 +40,99 @@ import "./styles/micro-interactions.css";
 import "./styles/custom-scrollbar.css";
 import "./styles/responsive-utilities.css";
 
+// WelcomeModalWrapper component to manage the welcome modal
+const WelcomeModalWrapper = () => {
+  const {
+    showWelcomeModal,
+    closeWelcomeModal,
+    userData,
+    isFirstLogin,
+    isInitialized,
+  } = useWelcome();
+
+  if (!showWelcomeModal || !userData || !isInitialized) return null;
+
+  return (
+    <WelcomeBackModal
+      username={userData.username}
+      onClose={closeWelcomeModal}
+      isFirstLogin={isFirstLogin}
+    />
+  );
+};
+
 function App() {
   return (
     <ThemeProvider>
-      <Router>
-        <ScrollToTop />
-        <Navbar />
-        <Layout>
-          <PageTransition>
-            <Routes>
-              <Route path="/" element={<WorkoutGenerator />} />
-              <Route
-                path="/explore-muscle-guide"
-                element={<ExploreMuscleGuide />}
-              />
-              <Route path="/about" element={<About />} />
-              <Route path="/workout-log" element={<WorkoutLog />} />
-              <Route path="/workout-history" element={<WorkoutHistory />} />
-              <Route path="/routines" element={<Routines />} />
-              <Route path="/add-exercise" element={<AddExercise />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/verify-email" element={<VerifyEmail />} />
-              <Route path="/reset-password" element={<ResetPassword />} />
-              <Route path="/confirm-deletion" element={<ConfirmDeletion />} />
-              <Route path="/signup" element={<Signup />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/saved-programs" element={<SavedPrograms />} />
-              <Route path="/program-tracker" element={<ProgramTracker />} />
-              <Route path="/change-password" element={<ChangePassword />} />
-              <Route path="/privacy" element={<PrivacyPolicy />} />
+      <WelcomeProvider>
+        <Router>
+          <ScrollToTop />
+          <Navbar />
+          <Layout>
+            <PageTransition>
+              <Routes>
+                <Route path="/" element={<WorkoutGenerator />} />
+                <Route
+                  path="/explore-muscle-guide"
+                  element={<ExploreMuscleGuide />}
+                />
+                <Route path="/about" element={<About />} />
+                <Route path="/workout-log" element={<WorkoutLog />} />
+                <Route path="/workout-history" element={<WorkoutHistory />} />
+                <Route path="/routines" element={<Routines />} />
+                <Route path="/add-exercise" element={<AddExercise />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/verify-email" element={<VerifyEmail />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path="/confirm-deletion" element={<ConfirmDeletion />} />
+                <Route path="/signup" element={<Signup />} />
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/saved-programs" element={<SavedPrograms />} />
+                <Route path="/program-tracker" element={<ProgramTracker />} />
+                <Route path="/change-password" element={<ChangePassword />} />
+                <Route path="/privacy" element={<PrivacyPolicy />} />
 
-              {/* Admin Routes with Protection */}
-              <Route
-                path="/admin"
-                element={
-                  <AdminRoute>
-                    <AdminDashboard />
-                  </AdminRoute>
-                }
-              />
-              <Route
-                path="/admin/users"
-                element={
-                  <AdminRoute>
-                    <AdminUsers />
-                  </AdminRoute>
-                }
-              />
-              <Route
-                path="/admin/exercises"
-                element={
-                  <AdminRoute>
-                    <AdminExercises />
-                  </AdminRoute>
-                }
-              />
-              <Route
-                path="/admin/workouts"
-                element={
-                  <AdminRoute>
-                    <AdminWorkouts />
-                  </AdminRoute>
-                }
-              />
-            </Routes>
-          </PageTransition>
-        </Layout>
-      </Router>
+                {/* Admin Routes with Protection */}
+                <Route
+                  path="/admin"
+                  element={
+                    <AdminRoute>
+                      <AdminDashboard />
+                    </AdminRoute>
+                  }
+                />
+                <Route
+                  path="/admin/users"
+                  element={
+                    <AdminRoute>
+                      <AdminUsers />
+                    </AdminRoute>
+                  }
+                />
+                <Route
+                  path="/admin/exercises"
+                  element={
+                    <AdminRoute>
+                      <AdminExercises />
+                    </AdminRoute>
+                  }
+                />
+                <Route
+                  path="/admin/workouts"
+                  element={
+                    <AdminRoute>
+                      <AdminWorkouts />
+                    </AdminRoute>
+                  }
+                />
+              </Routes>
+            </PageTransition>
+          </Layout>
+
+          {/* Welcome Back Modal */}
+          <WelcomeModalWrapper />
+        </Router>
+      </WelcomeProvider>
     </ThemeProvider>
   );
 }

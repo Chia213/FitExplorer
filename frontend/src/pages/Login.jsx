@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { GoogleLogin } from "@react-oauth/google";
-import { useNavigate } from "react-router-dom";
-import { FaEye, FaEyeSlash } from "react-icons/fa";
+import { useNavigate, useLocation } from "react-router-dom";
+import { FaEye, FaEyeSlash, FaCheckCircle } from "react-icons/fa";
 import { loginUser, checkAdminStatus } from "../api/auth";
+import { useWelcome } from "../contexts/WelcomeContext";
 
 function Login() {
   const [formData, setFormData] = useState({
@@ -10,6 +11,7 @@ function Login() {
     password: "",
   });
   const [error, setError] = useState(null);
+  const [successMessage, setSuccessMessage] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
@@ -18,6 +20,19 @@ function Login() {
   const [resendEmail, setResendEmail] = useState("");
   const [resendStatus, setResendStatus] = useState(null);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Get welcome modal trigger function from context
+  const { triggerWelcomeModal } = useWelcome();
+
+  // Check for success message from location state (e.g., after registration)
+  useEffect(() => {
+    if (location.state?.message) {
+      setSuccessMessage(location.state.message);
+      // Clear the location state to avoid showing the message multiple times
+      window.history.replaceState({}, document.title);
+    }
+  }, [location]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -33,13 +48,28 @@ function Login() {
     try {
       const response = await loginUser(formData.email, formData.password);
       if (response.access_token) {
+        // Store token
         localStorage.setItem("token", response.access_token);
+
+        // Set just logged in flag to trigger welcome modal
+        localStorage.setItem("justLoggedIn", "true");
+
+        // Check if this is the first login and store that information
+        const hasLoggedInBefore =
+          localStorage.getItem("hasLoggedInBefore") === "true";
+        if (!hasLoggedInBefore) {
+          localStorage.setItem("isFirstLogin", "true");
+          localStorage.setItem("hasLoggedInBefore", "true");
+        }
+
         try {
           // Try to check admin status, but don't let it block login if it fails
           await checkAdminStatus();
         } catch (adminErr) {
           localStorage.setItem("isAdmin", "false");
         }
+
+        // Navigate to home
         navigate("/");
       } else {
         setError("Invalid credentials");
@@ -93,7 +123,8 @@ function Login() {
     }
 
     try {
-      const response = await fetch("http://localhost:8000/auth/google-verify", {
+      const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+      const response = await fetch(`${API_URL}/auth/google-verify`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -104,6 +135,19 @@ function Login() {
       if (response.ok) {
         const data = await response.json();
         localStorage.setItem("token", data.access_token);
+
+        // Set just logged in flag to trigger welcome modal
+        localStorage.setItem("justLoggedIn", "true");
+
+        // Check if this is the first login
+        const hasLoggedInBefore =
+          localStorage.getItem("hasLoggedInBefore") === "true";
+        if (!hasLoggedInBefore) {
+          localStorage.setItem("isFirstLogin", "true");
+          localStorage.setItem("hasLoggedInBefore", "true");
+        }
+
+        // Navigate to home
         navigate("/");
       } else {
         const errorData = await response.text();
@@ -144,6 +188,15 @@ function Login() {
         <h1 className="text-3xl font-bold text-center text-gray-800 dark:text-gray-100 mb-6">
           Login
         </h1>
+
+        {successMessage && (
+          <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg flex items-start">
+            <FaCheckCircle className="text-green-500 mt-1 mr-2 flex-shrink-0" />
+            <p className="text-green-800 dark:text-green-300">
+              {successMessage}
+            </p>
+          </div>
+        )}
 
         {error && <p className="text-red-500 text-center mb-4">{error}</p>}
 

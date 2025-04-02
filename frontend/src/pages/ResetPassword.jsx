@@ -65,7 +65,6 @@ function ResetPassword() {
         setError(data.detail || "Failed to reset password. Please try again.");
       }
     } catch (error) {
-      console.error("Reset password error:", error);
       setStatus("error");
       setError("An error occurred. Please try again.");
     }

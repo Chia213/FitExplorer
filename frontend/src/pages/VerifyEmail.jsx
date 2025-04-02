@@ -41,7 +41,6 @@ function VerifyEmail() {
           );
         }
       } catch (error) {
-        console.error("Verification error:", error);
         setStatus("error");
         setMessage("An error occurred during verification. Please try again.");
       }

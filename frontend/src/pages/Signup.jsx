@@ -1,7 +1,14 @@
 import React, { useState } from "react";
-import { registerUser } from "../api/auth";
 import { useNavigate } from "react-router-dom";
-import { FaEye, FaEyeSlash } from "react-icons/fa";
+import {
+  FaEye,
+  FaEyeSlash,
+  FaExclamationCircle,
+  FaCheckCircle,
+} from "react-icons/fa";
+import { useWelcome } from "../contexts/WelcomeContext";
+
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 function Signup() {
   const [formData, setFormData] = useState({
@@ -10,76 +17,199 @@ function Signup() {
     password: "",
     confirmPassword: "",
   });
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(null);
+
+  const [formErrors, setFormErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState("idle"); // idle, loading, success, error
+  const [errorMessage, setErrorMessage] = useState("");
   const navigate = useNavigate();
+
+  // Import the welcome context to trigger the welcome modal for new users
+  const { triggerWelcomeModal } = useWelcome();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prevState) => ({
-      ...prevState,
-      [name]: value,
+    setFormData((prev) => ({ ...prev, [name]: value }));
+
+    // Clear error when field is edited
+    if (formErrors[name]) {
+      setFormErrors((prev) => ({ ...prev, [name]: "" }));
+    }
+
+    // Password validation
+    if (name === "password") {
+      validatePassword(value);
+    }
+
+    // Match passwords
+    if (
+      name === "confirmPassword" ||
+      (name === "password" && formData.confirmPassword)
+    ) {
+      const otherField =
+        name === "confirmPassword" ? "password" : "confirmPassword";
+      const otherValue =
+        name === "confirmPassword"
+          ? formData.password
+          : formData.confirmPassword;
+
+      if (value !== otherValue) {
+        setFormErrors((prev) => ({
+          ...prev,
+          [otherField]: "Passwords do not match",
+        }));
+      } else {
+        setFormErrors((prev) => ({ ...prev, [otherField]: "" }));
+      }
+    }
+  };
+
+  const validatePassword = (password) => {
+    const errors = [];
+
+    if (password.length < 8) {
+      errors.push("Password must be at least 8 characters");
+    }
+
+    if (!/[A-Z]/.test(password)) {
+      errors.push("Password must contain at least one uppercase letter");
+    }
+
+    if (!/[a-z]/.test(password)) {
+      errors.push("Password must contain at least one lowercase letter");
+    }
+
+    if (!/[0-9]/.test(password)) {
+      errors.push("Password must contain at least one number");
+    }
+
+    setFormErrors((prev) => ({
+      ...prev,
+      password: errors.length > 0 ? errors : "",
     }));
+    return errors.length === 0;
+  };
+
+  const validateForm = () => {
+    const errors = {};
+
+    if (!formData.username.trim()) {
+      errors.username = "Username is required";
+    } else if (formData.username.length < 3) {
+      errors.username = "Username must be at least 3 characters";
+    }
+
+    if (!formData.email.trim()) {
+      errors.email = "Email is required";
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      errors.email = "Email is invalid";
+    }
+
+    if (!formData.password) {
+      errors.password = "Password is required";
+    } else {
+      const passwordValid = validatePassword(formData.password);
+      if (!passwordValid) {
+        errors.password = formErrors.password;
+      }
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      errors.confirmPassword = "Passwords do not match";
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(null);
-    setSuccess(null);
 
-    if (formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match");
+    if (!validateForm()) {
       return;
     }
 
-    try {
-      const response = await registerUser(
-        formData.email,
-        formData.password,
-        formData.username
-      );
+    setSubmitStatus("loading");
+    setErrorMessage("");
 
-      if (response.message && response.message.includes("successfully")) {
-        setSuccess(
-          "Account created! Please check your email to verify your account before logging in."
-        );
-        // Don't redirect automatically, let them read the message first
-      } else {
-        setError(response.detail || "Failed to register.");
+    try {
+      const response = await fetch(`${API_URL}/auth/register`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username: formData.username,
+          email: formData.email,
+          password: formData.password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.detail || "Failed to register");
       }
-    } catch (err) {
-      setError("Something went wrong. Try again.");
+
+      setSubmitStatus("success");
+
+      // Set first login flag and trigger welcome modal on login
+      localStorage.setItem("isFirstLogin", "true");
+
+      // Redirect to verification message page or login
+      setTimeout(() => {
+        navigate("/login", {
+          state: {
+            message:
+              "Registration successful! Please check your email to verify your account before logging in.",
+            type: "success",
+          },
+        });
+      }, 2000);
+    } catch (error) {
+      setSubmitStatus("error");
+      setErrorMessage(
+        error.message || "Registration failed. Please try again."
+      );
     }
   };
 
-  const togglePasswordVisibility = () => {
-    setShowPassword((prev) => !prev);
-  };
-
-  const toggleConfirmPasswordVisibility = () => {
-    setShowConfirmPassword((prev) => !prev);
+  const togglePasswordVisibility = (field) => {
+    if (field === "password") {
+      setShowPassword((prev) => !prev);
+    } else {
+      setShowConfirmPassword((prev) => !prev);
+    }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
-      <div className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg w-full max-w-md mx-auto text-gray-900 dark:text-gray-100">
-        <h2 className="text-3xl font-bold text-center text-gray-800 dark:text-gray-100">
-          Sign Up
-        </h2>
-        <p className="text-center text-gray-500 dark:text-gray-400 mt-2">
-          Create your account
-        </p>
+      <div className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg w-full max-w-md mx-auto">
+        <h1 className="text-3xl font-bold text-center text-gray-800 dark:text-gray-100 mb-6">
+          Create Account
+        </h1>
 
-        {error && <p className="text-red-500 text-center mt-2">{error}</p>}
-        {success && (
-          <p className="text-green-500 text-center mt-2">{success}</p>
+        {submitStatus === "error" && (
+          <div className="bg-red-100 border border-red-400 text-red-700 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800 px-4 py-3 rounded mb-4">
+            <p className="flex items-center">
+              <FaExclamationCircle className="mr-2" /> {errorMessage}
+            </p>
+          </div>
         )}
 
-        <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+        {submitStatus === "success" && (
+          <div className="bg-green-100 border border-green-400 text-green-700 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800 px-4 py-3 rounded mb-4">
+            <p className="flex items-center">
+              <FaCheckCircle className="mr-2" /> Registration successful!
+              Redirecting you to login...
+            </p>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-gray-700 dark:text-gray-300 font-medium">
+            <label className="block text-gray-700 dark:text-gray-300 font-medium mb-1">
               Username
             </label>
             <input
@@ -87,17 +217,19 @@ function Signup() {
               name="username"
               value={formData.username}
               onChange={handleChange}
-              placeholder="Enter username"
-              required
-              className="w-full px-4 py-2 mt-2 border border-gray-300 dark:border-gray-600 rounded-lg 
-                         bg-white dark:bg-gray-700 
-                         text-gray-900 dark:text-gray-100
-                         focus:outline-none focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-500"
+              disabled={
+                submitStatus === "loading" || submitStatus === "success"
+              }
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              placeholder="Choose a username"
             />
+            {formErrors.username && (
+              <p className="text-red-500 text-sm mt-1">{formErrors.username}</p>
+            )}
           </div>
 
           <div>
-            <label className="block text-gray-700 dark:text-gray-300 font-medium">
+            <label className="block text-gray-700 dark:text-gray-300 font-medium mb-1">
               Email
             </label>
             <input
@@ -105,89 +237,105 @@ function Signup() {
               name="email"
               value={formData.email}
               onChange={handleChange}
-              placeholder="Enter email"
-              required
-              className="w-full px-4 py-2 mt-2 border border-gray-300 dark:border-gray-600 rounded-lg 
-                         bg-white dark:bg-gray-700 
-                         text-gray-900 dark:text-gray-100
-                         focus:outline-none focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-500"
+              disabled={
+                submitStatus === "loading" || submitStatus === "success"
+              }
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              placeholder="Enter your email"
             />
+            {formErrors.email && (
+              <p className="text-red-500 text-sm mt-1">{formErrors.email}</p>
+            )}
           </div>
 
           <div className="relative">
-            <label className="block text-gray-700 dark:text-gray-300 font-medium">
+            <label className="block text-gray-700 dark:text-gray-300 font-medium mb-1">
               Password
             </label>
-            <input
-              type={showPassword ? "text" : "password"}
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              placeholder="Enter password"
-              required
-              className="w-full px-4 py-2 mt-2 border border-gray-300 dark:border-gray-600 rounded-lg 
-                         bg-white dark:bg-gray-700 
-                         text-gray-900 dark:text-gray-100
-                         focus:outline-none focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-500"
-            />
-            <button
-              type="button"
-              onClick={togglePasswordVisibility}
-              className="absolute top-12 right-3 transform -translate-y-1/2 text-gray-500 dark:text-gray-400"
-            >
-              {showPassword ? <FaEyeSlash size={20} /> : <FaEye size={20} />}
-            </button>
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                disabled={
+                  submitStatus === "loading" || submitStatus === "success"
+                }
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                placeholder="Create a password"
+              />
+              <button
+                type="button"
+                onClick={() => togglePasswordVisibility("password")}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400"
+              >
+                {showPassword ? <FaEyeSlash /> : <FaEye />}
+              </button>
+            </div>
+            {formErrors.password && Array.isArray(formErrors.password) ? (
+              <ul className="text-red-500 text-sm mt-1 list-disc pl-5">
+                {formErrors.password.map((error, index) => (
+                  <li key={index}>{error}</li>
+                ))}
+              </ul>
+            ) : formErrors.password ? (
+              <p className="text-red-500 text-sm mt-1">{formErrors.password}</p>
+            ) : null}
           </div>
 
           <div className="relative">
-            <label className="block text-gray-700 dark:text-gray-300 font-medium">
+            <label className="block text-gray-700 dark:text-gray-300 font-medium mb-1">
               Confirm Password
             </label>
-            <input
-              type={showConfirmPassword ? "text" : "password"}
-              name="confirmPassword"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              placeholder="Confirm your password"
-              required
-              className="w-full px-4 py-2 mt-2 border border-gray-300 dark:border-gray-600 rounded-lg 
-                         bg-white dark:bg-gray-700 
-                         text-gray-900 dark:text-gray-100
-                         focus:outline-none focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-500"
-            />
-            <button
-              type="button"
-              onClick={toggleConfirmPasswordVisibility}
-              className="absolute top-12 right-3 transform -translate-y-1/2 text-gray-500 dark:text-gray-400"
-            >
-              {showConfirmPassword ? (
-                <FaEyeSlash size={20} />
-              ) : (
-                <FaEye size={20} />
-              )}
-            </button>
+            <div className="relative">
+              <input
+                type={showConfirmPassword ? "text" : "password"}
+                name="confirmPassword"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                disabled={
+                  submitStatus === "loading" || submitStatus === "success"
+                }
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                placeholder="Confirm your password"
+              />
+              <button
+                type="button"
+                onClick={() => togglePasswordVisibility("confirm")}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400"
+              >
+                {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+              </button>
+            </div>
+            {formErrors.confirmPassword && (
+              <p className="text-red-500 text-sm mt-1">
+                {formErrors.confirmPassword}
+              </p>
+            )}
           </div>
 
           <button
             type="submit"
-            className="w-full bg-blue-500 hover:bg-blue-600 
-                       dark:bg-blue-600 dark:hover:bg-blue-700 
-                       text-white font-semibold py-2 rounded-lg 
-                       transition duration-300 ease-in-out"
+            disabled={submitStatus === "loading" || submitStatus === "success"}
+            className={`w-full py-2 text-white font-medium rounded-lg ${
+              submitStatus === "loading" || submitStatus === "success"
+                ? "bg-blue-400 cursor-not-allowed"
+                : "bg-blue-500 hover:bg-blue-600"
+            } transition duration-300`}
           >
-            Sign Up
+            {submitStatus === "loading" ? "Signing Up..." : "Sign Up"}
           </button>
-        </form>
 
-        <p className="text-center text-gray-500 dark:text-gray-400 mt-4">
-          Already have an account?{" "}
-          <a
-            href="/login"
-            className="text-blue-500 dark:text-blue-400 hover:underline"
-          >
-            Log in
-          </a>
-        </p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 text-center">
+            Already have an account?{" "}
+            <a
+              href="/login"
+              className="text-blue-500 dark:text-blue-400 hover:underline"
+            >
+              Log in
+            </a>
+          </p>
+        </form>
       </div>
     </div>
   );
