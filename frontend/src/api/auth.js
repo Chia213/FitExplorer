@@ -44,7 +44,6 @@ export const loginUser = async (email, password) => {
   const response = await fetch(`${API_URL}/auth/token`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    credentials: "include",
     body: JSON.stringify({ email, password }),
   });
 
@@ -55,36 +54,22 @@ export const loginUser = async (email, password) => {
 
   const data = await response.json();
 
-  // Explicitly check admin status after login
+  // Explicitly check admin status
   try {
-    const isAdmin = await checkAdminStatus();
-    if (!isAdmin) {
-      localStorage.removeItem("isAdmin");
-    }
-  } catch (adminErr) {
-    console.error("Error checking admin status:", adminErr);
-    localStorage.removeItem("isAdmin");
+    const adminCheckResponse = await fetch(`${API_URL}/admin/stats/users`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${data.access_token}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    // Set isAdmin based on the response
+    localStorage.setItem("isAdmin", adminCheckResponse.ok ? "true" : "false");
+  } catch (error) {
+    console.error("Error checking admin status:", error);
+    localStorage.setItem("isAdmin", "false");
   }
 
   return data;
-};
-
-export const fetchUserData = async () => {
-  const token = localStorage.getItem("token");
-  if (!token) {
-    throw new Error("No authentication token found");
-  }
-
-  const response = await fetch(`${API_URL}/profile`, {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to fetch user data: ${response.status}`);
-  }
-
-  return response.json();
 };

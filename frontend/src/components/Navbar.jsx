@@ -53,12 +53,29 @@ function Navbar() {
 
   useEffect(() => {
     const token = localStorage.getItem("token");
+
     if (token) {
-      const decodedToken = JSON.parse(atob(token.split(".")[1]));
-      setUsername(decodedToken.sub);
-      setIsAuthenticated(true);
+      try {
+        const decodedToken = JSON.parse(atob(token.split(".")[1]));
+        setUsername(decodedToken.sub);
+        setIsAuthenticated(true);
+
+        // Check if is_admin exists in the token payload
+        if (decodedToken.is_admin === true) {
+          localStorage.setItem("isAdmin", "true");
+        } else {
+          localStorage.setItem("isAdmin", "false");
+        }
+
+        console.log("Decoded Token:", decodedToken);
+        console.log("Is Admin from Token:", decodedToken.is_admin);
+      } catch (error) {
+        console.error("Token decoding error:", error);
+        localStorage.setItem("isAdmin", "false");
+      }
     } else {
       setIsAuthenticated(false);
+      localStorage.setItem("isAdmin", "false");
     }
   }, [location]);
 
@@ -264,13 +281,16 @@ function Navbar() {
                         </Link>
 
                         {/* Add this new Admin Dashboard link */}
-                        <Link
-                          to="/admin"
-                          className="block p-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center"
-                        >
-                          <FaLock className="mr-2 text-red-500" /> Admin
-                          Dashboard
-                        </Link>
+                        {isAuthenticated &&
+                          localStorage.getItem("isAdmin") === "true" && (
+                            <Link
+                              to="/admin"
+                              className="block p-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center"
+                            >
+                              <FaLock className="mr-2 text-red-500" /> Admin
+                              Dashboard
+                            </Link>
+                          )}
 
                         <button
                           onClick={handleLogout}

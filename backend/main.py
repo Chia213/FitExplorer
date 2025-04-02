@@ -1168,3 +1168,11 @@ async def confirm_account_deletion(
         db.rollback()
         raise HTTPException(
             status_code=500, detail=f"Error deleting account: {str(e)}")
+
+
+@app.get("/check-admin")
+def check_admin_status(user: User = Depends(get_current_user)):
+    return {
+        "username": user.username,
+        "is_admin": user.is_admin
+    }

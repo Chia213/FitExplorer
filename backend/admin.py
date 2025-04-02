@@ -31,8 +31,10 @@ class WorkoutStatsResponse(BaseModel):
 @router.get("/stats/users", response_model=UserStatsResponse)
 def get_user_stats(
     db: Session = Depends(get_db),
+    # This ensures only admins can access
     admin: User = Depends(get_admin_user)
 ):
+    # Use the admin parameter to confirm access or log admin details if needed
     total_users = db.query(func.count(User.id)).scalar()
 
     one_month_ago = datetime.now(timezone.utc) - timedelta(days=30)
@@ -127,6 +129,7 @@ def get_all_users(
 def make_user_admin(
     user_id: int,
     db: Session = Depends(get_db),
+    # Verify the current user is an admin
     admin: User = Depends(get_admin_user)
 ):
     user = db.query(User).filter(User.id == user_id).first()

@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from passlib.context import CryptContext
 from datetime import timedelta, datetime, timezone
 import jwt
-from database import get_db
+from database import get_db, SessionLocal
 from models import User
 from schemas import UserCreate, UserLogin, Token, GoogleTokenVerifyRequest, GoogleAuthResponse
 from config import settings
@@ -37,6 +37,16 @@ def create_access_token(data: dict, expires_delta: timedelta):
     to_encode = data.copy()
     expire = datetime.now(timezone.utc) + expires_delta
     to_encode.update({"exp": expire})
+
+    # Fetch the user to get admin status
+    db = SessionLocal()
+    try:
+        user = db.query(User).filter(User.username == data.get("sub")).first()
+        if user:
+            to_encode["is_admin"] = user.is_admin
+    finally:
+        db.close()
+
     return jwt.encode(to_encode, settings.SECRET_KEY, algorithm="HS256")
 
 
