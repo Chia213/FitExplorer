@@ -12,7 +12,7 @@ class Settings:
         os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 1000000))
 
     MAIL_USERNAME = os.getenv("MAIL_USERNAME", "chiaranchber@gmail.com")
-    MAIL_PASSWORD = os.getenv("MAIL_PASSWORD", "qsygjsqmeihwateh")
+    MAIL_PASSWORD = os.getenv("MAIL_PASSWORD", "rtlqkkmcwuzbslnj")
     MAIL_FROM = os.getenv("MAIL_FROM", "chiaranchber@gmail.com")
     MAIL_PORT = int(os.getenv("MAIL_PORT", 587))
     MAIL_SERVER = os.getenv("MAIL_SERVER", "smtp.gmail.com")

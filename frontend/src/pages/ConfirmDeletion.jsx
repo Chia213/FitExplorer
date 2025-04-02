@@ -33,7 +33,7 @@ function ConfirmDeletion() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ token }),
+        body: JSON.stringify({ token }), // Make sure token is being sent in the body
       });
 
       if (response.ok) {

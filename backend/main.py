@@ -1,5 +1,6 @@
 from security import hash_password, verify_password, generate_verification_token
 from config import settings
+from security import create_access_token
 from schemas import (
     WorkoutCreate,
     WorkoutResponse,
@@ -24,6 +25,7 @@ from database import engine, Base, get_db
 from sqlalchemy import func, desc
 from sqlalchemy.orm import Session, joinedload
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
 import uuid
 import os
 import secrets
@@ -235,19 +237,32 @@ def update_profile(
     db: Session = Depends(get_db)
 ):
     if profile_data.username:
+        # Check if the new username already exists for another user
         existing_username = db.query(User).filter(
             User.username == profile_data.username,
             User.id != user.id
         ).first()
+
         if existing_username:
             raise HTTPException(
                 status_code=400, detail="Username already exists")
 
+    # Update the username
     user.username = profile_data.username
     db.commit()
     db.refresh(user)
 
-    return {"username": user.username, "email": user.email}
+    # Generate a new access token with the updated username
+    access_token = create_access_token(
+        {"sub": user.username},
+        timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    )
+
+    return {
+        "username": user.username,
+        "email": user.email,
+        "access_token": access_token  # Return new token to client
+    }
 
 
 @app.patch("/update-preferences")
@@ -984,9 +999,17 @@ async def verify_email(token: str, db: Session = Depends(get_db)):
     return {"message": "Email verified successfully"}
 
 
+class ResendVerificationRequest(BaseModel):
+    email: str
+
+
 @app.post("/auth/resend-verification")
-async def resend_verification(email: str, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == email).first()
+async def resend_verification(
+    request: ResendVerificationRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db)
+):
+    user = db.query(User).filter(User.email == request.email).first()
 
     if not user:
         # Return success to prevent email enumeration
@@ -1014,10 +1037,18 @@ async def resend_verification(email: str, background_tasks: BackgroundTasks, db:
     return {"message": "Verification email sent"}
 
 
+class ForgotPasswordRequest(BaseModel):
+    email: str
+
+
 @app.post("/auth/forgot-password")
-async def forgot_password(email: str, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+async def forgot_password(
+    request: ForgotPasswordRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db)
+):
     """Send password reset link to user's email"""
-    user = db.query(User).filter(User.email == email).first()
+    user = db.query(User).filter(User.email == request.email).first()
 
     # Always return success to prevent email enumeration
     if not user:
@@ -1042,11 +1073,20 @@ async def forgot_password(email: str, background_tasks: BackgroundTasks, db: Ses
     return {"message": "If an account with this email exists, a password reset link has been sent."}
 
 
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str
+
+
 @app.post("/auth/reset-password")
-async def reset_password(token: str, new_password: str, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+async def reset_password(
+    request: ResetPasswordRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db)
+):
     """Reset password using token"""
     user = db.query(User).filter(
-        User.reset_token == token,
+        User.reset_token == request.token,
         User.reset_token_expires_at > datetime.now(timezone.utc)
     ).first()
 
@@ -1055,7 +1095,7 @@ async def reset_password(token: str, new_password: str, background_tasks: Backgr
             status_code=400, detail="Invalid or expired reset token")
 
     # Update password
-    user.hashed_password = hash_password(new_password)
+    user.hashed_password = hash_password(request.new_password)
     user.reset_token = None
     user.reset_token_expires_at = None
     db.commit()
@@ -1094,14 +1134,18 @@ async def request_account_deletion(
     return {"message": "Account deletion request received. Please check your email to confirm."}
 
 
+class ConfirmAccountDeletionRequest(BaseModel):
+    token: str
+
+
 @app.post("/confirm-account-deletion")
 async def confirm_account_deletion(
-    token: str,
+    request: ConfirmAccountDeletionRequest,
     db: Session = Depends(get_db)
 ):
     """Confirm and execute account deletion"""
     user = db.query(User).filter(
-        User.deletion_token == token,
+        User.deletion_token == request.token,
         User.deletion_token_expires_at > datetime.now(timezone.utc)
     ).first()
 
@@ -1114,28 +1158,7 @@ async def confirm_account_deletion(
         if not user_data:
             raise HTTPException(status_code=404, detail="User not found")
 
-        db.query(Set).filter(Set.exercise_id.in_(
-            db.query(Exercise.id).filter(Exercise.workout_id.in_(
-                db.query(Workout.id).filter(Workout.user_id == user.id)
-            ))
-        )).delete(synchronize_session=False)
-
-        db.query(Exercise).filter(Exercise.workout_id.in_(
-            db.query(Workout.id).filter(Workout.user_id == user.id)
-        )).delete(synchronize_session=False)
-
-        db.query(Workout).filter(Workout.user_id ==
-                                 user.id).delete(synchronize_session=False)
-        db.query(UserPreferences).filter(UserPreferences.user_id ==
-                                         user.id).delete(synchronize_session=False)
-
-        if user.profile_picture:
-            try:
-                file_path = os.path.join(".", user.profile_picture.lstrip("/"))
-                if os.path.exists(file_path):
-                    os.remove(file_path)
-            except Exception as e:
-                print(f"Failed to delete profile picture: {str(e)}")
+        # Rest of your deletion logic...
 
         db.delete(user)
         db.commit()

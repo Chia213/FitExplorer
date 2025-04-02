@@ -191,6 +191,12 @@ function Profile() {
           ...prevUser,
           username: updatedUser.username,
         }));
+
+        // Update the token in local storage
+        if (updatedUser.access_token) {
+          localStorage.setItem("token", updatedUser.access_token);
+        }
+
         setIsEditing(false);
       } else {
         const errorData = await response.json();
