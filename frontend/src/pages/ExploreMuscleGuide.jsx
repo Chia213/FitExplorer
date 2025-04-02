@@ -13,11 +13,6 @@ const exerciseAlternatives = {
       description:
         "Seated dumbbell press with a rotational movement, targeting shoulders from multiple angles.",
     },
-    female: {
-      src: "/src/assets/exercises/female/arnold-press.gif",
-      description:
-        "Perform seated dumbbell press with a controlled rotational motion, focusing on shoulder muscle engagement.",
-    },
   },
 
   "Seated Dumbbell Shoulder Press": {
@@ -30,7 +25,7 @@ const exerciseAlternatives = {
         "Seated press with dumbbells, providing more range of motion compared to barbell press.",
     },
     female: {
-      src: "/src/assets/exercises/female/seated-dumbbell-press.gif",
+      src: "/src/assets/exercises/female/female-seated-dumbbell-shoulder-press.gif",
       description:
         "Seated dumbbell press with lighter weights, maintaining proper form and shoulder alignment.",
     },
@@ -45,11 +40,6 @@ const exerciseAlternatives = {
       description:
         "Raise your arm to the side using a cable machine, focusing on controlled movement for shoulder isolation.",
     },
-    female: {
-      src: "/src/assets/exercises/female/female-cable-lateral-raise.gif",
-      description:
-        "Cable lateral raise with smooth tension, targeting the side delts for balanced shoulder development.",
-    },
   },
 
   "Lateral Raise Machine": {
@@ -60,11 +50,6 @@ const exerciseAlternatives = {
       src: "/src/assets/exercises/male/lateral-raise-machine.gif",
       description:
         "Use a lateral raise machine to lift arms outward, keeping the motion slow and controlled for side delts.",
-    },
-    female: {
-      src: "/src/assets/exercises/female/female-machine-lateral-raise.gif",
-      description:
-        "Perform lateral raises on a machine for stable, consistent tension that isolates the side shoulder muscles.",
     },
   },
 
@@ -77,11 +62,6 @@ const exerciseAlternatives = {
       description:
         "Hold a weight plate with both hands and raise it in front of your body to shoulder height, then lower it with control.",
     },
-    female: {
-      src: "/src/assets/exercises/female/plate-front-raise.gif",
-      description:
-        "Front raise using a plate for focused shoulder activation, maintaining steady movement throughout.",
-    },
   },
 
   "Cable Front Raise": {
@@ -92,11 +72,6 @@ const exerciseAlternatives = {
       src: "/src/assets/exercises/male/alternatives/cable-front-raise.gif",
       description:
         "Raise the cable handle in front of you to shoulder height, keeping a controlled pace and straight arms.",
-    },
-    female: {
-      src: "/src/assets/exercises/female/cable-front-raise.gif",
-      description:
-        "Perform front raises using a cable machine to target shoulders with constant tension and control.",
     },
   },
 
@@ -109,11 +84,6 @@ const exerciseAlternatives = {
       description:
         "Stand holding a barbell in front of your body, lift your shoulders straight up, then lower and repeat.",
     },
-    female: {
-      src: "/src/assets/exercises/female/barbell-shrugs.gif",
-      description:
-        "Perform shrugs with a barbell in front, lifting shoulders up and lowering with control.",
-    },
   },
 
   "Smith Machine Shrug": {
@@ -125,11 +95,6 @@ const exerciseAlternatives = {
       description:
         "Stand inside a Smith machine, grip the bar and shrug shoulders upward, then lower back down slowly.",
     },
-    female: {
-      src: "/src/assets/exercises/female/smith-machine-shrug.gif",
-      description:
-        "Use a Smith machine for controlled shrugs, focusing on slow upward and downward shoulder motion.",
-    },
   },
 
   "Lever Seated Shoulder Press": {
@@ -139,23 +104,70 @@ const exerciseAlternatives = {
       description:
         "Controlled shoulder press using a machine, providing stability and consistent resistance.",
     },
+  },
+
+  "Resistance Band Lateral Raises": {
+    type: "animation",
+    equipment: "Resistance Band",
+    difficulty: "Beginner",
     female: {
-      src: "/src/assets/exercises/female/female-lever-seated-shoulder-press.gif",
+      src: "/src/assets/exercises/female/female-resistance-band-lateral-raises.gif",
       description:
-        "Machine shoulder press with adjustable resistance, ideal for building shoulder strength safely.",
+        "Stand with feet shoulder-width apart, holding a resistance band under your feet. With arms extended at your sides, raise them laterally to shoulder height while keeping a slight bend in your elbows. Focus on engaging your shoulder muscles and control the movement as you lower your arms back down.",
     },
   },
-  "Resistance Band Shoulder Press": {
+
+  "Resistance Band Standing Single Arm Shoulder Flexion": {
     type: "animation",
-    male: {
-      src: "/src/assets/exercises/male/resistance-band-shoulder-press.gif",
-      description:
-        "Shoulder press using resistance bands, offering variable tension throughout the movement.",
-    },
+    equipment: "Resistance Band",
+    difficulty: "Beginner",
     female: {
-      src: "/src/assets/exercises/female/female-resistance-band-shoulder-press.gif",
+      src: "/src/assets/exercises/female/female-resistance-band-standing-single-arm-shoulder-flexion.gif",
       description:
-        "Gentle shoulder press with resistance bands, great for building shoulder strength with low joint stress.",
+        "Stand with one foot on the center of a resistance band, holding the other end in the opposite hand. With a slight bend in your elbow, raise your arm in front of you until it reaches shoulder height. Keep your core engaged and lower your arm back down with control, ensuring proper form throughout the exercise.",
+    },
+  },
+
+  "Cable One Arm Front Raise": {
+    type: "animation",
+    equipment: "Cable Machine",
+    difficulty: "Intermediate",
+    female: {
+      src: "/src/assets/exercises/female/female-cable-one-arm-front-raise.gif",
+      description:
+        "Stand facing away from the cable machine, grasp the handle with one hand, and raise your arm in front of you to shoulder height. Keep your core engaged and control the movement as you lower your arm back down.",
+    },
+  },
+
+  "Barbell Front Raise": {
+    type: "animation",
+    equipment: "Barbell",
+    difficulty: "Intermediate",
+    female: {
+      src: "/src/assets/exercises/female/female-barbell-front-raise.gif",
+      description:
+        "Stand with feet shoulder-width apart, holding a barbell with both hands in front of your thighs. With a slight bend in your elbows, raise the barbell in front of you to shoulder height, then lower it back down with control.",
+    },
+  },
+
+  "Barbell Shrug": {
+    type: "animation",
+    equipment: "Barbell",
+    difficulty: "Beginner",
+    female: {
+      src: "/src/assets/exercises/female/female-barbell-shrug.gif",
+      description:
+        "Stand with feet shoulder-width apart, holding a barbell at your thighs with an overhand grip. Keeping your arms straight, lift your shoulders towards your ears, squeezing your traps at the top of the movement. Lower your shoulders back down with control.",
+    },
+  },
+  "Lever Shrug": {
+    type: "animation",
+    equipment: "Lever Machine",
+    difficulty: "Beginner",
+    female: {
+      src: "/src/assets/exercises/female/female-lever-shrug.gif",
+      description:
+        "Position yourself on the lever shrug machine with your shoulders under the pads. Grasp the handles and lift your shoulders towards your ears, focusing on contracting your trapezius muscles. Lower your shoulders back down with control.",
     },
   },
 
@@ -341,7 +353,7 @@ const exerciseAssets = {
         "Sit with back supported, press dumbbells upward with slightly adjusted form. Lower weights to shoulder level and repeat.",
       alternatives: [
         "Lever Seated Shoulder Press",
-        "Resistance Band Shoulder Press",
+        "Seated Dumbbell Shoulder Press",
       ],
     },
   },
@@ -356,12 +368,12 @@ const exerciseAssets = {
       alternatives: ["Cable Lateral Raise", "Lateral Raise Machine"],
     },
     female: {
-      src: "/src/assets/exercises/female/lateral-raise.gif", // Placeholder
+      src: "/src/assets/exercises/female/female-dumbbell-lateral-raise.gif", // Placeholder
       description:
         "Stand with lighter weights, raise arms out to sides with controlled motion, keeping core engaged.",
       alternatives: [
         "Resistance Band Lateral Raises",
-        "Single-Arm Lateral Raises",
+        "Resistance Band Standing Single Arm Shoulder Flexion",
       ],
     },
   },
@@ -376,10 +388,10 @@ const exerciseAssets = {
       alternatives: ["Plate Shoulder Press", "Cable Front Raise"],
     },
     female: {
-      src: "/src/assets/exercises/female/front-raise.gif", // Placeholder
+      src: "/src/assets/exercises/female/female-dumbbell-front-raise.gif", // Placeholder
       description:
         "Stand with lighter weights, raise arms forward to shoulder height with controlled movement.",
-      alternatives: ["Resistance Band Front Raises", "Plate Shoulder Press"],
+      alternatives: ["Cable One Arm Front Raise", "Barbell Front Raise"],
     },
   },
   "Dumbbell Shrug": {
@@ -393,10 +405,10 @@ const exerciseAssets = {
       alternatives: ["Barbell Shrugs", "Smith Machine Shrug"],
     },
     female: {
-      src: "/src/assets/exercises/female/shrugs.gif", // Placeholder
+      src: "/src/assets/exercises/female/female-dumbbell-shrug.gif", // Placeholder
       description:
         "Stand with lighter weights, lift shoulders up toward ears with controlled motion.",
-      alternatives: ["Machine Shrugs", "Resistance Band Shrugs"],
+      alternatives: ["Barbell Shrug", "Lever Shrug"],
     },
   },
   "Bench Press": {
@@ -719,8 +731,8 @@ const femaleFrontMuscles = [
     ],
     exercises: [
       "Seated Barbell Shoulder Press",
-      "Lateral Raise",
-      "Front Raise",
+      "Dumbbell Lateral Raise",
+      "Dumbbell Front Raise",
       "Dumbbell Shrug",
     ],
   },
