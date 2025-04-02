@@ -55,7 +55,7 @@ const exerciseAlternatives = {
   "Lateral Raise Machine": {
     type: "animation",
     equipment: "Lateral Raise Machine",
-    difficulty: "Beginner",
+    difficulty: "Beginners",
     male: {
       src: "/src/assets/exercises/male/lateral-raise-machine.gif",
       description:
