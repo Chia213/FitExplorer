@@ -21,12 +21,13 @@ function VerifyEmail() {
 
       try {
         const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
-        const response = await fetch(
-          `${API_URL}/auth/verify-email?token=${token}`,
-          {
-            method: "POST",
-          }
-        );
+        const response = await fetch(`${API_URL}/auth/verify-email`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ token }), // Send token in request body
+        });
 
         if (response.ok) {
           setStatus("success");

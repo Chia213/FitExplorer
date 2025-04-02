@@ -981,10 +981,14 @@ def move_routine_to_folder(
     }
 
 
+class TokenVerificationRequest(BaseModel):
+    token: str
+
+
 @app.post("/auth/verify-email")
-async def verify_email(token: str, db: Session = Depends(get_db)):
+async def verify_email(token_data: TokenVerificationRequest, db: Session = Depends(get_db)):
     user = db.query(User).filter(
-        User.verification_token == token,
+        User.verification_token == token_data.token,
         User.verification_token_expires_at > datetime.now(timezone.utc)
     ).first()
 
