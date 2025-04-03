@@ -6,10 +6,62 @@ from database import get_db
 from dependencies import get_admin_user
 from models import User, Workout, Exercise, Set, UserPreferences, Routine, SavedWorkoutProgram
 from datetime import datetime, timedelta, timezone
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
+from passlib.context import CryptContext
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
+class AdminUserCreate(BaseModel):
+    username: str
+    email: EmailStr
+    password: str
+    is_admin: bool = False
+    is_verified: bool = True  # Admin-created accounts are auto-verified
+
+@router.post("/users", response_model=dict)
+def create_user(
+    user_data: AdminUserCreate,
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_admin_user)
+):
+    """Create a new user (admin only)"""
+    # Check if user with email already exists
+    existing_user = db.query(User).filter(User.email == user_data.email).first()
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    
+    # Check if username already exists
+    existing_username = db.query(User).filter(User.username == user_data.username).first()
+    if existing_username:
+        raise HTTPException(status_code=400, detail="Username already taken")
+    
+    # Create new user
+    hashed_password = pwd_context.hash(user_data.password)
+    
+    new_user = User(
+        email=user_data.email,
+        hashed_password=hashed_password,
+        username=user_data.username,
+        is_verified=user_data.is_verified,
+        is_admin=user_data.is_admin,
+        created_at=datetime.now(timezone.utc)
+    )
+    
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    
+    return {
+        "id": new_user.id,
+        "username": new_user.username,
+        "email": new_user.email,
+        "is_admin": new_user.is_admin,
+        "is_verified": new_user.is_verified,
+        "created_at": new_user.created_at
+    }
 
 class UserStatsResponse(BaseModel):
     total_users: int
