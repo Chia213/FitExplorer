@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useTheme } from "../hooks/useTheme";
 import BodyTypeToggle from "../components/BodyTypeToggle";
 
@@ -836,6 +836,9 @@ const femaleBackMuscles = [
   },
 ];
 
+// Exercise data imports remain the same
+// exerciseAlternatives, exerciseAssets, maleFrontMuscles, maleBackMuscles, femaleFrontMuscles, femaleBackMuscles
+
 function ExploreMuscleGuide() {
   const { theme } = useTheme();
   const [selectedMuscle, setSelectedMuscle] = useState(null);
@@ -847,13 +850,15 @@ function ExploreMuscleGuide() {
     useState(null);
   const [highlightedAreas, setHighlightedAreas] = useState({});
   const [parentExercise, setParentExercise] = useState(null);
-  // New state for body type
   const [bodyType, setBodyType] = useState("male");
+  const [scrolled, setScrolled] = useState(false);
+  const [navigationHistory, setNavigationHistory] = useState([]);
+  const exerciseModalContentRef = useRef(null);
 
   // Body images for different body types
   const bodyImages = {
     male: "/src/assets/titan.png",
-    female: "/src/assets/female-titan.png", // You'll need to add this image
+    female: "/src/assets/female-titan.png",
   };
 
   // Determine which muscle data to use based on body type
@@ -862,6 +867,27 @@ function ExploreMuscleGuide() {
   const backMuscles = bodyType === "male" ? maleBackMuscles : femaleBackMuscles;
   const allMuscles = [...frontMuscles, ...backMuscles];
 
+  // Track scrolling
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 100) {
+        setScrolled(true);
+      } else {
+        setScrolled(false);
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // Scroll modal content to top when changing exercises
+  useEffect(() => {
+    if (exerciseModalContentRef.current) {
+      exerciseModalContentRef.current.scrollTop = 0;
+    }
+  }, [viewingExercise, viewingAlternativeExercise]);
+
   const getCurrentMuscleName = () => {
     if (activeMuscleIndex !== null) {
       return allMuscles[activeMuscleIndex].name;
@@ -869,21 +895,64 @@ function ExploreMuscleGuide() {
     return null;
   };
 
+  const handleResetView = () => {
+    setSelectedMuscle(null);
+    setSelectedDotIndex(null);
+    setActiveMuscleIndex(null);
+    setHoveredMuscle(null);
+    setHighlightedAreas({});
+    // Clear navigation history when resetting
+    setNavigationHistory([]);
+  };
+
+  const handleViewExercise = (exercise) => {
+    // Add current exercise to history if viewing a new exercise
+    if (viewingExercise) {
+      setNavigationHistory((prev) => [...prev, viewingExercise]);
+    }
+    setViewingExercise(exercise);
+    setViewingAlternativeExercise(null);
+  };
+
   const handleViewAlternative = (alternativeName, parentExerciseName) => {
-    setParentExercise(parentExerciseName); // Store the parent exercise
-    setViewingExercise(null); // Close the current exercise modal
-    setViewingAlternativeExercise(alternativeName); // Open the alternative exercise modal
+    // Add current exercise to history
+    setNavigationHistory((prev) => [...prev, parentExerciseName]);
+    setParentExercise(parentExerciseName);
+    setViewingExercise(null);
+    setViewingAlternativeExercise(alternativeName);
+  };
+
+  const handleNavigateBack = () => {
+    // Pop the last item from history and go to it
+    if (navigationHistory.length > 0) {
+      const newHistory = [...navigationHistory];
+      const lastExercise = newHistory.pop();
+      setNavigationHistory(newHistory);
+
+      // Set the appropriate exercise
+      setViewingExercise(lastExercise);
+      setViewingAlternativeExercise(null);
+      setParentExercise(null);
+    } else {
+      // If no history, just close
+      setViewingExercise(null);
+      setViewingAlternativeExercise(null);
+      setParentExercise(null);
+    }
+  };
+
+  const handleBackToMuscleGroup = () => {
+    // Clear all exercise views but keep muscle group selected
+    setViewingExercise(null);
+    setViewingAlternativeExercise(null);
+    setParentExercise(null);
+    setNavigationHistory([]);
   };
 
   const handleDotClick = (muscle, muscleIndex, posIndex) => {
-    // Instead of showing a popup, just set the active muscle directly
     if (activeMuscleIndex === muscleIndex) {
-      // Toggle off if clicking the same muscle
-      setSelectedMuscle(null);
-      setSelectedDotIndex(null);
-      setActiveMuscleIndex(null);
+      handleResetView();
     } else {
-      // Set the new active muscle
       setSelectedMuscle(null);
       setSelectedDotIndex(null);
       setActiveMuscleIndex(muscleIndex);
@@ -918,13 +987,9 @@ function ExploreMuscleGuide() {
     });
 
     if (closestMuscle) {
-      // If clicking the same muscle that's already active, deactivate it
       if (activeMuscleIndex === closestIndex) {
-        setSelectedMuscle(null);
-        setSelectedDotIndex(null);
-        setActiveMuscleIndex(null);
+        handleResetView();
       } else {
-        // Otherwise, activate the new muscle
         setSelectedMuscle(null);
         setSelectedDotIndex(null);
         setActiveMuscleIndex(closestIndex);
@@ -934,7 +999,6 @@ function ExploreMuscleGuide() {
   };
 
   const handleMouseMove = (e) => {
-    // Always process hover effects, even if a muscle is already active
     const rect = e.currentTarget.getBoundingClientRect();
     const x = ((e.clientX - rect.left) / rect.width) * 100;
     const y = ((e.clientY - rect.top) / rect.height) * 100;
@@ -942,7 +1006,6 @@ function ExploreMuscleGuide() {
     let closestMuscle = null;
     let minDistance = Infinity;
 
-    // We'll only highlight one muscle at a time to avoid lagginess
     for (let i = 0; i < allMuscles.length; i++) {
       const muscle = allMuscles[i];
 
@@ -955,20 +1018,16 @@ function ExploreMuscleGuide() {
           Math.pow(x - posLeft, 2) + Math.pow(y - posTop, 2)
         );
 
-        // Use a slightly larger detection area but only pick the closest one
         if (distance < 15 && distance < minDistance) {
           minDistance = distance;
           closestMuscle = muscle;
-          // Break early once we found a very close match
           if (distance < 8) break;
         }
       }
 
-      // If we found a very close match, no need to check other muscles
       if (minDistance < 8) break;
     }
 
-    // Only update state if there's a change to avoid unnecessary re-renders
     if (
       (closestMuscle && closestMuscle.name !== hoveredMuscle) ||
       (!closestMuscle && hoveredMuscle !== null)
@@ -989,15 +1048,34 @@ function ExploreMuscleGuide() {
     }
   };
 
-  // Toggle body type method
   const toggleBodyType = () => {
     setBodyType((prevType) => (prevType === "male" ? "female" : "male"));
-    // Reset selection when switching body types
-    setSelectedMuscle(null);
-    setSelectedDotIndex(null);
-    setActiveMuscleIndex(null);
-    setHoveredMuscle(null);
-    setHighlightedAreas({});
+    handleResetView();
+  };
+
+  // Get alternative exercise asset with proper fallback
+  const getAlternativeExerciseAsset = (exerciseName) => {
+    const alternativeAsset = exerciseAlternatives[exerciseName];
+    if (!alternativeAsset) {
+      return {
+        src: "/src/assets/placeholder-exercise.png",
+        description: "Demonstration for this exercise will be added soon.",
+        equipment: null,
+        difficulty: null,
+      };
+    }
+
+    const variantAsset =
+      alternativeAsset[bodyType] ||
+      alternativeAsset.male ||
+      alternativeAsset.female;
+    return {
+      src: variantAsset?.src || "/src/assets/placeholder-exercise.png",
+      description:
+        variantAsset?.description || "Demonstration for this exercise.",
+      equipment: alternativeAsset.equipment || null,
+      difficulty: alternativeAsset.difficulty || null,
+    };
   };
 
   return (
@@ -1011,6 +1089,7 @@ function ExploreMuscleGuide() {
         <BodyTypeToggle bodyType={bodyType} onToggle={toggleBodyType} />
       </div>
 
+      {/* Current muscle status */}
       <div className="bg-transparent dark:bg-transparent px-4 py-2 rounded-lg w-full max-w-4xl mx-auto text-center">
         {activeMuscleIndex !== null ? (
           <p className="font-medium">
@@ -1027,6 +1106,7 @@ function ExploreMuscleGuide() {
       </div>
 
       <div className="flex flex-col md:flex-row gap-6 max-w-5xl mx-auto">
+        {/* Muscle Image Section */}
         <div className="md:w-3/5 relative">
           <div className="relative max-h-[500px] overflow-hidden mx-auto">
             <div
@@ -1045,6 +1125,7 @@ function ExploreMuscleGuide() {
               className="w-full max-h-[500px] object-contain"
             />
 
+            {/* Hover tooltip */}
             {hoveredMuscle && activeMuscleIndex === null && (
               <div
                 className="absolute bg-black bg-opacity-80 text-white px-2 py-1 rounded text-sm whitespace-nowrap
@@ -1059,7 +1140,7 @@ function ExploreMuscleGuide() {
               </div>
             )}
 
-            {/* Active muscle group dots - always visible when a muscle is selected */}
+            {/* Active muscle group dots */}
             {activeMuscleIndex !== null && (
               <div key={`active-dots-${activeMuscleIndex}`}>
                 {allMuscles[activeMuscleIndex].positions.map(
@@ -1093,7 +1174,7 @@ function ExploreMuscleGuide() {
               </div>
             )}
 
-            {/* Hovered muscle group dots - only show when hovering and no active selection */}
+            {/* Hovered muscle group dots */}
             {activeMuscleIndex === null &&
               hoveredMuscle &&
               allMuscles
@@ -1131,8 +1212,8 @@ function ExploreMuscleGuide() {
           </div>
         </div>
 
-        {/* Exercise Details Panel */}
-        <div className="md:w-2/5">
+        {/* Exercise Details Panel - visible when not scrolling */}
+        <div className={`md:w-2/5 ${scrolled ? "md:hidden" : ""}`}>
           {activeMuscleIndex !== null ? (
             <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg">
               <h2 className="text-xl font-bold mb-4">
@@ -1143,7 +1224,7 @@ function ExploreMuscleGuide() {
                   (exercise, idx) => (
                     <li key={idx} className="py-3">
                       <button
-                        onClick={() => setViewingExercise(exercise)}
+                        onClick={() => handleViewExercise(exercise)}
                         className="flex items-center w-full text-left hover:text-blue-500"
                       >
                         <span className="font-medium">{exercise}</span>
@@ -1153,13 +1234,7 @@ function ExploreMuscleGuide() {
                 )}
               </ul>
               <button
-                onClick={() => {
-                  setSelectedMuscle(null);
-                  setSelectedDotIndex(null);
-                  setActiveMuscleIndex(null);
-                  setHoveredMuscle(null);
-                  setHighlightedAreas({});
-                }}
+                onClick={handleResetView}
                 className="mt-4 w-full px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-700 transition-colors"
               >
                 Reset View
@@ -1169,7 +1244,7 @@ function ExploreMuscleGuide() {
             <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg">
               <h2 className="text-xl font-bold mb-4">Select a Muscle Group</h2>
 
-              {/* Fixed height container for hover text to prevent layout shifts */}
+              {/* Fixed height container for hover text */}
               <div className="h-16 mb-4">
                 {hoveredMuscle && (
                   <p className="text-gray-600 dark:text-gray-400">
@@ -1214,30 +1289,69 @@ function ExploreMuscleGuide() {
         </div>
       </div>
 
-      <div className="flex-grow overflow-y-auto">
-        <div className="flex flex-col md:flex-row gap-6 max-w-5xl mx-auto px-4 py-6">
-          {/* Muscle Image Section */}
-          <div className="md:w-3/5 relative">
-            <div className="relative max-h-[500px] overflow-hidden mx-auto">
-              {/* (Keep existing image and interaction logic) */}
+      {/* Floating Exercise Window when scrolled */}
+      {activeMuscleIndex !== null && scrolled && (
+        <div className="fixed bottom-4 right-4 z-50 w-72 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="bg-gray-50 dark:bg-gray-700 px-4 py-3 border-b border-gray-200 dark:border-gray-600">
+            <div className="flex justify-between items-center">
+              <h3 className="font-bold text-gray-800 dark:text-white">
+                {allMuscles[activeMuscleIndex].name}
+              </h3>
+              <button
+                onClick={handleResetView}
+                className="text-xs bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded"
+              >
+                Reset
+              </button>
             </div>
           </div>
 
-          {/* Exercise Details Panel */}
-          <div className="md:w-2/5 sticky top-[calc(100vh/4)] self-start">
-            {/* (Keep existing exercise panel logic) */}
+          <div className="max-h-72 overflow-y-auto p-2">
+            <ul className="divide-y divide-gray-200 dark:divide-gray-700">
+              {allMuscles[activeMuscleIndex].exercises.map((exercise, idx) => (
+                <li key={idx} className="py-2">
+                  <button
+                    onClick={() => handleViewExercise(exercise)}
+                    className="w-full text-left px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+                  >
+                    <span className="font-medium text-sm">{exercise}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
-      </div>
+      )}
+
+      {/* Alternative Exercise Modal with improved navigation */}
       {viewingAlternativeExercise && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center"
+          className="fixed inset-0 bg-black bg-opacity-70 z-[1000] flex items-center justify-center"
           onClick={() => setViewingAlternativeExercise(null)}
         >
           <div
             className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-xl w-full max-h-[90vh] overflow-y-auto"
+            ref={exerciseModalContentRef}
             onClick={(e) => e.stopPropagation()}
           >
+            {/* Navigation breadcrumb */}
+            <div className="flex items-center text-xs text-gray-500 dark:text-gray-400 mb-2">
+              <button
+                onClick={handleBackToMuscleGroup}
+                className="hover:underline"
+              >
+                {getCurrentMuscleName()}
+              </button>
+              <span className="mx-1">›</span>
+              <button onClick={handleNavigateBack} className="hover:underline">
+                {parentExercise}
+              </button>
+              <span className="mx-1">›</span>
+              <span className="font-medium text-gray-700 dark:text-gray-300">
+                {viewingAlternativeExercise}
+              </span>
+            </div>
+
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-2xl font-bold">
                 {viewingAlternativeExercise}
@@ -1249,50 +1363,51 @@ function ExploreMuscleGuide() {
                 <span className="text-2xl">×</span>
               </button>
             </div>
+
             <div className="mb-4 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
               {(() => {
-                const alternativeAsset =
-                  exerciseAlternatives[viewingAlternativeExercise];
-                const variantAsset = alternativeAsset[bodyType];
+                const asset = getAlternativeExerciseAsset(
+                  viewingAlternativeExercise
+                );
                 return (
                   <img
-                    src={variantAsset.src}
+                    src={asset.src}
                     alt={`${viewingAlternativeExercise} demonstration`}
                     className="w-full object-contain max-h-60"
                   />
                 );
               })()}
             </div>
+
             <div>
               <h4 className="text-lg font-bold mb-2">How to Perform:</h4>
               <p className="text-gray-700 dark:text-gray-300">
-                {(() => {
-                  const alternativeAsset =
-                    exerciseAlternatives[viewingAlternativeExercise];
-                  const variantAsset = alternativeAsset[bodyType];
-                  return variantAsset.description;
-                })()}
+                {
+                  getAlternativeExerciseAsset(viewingAlternativeExercise)
+                    .description
+                }
               </p>
+
               <div className="mt-3 flex flex-wrap gap-2">
-                {exerciseAlternatives[viewingAlternativeExercise]
-                  ?.equipment && (
+                {getAlternativeExerciseAsset(viewingAlternativeExercise)
+                  .equipment && (
                   <div className="inline-flex items-center rounded-full bg-blue-100 dark:bg-blue-900 px-3 py-1">
                     <span className="text-xs font-medium text-blue-800 dark:text-blue-200">
                       Equipment:{" "}
                       {
-                        exerciseAlternatives[viewingAlternativeExercise]
+                        getAlternativeExerciseAsset(viewingAlternativeExercise)
                           .equipment
                       }
                     </span>
                   </div>
                 )}
-                {exerciseAlternatives[viewingAlternativeExercise]
-                  ?.difficulty && (
+                {getAlternativeExerciseAsset(viewingAlternativeExercise)
+                  .difficulty && (
                   <div className="inline-flex items-center rounded-full bg-purple-100 dark:bg-purple-900 px-3 py-1">
                     <span className="text-xs font-medium text-purple-800 dark:text-purple-200">
                       Difficulty:{" "}
                       {
-                        exerciseAlternatives[viewingAlternativeExercise]
+                        getAlternativeExerciseAsset(viewingAlternativeExercise)
                           .difficulty
                       }
                     </span>
@@ -1302,23 +1417,15 @@ function ExploreMuscleGuide() {
             </div>
 
             <div className="flex space-x-2 mt-4">
-              {parentExercise && (
-                <button
-                  onClick={() => {
-                    setViewingAlternativeExercise(null);
-                    setViewingExercise(parentExercise);
-                    setParentExercise(null);
-                  }}
-                  className="w-1/2 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-                >
-                  Back to {parentExercise}
-                </button>
-              )}
+              <button
+                onClick={handleNavigateBack}
+                className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+              >
+                Back to {parentExercise}
+              </button>
               <button
                 onClick={() => setViewingAlternativeExercise(null)}
-                className={`py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors ${
-                  parentExercise ? "w-1/2" : "w-full"
-                }`}
+                className="flex-1 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
               >
                 Close
               </button>
@@ -1327,23 +1434,10 @@ function ExploreMuscleGuide() {
         </div>
       )}
 
+      {/* Primary Exercise Modal with improved navigation */}
       {viewingExercise && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-70 z-50"
-          style={{
-            position: "fixed",
-            top: 0,
-            right: 0,
-            bottom: 0,
-            left: 0,
-            width: "100%",
-            height: "100%",
-            margin: 0,
-            padding: 0,
-            zIndex: 9999,
-            transform: "translateX(0)",
-            boxSizing: "border-box",
-          }}
+          className="fixed inset-0 bg-black bg-opacity-70 z-[2000]"
           onClick={() => setViewingExercise(null)}
         >
           <div
@@ -1352,9 +1446,39 @@ function ExploreMuscleGuide() {
               top: "40%",
               left: "50%",
               transform: "translate(-50%, -50%)",
+              maxHeight: "80vh",
+              overflowY: "auto",
             }}
+            ref={exerciseModalContentRef}
             onClick={(e) => e.stopPropagation()}
           >
+            {/* Navigation breadcrumb */}
+            <div className="flex items-center text-xs text-gray-500 dark:text-gray-400 mb-2">
+              <button
+                onClick={handleBackToMuscleGroup}
+                className="hover:underline"
+              >
+                {getCurrentMuscleName()}
+              </button>
+
+              {navigationHistory.length > 0 && (
+                <>
+                  <span className="mx-1">›</span>
+                  <button
+                    onClick={handleNavigateBack}
+                    className="hover:underline"
+                  >
+                    {navigationHistory[navigationHistory.length - 1]}
+                  </button>
+                </>
+              )}
+
+              <span className="mx-1">›</span>
+              <span className="font-medium text-gray-700 dark:text-gray-300">
+                {viewingExercise}
+              </span>
+            </div>
+
             <div className="flex justify-between items-center mb-2">
               <h3 className="text-xl font-bold">{viewingExercise}</h3>
               <button
@@ -1405,7 +1529,7 @@ function ExploreMuscleGuide() {
               </div>
             </div>
 
-            {/* New Alternatives Section */}
+            {/* Improved Alternatives Section */}
             <div className="mt-4">
               <h4 className="font-bold mb-2">Alternative Exercises:</h4>
               <div className="flex flex-wrap gap-2">
@@ -1425,12 +1549,23 @@ function ExploreMuscleGuide() {
               </div>
             </div>
 
-            <button
-              onClick={() => setViewingExercise(null)}
-              className="mt-4 w-full py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
-            >
-              Close
-            </button>
+            {/* Navigation buttons */}
+            <div className="flex space-x-2 mt-4">
+              {navigationHistory.length > 0 && (
+                <button
+                  onClick={handleNavigateBack}
+                  className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                >
+                  Back
+                </button>
+              )}
+              <button
+                onClick={() => setViewingExercise(null)}
+                className="flex-1 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}
