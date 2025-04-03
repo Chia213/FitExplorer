@@ -217,9 +217,36 @@ function Navbar() {
     setSearchQuery(query);
     
     if (query.length > 0) {
-      const filtered = NAVIGATION_ITEMS.search.filter(
-        item => item.label.toLowerCase().includes(query)
+      // Combine all navigation items into one array for searching
+      const allItems = [
+        ...NAVIGATION_ITEMS.workout,
+        ...NAVIGATION_ITEMS.tools,
+        ...NAVIGATION_ITEMS.help,
+      ];
+
+      // First, try to find exact matches at the start of words
+      let filtered = allItems.filter(item =>
+        item.label.toLowerCase().startsWith(query)
       );
+
+      // If no exact matches, look for partial matches
+      if (filtered.length === 0) {
+        filtered = allItems.filter(item => {
+          const words = item.label.toLowerCase().split(' ');
+          return words.some(word => word.startsWith(query)) ||
+                 item.label.toLowerCase().includes(query);
+        });
+      }
+
+      // Sort results: exact matches first, then partial matches
+      filtered.sort((a, b) => {
+        const aStartsWith = a.label.toLowerCase().startsWith(query);
+        const bStartsWith = b.label.toLowerCase().startsWith(query);
+        if (aStartsWith && !bStartsWith) return -1;
+        if (!aStartsWith && bStartsWith) return 1;
+        return a.label.localeCompare(b.label);
+      });
+
       setSearchResults(filtered);
     } else {
       setSearchResults([]);
@@ -389,9 +416,17 @@ function Navbar() {
                   aria-haspopup="true"
                 >
                   <FaUser className="nav-icon" size={20} />
-                  <span className="nav-text text-sm mt-1 max-w-[80px] truncate">
-                    {isAuthenticated ? username : "Account"}
-                  </span>
+                  <div className="nav-text text-sm mt-1 flex flex-col items-center">
+                    <span className="max-w-[80px] truncate">
+                      {isAuthenticated ? username : "Account"}
+                    </span>
+                    {isAuthenticated && isAdmin && (
+                      <span className="text-[10px] bg-gradient-to-r from-purple-500 to-pink-500 text-white px-2 py-0.5 rounded-md font-semibold shadow-sm flex items-center gap-1">
+                        <FaLock className="w-2.5 h-2.5" />
+                        ADMIN
+                      </span>
+                    )}
+                  </div>
                 </button>
 
                 <NavDropdown isOpen={authDropdownOpen}>
@@ -588,7 +623,15 @@ function Navbar() {
                 <>
                   <div className="p-3 bg-gray-100 dark:bg-gray-700 rounded-md mb-2">
                     <p className="text-sm text-gray-500 dark:text-gray-400">Logged in as:</p>
-                    <p className="font-semibold">{username}</p>
+                    <div className="flex flex-col">
+                      <span className="font-semibold">{username}</span>
+                      {isAdmin && (
+                        <span className="text-xs bg-gradient-to-r from-purple-500 to-pink-500 text-white px-2 py-0.5 rounded-md font-semibold shadow-sm flex items-center gap-1 w-fit mt-1">
+                          <FaLock className="w-2.5 h-2.5" />
+                          ADMIN
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   <Link

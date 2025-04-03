@@ -6,7 +6,7 @@ from database import get_db
 from dependencies import get_admin_user
 from models import User, Workout, Exercise, Set, UserPreferences, Routine, SavedWorkoutProgram
 from datetime import datetime, timedelta, timezone
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from passlib.context import CryptContext
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -85,81 +85,263 @@ class WorkoutStatsResponse(BaseModel):
     avg_workout_duration: float
 
 
-@router.get("/stats/users", response_model=UserStatsResponse)
+@router.get("/stats/users", response_model=Dict[str, Any])
 def get_user_stats(
     db: Session = Depends(get_db),
-    # This ensures only admins can access
-    admin: User = Depends(get_admin_user)
+    admin: User = Depends(get_admin_user),
+    time_range: str = "month"
 ):
-    # Use the admin parameter to confirm access or log admin details if needed
-    total_users = db.query(func.count(User.id)).scalar()
+    try:
+        # Calculate date range
+        now = datetime.now(timezone.utc)
+        if time_range == "week":
+            start_date = now - timedelta(days=7)
+        elif time_range == "year":
+            start_date = now - timedelta(days=365)
+        else:  # month
+            start_date = now - timedelta(days=30)
 
-    one_month_ago = datetime.now(timezone.utc) - timedelta(days=30)
+        # Basic stats
+        total_users = db.query(func.count(User.id)).scalar()
+        active_users = db.query(func.count(User.id)).join(Workout).filter(
+            Workout.date >= start_date
+        ).scalar()
+        new_users = db.query(func.count(User.id)).filter(
+            User.created_at >= start_date
+        ).scalar()
 
-    active_users = db.query(func.count(User.id)).join(Workout).filter(
-        Workout.date >= one_month_ago
-    ).scalar()
+        # Calculate growth rate
+        previous_period_start = start_date - (now - start_date)
+        previous_new_users = db.query(func.count(User.id)).filter(
+            User.created_at >= previous_period_start,
+            User.created_at < start_date
+        ).scalar()
+        new_users_growth = ((new_users - previous_new_users) / (previous_new_users or 1)) * 100
 
-    new_users = db.query(func.count(User.id)).filter(
-        User.created_at >= one_month_ago
-    ).scalar()
+        # Get recent signups
+        recent_signups = db.query(User).order_by(
+            User.created_at.desc()
+        ).limit(5).all()
 
-    return {
-        "total_users": total_users,
-        "active_users_last_month": active_users,
-        "new_users_last_month": new_users
-    }
+        # Calculate average workouts per user
+        total_workouts = db.query(func.count(Workout.id)).scalar()
+        avg_workouts_per_user = total_workouts / (total_users or 1)
+
+        # Most active day calculation
+        try:
+            most_active_day = db.query(
+                func.strftime('%w', Workout.date).label('day_of_week'),  # SQLite format
+                func.count(Workout.id).label('count')
+            ).group_by('day_of_week').order_by(desc('count')).first()
+
+            days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+            most_active_day = days[int(most_active_day[0])] if most_active_day else "N/A"
+        except Exception:
+            # Fallback for PostgreSQL
+            try:
+                most_active_day = db.query(
+                    func.extract('dow', Workout.date).label('day_of_week'),
+                    func.count(Workout.id).label('count')
+                ).group_by('day_of_week').order_by(desc('count')).first()
+
+                days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+                most_active_day = days[int(most_active_day[0])] if most_active_day else "N/A"
+            except Exception:
+                most_active_day = "N/A"
+
+        # Calculate inactive users
+        try:
+            inactive_users = db.query(func.count(User.id)).filter(
+                ~User.id.in_(
+                    db.query(Workout.user_id).filter(Workout.date >= start_date)
+                )
+            ).scalar()
+        except Exception:
+            inactive_users = 0
+
+        return {
+            "total_users": total_users,
+            "active_users_last_month": active_users,
+            "new_users_last_month": new_users,
+            "new_users_growth": round(new_users_growth, 1),
+            "avg_workouts_per_user": round(avg_workouts_per_user, 1),
+            "most_active_day": most_active_day,
+            "inactive_users": inactive_users,
+            "recent_signups": [
+                {
+                    "name": user.username,
+                    "signup_date": user.created_at
+                } for user in recent_signups
+            ]
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/stats/exercises", response_model=ExerciseStatsResponse)
+@router.get("/stats/exercises", response_model=Dict[str, Any])
 def get_exercise_stats(
     db: Session = Depends(get_db),
-    admin: User = Depends(get_admin_user)
+    admin: User = Depends(get_admin_user),
+    time_range: str = "month"
 ):
-    popular_exercises = db.query(
-        Exercise.name,
-        func.count(Exercise.id).label("count")
-    ).group_by(Exercise.name).order_by(desc("count")).limit(10).all()
+    try:
+        now = datetime.now(timezone.utc)
+        if time_range == "week":
+            start_date = now - timedelta(days=7)
+        elif time_range == "year":
+            start_date = now - timedelta(days=365)
+        else:  # month
+            start_date = now - timedelta(days=30)
 
-    exercise_categories = db.query(
-        Exercise.category,
-        func.count(Exercise.id).label("count")
-    ).group_by(Exercise.category).order_by(desc("count")).all()
+        # Popular exercises
+        popular_exercises = db.query(
+            Exercise.name,
+            func.count(Exercise.id).label('count')
+        ).join(Workout).filter(
+            Workout.date >= start_date
+        ).group_by(Exercise.name).order_by(desc('count')).limit(10).all()
 
-    return {
-        "popular_exercises": [{"name": ex[0], "count": ex[1]} for ex in popular_exercises],
-        "exercise_categories": [{"category": cat[0] or "Uncategorized", "count": cat[1]} for cat in exercise_categories]
-    }
+        # Exercise categories
+        exercise_categories = db.query(
+            Exercise.category,
+            func.count(Exercise.id).label('count')
+        ).join(Workout).filter(
+            Workout.date >= start_date
+        ).group_by(Exercise.category).order_by(desc('count')).all()
+
+        # Average weight and reps
+        avg_stats = db.query(
+            func.avg(Set.weight).label('avg_weight'),
+            func.avg(Set.reps).label('avg_reps')
+        ).join(Exercise).join(Workout).filter(
+            Workout.date >= start_date,
+            Set.weight.isnot(None),
+            Set.reps.isnot(None)
+        ).first()
+
+        # Most common rep range
+        rep_ranges = db.query(
+            Set.reps,
+            func.count(Set.id).label('count')
+        ).join(Exercise).join(Workout).filter(
+            Workout.date >= start_date,
+            Set.reps.isnot(None)
+        ).group_by(Set.reps).order_by(desc('count')).first()
+
+        return {
+            "popular_exercises": [
+                {"name": name, "count": count}
+                for name, count in popular_exercises
+            ],
+            "exercise_categories": [
+                {"name": cat or "Uncategorized", "count": count}
+                for cat, count in exercise_categories
+            ],
+            "avg_weight": round(avg_stats[0] or 0, 1),
+            "avg_reps_per_set": round(avg_stats[1] or 0, 1),
+            "most_common_rep_range": str(rep_ranges[0]) if rep_ranges else "N/A"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/stats/workouts", response_model=WorkoutStatsResponse)
+@router.get("/stats/workouts", response_model=Dict[str, Any])
 def get_workout_stats(
     db: Session = Depends(get_db),
-    admin: User = Depends(get_admin_user)
+    admin: User = Depends(get_admin_user),
+    time_range: str = "month"
 ):
-    total_workouts = db.query(func.count(Workout.id)).scalar()
+    try:
+        now = datetime.now(timezone.utc)
+        if time_range == "week":
+            start_date = now - timedelta(days=7)
+        elif time_range == "year":
+            start_date = now - timedelta(days=365)
+        else:  # month
+            start_date = now - timedelta(days=30)
 
-    one_month_ago = datetime.now(timezone.utc) - timedelta(days=30)
-    recent_workouts = db.query(func.count(Workout.id)).filter(
-        Workout.date >= one_month_ago
-    ).scalar()
+        # Basic stats
+        total_workouts = db.query(func.count(Workout.id)).scalar()
+        recent_workouts = db.query(func.count(Workout.id)).filter(
+            Workout.date >= start_date
+        ).scalar()
 
-    # Calculate average duration in minutes
-    duration_query = db.query(
-        func.avg(
-            func.extract('epoch', Workout.end_time) -
-            func.extract('epoch', Workout.start_time)
-        ) / 60
-    ).filter(
-        Workout.start_time.isnot(None),
-        Workout.end_time.isnot(None)
-    ).scalar() or 0
+        # Calculate growth rate
+        previous_period_start = start_date - (now - start_date)
+        previous_workouts = db.query(func.count(Workout.id)).filter(
+            Workout.date >= previous_period_start,
+            Workout.date < start_date
+        ).scalar()
+        workout_growth = ((recent_workouts - previous_workouts) / (previous_workouts or 1)) * 100
 
-    return {
-        "total_workouts": total_workouts,
-        "workouts_last_month": recent_workouts,
-        "avg_workout_duration": round(duration_query, 1)
-    }
+        # Average duration calculation
+        avg_duration = db.query(
+            func.avg(
+                func.extract('epoch', Workout.end_time) -
+                func.extract('epoch', Workout.start_time)
+            ) / 60
+        ).filter(
+            Workout.start_time.isnot(None),
+            Workout.end_time.isnot(None)
+        ).scalar() or 0
+
+        # Calculate duration change
+        previous_avg_duration = db.query(
+            func.avg(
+                func.extract('epoch', Workout.end_time) -
+                func.extract('epoch', Workout.start_time)
+            ) / 60
+        ).filter(
+            Workout.date >= previous_period_start,
+            Workout.date < start_date,
+            Workout.start_time.isnot(None),
+            Workout.end_time.isnot(None)
+        ).scalar() or 0
+        duration_change = ((avg_duration - previous_avg_duration) / (previous_avg_duration or 1)) * 100
+
+        # Popular workout types
+        popular_types = db.query(
+            Workout.name,
+            func.count(Workout.id).label('count')
+        ).group_by(Workout.name).order_by(desc('count')).limit(5).all()
+
+        # Completion rate by day
+        completion_by_day = {}
+        for day in range(7):
+            total = db.query(func.count(Workout.id)).filter(
+                func.extract('dow', Workout.date) == day
+            ).scalar()
+            completed = db.query(func.count(Workout.id)).filter(
+                func.extract('dow', Workout.date) == day,
+                Workout.end_time.isnot(None)
+            ).scalar()
+            completion_by_day[day] = (completed / (total or 1)) * 100
+
+        # Most popular time
+        most_popular_hour = db.query(
+            func.extract('hour', Workout.start_time).label('hour'),
+            func.count(Workout.id).label('count')
+        ).filter(
+            Workout.start_time.isnot(None)
+        ).group_by('hour').order_by(desc('count')).first()
+
+        most_popular_time = f"{int(most_popular_hour[0]):02d}:00" if most_popular_hour else "N/A"
+
+        return {
+            "total_workouts": total_workouts,
+            "workouts_last_month": recent_workouts,
+            "workout_growth": round(workout_growth, 1),
+            "avg_workout_duration": round(avg_duration, 1),
+            "duration_change": round(duration_change, 1),
+            "most_popular_time": most_popular_time,
+            "popular_workout_types": [
+                {"name": name, "count": count}
+                for name, count in popular_types
+            ],
+            "completion_by_day": completion_by_day
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/users", response_model=List[Dict[str, Any]])
@@ -230,3 +412,68 @@ def delete_user(
     db.delete(user)
     db.commit()
     return {"message": f"User {user.username} has been deleted"}
+
+
+class AdminSettings(BaseModel):
+    auto_verify_users: bool = False
+    require_email_verification: bool = True
+    require_2fa_admins: bool = True
+    session_timeout: int = Field(ge=15, le=1440, default=60)  # 15 minutes to 24 hours
+    backup_frequency: str = Field(pattern="^(daily|weekly|monthly)$", default="daily")
+    data_retention_months: int = Field(ge=0, le=120, default=24)  # 0 to 10 years
+    notify_new_users: bool = True
+    notify_system_alerts: bool = True
+
+
+@router.get("/settings", response_model=AdminSettings)
+def get_admin_settings(
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_admin_user)
+):
+    """Get current admin settings"""
+    settings = db.query(AdminSettings).first()
+    if not settings:
+        # Create default settings if none exist
+        settings = AdminSettings()
+        db.add(settings)
+        db.commit()
+        db.refresh(settings)
+    
+    return settings
+
+
+@router.post("/settings", response_model=AdminSettings)
+def update_admin_settings(
+    settings: AdminSettings,
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_admin_user)
+):
+    """Update admin settings"""
+    try:
+        # Get existing settings or create new ones
+        existing_settings = db.query(AdminSettings).first()
+        if not existing_settings:
+            existing_settings = AdminSettings()
+            db.add(existing_settings)
+
+        # Update settings
+        for field, value in settings.dict().items():
+            setattr(existing_settings, field, value)
+        
+        # Set update metadata
+        existing_settings.last_updated = datetime.now(timezone.utc)
+        existing_settings.updated_by = admin.id
+
+        db.commit()
+        db.refresh(existing_settings)
+
+        # Log the settings change
+        print(f"Admin settings updated by {admin.username} at {existing_settings.last_updated}")
+
+        return existing_settings
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to update admin settings: {str(e)}"
+        )

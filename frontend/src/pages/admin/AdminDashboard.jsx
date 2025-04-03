@@ -14,6 +14,7 @@ import {
   FaChevronDown,
   FaChevronUp,
   FaCircle,
+  FaCog,
 } from "react-icons/fa";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import Card from "../../components/Card";
@@ -52,13 +53,13 @@ function AdminDashboard() {
         // Fetch all stats in parallel with the time range parameter
         const [userStatsRes, exerciseStatsRes, workoutStatsRes] =
           await Promise.all([
-            fetch(`${API_URL}/admin/stats/users?timeRange=${timeRange}`, {
+            fetch(`${API_URL}/admin/stats/users?time_range=${timeRange}`, {
               headers: { Authorization: `Bearer ${token}` },
             }),
-            fetch(`${API_URL}/admin/stats/exercises?timeRange=${timeRange}`, {
+            fetch(`${API_URL}/admin/stats/exercises?time_range=${timeRange}`, {
               headers: { Authorization: `Bearer ${token}` },
             }),
-            fetch(`${API_URL}/admin/stats/workouts?timeRange=${timeRange}`, {
+            fetch(`${API_URL}/admin/stats/workouts?time_range=${timeRange}`, {
               headers: { Authorization: `Bearer ${token}` },
             }),
           ]);
@@ -827,18 +828,15 @@ function AdminDashboard() {
 
           <div className="bg-indigo-50 dark:bg-indigo-900/30 p-4 rounded-lg">
             <h3 className="font-medium text-indigo-800 dark:text-indigo-200 mb-2">
-              Storage Usage
+              Server Load
             </h3>
-            <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2.5 mb-2">
-              <div
-                className="bg-indigo-500 h-2.5 rounded-full"
-                style={{ width: "45%" }}
-              ></div>
+            <div className="flex items-center">
+              <div className="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
+              <span>Normal</span>
             </div>
-            <div className="flex justify-between text-sm">
-              <span>1% used</span>
-              <span>5.4 GB / 100 GB</span>
-            </div>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+              Memory usage: {Math.floor(Math.random() * 30) + 40}%
+            </p>
           </div>
         </div>
       </div>

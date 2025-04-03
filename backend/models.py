@@ -45,6 +45,9 @@ class User(Base):
     workout_preferences = relationship(
         "WorkoutPreferences", back_populates="user", uselist=False, cascade="all, delete-orphan"
     )
+    admin_settings_updates = relationship(
+        "AdminSettings", back_populates="updated_by_user", cascade="all, delete-orphan"
+    )
 
 
 class UserPreferences(Base):
@@ -196,3 +199,20 @@ class WorkoutPreferences(Base):
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
     user = relationship("User", back_populates="workout_preferences")
+
+
+class AdminSettings(Base):
+    __tablename__ = "admin_settings"
+
+    id = Column(Integer, primary_key=True, index=True)
+    auto_verify_users = Column(Boolean, default=False)
+    require_email_verification = Column(Boolean, default=True)
+    require_2fa_admins = Column(Boolean, default=True)
+    session_timeout = Column(Integer, default=60)  # minutes
+    backup_frequency = Column(String, default="daily")  # daily, weekly, monthly
+    data_retention_months = Column(Integer, default=24)  # 0 for forever
+    notify_new_users = Column(Boolean, default=True)
+    notify_system_alerts = Column(Boolean, default=True)
+    last_updated = Column(DateTime, default=datetime.now(timezone.utc))
+    updated_by = Column(Integer, ForeignKey("users.id"))
+    updated_by_user = relationship("User", back_populates="admin_settings_updates")

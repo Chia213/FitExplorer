@@ -23,7 +23,7 @@ function AdminExercises() {
       try {
         setLoading(true);
 
-        const response = await fetch(`${API_URL}/admin/stats/exercises`, {
+        const response = await fetch(`${API_URL}/admin/stats/exercises?time_range=month`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 

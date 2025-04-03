@@ -21,6 +21,8 @@ import {
   FaHistory,
   FaTrophy,
   FaUserFriends,
+  FaFire,
+  FaExternalLinkAlt,
 } from "react-icons/fa";
 
 const backendURL = "http://localhost:8000";
@@ -46,10 +48,19 @@ function Profile() {
   const [isEditing, setIsEditing] = useState(false);
   const [editedUsername, setEditedUsername] = useState("");
   const [workoutStats, setWorkoutStats] = useState(null);
+  const [lastSavedRoutine, setLastSavedRoutine] = useState(null);
   const [profilePicture, setProfilePicture] = useState(null);
+  const [isEditingPersonalInfo, setIsEditingPersonalInfo] = useState(false);
+  const [personalInfo, setPersonalInfo] = useState({
+    height: "",
+    weight: "",
+    age: "",
+    gender: "",
+    fitnessGoals: "",
+    bio: ""
+  });
   const [preferences, setPreferences] = useState({
     goalWeight: null,
-    emailNotifications: false,
     summaryFrequency: null,
     cardColor: "#dbeafe",
   });
@@ -76,11 +87,14 @@ function Profile() {
 
     try {
       setLoading(true);
-      const [profileRes, statsRes] = await Promise.all([
+      const [profileRes, statsRes, routineRes] = await Promise.all([
         fetch(`${backendURL}/profile`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
         fetch(`${backendURL}/workout-stats`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch(`${backendURL}/last-saved-routine`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
       ]);
@@ -114,7 +128,6 @@ function Profile() {
         setPreferences((prev) => ({
           ...prev,
           goalWeight: userData.preferences.goal_weight,
-          emailNotifications: userData.preferences.email_notifications || false,
           summaryFrequency: userData.preferences.summary_frequency,
         }));
       }
@@ -136,6 +149,12 @@ function Profile() {
           totalCardioDuration: statsData.total_cardio_duration,
           weightProgression: statsData.weight_progression,
         });
+      }
+
+      // Handle last saved routine
+      if (routineRes.ok) {
+        const routineData = await routineRes.json();
+        setLastSavedRoutine(routineData);
       }
     } catch (err) {
       console.error("Error fetching user data:", err);
@@ -331,10 +350,7 @@ function Profile() {
         },
         body: JSON.stringify({
           goal_weight: preferences.goalWeight,
-          email_notifications: preferences.emailNotifications,
-          summary_frequency: preferences.emailNotifications
-            ? preferences.summaryFrequency
-            : null,
+          summary_frequency: preferences.summaryFrequency,
           card_color: preferences.cardColor,
         }),
       });
@@ -347,7 +363,6 @@ function Profile() {
         const updatedPreferences = await response.json();
         setPreferences({
           goalWeight: updatedPreferences.goal_weight,
-          emailNotifications: updatedPreferences.email_notifications || false,
           summaryFrequency: updatedPreferences.summary_frequency,
           cardColor: updatedPreferences.card_color,
         });
@@ -400,6 +415,57 @@ function Profile() {
     navigate("/login");
   };
 
+  const handlePersonalInfoUpdate = async () => {
+    try {
+      setIsSaving(true);
+      const token = localStorage.getItem("token");
+      const response = await fetch(`${backendURL}/update-profile`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          username: user.username,
+          height: personalInfo.height,
+          weight: personalInfo.weight,
+          age: personalInfo.age,
+          gender: personalInfo.gender,
+          fitness_goals: personalInfo.fitnessGoals,
+          bio: personalInfo.bio
+        }),
+      });
+
+      if (response.ok) {
+        const updatedUser = await response.json();
+        setUser(prevUser => ({
+          ...prevUser,
+          height: updatedUser.height,
+          weight: updatedUser.weight,
+          age: updatedUser.age,
+          gender: updatedUser.gender,
+          fitness_goals: updatedUser.fitness_goals,
+          bio: updatedUser.bio
+        }));
+        setIsEditingPersonalInfo(false);
+        setError(null);
+      } else if (response.status === 401) {
+        // Handle unauthorized (token expired)
+        setError("Session expired. Please log in again.");
+        localStorage.removeItem("token");
+        navigate("/login");
+      } else {
+        const errorData = await response.json();
+        setError(errorData.detail || "Failed to update personal information");
+      }
+    } catch (err) {
+      console.error("Error updating personal information:", err);
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const quickAccessLinks = [
     { icon: <FaDumbbell className="w-6 h-6" />, label: "Workouts", path: "/workout-log" },
     { icon: <FaChartLine className="w-6 h-6" />, label: "Progress", path: "/progress-tracker" },
@@ -435,7 +501,7 @@ function Profile() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         {/* Profile Header */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8" style={{ backgroundColor: preferences.cardColor }}>
           <div className="flex items-center space-x-6">
             <div className="relative">
               <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-blue-500">
@@ -494,8 +560,13 @@ function Profile() {
                   </div>
                 ) : (
                   <>
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
                       {user.username}
+                      {localStorage.getItem("isAdmin") === "true" && (
+                        <span className="text-xs bg-yellow-500 text-white px-2 py-0.5 rounded-full">
+                          Admin
+                        </span>
+                      )}
                     </h1>
                     <button
                       onClick={() => setIsEditing(true)}
@@ -531,31 +602,265 @@ function Profile() {
 
         {/* Stats and Preferences */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Personal Information */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Personal Information
+              </h2>
+              <button
+                onClick={() => setIsEditingPersonalInfo(!isEditingPersonalInfo)}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              >
+                <FaEdit className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-2">
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-300">Height (cm)</label>
+                  {isEditingPersonalInfo ? (
+                    <input
+                      type="number"
+                      value={personalInfo.height}
+                      onChange={(e) => setPersonalInfo(prev => ({ ...prev, height: e.target.value }))}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-600 dark:border-gray-500 text-sm"
+                    />
+                  ) : (
+                    <p className="mt-1 text-sm text-gray-900 dark:text-white">{personalInfo.height || "Not set"}</p>
+                  )}
+                </div>
+                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-2">
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-300">Weight (kg)</label>
+                  {isEditingPersonalInfo ? (
+                    <input
+                      type="number"
+                      value={personalInfo.weight}
+                      onChange={(e) => setPersonalInfo(prev => ({ ...prev, weight: e.target.value }))}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-600 dark:border-gray-500 text-sm"
+                    />
+                  ) : (
+                    <p className="mt-1 text-sm text-gray-900 dark:text-white">{personalInfo.weight || "Not set"}</p>
+                  )}
+                </div>
+                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-2">
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-300">Age</label>
+                  {isEditingPersonalInfo ? (
+                    <input
+                      type="number"
+                      value={personalInfo.age}
+                      onChange={(e) => setPersonalInfo(prev => ({ ...prev, age: e.target.value }))}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-600 dark:border-gray-500 text-sm"
+                    />
+                  ) : (
+                    <p className="mt-1 text-sm text-gray-900 dark:text-white">{personalInfo.age || "Not set"}</p>
+                  )}
+                </div>
+                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-2">
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-300">Gender</label>
+                  {isEditingPersonalInfo ? (
+                    <select
+                      value={personalInfo.gender}
+                      onChange={(e) => setPersonalInfo(prev => ({ ...prev, gender: e.target.value }))}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-600 dark:border-gray-500 text-sm"
+                    >
+                      <option value="">Select</option>
+                      <option value="male">Male</option>
+                      <option value="female">Female</option>
+                      <option value="other">Other</option>
+                      <option value="prefer_not_to_say">Prefer not to say</option>
+                    </select>
+                  ) : (
+                    <p className="mt-1 text-sm text-gray-900 dark:text-white">{personalInfo.gender || "Not set"}</p>
+                  )}
+                </div>
+              </div>
+              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-2">
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-300">Fitness Goals</label>
+                {isEditingPersonalInfo ? (
+                  <textarea
+                    value={personalInfo.fitnessGoals}
+                    onChange={(e) => setPersonalInfo(prev => ({ ...prev, fitnessGoals: e.target.value }))}
+                    rows="2"
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-600 dark:border-gray-500 text-sm"
+                  />
+                ) : (
+                  <p className="mt-1 text-sm text-gray-900 dark:text-white">{personalInfo.fitnessGoals || "Not set"}</p>
+                )}
+              </div>
+              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-2">
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-300">Bio</label>
+                {isEditingPersonalInfo ? (
+                  <textarea
+                    value={personalInfo.bio}
+                    onChange={(e) => setPersonalInfo(prev => ({ ...prev, bio: e.target.value }))}
+                    rows="2"
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-600 dark:border-gray-500 text-sm"
+                  />
+                ) : (
+                  <p className="mt-1 text-sm text-gray-900 dark:text-white">{personalInfo.bio || "Not set"}</p>
+                )}
+              </div>
+              {isEditingPersonalInfo && (
+                <div className="flex justify-end space-x-2">
+                  <button
+                    onClick={() => setIsEditingPersonalInfo(false)}
+                    className="px-3 py-1 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handlePersonalInfoUpdate}
+                    disabled={isSaving}
+                    className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
+                  >
+                    Save
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* Workout Stats */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
               Workout Statistics
             </h2>
             {workoutStats && (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600 dark:text-gray-300">Total Workouts</span>
-                  <span className="font-semibold text-gray-900 dark:text-white">
-                    {workoutStats.totalWorkouts}
-                  </span>
+              <div className="space-y-3">
+                {/* Weight Goal */}
+                <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <FaWeightHanging className="text-purple-500" />
+                      <div>
+                        <p className="text-sm text-gray-600 dark:text-gray-300">Weight Goal</p>
+                        <div className="flex items-center space-x-2">
+                          <span className="font-medium text-gray-900 dark:text-white">
+                            {preferences.goalWeight || "Not set"} kg
+                          </span>
+                          <button
+                            onClick={() => {
+                              const newWeight = prompt("Enter your weight goal in kg:");
+                              if (newWeight && !isNaN(newWeight)) {
+                                handlePreferenceChange({
+                                  ...preferences,
+                                  goalWeight: parseFloat(newWeight),
+                                });
+                              }
+                            }}
+                            className="text-purple-500 hover:text-purple-600"
+                          >
+                            <FaEdit className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                    {preferences.goalWeight && workoutStats.currentWeight && (
+                      <span className="text-sm text-gray-600 dark:text-gray-300">
+                        Current: {workoutStats.currentWeight} kg
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600 dark:text-gray-300">Favorite Exercise</span>
-                  <span className="font-semibold text-gray-900 dark:text-white">
-                    {workoutStats.favoriteExercise || "None"}
-                  </span>
+
+                {/* Total Workouts */}
+                <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <FaDumbbell className="text-blue-500" />
+                      <div>
+                        <p className="text-sm text-gray-600 dark:text-gray-300">Total Workouts</p>
+                        <span className="font-medium text-gray-900 dark:text-white">
+                          {workoutStats.totalWorkouts}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600 dark:text-gray-300">Last Workout</span>
-                  <span className="font-semibold text-gray-900 dark:text-white">
-                    {workoutStats.lastWorkout ? new Date(workoutStats.lastWorkout).toLocaleDateString() : "Never"}
-                  </span>
+
+                {/* Workout Streak */}
+                <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <FaFire className="text-green-500" />
+                      <div>
+                        <p className="text-sm text-gray-600 dark:text-gray-300">Current Streak</p>
+                        <span className="font-medium text-gray-900 dark:text-white">
+                          {workoutStats.currentStreak || 0} days
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
+
+                {/* Recent Activity */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600 dark:text-gray-300">Last Workout</span>
+                    <span className="font-medium text-gray-900 dark:text-white">
+                      {workoutStats.lastWorkout ? new Date(workoutStats.lastWorkout).toLocaleDateString() : "Never"}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600 dark:text-gray-300">Total Duration</span>
+                    <span className="font-medium text-gray-900 dark:text-white">
+                      {Math.floor(workoutStats.totalCardioDuration / 60)} hours
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600 dark:text-gray-300">Favorite Exercise</span>
+                    <span className="font-medium text-gray-900 dark:text-white">
+                      {workoutStats.favoriteExercise || "None"}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Last Saved Routine */}
+                {lastSavedRoutine && (
+                  <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <FaSave className="text-yellow-500" />
+                        <div>
+                          <p className="text-sm text-gray-600 dark:text-gray-300">Last Saved Routine</p>
+                          <div className="flex items-center space-x-2">
+                            <span className="font-medium text-gray-900 dark:text-white">
+                              {lastSavedRoutine.name}
+                            </span>
+                            <button
+                              onClick={() => navigate(`/saved-programs/${lastSavedRoutine.id}`)}
+                              className="text-yellow-500 hover:text-yellow-600"
+                            >
+                              <FaExternalLinkAlt className="w-3 h-3" />
+                            </button>
+                          </div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            {new Date(lastSavedRoutine.updated_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Weight Progression */}
+                {workoutStats.weightProgression && workoutStats.weightProgression.length > 0 && (
+                  <div className="h-24 bg-gray-50 dark:bg-gray-700 rounded-lg p-2">
+                    <div className="flex items-end h-full space-x-1">
+                      {workoutStats.weightProgression.map((entry, index) => (
+                        <div
+                          key={index}
+                          className="flex-1 bg-blue-500 rounded-t hover:bg-blue-600 transition-colors"
+                          style={{
+                            height: `${(entry.weight / Math.max(...workoutStats.weightProgression.map(e => e.weight))) * 100}%`,
+                          }}
+                          title={`${entry.weight}kg on ${new Date(entry.date).toLocaleDateString()}`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -574,23 +879,6 @@ function Profile() {
                   onChange={(e) => handleColorChange(e.target.value)}
                   className="w-8 h-8 rounded cursor-pointer"
                 />
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-gray-600 dark:text-gray-300">Email Notifications</span>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={preferences.emailNotifications}
-                    onChange={(e) =>
-                      handlePreferenceChange({
-                        ...preferences,
-                        emailNotifications: e.target.checked,
-                      })
-                    }
-                    className="sr-only peer"
-                  />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-                </label>
               </div>
               {preferencesChanged && (
                 <button

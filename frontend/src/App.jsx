@@ -36,6 +36,7 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminExercises from "./pages/admin/AdminExercises";
 import AdminWorkouts from "./pages/admin/AdminWorkouts";
+import AdminSettings from "./pages/admin/AdminSettings";
 
 // Context providers
 import { ThemeProvider } from "./hooks/useTheme";
@@ -111,10 +112,11 @@ function App() {
                   <Route path="/settings" element={<Settings />} />
 
                   {/* Admin Routes */}
-                  <Route path="/admin" element={<AdminDashboard />} />
-                  <Route path="/admin/users" element={<AdminUsers />} />
-                  <Route path="/admin/exercises" element={<AdminExercises />} />
-                  <Route path="/admin/workouts" element={<AdminWorkouts />} />
+                  <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+                  <Route path="/admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
+                  <Route path="/admin/exercises" element={<AdminRoute><AdminExercises /></AdminRoute>} />
+                  <Route path="/admin/workouts" element={<AdminRoute><AdminWorkouts /></AdminRoute>} />
+                  <Route path="/admin/settings" element={<AdminRoute><AdminSettings /></AdminRoute>} />
                 </Routes>
               </PageTransition>
             </Layout>

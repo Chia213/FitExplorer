@@ -9,7 +9,7 @@ from passlib.context import CryptContext
 from datetime import timedelta, datetime, timezone
 import jwt
 from database import get_db, SessionLocal
-from models import User
+from models import User, AdminSettings
 from schemas import UserCreate, UserLogin, Token, GoogleTokenVerifyRequest, GoogleAuthResponse
 from config import settings
 from security import generate_verification_token
@@ -58,6 +58,14 @@ def register(user: UserCreate, background_tasks: BackgroundTasks, db: Session = 
 
     hashed_password = pwd_context.hash(user.password)
 
+    # Check admin settings for auto-verification
+    admin_settings = db.query(AdminSettings).first()
+    if not admin_settings:
+        admin_settings = AdminSettings()
+        db.add(admin_settings)
+        db.commit()
+        db.refresh(admin_settings)
+
     # Generate verification token
     token = generate_verification_token()
     expires = datetime.now(timezone.utc) + timedelta(hours=24)
@@ -68,20 +76,21 @@ def register(user: UserCreate, background_tasks: BackgroundTasks, db: Session = 
         username=user.username,
         verification_token=token,
         verification_token_expires_at=expires,
-        is_verified=False,
+        is_verified=admin_settings.auto_verify_users,  # Set based on admin settings
         created_at=datetime.now(timezone.utc)
     )
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
 
-    # Send verification email
-    verification_url = f"{settings.FRONTEND_URL}/verify-email?token={token}"
-    background_tasks.add_task(
-        send_verification_email,
-        user.email,
-        verification_url
-    )
+    # Only send verification email if auto-verification is disabled
+    if not admin_settings.auto_verify_users:
+        verification_url = f"{settings.FRONTEND_URL}/verify-email?token={token}"
+        background_tasks.add_task(
+            send_verification_email,
+            user.email,
+            verification_url
+        )
 
     # Notify admin about new registration
     background_tasks.add_task(
@@ -101,13 +110,23 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
     if not db_user or not pwd_context.verify(user.password, db_user.hashed_password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
-    if not db_user.is_verified:
+    # Check admin settings for email verification requirement
+    admin_settings = db.query(AdminSettings).first()
+    if not admin_settings:
+        admin_settings = AdminSettings()
+        db.add(admin_settings)
+        db.commit()
+        db.refresh(admin_settings)
+
+    # Only check verification if required
+    if admin_settings.require_email_verification and not db_user.is_verified:
         raise HTTPException(
             status_code=401, detail="Account not verified. Please check your email.")
 
+    # Use session timeout from admin settings
     access_token = create_access_token(
-        {"sub": db_user.username}, timedelta(
-            minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+        {"sub": db_user.username}, 
+        timedelta(minutes=admin_settings.session_timeout)
     )
     return {"access_token": access_token, "token_type": "bearer"}
 

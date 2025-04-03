@@ -210,14 +210,16 @@ function AdminUsers() {
     setShowCreateModal(true);
   };
 
-  // Reset password modal
+  // Handle reset password
   const handleResetPassword = (user) => {
     setSelectedUser(user);
-    setFormData((prev) => ({
-      ...prev,
+    setFormData({
+      username: user.username,
+      email: user.email,
       password: "",
       confirmPassword: "",
-    }));
+      is_admin: user.is_admin,
+    });
     setShowPasswordModal(true);
   };
 
@@ -359,21 +361,36 @@ function AdminUsers() {
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
-            password: formData.password,
+            token: "", // Required by the ResetPasswordRequest schema
+            new_password: formData.password
           }),
         }
       );
 
+      const data = await response.json();
+
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || "Failed to reset password");
+        throw new Error(
+          typeof data.detail === 'string' 
+            ? data.detail 
+            : 'Failed to reset password'
+        );
       }
 
       setShowPasswordModal(false);
+      setFormData({
+        ...formData,
+        password: "",
+        confirmPassword: ""
+      });
+      
       setNotification({
         type: "success",
         message: "Password reset successfully",
       });
+      
+      // Refresh the users list
+      fetchUsers();
     } catch (err) {
       console.error("Error resetting password:", err);
       setNotification({
@@ -474,7 +491,7 @@ function AdminUsers() {
     return new Date(dateString).toLocaleDateString();
   };
 
-  // Filter and sort users
+  // Filter users based on search query and filters
   const filteredUsers = useMemo(() => {
     let result = [...users];
 
@@ -488,31 +505,26 @@ function AdminUsers() {
       );
     }
 
+    // Apply verification filter
     if (filterVerified !== "all") {
       if (filterVerified === "google") {
-        // Only show Google OAuth users
-        result = result.filter(
-          (user) => user.hashed_password === "google_oauth"
-        );
+        result = result.filter((user) => user.oauth_provider === "google");
       } else if (filterVerified === "verified") {
-        // Show verified users (excluding Google users which are implicitly verified)
         result = result.filter(
-          (user) =>
-            user.is_verified === true && user.hashed_password !== "google_oauth"
+          (user) => user.is_verified === true && !user.oauth_provider
         );
       } else if (filterVerified === "unverified") {
-        // Show only unverified users (never include Google users as they're always verified)
         result = result.filter(
-          (user) =>
-            user.is_verified === false &&
-            user.hashed_password !== "google_oauth"
+          (user) => user.is_verified === false && !user.oauth_provider
         );
       }
     }
+
     // Apply admin filter
     if (filterAdmin !== "all") {
-      const isAdmin = filterAdmin === "admin";
-      result = result.filter((user) => user.is_admin === isAdmin);
+      result = result.filter((user) => 
+        filterAdmin === "admin" ? user.is_admin : !user.is_admin
+      );
     }
 
     // Apply sorting
@@ -520,8 +532,8 @@ function AdminUsers() {
       let valueA = a[sortField];
       let valueB = b[sortField];
 
-      // Handle special cases
-      if (sortField === "created_at") {
+      // Handle special cases for dates and strings
+      if (sortField === "created_at" || sortField === "last_login") {
         valueA = new Date(valueA || 0).getTime();
         valueB = new Date(valueB || 0).getTime();
       } else if (typeof valueA === "string") {
@@ -530,22 +542,13 @@ function AdminUsers() {
       }
 
       // Apply direction
-      if (sortDirection === "asc") {
-        return valueA > valueB ? 1 : -1;
-      } else {
-        return valueA < valueB ? 1 : -1;
-      }
+      return sortDirection === "asc" 
+        ? (valueA > valueB ? 1 : -1)
+        : (valueA < valueB ? 1 : -1);
     });
 
     return result;
-  }, [
-    users,
-    searchQuery,
-    sortField,
-    sortDirection,
-    filterVerified,
-    filterAdmin,
-  ]);
+  }, [users, searchQuery, sortField, sortDirection, filterVerified, filterAdmin]);
 
   // Pagination
   const indexOfLastUser = currentPage * usersPerPage;
@@ -829,14 +832,14 @@ function AdminUsers() {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
                       className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        user.hashed_password === "google_oauth"
+                        user.oauth_provider === "google"
                           ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
                           : user.is_verified
                           ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
                           : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
                       }`}
                     >
-                      {user.hashed_password === "google_oauth" ? (
+                      {user.oauth_provider === "google" ? (
                         <>
                           <FaGoogle className="mr-1" />
                           Google User
@@ -881,7 +884,7 @@ function AdminUsers() {
                       </button>
 
                       <button
-                        onClick={() => handleResetPassword(user.id)}
+                        onClick={() => handleResetPassword(user)}
                         className="text-yellow-600 hover:text-yellow-900 dark:text-yellow-400 dark:hover:text-yellow-300"
                         title="Reset password"
                       >
