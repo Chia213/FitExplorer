@@ -1,6 +1,6 @@
 from pydantic import BaseModel, EmailStr, Field
 from datetime import datetime
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Any
 
 
 class UserCreate(BaseModel):
@@ -59,10 +59,10 @@ class ExerciseResponse(ExerciseBase):
 
 class WorkoutBase(BaseModel):
     name: str
-    date: datetime
+    date: Optional[datetime] = None
     start_time: Optional[datetime] = None
     end_time: Optional[datetime] = None
-    bodyweight: Optional[int] = None
+    bodyweight: Optional[float] = None
     weight_unit: Optional[str] = "kg"
     notes: Optional[str] = None
 
@@ -276,3 +276,47 @@ class ProgressResponse(BaseModel):
 
 class ResetPasswordRequest(BaseModel):
     new_password: str
+
+
+class NotificationCreate(BaseModel):
+    message: str
+    type: str
+    icon: Optional[str] = "bell"
+    icon_color: Optional[str] = "text-blue-500"
+
+
+class NotificationResponse(BaseModel):
+    id: int
+    message: str
+    type: str
+    date: datetime
+    read: bool
+    icon: str
+    iconColor: str
+
+    class Config:
+        from_attributes = True
+
+
+class WorkoutPreferencesBase(BaseModel):
+    last_bodyweight: Optional[float] = None
+    last_weight_unit: Optional[str] = "kg"
+    last_exercises: Optional[List[Dict[str, Any]]] = None
+
+
+class WorkoutPreferencesCreate(WorkoutPreferencesBase):
+    pass
+
+
+class WorkoutPreferencesUpdate(WorkoutPreferencesBase):
+    pass
+
+
+class WorkoutPreferencesResponse(WorkoutPreferencesBase):
+    id: int
+    user_id: int
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True

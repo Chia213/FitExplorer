@@ -17,6 +17,12 @@ import {
 } from "react-icons/fa";
 import AddExercise from "./AddExercise";
 import { LuCalendarClock } from "react-icons/lu";
+import { 
+  notifyWorkoutCompleted, 
+  notifyPersonalRecord,
+  notifyWorkoutStreak,
+  notifyStreakBroken 
+} from '../utils/notificationsHelpers';
 
 const API_BASE_URL = "http://localhost:8000";
 
@@ -37,7 +43,7 @@ const getIntensityName = (intensityValue) => {
   return intensityMap[intensityValue] || "-";
 };
 
-function WorkoutLog() {
+const WorkoutLog = () => {
   const [workoutName, setWorkoutName] = useState("");
   const [startTime, setStartTime] = useState(
     new Date().toISOString().slice(0, 16)
@@ -54,10 +60,11 @@ function WorkoutLog() {
   const [routines, setRoutines] = useState([]);
   const [showRoutinesSelector, setShowRoutinesSelector] = useState(false);
   const [loadingRoutines, setLoadingRoutines] = useState(false);
-  const [weightUnit, setWeightUnit] = useState(() => {
-    // Try to get from localStorage or default to kg
-    return localStorage.getItem("weightUnit") || "kg";
-  });
+  const [weightUnit, setWeightUnit] = useState("kg");
+  const [showHistory, setShowHistory] = useState(false);
+  const [showAddExercise, setShowAddExercise] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   const navigate = useNavigate();
 
   const toggleWeightUnit = () => {
@@ -301,6 +308,78 @@ function WorkoutLog() {
     setShowRoutinesSelector(false);
   };
 
+  const checkForPersonalRecords = async (workout) => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`${API_BASE_URL}/personal-records`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) return;
+
+      const personalRecords = await response.json();
+
+      // Check each exercise in the workout for new records
+      for (const exercise of workout.exercises) {
+        if (!exercise.is_cardio) {
+          // For strength exercises, check each set
+          for (const set of exercise.sets) {
+            if (set.weight && set.reps) {
+              const currentPR = personalRecords[exercise.name];
+              if (!currentPR || set.weight > currentPR.weight) {
+                // New personal record!
+                await notifyPersonalRecord(
+                  exercise.name,
+                  set.weight,
+                  workout.weight_unit
+                );
+              }
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error checking personal records:", error);
+    }
+  };
+
+  const checkWorkoutStreak = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`${API_BASE_URL}/workout-streak`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) return;
+
+      const streakData = await response.json();
+      
+      // Check for streak milestones (3, 7, 14, 30 days)
+      if (streakData.streak > 0) {
+        if ([3, 7, 14, 30].includes(streakData.streak)) {
+          await notifyWorkoutStreak(streakData.streak);
+        }
+      } else if (streakData.last_workout) {
+        // Check if streak was broken
+        const lastWorkoutDate = new Date(streakData.last_workout);
+        const today = new Date();
+        const daysSinceLastWorkout = Math.floor(
+          (today - lastWorkoutDate) / (1000 * 60 * 60 * 24)
+        );
+        
+        if (daysSinceLastWorkout > 1) {
+          await notifyStreakBroken();
+        }
+      }
+    } catch (error) {
+      console.error("Error checking workout streak:", error);
+    }
+  };
+
   const handleFinishWorkout = async () => {
     if (!workoutName.trim()) {
       alert("Please enter a workout name.");
@@ -308,134 +387,56 @@ function WorkoutLog() {
     }
 
     if (!workoutExercises.length) {
-      alert("Please add at least one exercise before finishing the workout.");
+      alert("Please add at least one exercise.");
       return;
     }
-
-    let hasInvalidExercises = false;
-
-    workoutExercises.forEach((exercise) => {
-      if (exercise.is_cardio) {
-        if (
-          exercise.sets.some(
-            (set) => (!set.distance && !set.duration) || !set.intensity
-          )
-        ) {
-          alert(
-            `Please fill in at least Distance or Duration, and Intensity for ${exercise.name}.`
-          );
-          hasInvalidExercises = true;
-        }
-      } else {
-        if (exercise.sets.some((set) => !set.weight || !set.reps)) {
-          alert(
-            `Please fill in Weight and Reps to save exercise ${exercise.name}.`
-          );
-          hasInvalidExercises = true;
-        }
-      }
-    });
-
-    if (hasInvalidExercises) {
-      return;
-    }
-
-    const token = localStorage.getItem("token");
-
-    // Extract max lifts for strength exercises
-    const maxLifts = {};
-    const cardioSummary = {};
-
-    workoutExercises.forEach((exercise) => {
-      if (!exercise.is_cardio) {
-        // Find max weight for strength exercises
-        const maxWeight = Math.max(
-          ...exercise.sets
-            .map((set) => parseFloat(set.weight) || 0)
-            .filter((weight) => !isNaN(weight))
-        );
-
-        if (maxWeight > 0) {
-          maxLifts[exercise.name] = maxWeight;
-        }
-      } else {
-        // Aggregate cardio data
-        const totalDistance = exercise.sets.reduce(
-          (sum, set) => sum + (parseFloat(set.distance) || 0),
-          0
-        );
-        const totalDuration = exercise.sets.reduce(
-          (sum, set) => sum + (parseFloat(set.duration) || 0),
-          0
-        );
-        const intensity = exercise.sets[0].intensity || ""; // Take first set's intensity
-
-        if (totalDistance > 0 || totalDuration > 0) {
-          cardioSummary[exercise.name] = {
-            distance: totalDistance,
-            duration: totalDuration,
-            intensity: intensity,
-          };
-        }
-      }
-    });
-
-    const cleanedExercises = workoutExercises.map((exercise) => ({
-      name: exercise.name,
-      category: exercise.category || "Uncategorized",
-      is_cardio: exercise.is_cardio || false,
-      sets: exercise.sets.map((set) => {
-        if (exercise.is_cardio) {
-          return {
-            distance: set.distance ? parseFloat(set.distance) : null,
-            duration: set.duration ? parseFloat(set.duration) : null,
-            intensity: set.intensity,
-            notes: set.notes || "",
-          };
-        } else {
-          return {
-            weight: set.weight || "",
-            reps: set.reps || "",
-            notes: set.notes || "",
-          };
-        }
-      }),
-    }));
-
-    const newWorkout = {
-      name: workoutName || `Workout ${new Date().toLocaleDateString()}`,
-      date: new Date().toISOString(),
-      start_time: startTime
-        ? new Date(startTime).toISOString()
-        : new Date().toISOString(),
-      end_time: endTime
-        ? new Date(endTime).toISOString()
-        : new Date().toISOString(),
-      bodyweight: bodyweight ? parseFloat(bodyweight) : null,
-      weight_unit: weightUnit,
-      notes,
-      max_lifts: Object.keys(maxLifts).length > 0 ? maxLifts : undefined,
-      cardio_summary:
-        Object.keys(cardioSummary).length > 0 ? cardioSummary : undefined,
-      exercises: cleanedExercises,
-    };
 
     try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        alert("You need to be logged in to save workouts.");
+        navigate("/login");
+        return;
+      }
+
+      const cleanedExercises = workoutExercises.map((exercise) => ({
+        ...exercise,
+        sets: exercise.sets.map((set) => ({
+          ...set,
+          weight: set.weight ? parseFloat(set.weight) : null,
+          reps: set.reps ? parseInt(set.reps) : null,
+          distance: set.distance ? parseFloat(set.distance) : null,
+          duration: set.duration ? parseInt(set.duration) : null,
+        })),
+      }));
+
+      const workoutData = {
+        name: workoutName,
+        exercises: cleanedExercises,
+        bodyweight: bodyweight ? parseFloat(bodyweight) : null,
+        notes: notes,
+        start_time: startTime,
+        end_time: endTime || new Date().toISOString(),
+        weight_unit: weightUnit,
+      };
+
       const response = await fetch(`${API_BASE_URL}/workouts`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(newWorkout),
+        body: JSON.stringify(workoutData),
       });
 
       if (!response.ok) {
         const errorText = await response.text();
         try {
           const errorJson = JSON.parse(errorText);
-        } catch (e) {}
-        throw new Error("Failed to save workout");
+          throw new Error(errorJson.detail || "Failed to save workout");
+        } catch (e) {
+          throw new Error("Failed to save workout");
+        }
       }
 
       const savedWorkout = await response.json();
@@ -447,16 +448,29 @@ function WorkoutLog() {
 
       setWorkoutHistory((prev) => [workoutWithExercises, ...prev]);
 
-      setWorkoutExercises([]);
+      try {
+        // Check for personal records and workout streak
+        await Promise.all([
+          checkForPersonalRecords(workoutWithExercises),
+          checkWorkoutStreak()
+        ]);
+      } catch (error) {
+        console.error("Error checking records or streak:", error);
+        // Continue even if these checks fail
+      }
+
+      await notifyWorkoutCompleted(workoutName);
+
+      // Clear only the workout name and notes, keep exercises and bodyweight
       setWorkoutName("");
-      setBodyweight("");
       setNotes("");
       setStartTime(new Date().toISOString().slice(0, 16));
       setEndTime("");
 
       alert("Workout saved successfully!");
     } catch (error) {
-      alert("Error saving workout. Please try again.");
+      console.error("Error saving workout:", error);
+      alert(error.message || "Error saving workout. Please try again.");
     }
   };
 
@@ -691,6 +705,63 @@ function WorkoutLog() {
       )
     );
   };
+
+  // Load workout preferences from backend
+  useEffect(() => {
+    const loadWorkoutPreferences = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+
+        const response = await fetch(`${API_BASE_URL}/workout-preferences`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) return;
+
+        const preferences = await response.json();
+        if (preferences.last_bodyweight) setBodyweight(preferences.last_bodyweight.toString());
+        if (preferences.last_weight_unit) setWeightUnit(preferences.last_weight_unit);
+        if (preferences.last_exercises) setWorkoutExercises(preferences.last_exercises);
+      } catch (error) {
+        console.error("Error loading workout preferences:", error);
+      }
+    };
+
+    loadWorkoutPreferences();
+  }, []);
+
+  // Save workout preferences to backend
+  const saveWorkoutPreferences = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      const preferences = {
+        last_bodyweight: bodyweight ? parseFloat(bodyweight) : null,
+        last_weight_unit: weightUnit,
+        last_exercises: workoutExercises,
+      };
+
+      await fetch(`${API_BASE_URL}/workout-preferences`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(preferences),
+      });
+    } catch (error) {
+      console.error("Error saving workout preferences:", error);
+    }
+  };
+
+  // Save preferences whenever relevant data changes
+  useEffect(() => {
+    saveWorkoutPreferences();
+  }, [bodyweight, weightUnit, workoutExercises]);
 
   return (
     <div className="min-h-screen flex flex-col items-center p-6 bg-gray-100 dark:bg-gray-900">

@@ -1,4 +1,5 @@
-import { FaBell, FaTrash, FaCheck, FaDumbbell, FaUser, FaCalendarAlt, FaLock } from "react-icons/fa";
+import { useState, useEffect } from "react";
+import { FaBell, FaTrash, FaCheck, FaDumbbell, FaUser, FaCalendarAlt, FaLock, FaSync } from "react-icons/fa";
 import { useTheme } from "../hooks/useTheme";
 import { useNotifications } from "../contexts/NotificationContext";
 
@@ -7,12 +8,23 @@ const Notifications = () => {
   const { 
     notifications, 
     loading, 
+    error,
     unreadCount, 
     markAsRead, 
     markAllAsRead, 
     deleteNotification, 
-    clearAll 
+    clearAll,
+    refreshNotifications
   } = useNotifications();
+  
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Handle manual refresh
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await refreshNotifications();
+    setTimeout(() => setIsRefreshing(false), 500); // Show spinner for at least 500ms
+  };
 
   // Format date to relative time (e.g., "2 hours ago")
   const formatRelativeTime = (dateString) => {
@@ -67,6 +79,14 @@ const Notifications = () => {
           </h1>
           
           <div className="flex space-x-2">
+            <button 
+              onClick={handleRefresh}
+              className={`px-3 py-1 text-sm bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition flex items-center ${isRefreshing ? 'opacity-50 cursor-not-allowed' : ''}`}
+              disabled={isRefreshing}
+            >
+              <FaSync className={`mr-1 ${isRefreshing ? 'animate-spin' : ''}`} /> Refresh
+            </button>
+            
             {notifications.length > 0 && (
               <>
                 <button 
@@ -90,6 +110,16 @@ const Notifications = () => {
         {loading ? (
           <div className="flex justify-center items-center h-64">
             <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        ) : error ? (
+          <div className="text-center p-12 bg-white dark:bg-gray-800 rounded-lg shadow">
+            <p className="text-red-500 dark:text-red-400">{error}</p>
+            <button 
+              onClick={handleRefresh}
+              className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
+            >
+              Try Again
+            </button>
           </div>
         ) : (
           <div className="space-y-4">

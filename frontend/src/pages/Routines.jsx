@@ -15,9 +15,11 @@ import {
   FaFolderOpen,
   FaArrowUp,
   FaArrowDown,
+  FaFolderPlus,
 } from "react-icons/fa";
 import AddExercise from "./AddExercise";
 import FolderModal from "./FolderModal";
+import { notifyRoutineCreated } from '../utils/notificationsHelpers';
 
 const backendURL = "http://localhost:8000";
 
@@ -40,6 +42,10 @@ function Routines() {
   const [weightUnit, setWeightUnit] = useState(() => {
     return localStorage.getItem("weightUnit") || "kg";
   });
+  const [showSaveRoutineModal, setShowSaveRoutineModal] = useState(false);
+  const [routineName, setRoutineName] = useState("");
+  const [selectedWorkout, setSelectedWorkout] = useState(null);
+  const [savingRoutine, setSavingRoutine] = useState(false);
 
   const navigate = useNavigate();
   const { theme } = useTheme();
@@ -377,16 +383,11 @@ function Routines() {
       );
 
       // Set success message
-      setSuccessMessage(
-        `Routine successfully moved to "${
-          updatedRoutine.folder_name || "Unassigned"
-        }"!`
-      );
-
-      // Close folder modal
-      setShowFolderModal(false);
-    } catch (err) {
-      setError("Failed to assign routine to folder. Please try again.");
+      const folderName = updatedRoutine.folder_name || "Unassigned";
+      setSuccessMessage(`Routine successfully moved to "${folderName}"!`);
+      await notifyRoutineCreated(updatedRoutine.name);
+    } catch (error) {
+      alert(`Error assigning routine to folder: ${error.message}`);
     }
   };
 
@@ -433,6 +434,76 @@ function Routines() {
   // Get routines not in folders
   const getUnassignedRoutines = () => {
     return routines.filter((routine) => routine.folder_id === null);
+  };
+
+  const handleSaveRoutine = async () => {
+    if (!routineName.trim()) {
+      alert("Please enter a routine name.");
+      return;
+    }
+
+    setSavingRoutine(true);
+
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        alert("You need to be logged in to save routines.");
+        navigate("/login");
+        return;
+      }
+
+      const routineData = {
+        name: routineName,
+        weight_unit: selectedWorkout.weight_unit || "kg",
+        exercises: selectedWorkout.exercises.map((exercise) => ({
+          name: exercise.name,
+          category: exercise.category || "Uncategorized",
+          is_cardio: Boolean(exercise.is_cardio),
+          initial_sets: exercise.sets?.length || 1,
+          sets:
+            exercise.sets?.map((set) => {
+              if (exercise.is_cardio) {
+                return {
+                  distance: set.distance || null,
+                  duration: set.duration || null,
+                  intensity: set.intensity || "",
+                  notes: set.notes || "",
+                };
+              } else {
+                return {
+                  weight: set.weight || null,
+                  reps: set.reps || null,
+                  notes: set.notes || "",
+                };
+              }
+            }) || [],
+        })),
+      };
+
+      const response = await fetch(`${backendURL}/routines`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(routineData),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Server error: ${response.status}`);
+      }
+
+      // Successfully created a new routine
+      const newRoutine = await response.json();
+      setRoutines((prev) => [...prev, newRoutine]);
+      setShowSaveRoutineModal(false);
+      await notifyRoutineCreated(routineName);
+    } catch (error) {
+      alert(`Error saving routine: ${error.message}. Please try again.`);
+    } finally {
+      setSavingRoutine(false);
+    }
   };
 
   if (loading) {

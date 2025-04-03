@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import { updateSavedProgram, getSavedPrograms } from "../api/savedProgramsApi";
+import { useTheme } from "../hooks/useTheme";
 import {
   FaCheckCircle,
   FaCalendarAlt,
@@ -23,7 +24,10 @@ import {
   FaExchangeAlt,
   FaMagic,
   FaClipboard,
+  FaChevronLeft,
+  FaChevronRight,
 } from "react-icons/fa";
+import { notifyGoalAchieved, notifyProgramStarted } from '../utils/notificationsHelpers';
 
 // Sample exercise demo GIFs - in a real application, you would store these URLs in your database
 // or fetch them from an API. This is just for demonstration purposes.
@@ -100,6 +104,7 @@ function ProgramTracker() {
   const [weightUnit, setWeightUnit] = useState("kg"); // kg or lbs
   const [editingSetWeight, setEditingSetWeight] = useState(null); // { exerciseName, setIndex }
   const [showExerciseDemo, setShowExerciseDemo] = useState(null);
+  const [showStartProgramModal, setShowStartProgramModal] = useState(false);
 
   useEffect(() => {
     const initializeTracker = async () => {
@@ -454,9 +459,11 @@ function ProgramTracker() {
     if (programProgress.currentWeek === 6) {
       // Program is fully complete - show the completion options modal
       setShowProgramCompleteModal(true);
+      notifyGoalAchieved("6-week workout program");
     } else {
       // Regular week completion
       setShowWeekCompleteModal(true);
+      notifyGoalAchieved(`Week ${programProgress.currentWeek} of workout program`);
     }
   };
 
@@ -493,6 +500,47 @@ function ProgramTracker() {
 
   const getExerciseDemo = (exerciseName) => {
     return exerciseDemos[exerciseName] || defaultExerciseDescription;
+  };
+
+  const handleStartProgram = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        alert("You need to be logged in to start a program.");
+        navigate("/login");
+        return;
+      }
+
+      const programData = {
+        program_data: workout,
+        current_week: 1,
+        completed_weeks: [],
+      };
+
+      const response = await fetch(`${backendURL}/saved-programs`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(programData),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to start program");
+      }
+
+      const savedProgram = await response.json();
+      setSavedProgramId(savedProgram.id);
+      setProgramProgress({
+        currentWeek: 1,
+        completedWeeks: [],
+      });
+      setShowStartProgramModal(false);
+      await notifyProgramStarted(workout.name);
+    } catch (error) {
+      alert("Error starting program. Please try again.");
+    }
   };
 
   // Loading state

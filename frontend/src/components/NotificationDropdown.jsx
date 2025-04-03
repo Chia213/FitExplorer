@@ -1,12 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { FaBell, FaCheck, FaTrash, FaDumbbell, FaUser, FaCalendarAlt, FaLock, FaEllipsisH } from 'react-icons/fa';
+import { FaBell, FaCheck, FaTrash, FaDumbbell, FaUser, FaCalendarAlt, FaLock, FaEllipsisH, FaSync } from 'react-icons/fa';
 import { useNotifications } from '../contexts/NotificationContext';
 import { useTheme } from '../hooks/useTheme';
 
 const NotificationDropdown = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const { notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification } = useNotifications();
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const { notifications, loading, unreadCount, markAsRead, markAllAsRead, deleteNotification, refreshNotifications } = useNotifications();
   const dropdownRef = useRef(null);
   const { theme } = useTheme();
 
@@ -27,9 +28,23 @@ const NotificationDropdown = () => {
     };
   }, [isOpen]);
 
+  // Refresh notifications when dropdown is opened
+  useEffect(() => {
+    if (isOpen) {
+      handleRefresh();
+    }
+  }, [isOpen]);
+
   // Toggle dropdown
   const toggleDropdown = () => {
     setIsOpen(!isOpen);
+  };
+
+  // Handle refresh
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await refreshNotifications();
+    setTimeout(() => setIsRefreshing(false), 500);
   };
 
   // Handle mark as read
@@ -111,19 +126,34 @@ const NotificationDropdown = () => {
           {/* Header */}
           <div className="flex justify-between items-center px-4 py-2 border-b border-gray-200 dark:border-gray-700">
             <h3 className="font-semibold">Notifications</h3>
-            {unreadCount > 0 && (
+            <div className="flex space-x-2">
               <button
-                onClick={markAllAsRead}
-                className="text-xs text-blue-500 hover:text-blue-700"
+                onClick={handleRefresh}
+                className={`text-blue-500 hover:text-blue-700 ${isRefreshing ? 'opacity-50' : ''}`}
+                disabled={isRefreshing}
+                title="Refresh"
               >
-                Mark all as read
+                <FaSync className={isRefreshing ? 'animate-spin' : ''} size={14} />
               </button>
-            )}
+              {unreadCount > 0 && (
+                <button
+                  onClick={markAllAsRead}
+                  className="text-xs text-blue-500 hover:text-blue-700"
+                  title="Mark all as read"
+                >
+                  Mark all as read
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Notification list */}
           <div className="max-h-96 overflow-y-auto">
-            {displayNotifications.length === 0 ? (
+            {loading ? (
+              <div className="flex justify-center items-center py-8">
+                <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+              </div>
+            ) : displayNotifications.length === 0 ? (
               <div className="p-4 text-center text-gray-500 dark:text-gray-400">
                 <FaBell className="mx-auto text-gray-300 dark:text-gray-600 text-2xl mb-2" />
                 <p>No notifications</p>

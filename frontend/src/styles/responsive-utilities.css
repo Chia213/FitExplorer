@@ -8,19 +8,19 @@
 
 /* Better typography for different screens */
 html {
-    font-size: 15px;
+    font-size: 14px;
     /* Base size for mobile */
 }
 
 @media (min-width: 640px) {
     html {
-        font-size: 16px;
+        font-size: 15px;
     }
 }
 
 @media (min-width: 1024px) {
     html {
-        font-size: 17px;
+        font-size: 16px;
     }
 }
 
@@ -52,7 +52,7 @@ html {
 @media (max-width: 640px) {
     .mobile-compact-nav {
         padding: 0.5rem;
-        font-size: 0.9rem;
+        font-size: 0.875rem;
     }
 
     .mobile-compact-nav .icon {

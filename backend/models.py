@@ -1,8 +1,11 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Float, Boolean, JSON
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import JSON
+from sqlalchemy.ext.declarative import declarative_base
 from database import Base
 from datetime import datetime, timezone
+
+Base = declarative_base()
 
 
 class User(Base):
@@ -36,6 +39,12 @@ class User(Base):
         "CustomExercise", back_populates="user", cascade="all, delete-orphan")
     routines = relationship(
         "Routine", back_populates="user", cascade="all, delete-orphan")
+    notifications = relationship(
+        "Notification", back_populates="user", cascade="all, delete-orphan"
+    )
+    workout_preferences = relationship(
+        "WorkoutPreferences", back_populates="user", uselist=False, cascade="all, delete-orphan"
+    )
 
 
 class UserPreferences(Base):
@@ -56,20 +65,18 @@ class Workout(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
-    date = Column(DateTime, default=datetime.now(timezone.utc))
+    date = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     start_time = Column(DateTime, nullable=True)
     end_time = Column(DateTime, nullable=True)
-    bodyweight = Column(Integer, nullable=True)
+    bodyweight = Column(Float, nullable=True)
     weight_unit = Column(String, default="kg")
     notes = Column(String, nullable=True)
     is_template = Column(Boolean, default=False, nullable=False)
-    user_id = Column(Integer, ForeignKey(
-        "users.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+
     user = relationship("User", back_populates="workouts")
-    exercises = relationship(
-        "Exercise", back_populates="workout", cascade="all, delete-orphan")
-    routines = relationship(
-        "Routine", back_populates="workout", cascade="all, delete-orphan")
+    exercises = relationship("Exercise", back_populates="workout", cascade="all, delete-orphan")
+    routines = relationship("Routine", back_populates="workout", cascade="all, delete-orphan")
 
 
 class Exercise(Base):
@@ -160,3 +167,32 @@ class SavedWorkoutProgram(Base):
     completed_weeks = Column(JSON)  # Use JSON column type for lists
 
     user = relationship("User", back_populates="saved_programs")
+
+
+class Notification(Base):
+    __tablename__ = "notifications"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    message = Column(String, nullable=False)
+    type = Column(String, nullable=False)  # e.g., "workout_completed", "profile_updated"
+    icon = Column(String, default="bell")  # Icon name for the frontend
+    icon_color = Column(String, default="text-blue-500")  # Tailwind CSS color class
+    read = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))
+
+    user = relationship("User", back_populates="notifications")
+
+
+class WorkoutPreferences(Base):
+    __tablename__ = "workout_preferences"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), unique=True)
+    last_bodyweight = Column(Float, nullable=True)
+    last_weight_unit = Column(String, default="kg")
+    last_exercises = Column(JSON, nullable=True)  # Store last used exercises and their sets
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+    user = relationship("User", back_populates="workout_preferences")

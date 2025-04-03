@@ -27,6 +27,7 @@ import { useTheme } from "../hooks/useTheme";
 import NotificationDropdown from "./NotificationDropdown";
 import { useNotifications } from "../contexts/NotificationContext";
 import "../styles/navHover.css";
+import { notifyWorkoutCompleted } from '../utils/notificationsHelpers';
 
 // Navigation items configuration
 const NAVIGATION_ITEMS = {
@@ -119,7 +120,7 @@ function Navbar() {
   const { theme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
-  const { unreadCount } = useNotifications();
+  const { unreadCount, addNotification } = useNotifications();
 
   // Check authentication status when location changes
   useEffect(() => {
@@ -231,6 +232,15 @@ function Navbar() {
     setSearchResults([]);
     setMobileMenuOpen(false);
     navigate(path);
+  };
+
+  const createSampleNotification = () => {
+    addNotification({
+      title: "New Notification",
+      message: "This is a test notification",
+      type: "info",
+      icon: "dumbbell" // Available icons: dumbbell, user, calendar
+    });
   };
 
   return (

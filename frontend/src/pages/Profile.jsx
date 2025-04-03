@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "../hooks/useTheme";
+import { notifyProfileUpdated, notifyUsernameChanged } from '../utils/notificationsHelpers';
 import {
   FaEdit,
   FaTrash,
@@ -14,6 +15,12 @@ import {
   FaUser,
   FaSignOutAlt,
   FaLock,
+  FaChartLine,
+  FaCog,
+  FaHeart,
+  FaHistory,
+  FaTrophy,
+  FaUserFriends,
 } from "react-icons/fa";
 
 const backendURL = "http://localhost:8000";
@@ -222,6 +229,7 @@ function Profile() {
 
         setIsEditing(false);
         setError(null);
+        await notifyUsernameChanged(updatedUser.username);
       } else {
         const errorData = await response.json();
         setError(errorData.detail || "Failed to update profile");
@@ -269,6 +277,7 @@ function Profile() {
           `${backendURL}/${result.file_path}?t=${new Date().getTime()}`
         );
         setError(null);
+        await notifyProfileUpdated();
       } else {
         setError(result.detail || "Failed to upload profile picture");
       }
@@ -293,6 +302,7 @@ function Profile() {
       if (response.ok) {
         setProfilePicture(null);
         setError(null);
+        await notifyProfileUpdated();
       } else {
         const errorData = await response.json();
         setError(errorData.detail || "Failed to remove profile picture");
@@ -390,88 +400,45 @@ function Profile() {
     navigate("/login");
   };
 
+  const quickAccessLinks = [
+    { icon: <FaDumbbell className="w-6 h-6" />, label: "Workouts", path: "/workout-log" },
+    { icon: <FaChartLine className="w-6 h-6" />, label: "Progress", path: "/progress-tracker" },
+    { icon: <FaHistory className="w-6 h-6" />, label: "History", path: "/workout-history" },
+    { icon: <FaCog className="w-6 h-6" />, label: "Settings", path: "/settings" },
+  ];
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="flex flex-col items-center">
-          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-          <p className="mt-4 text-lg">Loading your profile...</p>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-red-500 text-center">
+          <p className="text-xl mb-4">{error}</p>
+          <button
+            onClick={() => navigate("/login")}
+            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+          >
+            Return to Login
+          </button>
         </div>
       </div>
     );
   }
 
   return (
-    <div
-      className={`flex flex-col items-center justify-center min-h-screen p-4 md:p-6 ${
-        theme === "dark"
-          ? "bg-gray-900 text-white"
-          : "bg-gray-100 text-gray-900"
-      }`}
-    >
-      {error && (
-        <div className="bg-red-500 text-white p-4 rounded-lg mb-4 w-full max-w-md flex items-center justify-between">
-          <p>{error}</p>
-          <button onClick={() => setError(null)} className="ml-2 text-white">
-            <FaTimes />
-          </button>
-        </div>
-      )}
-
-      {user && (
-        <div
-          className={`bg-white dark:bg-gray-800 shadow-lg rounded-lg p-6 w-full max-w-md ${
-            theme === "dark" ? "text-white" : "text-gray-900"
-          }`}
-        >
-          {/* Greeting Card */}
-          <div
-            className="p-6 rounded-xl shadow-md text-center mb-6 transition-colors duration-300"
-            style={{ backgroundColor: cardColor }}
-          >
-            <h2 className="text-2xl md:text-3xl font-bold text-gray-900">
-              {getGreeting()}, {user.username}!
-            </h2>
-          </div>
-
-          {/* Card Color Selection */}
-          <div className="mb-6 text-center">
-            <label className="block text-gray-700 dark:text-gray-300 font-medium">
-              Card Color
-            </label>
-            <div className="flex justify-center mt-2 space-x-2">
-              {["#dbeafe", "#dcfce7", "#ffedd5", "#f3e8ff", "#fee2e2"].map(
-                (color) => (
-                  <button
-                    key={color}
-                    className={`w-8 h-8 rounded-full border-2 ${
-                      cardColor === color
-                        ? "border-gray-800 dark:border-white"
-                        : "border-transparent"
-                    }`}
-                    style={{ backgroundColor: color }}
-                    onClick={() => handleColorChange(color)}
-                    aria-label={`Set card color to ${color}`}
-                  />
-                )
-              )}
-              <input
-                type="color"
-                value={cardColor}
-                onChange={(e) => handleColorChange(e.target.value)}
-                className="w-8 h-8 rounded-full border border-gray-300 cursor-pointer"
-                aria-label="Select custom color"
-              />
-            </div>
-          </div>
-
-          {/* Profile Picture */}
-          <div className="flex flex-col items-center mb-6">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto">
+        {/* Profile Header */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8">
+          <div className="flex items-center space-x-6">
             <div className="relative">
-              <div
-                className="w-32 h-32 rounded-full bg-gray-200 dark:bg-gray-700 
-                           flex items-center justify-center overflow-hidden border-2 border-gray-300 dark:border-gray-600"
-              >
+              <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-blue-500">
                 {profilePicture ? (
                   <img
                     src={profilePicture}
@@ -479,221 +446,138 @@ function Profile() {
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <FaUser className="text-5xl text-gray-500 dark:text-gray-400" />
+                  <div className="w-full h-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                    <FaUser className="w-16 h-16 text-gray-400" />
+                  </div>
                 )}
               </div>
-
-              <div className="absolute bottom-0 right-0">
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleProfilePictureChange}
-                  accept="image/jpeg,image/png,image/gif"
-                  className="hidden"
-                />
-                <button
-                  onClick={() => fileInputRef.current.click()}
-                  className="bg-blue-500 text-white p-2 rounded-full shadow-lg hover:bg-blue-600 transition-colors"
-                  title="Upload Profile Picture"
-                  disabled={isSaving}
-                >
-                  <FaCamera />
-                </button>
-                {profilePicture && (
-                  <button
-                    onClick={handleRemoveProfilePicture}
-                    className="bg-red-500 text-white p-2 rounded-full shadow-lg ml-2 hover:bg-red-600 transition-colors"
-                    title="Remove Profile Picture"
-                    disabled={isSaving}
-                  >
-                    <FaTrash />
-                  </button>
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="absolute bottom-0 right-0 bg-blue-500 text-white p-2 rounded-full hover:bg-blue-600"
+              >
+                <FaCamera className="w-4 h-4" />
+              </button>
+              <input
+                type="file"
+                ref={fileInputRef}
+                className="hidden"
+                accept="image/*"
+                onChange={handleProfilePictureChange}
+              />
+            </div>
+            <div className="flex-1">
+              <div className="flex items-center space-x-4">
+                {isEditing ? (
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="text"
+                      value={editedUsername}
+                      onChange={(e) => setEditedUsername(e.target.value)}
+                      className="text-2xl font-bold bg-transparent border-b-2 border-blue-500 focus:outline-none"
+                    />
+                    <button
+                      onClick={handleUpdateProfile}
+                      disabled={isSaving}
+                      className="text-green-500 hover:text-green-600"
+                    >
+                      <FaSave className="w-5 h-5" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        setIsEditing(false);
+                        setEditedUsername(user.username);
+                      }}
+                      className="text-red-500 hover:text-red-600"
+                    >
+                      <FaTimes className="w-5 h-5" />
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                      {user.username}
+                    </h1>
+                    <button
+                      onClick={() => setIsEditing(true)}
+                      className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                    >
+                      <FaEdit className="w-4 h-4" />
+                    </button>
+                  </>
                 )}
               </div>
+              <p className="text-gray-600 dark:text-gray-300 mt-1">
+                Member since {formatJoinDate(user.created_at)} {getMembershipDuration(user.created_at)}
+              </p>
             </div>
           </div>
+        </div>
 
-          {/* Profile Information */}
-          <div className="mb-6">
-            <div className="flex justify-between items-center mb-4">
-              <h1 className="text-2xl md:text-3xl font-bold">Profile</h1>
-              {!isEditing ? (
-                <button
-                  onClick={() => setIsEditing(true)}
-                  className="text-blue-500 hover:text-blue-600 flex items-center"
-                  disabled={isSaving}
-                >
-                  <FaEdit className="mr-2" /> Edit Username
-                </button>
-              ) : (
-                <div className="flex space-x-2">
-                  <button
-                    onClick={handleUpdateProfile}
-                    className="text-green-500 hover:text-green-600 flex items-center"
-                    disabled={isSaving}
-                  >
-                    <FaSave className="mr-2" /> Save
-                  </button>
-                  <button
-                    onClick={() => {
-                      setIsEditing(false);
-                      setEditedUsername(user.username);
-                    }}
-                    className="text-red-500 hover:text-red-600 flex items-center"
-                    disabled={isSaving}
-                  >
-                    <FaTimes className="mr-2" /> Cancel
-                  </button>
-                </div>
-              )}
-            </div>
+        {/* Quick Access Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          {quickAccessLinks.map((link, index) => (
+            <button
+              key={index}
+              onClick={() => navigate(link.path)}
+              className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow duration-200 flex items-center space-x-4"
+            >
+              <div className="text-blue-500">{link.icon}</div>
+              <span className="text-lg font-medium text-gray-900 dark:text-white">
+                {link.label}
+              </span>
+            </button>
+          ))}
+        </div>
 
-            {!isEditing ? (
-              <div className="space-y-3 bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-                <p className="flex items-center">
-                  <FaUser className="mr-3 text-blue-500" />
-                  <span className="font-semibold">Username:</span>{" "}
-                  <span className="ml-2">{user.username}</span>
-                </p>
-                <p className="flex items-center">
-                  <FaEnvelope className="mr-3 text-blue-500" />
-                  <span className="font-semibold">Email:</span>{" "}
-                  <span className="ml-2">{user.email}</span>
-                </p>
-                <p className="flex items-center">
-                  <FaCalendarAlt className="mr-3 text-blue-500" />
-                  <span className="font-semibold">Member since:</span>{" "}
-                  <span className="ml-2">
-                    {formatJoinDate(user.created_at)}{" "}
-                    <span className="text-sm text-gray-500">
-                      {getMembershipDuration(user.created_at)}
-                    </span>
+        {/* Stats and Preferences */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Workout Stats */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+              Workout Statistics
+            </h2>
+            {workoutStats && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-600 dark:text-gray-300">Total Workouts</span>
+                  <span className="font-semibold text-gray-900 dark:text-white">
+                    {workoutStats.totalWorkouts}
                   </span>
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-4 bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Username
-                  </label>
-                  <input
-                    type="text"
-                    value={editedUsername}
-                    onChange={(e) => setEditedUsername(e.target.value)}
-                    className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                    minLength={3}
-                    maxLength={50}
-                    disabled={isSaving}
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Username must be between 3 and 50 characters
-                  </p>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    value={user.email}
-                    disabled
-                    className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 bg-gray-200 cursor-not-allowed"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Email cannot be changed
-                  </p>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-600 dark:text-gray-300">Favorite Exercise</span>
+                  <span className="font-semibold text-gray-900 dark:text-white">
+                    {workoutStats.favoriteExercise || "None"}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-600 dark:text-gray-300">Last Workout</span>
+                  <span className="font-semibold text-gray-900 dark:text-white">
+                    {workoutStats.lastWorkout ? new Date(workoutStats.lastWorkout).toLocaleDateString() : "Never"}
+                  </span>
                 </div>
               </div>
             )}
           </div>
 
-          {/* Workout Statistics */}
-          {workoutStats && (
-            <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg w-full shadow-sm">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold flex items-center">
-                  <FaDumbbell className="mr-2 text-blue-500" />
-                  Workout Statistics
-                </h2>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-white dark:bg-gray-800 p-3 rounded shadow-sm">
-                  <p className="font-medium text-sm text-gray-500 dark:text-gray-400">
-                    Total Workouts
-                  </p>
-                  <p className="text-xl font-bold">
-                    {workoutStats.totalWorkouts || 0}
-                  </p>
-                </div>
-                <div className="bg-white dark:bg-gray-800 p-3 rounded shadow-sm">
-                  <p className="font-medium text-sm text-gray-500 dark:text-gray-400">
-                    Favorite Exercise
-                  </p>
-                  <p
-                    className="text-xl font-bold truncate"
-                    title={workoutStats.favoriteExercise || "N/A"}
-                  >
-                    {workoutStats.favoriteExercise || "N/A"}
-                  </p>
-                </div>
-                <div className="bg-white dark:bg-gray-800 p-3 rounded shadow-sm">
-                  <p className="font-medium text-sm text-gray-500 dark:text-gray-400">
-                    Last Workout
-                  </p>
-                  <p className="text-xl font-bold">
-                    {workoutStats.lastWorkout
-                      ? new Date(workoutStats.lastWorkout).toLocaleDateString()
-                      : "N/A"}
-                  </p>
-                </div>
-                <div className="bg-white dark:bg-gray-800 p-3 rounded shadow-sm">
-                  <p className="font-medium text-sm text-gray-500 dark:text-gray-400">
-                    Cardio Duration
-                  </p>
-                  <p className="text-xl font-bold">
-                    {workoutStats.totalCardioDuration
-                      ? `${workoutStats.totalCardioDuration} min`
-                      : "0 min"}
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* Preferences */}
-          <div className="mb-6">
-            <h2 className="text-xl font-semibold mb-4 flex items-center">
-              <FaWeightHanging className="mr-2 text-blue-500" />
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
               Preferences
             </h2>
-            <div className="space-y-4 bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-              {/* Goal Weight Input */}
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Goal Weight (kg)
-                </label>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-gray-600 dark:text-gray-300">Card Color</span>
                 <input
-                  type="number"
-                  value={preferences.goalWeight || ""}
-                  onChange={(e) =>
-                    handlePreferenceChange({
-                      ...preferences,
-                      goalWeight: e.target.value
-                        ? Number(e.target.value)
-                        : null,
-                    })
-                  }
-                  className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  min={1}
-                  placeholder="Enter your goal weight"
-                  disabled={isSaving}
+                  type="color"
+                  value={preferences.cardColor}
+                  onChange={(e) => handleColorChange(e.target.value)}
+                  className="w-8 h-8 rounded cursor-pointer"
                 />
               </div>
-
-              {/* Email Notifications */}
-              <div>
-                <label className="flex items-center">
+              <div className="flex items-center justify-between">
+                <span className="text-gray-600 dark:text-gray-300">Email Notifications</span>
+                <label className="relative inline-flex items-center cursor-pointer">
                   <input
                     type="checkbox"
                     checked={preferences.emailNotifications}
@@ -701,151 +585,74 @@ function Profile() {
                       handlePreferenceChange({
                         ...preferences,
                         emailNotifications: e.target.checked,
-                        summaryFrequency: e.target.checked
-                          ? preferences.summaryFrequency
-                          : null,
                       })
                     }
-                    className="mr-2 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    disabled={isSaving}
+                    className="sr-only peer"
                   />
-                  <span className="text-sm font-medium">
-                    Email Notifications
-                  </span>
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
                 </label>
               </div>
-
-              {/* Summary Frequency Selection */}
-              {preferences.emailNotifications && (
-                <div className="mt-4 pl-6 border-l-2 border-blue-300 dark:border-blue-700">
-                  {!ALLOWED_EMAIL_DOMAINS.has(user.email.split("@")[1]) ? (
-                    <p className="text-red-500 text-sm">
-                      ⚠️ To enable email notifications, please use a valid email
-                      provider (Gmail, Yahoo, Outlook, etc.).
-                    </p>
-                  ) : (
-                    <>
-                      <label className="block text-sm font-medium mb-1">
-                        Workout Summary Frequency
-                      </label>
-                      <select
-                        value={preferences.summaryFrequency || ""}
-                        onChange={(e) =>
-                          handlePreferenceChange({
-                            ...preferences,
-                            summaryFrequency: e.target.value,
-                          })
-                        }
-                        className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        disabled={isSaving}
-                      >
-                        <option value="">Select Frequency</option>
-                        <option value="weekly">Weekly Summary</option>
-                        <option value="monthly">Monthly Summary</option>
-                      </select>
-                      {!preferences.summaryFrequency && (
-                        <p className="text-sm text-amber-600 dark:text-amber-400 mt-1">
-                          Please select a frequency to receive email summaries
-                        </p>
-                      )}
-                    </>
-                  )}
-                </div>
+              {preferencesChanged && (
+                <button
+                  onClick={handlePreferenceUpdate}
+                  className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600 transition-colors"
+                >
+                  Save Preferences
+                </button>
               )}
+            </div>
+          </div>
+        </div>
 
-              {/* Save Preferences Button */}
+        {/* Account Actions */}
+        <div className="mt-8 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+            Account Actions
+          </h2>
+          <div className="space-y-4">
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center justify-center space-x-2 bg-red-500 text-white py-2 rounded hover:bg-red-600 transition-colors"
+            >
+              <FaSignOutAlt className="w-5 h-5" />
+              <span>Logout</span>
+            </button>
+            <button
+              onClick={() => setShowDeleteConfirmation(true)}
+              className="w-full flex items-center justify-center space-x-2 bg-gray-500 text-white py-2 rounded hover:bg-gray-600 transition-colors"
+            >
+              <FaTrash className="w-5 h-5" />
+              <span>Delete Account</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirmation && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+              Delete Account
+            </h3>
+            <p className="text-gray-600 dark:text-gray-300 mb-4">
+              Are you sure you want to delete your account? This action cannot be undone.
+            </p>
+            <div className="flex justify-end space-x-4">
               <button
-                onClick={handlePreferenceUpdate}
-                disabled={!preferencesChanged || isSaving}
-                className={`w-full py-2 rounded-lg flex items-center justify-center ${
-                  preferencesChanged && !isSaving
-                    ? "bg-blue-500 hover:bg-blue-600 text-white"
-                    : "bg-gray-400 text-gray-700 cursor-not-allowed"
-                }`}
+                onClick={() => setShowDeleteConfirmation(false)}
+                className="px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white"
               >
-                {isSaving ? (
-                  <>
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    <FaSave className="mr-2" /> Save Preferences
-                  </>
-                )}
+                Cancel
+              </button>
+              <button
+                onClick={handleInitiateAccountDeletion}
+                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+              >
+                Delete Account
               </button>
             </div>
           </div>
-
-          {/* Account Actions */}
-          <div className="space-y-4">
-            <button
-              onClick={() => navigate("/change-password")}
-              className="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition flex items-center justify-center"
-              disabled={isSaving}
-            >
-              <FaLock className="mr-2" /> Change Password
-            </button>
-
-            <button
-              onClick={() => setShowDeleteConfirmation(true)}
-              className="w-full bg-red-500 text-white py-2 rounded-lg hover:bg-red-600 transition flex items-center justify-center"
-              disabled={isSaving}
-            >
-              <FaTrash className="mr-2" /> Delete Account
-            </button>
-
-            <button
-              onClick={handleLogout}
-              className="w-full bg-gray-500 text-white py-2 rounded-lg hover:bg-gray-600 transition flex items-center justify-center"
-              disabled={isSaving}
-            >
-              <FaSignOutAlt className="mr-2" /> Logout
-            </button>
-          </div>
-
-          {/* Account Deletion Confirmation Modal */}
-          {showDeleteConfirmation && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-              <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl max-w-md w-full">
-                <h2 className="text-xl font-bold mb-4 text-red-500 flex items-center">
-                  <FaTrash className="mr-2" /> Delete Account
-                </h2>
-                <p className="mb-4">
-                  Are you sure you want to delete your account? This action
-                  cannot be undone.
-                </p>
-                <p className="mb-4 text-sm bg-yellow-100 dark:bg-yellow-800 text-yellow-800 dark:text-yellow-200 p-3 rounded">
-                  We'll send you an email with a confirmation link to complete
-                  the deletion. This link will expire in 1 hour.
-                </p>
-                <div className="flex justify-between">
-                  <button
-                    onClick={() => setShowDeleteConfirmation(false)}
-                    className="bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-white py-2 px-4 rounded hover:bg-gray-400 dark:hover:bg-gray-500 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleInitiateAccountDeletion}
-                    className="bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600 transition-colors flex items-center"
-                    disabled={isSaving}
-                  >
-                    {isSaving ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                        Sending...
-                      </>
-                    ) : (
-                      <>
-                        <FaEnvelope className="mr-2" /> Send Confirmation Email
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       )}
     </div>

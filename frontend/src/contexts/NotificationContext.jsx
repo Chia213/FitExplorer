@@ -1,120 +1,188 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import { apiUrl } from '../utils/config';
 
 // Create context
 const NotificationContext = createContext(null);
-
-// Mock notification data generator
-const generateMockNotifications = () => {
-  const now = new Date();
-  
-  return [
-    {
-      id: 1,
-      type: "workout_completed",
-      message: "You completed your leg day workout! Great job!",
-      date: new Date(now.getTime() - 1000 * 60 * 60 * 2).toISOString(), // 2 hours ago
-      read: false,
-      icon: "dumbbell",
-      iconColor: "text-green-500"
-    },
-    {
-      id: 2,
-      type: "profile_updated",
-      message: "Your profile picture was updated successfully.",
-      date: new Date(now.getTime() - 1000 * 60 * 60 * 26).toISOString(), // 26 hours ago
-      read: true,
-      icon: "user",
-      iconColor: "text-blue-500"
-    },
-    {
-      id: 3,
-      type: "password_changed",
-      message: "Your password was successfully changed. If this wasn't you, please contact support.",
-      date: new Date(now.getTime() - 1000 * 60 * 60 * 24 * 3).toISOString(), // 3 days ago
-      read: true,
-      icon: "lock",
-      iconColor: "text-red-500"
-    },
-    {
-      id: 4,
-      type: "workout_reminder",
-      message: "Don't forget your scheduled upper body workout today!",
-      date: new Date(now.getTime() - 1000 * 60 * 30).toISOString(), // 30 minutes ago
-      read: false,
-      icon: "calendar",
-      iconColor: "text-purple-500"
-    },
-    {
-      id: 5,
-      type: "goal_achieved",
-      message: "Congratulations! You've reached your monthly workout goal.",
-      date: new Date(now.getTime() - 1000 * 60 * 60 * 12).toISOString(), // 12 hours ago
-      read: false,
-      icon: "check",
-      iconColor: "text-yellow-500"
-    }
-  ];
-};
 
 // Provider component
 export const NotificationProvider = ({ children }) => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   // Load notifications when component mounts
-  useEffect(() => {
-    const fetchNotifications = async () => {
-      setLoading(true);
-      try {
-        // In a real app, this would be an API call
-        // Example: const response = await fetch('/api/notifications');
-        
-        // For now, use mock data with a slight delay to simulate API call
-        setTimeout(() => {
-          const mockData = generateMockNotifications();
-          setNotifications(mockData);
-          setLoading(false);
-        }, 800);
-      } catch (error) {
-        console.error('Error fetching notifications:', error);
+  const fetchNotifications = async () => {
+    setLoading(true);
+    try {
+      // Get token from local storage
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setNotifications([]);
         setLoading(false);
+        return;
       }
-    };
 
+      const response = await fetch(`${apiUrl}/notifications`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch notifications');
+      }
+
+      const data = await response.json();
+      setNotifications(data);
+      setError(null);
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+      setError('Failed to load notifications');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchNotifications();
+    
+    // Set up periodic refresh every 2 minutes
+    const intervalId = setInterval(fetchNotifications, 2 * 60 * 1000);
+    
+    return () => clearInterval(intervalId);
   }, []);
 
   // Mark a notification as read
-  const markAsRead = (id) => {
-    setNotifications(
-      notifications.map(notification => 
-        notification.id === id ? { ...notification, read: true } : notification
-      )
-    );
+  const markAsRead = async (id) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      const response = await fetch(`${apiUrl}/notifications/${id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ read: true })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update notification');
+      }
+
+      setNotifications(
+        notifications.map(notification => 
+          notification.id === id ? { ...notification, read: true } : notification
+        )
+      );
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+    }
   };
 
   // Mark all notifications as read
-  const markAllAsRead = () => {
-    setNotifications(
-      notifications.map(notification => ({ ...notification, read: true }))
-    );
+  const markAllAsRead = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      const response = await fetch(`${apiUrl}/notifications/mark-all-read`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to mark all notifications as read');
+      }
+
+      setNotifications(
+        notifications.map(notification => ({ ...notification, read: true }))
+      );
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
+    }
   };
 
   // Delete a notification
-  const deleteNotification = (id) => {
-    setNotifications(
-      notifications.filter(notification => notification.id !== id)
-    );
+  const deleteNotification = async (id) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      const response = await fetch(`${apiUrl}/notifications/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete notification');
+      }
+
+      setNotifications(
+        notifications.filter(notification => notification.id !== id)
+      );
+    } catch (error) {
+      console.error('Error deleting notification:', error);
+    }
   };
 
   // Clear all notifications
-  const clearAll = () => {
-    setNotifications([]);
+  const clearAll = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      const response = await fetch(`${apiUrl}/notifications/clear-all`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to clear notifications');
+      }
+
+      setNotifications([]);
+    } catch (error) {
+      console.error('Error clearing notifications:', error);
+    }
   };
 
-  // Add a new notification
-  const addNotification = (notification) => {
-    setNotifications(prev => [notification, ...prev]);
+  // Add a new notification (for local testing)
+  const addNotification = async (notification) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      const response = await fetch(`${apiUrl}/notifications`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          message: notification.message,
+          type: notification.type,
+          icon: notification.icon || 'bell',
+          icon_color: notification.iconColor || 'text-blue-500'
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create notification');
+      }
+
+      const data = await response.json();
+      setNotifications(prev => [data, ...prev]);
+    } catch (error) {
+      console.error('Error adding notification:', error);
+    }
   };
 
   // Get unread count
@@ -123,12 +191,14 @@ export const NotificationProvider = ({ children }) => {
   const value = {
     notifications,
     loading,
+    error,
     unreadCount,
     markAsRead,
     markAllAsRead,
     deleteNotification,
     clearAll,
-    addNotification
+    addNotification,
+    refreshNotifications: fetchNotifications
   };
 
   return (
@@ -146,5 +216,3 @@ export const useNotifications = () => {
   }
   return context;
 };
-
-// Remove the default export to avoid circular reference

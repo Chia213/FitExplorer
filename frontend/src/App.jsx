@@ -29,6 +29,7 @@ import ChangePassword from "./pages/ChangePassword";
 import Notifications from "./pages/Notifications";
 import FAQ from "./pages/FAQ";
 import FitnessCalculator from "./pages/FitnessCalculator";
+import Settings from "./pages/Settings";
 
 // Admin pages
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -107,6 +108,7 @@ function App() {
                   <Route path="/saved-programs" element={<SavedPrograms />} />
                   <Route path="/program-tracker" element={<ProgramTracker />} />
                   <Route path="/change-password" element={<ChangePassword />} />
+                  <Route path="/settings" element={<Settings />} />
 
                   {/* Admin Routes */}
                   <Route path="/admin" element={<AdminDashboard />} />

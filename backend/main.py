@@ -1,6 +1,6 @@
 from security import hash_password, verify_password, generate_verification_token
 from config import settings
-from itertools import groupby
+from notifications import router as notifications_router
 from security import create_access_token
 from schemas import (
     WorkoutCreate,
@@ -14,28 +14,33 @@ from schemas import (
     SavedWorkoutProgramCreate,
     SavedWorkoutProgramResponse,
     RoutineFolderCreate,
-    RoutineFolderResponse
+    RoutineFolderResponse,
+    WorkoutPreferencesCreate,
+    WorkoutPreferencesUpdate,
+    WorkoutPreferencesResponse
 )
-from models import Workout, User, Exercise, Set, UserPreferences, Routine, CustomExercise, SavedWorkoutProgram, RoutineFolder
-from typing import List, Dict, Any
+from models import Workout, User, Exercise, Set, UserPreferences, Routine, CustomExercise, SavedWorkoutProgram, RoutineFolder, WorkoutPreferences
+from typing import List, Dict, Any, Optional
 from admin import router as admin_router
 from dependencies import get_current_user, get_admin_user
 from auth import router as auth_router
 from datetime import datetime, timezone, timedelta
 from database import engine, Base, get_db
-from sqlalchemy import func, desc, extract
+from sqlalchemy import func, desc, extract, and_
 from sqlalchemy.orm import Session, joinedload
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import uuid
 import os
-import secrets
 from fastapi import FastAPI, Depends, HTTPException, File, UploadFile, BackgroundTasks, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from background_task import send_summary_emails
 from email_service import (send_summary_email, send_security_alert, send_verification_email, send_password_reset_email,
                            send_password_changed_email, send_account_deletion_email, notify_admin_new_registration)
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+import jwt
+from passlib.context import CryptContext
 
 
 Base.metadata.create_all(bind=engine)
@@ -77,6 +82,7 @@ app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 app.include_router(auth_router)
 app.include_router(admin_router)
+app.include_router(notifications_router)
 
 
 @app.get("/protected-route")
@@ -121,78 +127,105 @@ def get_workouts(user: User = Depends(get_current_user), db: Session = Depends(g
 
 
 @app.post("/workouts", response_model=WorkoutResponse)
-def add_workout(
-    workout: WorkoutCreate,
-    user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    new_workout = Workout(
-        name=workout.name,
-        date=workout.date,
-        start_time=workout.start_time,
-        end_time=workout.end_time,
-        bodyweight=workout.bodyweight,  # Capture bodyweight
-        weight_unit=workout.weight_unit,
-        notes=workout.notes,
-        user_id=user.id
-    )
-    db.add(new_workout)
-    db.commit()
-    db.refresh(new_workout)
+def add_workout(workout: WorkoutCreate, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    try:
+        new_workout = Workout(
+            name=workout.name,
+            date=workout.date,
+            start_time=workout.start_time,
+            end_time=workout.end_time,
+            bodyweight=workout.bodyweight,
+            weight_unit=workout.weight_unit,
+            notes=workout.notes,
+            user_id=user.id
+        )
+        db.add(new_workout)
+        db.commit()
+        db.refresh(new_workout)
 
-    # Process max lifts if provided
-    if workout.max_lifts:
-        for exercise_name, max_weight in workout.max_lifts.items():
-            # Find or create the exercise
-            exercise = db.query(Exercise).filter(
-                Exercise.workout_id == new_workout.id,
-                Exercise.name == exercise_name
-            ).first()
-
-            if not exercise:
+        # Add exercises and their sets
+        if workout.exercises:
+            for exercise_data in workout.exercises:
                 exercise = Exercise(
-                    name=exercise_name,
-                    workout_id=new_workout.id,
-                    category=_determine_exercise_category(exercise_name)
+                    name=exercise_data.name,
+                    category=exercise_data.category,
+                    is_cardio=exercise_data.is_cardio,
+                    workout_id=new_workout.id
                 )
                 db.add(exercise)
                 db.commit()
                 db.refresh(exercise)
 
-            # Add a set representing the max lift
-            max_lift_set = Set(
-                weight=max_weight,
-                exercise_id=exercise.id,
-                notes="Max lift tracking"
+                # Add sets for this exercise
+                if exercise_data.sets:
+                    for set_data in exercise_data.sets:
+                        set_obj = Set(
+                            weight=set_data.weight,
+                            reps=set_data.reps,
+                            distance=set_data.distance,
+                            duration=set_data.duration,
+                            intensity=set_data.intensity,
+                            notes=set_data.notes,
+                            exercise_id=exercise.id
+                        )
+                        db.add(set_obj)
+                db.commit()
+
+        # Process max lifts if provided
+        if workout.max_lifts:
+            for exercise_name, max_weight in workout.max_lifts.items():
+                exercise = db.query(Exercise).filter(
+                    Exercise.workout_id == new_workout.id,
+                    Exercise.name == exercise_name
+                ).first()
+
+                if not exercise:
+                    exercise = Exercise(
+                        name=exercise_name,
+                        workout_id=new_workout.id,
+                        category=_determine_exercise_category(exercise_name)
+                    )
+                    db.add(exercise)
+                    db.commit()
+                    db.refresh(exercise)
+
+                max_lift_set = Set(
+                    weight=max_weight,
+                    exercise_id=exercise.id,
+                    notes="Max lift tracking"
+                )
+                db.add(max_lift_set)
+
+        # Process cardio summary
+        if workout.cardio_summary:
+            cardio_exercise = Exercise(
+                name="Cardio",
+                is_cardio=True,
+                workout_id=new_workout.id
             )
-            db.add(max_lift_set)
+            db.add(cardio_exercise)
+            db.commit()
+            db.refresh(cardio_exercise)
 
-    # Process cardio summary
-    if workout.cardio_summary:
-        cardio_exercise = Exercise(
-            name="Cardio",
-            is_cardio=True,
-            workout_id=new_workout.id
-        )
-        db.add(cardio_exercise)
+            cardio_set = Set(
+                distance=workout.cardio_summary.get('distance'),
+                duration=workout.cardio_summary.get('duration'),
+                intensity=workout.cardio_summary.get('intensity', ''),
+                exercise_id=cardio_exercise.id
+            )
+            db.add(cardio_set)
+
         db.commit()
-        db.refresh(cardio_exercise)
 
-        cardio_set = Set(
-            distance=workout.cardio_summary.get('distance'),
-            duration=workout.cardio_summary.get('duration'),
-            intensity=workout.cardio_summary.get('intensity', ''),
-            exercise_id=cardio_exercise.id
-        )
-        db.add(cardio_set)
+        # Return the complete workout with all relationships loaded
+        return db.query(Workout)\
+            .options(joinedload(Workout.exercises).joinedload(Exercise.sets))\
+            .filter(Workout.id == new_workout.id)\
+            .first()
 
-    db.commit()
-    db.refresh(new_workout)
-
-    return db.query(Workout)\
-        .options(joinedload(Workout.exercises).joinedload(Exercise.sets))\
-        .filter(Workout.id == new_workout.id)\
-        .first()
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=422, detail=f"Error creating workout: {str(e)}")
 
 
 def _determine_exercise_category(exercise_name):
@@ -499,8 +532,6 @@ def remove_profile_picture(
             status_code=500, detail=f"Error removing profile picture: {str(e)}")
 
 
-# In main.py, modify the create_routine function to save set information:
-
 @app.post("/routines", response_model=RoutineResponse)
 def create_routine(
     routine: RoutineCreate,
@@ -604,8 +635,6 @@ def create_routine(
         db.rollback()
         print(f"Error creating routine: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
-
-# In main.py, update the update_routine function to handle sets properly:
 
 
 @app.put("/routines/{routine_id}", response_model=RoutineResponse)
@@ -763,7 +792,6 @@ def create_saved_program(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# Change the return type
 @app.get("/saved-programs", response_model=List[Dict[str, Any]])
 def get_saved_programs(
     user: User = Depends(get_current_user),
@@ -862,7 +890,6 @@ def clear_saved_programs(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# In main.py
 @app.post("/routines/check-name")
 def check_routine_name(
     data: dict = Body(..., example={"name": "My Routine"}),
@@ -962,8 +989,6 @@ def delete_routine_folder(
     db.delete(folder)
     db.commit()
     return {"message": "Folder deleted successfully"}
-
-# Add endpoint to move routine to a folder
 
 
 @app.put("/routines/{routine_id}/move-to-folder", response_model=RoutineResponse)
@@ -1442,3 +1467,100 @@ def reset_user_password(
     db.commit()
 
     return {"message": "Password reset successful"}
+
+
+@app.get("/personal-records")
+def get_personal_records(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    workouts = db.query(Workout).filter(Workout.user_id == user.id).order_by(Workout.date.desc()).all()
+    personal_records = {}
+    for workout in workouts:
+        for exercise in workout.exercises:
+            if not exercise.is_cardio:
+                max_weight = 0
+                for set_data in exercise.sets:
+                    if set_data.weight and set_data.weight > max_weight:
+                        max_weight = set_data.weight
+                if max_weight > 0:
+                    if exercise.name not in personal_records:
+                        personal_records[exercise.name] = {'weight': max_weight, 'date': workout.date}
+                    elif max_weight > personal_records[exercise.name]['weight']:
+                        personal_records[exercise.name] = {'weight': max_weight, 'date': workout.date}
+    return personal_records
+
+
+@app.get("/workout-streak")
+def get_workout_streak(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    # Get all workouts for the user, ordered by date
+    workouts = db.query(Workout).filter(
+        Workout.user_id == user.id
+    ).order_by(Workout.date.desc()).all()
+
+    if not workouts:
+        return {"streak": 0, "last_workout": None}
+
+    # Get the last workout date
+    last_workout = workouts[0].date
+    today = datetime.now(timezone.utc).date()
+    
+    # If the last workout was not today, streak is broken
+    if last_workout.date() != today:
+        return {"streak": 0, "last_workout": last_workout}
+
+    # Calculate the streak
+    streak = 1
+    current_date = today - timedelta(days=1)
+    
+    for workout in workouts[1:]:
+        if workout.date.date() == current_date:
+            streak += 1
+            current_date -= timedelta(days=1)
+        else:
+            break
+
+    return {"streak": streak, "last_workout": last_workout}
+
+
+@app.get("/workout-preferences", response_model=WorkoutPreferencesResponse)
+async def get_workout_preferences(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    preferences = db.query(WorkoutPreferences).filter(
+        WorkoutPreferences.user_id == current_user.id
+    ).first()
+    
+    if not preferences:
+        # Create default preferences if none exist
+        preferences = WorkoutPreferences(
+            user_id=current_user.id,
+            last_weight_unit="kg"
+        )
+        db.add(preferences)
+        db.commit()
+        db.refresh(preferences)
+    
+    return preferences
+
+@app.put("/workout-preferences", response_model=WorkoutPreferencesResponse)
+async def update_workout_preferences(
+    preferences_update: WorkoutPreferencesUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    preferences = db.query(WorkoutPreferences).filter(
+        WorkoutPreferences.user_id == current_user.id
+    ).first()
+    
+    if not preferences:
+        preferences = WorkoutPreferences(user_id=current_user.id)
+        db.add(preferences)
+    
+    for field, value in preferences_update.dict(exclude_unset=True).items():
+        setattr(preferences, field, value)
+    
+    db.commit()
+    db.refresh(preferences)
+    return preferences
