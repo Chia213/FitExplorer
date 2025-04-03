@@ -36,7 +36,6 @@ import AdminRoute from "./components/AdminRoute";
 // Import all CSS files
 import "./styles/design-system.css";
 import "./styles/navHover.css";
-import "./styles/page-transitions.css";
 import "./styles/micro-interactions.css";
 import "./styles/custom-scrollbar.css";
 import "./styles/responsive-utilities.css";
