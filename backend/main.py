@@ -1,5 +1,6 @@
 from security import hash_password, verify_password, generate_verification_token
 from config import settings
+from itertools import groupby
 from security import create_access_token
 from schemas import (
     WorkoutCreate,
@@ -22,7 +23,7 @@ from dependencies import get_current_user
 from auth import router as auth_router
 from datetime import datetime, timezone, timedelta
 from database import engine, Base, get_db
-from sqlalchemy import func, desc
+from sqlalchemy import func, desc, extract
 from sqlalchemy.orm import Session, joinedload
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -120,13 +121,17 @@ def get_workouts(user: User = Depends(get_current_user), db: Session = Depends(g
 
 
 @app.post("/workouts", response_model=WorkoutResponse)
-def add_workout(workout: WorkoutCreate, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def add_workout(
+    workout: WorkoutCreate,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     new_workout = Workout(
         name=workout.name,
         date=workout.date,
         start_time=workout.start_time,
         end_time=workout.end_time,
-        bodyweight=workout.bodyweight,
+        bodyweight=workout.bodyweight,  # Capture bodyweight
         weight_unit=workout.weight_unit,
         notes=workout.notes,
         user_id=user.id
@@ -135,35 +140,71 @@ def add_workout(workout: WorkoutCreate, user: User = Depends(get_current_user), 
     db.commit()
     db.refresh(new_workout)
 
-    if workout.exercises:
-        for exercise_data in workout.exercises:
-            new_exercise = Exercise(
-                name=exercise_data.name,
-                category=exercise_data.category,
-                is_cardio=exercise_data.is_cardio,
-                workout_id=new_workout.id
-            )
-            db.add(new_exercise)
-            db.commit()
-            db.refresh(new_exercise)
+    # Process max lifts if provided
+    if workout.max_lifts:
+        for exercise_name, max_weight in workout.max_lifts.items():
+            # Find or create the exercise
+            exercise = db.query(Exercise).filter(
+                Exercise.workout_id == new_workout.id,
+                Exercise.name == exercise_name
+            ).first()
 
-            for set_data in exercise_data.sets:
-                new_set = Set(
-                    weight=set_data.weight,
-                    reps=set_data.reps,
-                    distance=set_data.distance,
-                    duration=set_data.duration,
-                    intensity=set_data.intensity,
-                    notes=set_data.notes,
-                    exercise_id=new_exercise.id
+            if not exercise:
+                exercise = Exercise(
+                    name=exercise_name,
+                    workout_id=new_workout.id,
+                    category=_determine_exercise_category(exercise_name)
                 )
-                db.add(new_set)
-            db.commit()
+                db.add(exercise)
+                db.commit()
+                db.refresh(exercise)
+
+            # Add a set representing the max lift
+            max_lift_set = Set(
+                weight=max_weight,
+                exercise_id=exercise.id,
+                notes="Max lift tracking"
+            )
+            db.add(max_lift_set)
+
+    # Process cardio summary
+    if workout.cardio_summary:
+        cardio_exercise = Exercise(
+            name="Cardio",
+            is_cardio=True,
+            workout_id=new_workout.id
+        )
+        db.add(cardio_exercise)
+        db.commit()
+        db.refresh(cardio_exercise)
+
+        cardio_set = Set(
+            distance=workout.cardio_summary.get('distance'),
+            duration=workout.cardio_summary.get('duration'),
+            intensity=workout.cardio_summary.get('intensity', ''),
+            exercise_id=cardio_exercise.id
+        )
+        db.add(cardio_set)
+
+    db.commit()
+    db.refresh(new_workout)
 
     return db.query(Workout)\
         .options(joinedload(Workout.exercises).joinedload(Exercise.sets))\
         .filter(Workout.id == new_workout.id)\
         .first()
+
+
+def _determine_exercise_category(exercise_name):
+    # Helper function to categorize exercises
+    strength_categories = {
+        'Bench Press': 'Upper Body',
+        'Squat': 'Lower Body',
+        'Deadlift': 'Full Body',
+        'Overhead Press': 'Upper Body',
+        'Row': 'Upper Body'
+    }
+    return strength_categories.get(exercise_name, 'Other')
 
 
 @app.delete("/workouts/{workout_id}")
@@ -1180,3 +1221,206 @@ def check_admin_status(user: User = Depends(get_current_user)):
         "username": user.username,
         "is_admin": user.is_admin
     }
+
+
+@app.get("/progress/strength")
+def get_strength_progress(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    try:
+        # Debug: Print user ID to verify authentication
+        print(f"Fetching strength progress for user ID: {user.id}")
+
+        # Fetch workouts with strength exercises for this user
+        workouts = db.query(Workout)\
+            .options(joinedload(Workout.exercises).joinedload(Exercise.sets))\
+            .filter(Workout.user_id == user.id)\
+            .all()
+
+        # Process strength data manually
+        processed_data = []
+        strength_exercises = ['Bench Press', 'Squat', 'Deadlift']
+
+        for workout in workouts:
+            for exercise in workout.exercises:
+                if exercise.name in strength_exercises:
+                    # Find max weight for this exercise in this workout
+                    max_weight = max(
+                        (set.weight for set in exercise.sets if set.weight is not None),
+                        default=0
+                    )
+
+                    if max_weight > 0:
+                        processed_data.append({
+                            'date': workout.date.isoformat(),
+                            'exercise': exercise.name,
+                            'weight': max_weight
+                        })
+
+        # Debug: Print processed data
+        print(f"Strength progress data: {processed_data}")
+
+        return processed_data
+
+    except Exception as e:
+        print(f"Error in strength progress: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error fetching strength progress: {str(e)}")
+
+
+@app.get("/progress/cardio")
+def get_cardio_progress(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    try:
+        # Debug: Print user ID
+        print(f"Fetching cardio progress for user ID: {user.id}")
+
+        # Fetch workouts with cardio exercises
+        workouts = db.query(Workout)\
+            .options(joinedload(Workout.exercises).joinedload(Exercise.sets))\
+            .filter(Workout.user_id == user.id, Exercise.is_cardio == True)\
+            .all()
+
+        processed_data = []
+        for workout in workouts:
+            total_distance = sum(
+                set.distance for exercise in workout.exercises
+                for set in exercise.sets if set.distance is not None
+            )
+            total_duration = sum(
+                set.duration for exercise in workout.exercises
+                for set in exercise.sets if set.duration is not None
+            )
+
+            # Calculate pace safely
+            running_pace = (total_duration /
+                            total_distance) if total_distance > 0 else None
+
+            processed_data.append({
+                'date': workout.date.isoformat(),
+                'runningDistance': round(total_distance, 2),
+                'runningPace': round(running_pace, 2) if running_pace is not None else None
+            })
+
+        # Debug: Print processed data
+        print(f"Cardio progress data: {processed_data}")
+
+        return processed_data
+
+    except Exception as e:
+        print(f"Error in cardio progress: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error fetching cardio progress: {str(e)}")
+
+
+@app.get("/progress/workout-frequency")
+def get_workout_frequency(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    try:
+        # Debug: Print user ID
+        print(f"Fetching workout frequency for user ID: {user.id}")
+
+        # Count workouts per month
+        monthly_workouts = db.query(
+            func.to_char(Workout.date, 'Mon'),
+            func.count(Workout.id)
+        )\
+            .filter(Workout.user_id == user.id)\
+            .group_by(func.to_char(Workout.date, 'Mon'))\
+            .order_by(func.to_char(Workout.date, 'Mon'))\
+            .all()
+
+        processed_data = [
+            {
+                'month': month,
+                'workouts': count
+            } for month, count in monthly_workouts
+        ]
+
+        # Debug: Print processed data
+        print(f"Workout frequency data: {processed_data}")
+
+        return processed_data
+
+    except Exception as e:
+        print(f"Error in workout frequency: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error fetching workout frequency: {str(e)}")
+
+
+@app.get("/progress/body-composition")
+def get_body_composition_progress(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    try:
+        # Debug print
+        print(f"Fetching body composition for user ID: {user.id}")
+
+        body_weight_data = db.query(Workout.date, Workout.bodyweight)\
+            .filter(
+                Workout.user_id == user.id,
+                Workout.bodyweight.isnot(None)
+        )\
+            .order_by(Workout.date)\
+            .all()
+
+        # Debug print
+        print(f"Found {len(body_weight_data)} body weight entries")
+
+        return [
+            {
+                'date': date.isoformat(),
+                'bodyweight': float(bodyweight)  # Ensure it's a float
+            } for date, bodyweight in body_weight_data
+        ]
+    except Exception as e:
+        print(f"Error in body composition progress: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Internal server error: {str(e)}")
+
+
+@app.get("/progress/strength-lifts")
+def get_strength_lift_progress(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    try:
+        # Debug print
+        print(f"Fetching strength lifts for user ID: {user.id}")
+
+        strength_exercises = ['Bench Press', 'Squat', 'Deadlift']
+
+        progress_data = {}
+        for exercise_name in strength_exercises:
+            max_lifts = db.query(Workout.date, func.max(Set.weight))\
+                .join(Exercise)\
+                .join(Set)\
+                .filter(
+                    Workout.user_id == user.id,
+                    Exercise.name == exercise_name
+            )\
+                .group_by(Workout.date)\
+                .order_by(Workout.date)\
+                .all()
+
+            # Debug print
+            print(f"Found {len(max_lifts)} max lifts for {exercise_name}")
+
+            progress_data[exercise_name] = [
+                {
+                    'date': date.isoformat(),
+                    'max_weight': float(max_weight) if max_weight is not None else None
+                } for date, max_weight in max_lifts
+            ]
+
+        return progress_data
+    except Exception as e:
+        print(f"Error in strength lifts progress: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Internal server error: {str(e)}")

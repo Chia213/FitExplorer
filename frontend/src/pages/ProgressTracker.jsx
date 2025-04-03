@@ -1,7 +1,7 @@
-// src/pages/ProgressTracker.jsx
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "../hooks/useTheme";
+import axios from "../utils/axiosConfig";
 import {
   LineChart,
   Line,
@@ -27,7 +27,7 @@ import {
   FaMinus,
 } from "react-icons/fa";
 
-const backendURL = "http://localhost:8000";
+const backendURL = import.meta.env.VITE_BACKEND_URL;
 
 function ProgressTracker() {
   const [loading, setLoading] = useState(true);
@@ -54,17 +54,52 @@ function ProgressTracker() {
     const fetchProgressData = async () => {
       try {
         setLoading(true);
+        setError(null);
 
-        // For now we're using mock data, but in a real app you'd fetch from backend endpoints
-        // const response = await fetch(`${backendURL}/progress?range=${dateRange}`, {
-        //   headers: { Authorization: `Bearer ${token}` },
-        // });
-        // if (!response.ok) throw new Error("Failed to fetch progress data");
-        // const data = await response.json();
+        // Fetch workout stats first
+        const workoutStatsResponse = await axios.get(
+          `${backendURL}/workout-stats`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
 
-        // Mock data for demonstration
-        const mockData = generateMockData();
-        setProgressData(mockData);
+        // Process weight progression
+        const weightData = workoutStatsResponse.data.weight_progression
+          .map((entry) => ({
+            date: new Date(entry.date).toISOString().split("T")[0],
+            bodyweight: entry.bodyweight,
+          }))
+          .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+        // Fetch historical data for other metrics (you'll need to implement these endpoints)
+        const strengthResponse = await axios.get(
+          `${backendURL}/progress/strength`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+
+        const cardioResponse = await axios.get(
+          `${backendURL}/progress/cardio`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+
+        const workoutsResponse = await axios.get(
+          `${backendURL}/progress/workout-frequency`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+
+        setProgressData({
+          weight: weightData,
+          strength: strengthResponse.data,
+          cardio: cardioResponse.data,
+          workouts: workoutsResponse.data,
+        });
       } catch (err) {
         console.error("Error fetching progress data:", err);
         setError("Failed to load progress data. Please try again later.");
@@ -76,99 +111,34 @@ function ProgressTracker() {
     fetchProgressData();
   }, [navigate, dateRange]);
 
-  const generateMockData = () => {
-    // Helper to generate dates
-    const generateDates = (numPoints, interval = 7) => {
-      const dates = [];
-      const today = new Date();
+  const filterDataByDateRange = (data, range) => {
+    if (!data || data.length === 0) return data;
 
-      for (let i = numPoints - 1; i >= 0; i--) {
-        const date = new Date();
-        date.setDate(today.getDate() - i * interval);
-        dates.push(date.toISOString().split("T")[0]);
-      }
-
-      return dates;
+    const now = new Date();
+    const rangeMap = {
+      "1m": 30,
+      "3m": 90,
+      "6m": 180,
+      "1y": 365,
+      all: Infinity,
     };
 
-    // Generate weight data (weekly measurements)
-    const weightDates = generateDates(12);
-    const weightData = weightDates.map((date, index) => {
-      // Start at 80kg and gradually decrease with some fluctuation
-      const baseWeight = 80 - index * 0.5;
-      const fluctuation = Math.random() * 0.8 - 0.4; // Random fluctuation between -0.4 and 0.4
-      return {
-        date,
-        bodyweight: +(baseWeight + fluctuation).toFixed(1),
-      };
+    const daysToSubtract = rangeMap[range] || 90;
+
+    return data.filter((entry) => {
+      const entryDate = new Date(entry.date);
+      const daysDiff = (now - entryDate) / (1000 * 60 * 60 * 24);
+      return daysDiff <= daysToSubtract;
     });
-
-    // Generate strength data (less frequent measurements, every 2 weeks)
-    const strengthDates = generateDates(6, 14);
-    const strengthData = strengthDates.map((date, index) => {
-      // Progressive overload with some variation
-      return {
-        date,
-        benchPress: Math.round(80 + index * 2.5 + (Math.random() * 2 - 1)),
-        squat: Math.round(100 + index * 5 + (Math.random() * 3 - 1.5)),
-        deadlift: Math.round(140 + index * 5 + (Math.random() * 3 - 1.5)),
-      };
-    });
-
-    // Generate cardio data (weekly measurements)
-    const cardioDates = generateDates(12);
-    const cardioData = cardioDates.map((date, index) => {
-      // Improving cardio performance
-      return {
-        date,
-        runningPace: +(5.5 - index * 0.1 + (Math.random() * 0.2 - 0.1)).toFixed(
-          1
-        ), // min/km
-        runningDistance: Math.round(
-          3 + index * 0.3 + (Math.random() * 0.4 - 0.2)
-        ), // km
-      };
-    });
-
-    // Generate workout frequency data (monthly counts)
-    const months = [
-      "Jan",
-      "Feb",
-      "Mar",
-      "Apr",
-      "May",
-      "Jun",
-      "Jul",
-      "Aug",
-      "Sep",
-      "Oct",
-      "Nov",
-      "Dec",
-    ];
-    const currentMonth = new Date().getMonth();
-
-    const workoutData = [];
-    for (let i = 0; i < 12; i++) {
-      const monthIndex = (currentMonth - 11 + i) % 12;
-      workoutData.push({
-        month: months[monthIndex],
-        workouts: Math.round(8 + Math.random() * 6), // 8-14 workouts per month
-      });
-    }
-
-    return {
-      weight: weightData,
-      strength: strengthData,
-      cardio: cardioData,
-      workouts: workoutData,
-    };
   };
 
   const calculateChange = (data, key) => {
-    if (!data || data.length < 2) return { value: 0, direction: "none" };
+    const filteredData = filterDataByDateRange(data, dateRange);
+    if (!filteredData || filteredData.length < 2)
+      return { value: 0, direction: "none" };
 
-    const latest = data[data.length - 1][key];
-    const previous = data[data.length - 2][key];
+    const latest = filteredData[filteredData.length - 1][key];
+    const previous = filteredData[0][key];
     const change = latest - previous;
 
     return {
@@ -178,7 +148,6 @@ function ProgressTracker() {
   };
 
   const renderChangeIndicator = (change, invertColors = false) => {
-    // For weight, down is good (green), for strength, up is good (green)
     const upColor = invertColors ? "text-green-500" : "text-red-500";
     const downColor = invertColors ? "text-red-500" : "text-green-500";
 
@@ -214,8 +183,9 @@ function ProgressTracker() {
   };
 
   const renderWeightMetric = () => {
-    const weightData = progressData.weight;
+    const weightData = filterDataByDateRange(progressData.weight, dateRange);
     const weightChange = calculateChange(weightData, "bodyweight");
+
     const processedData = weightData.map((entry) => ({
       ...entry,
       formattedDate: formatDate(entry.date),
@@ -286,8 +256,12 @@ function ProgressTracker() {
   };
 
   const renderStrengthMetric = () => {
-    const strengthData = progressData.strength;
-    if (!strengthData.length) return <p>No strength data available</p>;
+    const strengthData = filterDataByDateRange(
+      progressData.strength,
+      dateRange
+    );
+    if (!strengthData || strengthData.length === 0)
+      return <p>No strength data available</p>;
 
     const benchChange = calculateChange(strengthData, "benchPress");
     const squatChange = calculateChange(strengthData, "squat");
@@ -379,14 +353,12 @@ function ProgressTracker() {
   };
 
   const renderCardioMetric = () => {
-    const cardioData = progressData.cardio;
-    if (!cardioData.length) return <p>No cardio data available</p>;
+    const cardioData = filterDataByDateRange(progressData.cardio, dateRange);
+    if (!cardioData || cardioData.length === 0)
+      return <p>No cardio data available</p>;
 
     const paceChange = calculateChange(cardioData, "runningPace");
     const distanceChange = calculateChange(cardioData, "runningDistance");
-
-    // For pace, lower is better, so we invert the arrows
-    const invertPaceIndicator = true;
 
     const processedData = cardioData.map((entry) => ({
       ...entry,
@@ -405,7 +377,7 @@ function ProgressTracker() {
             </p>
             <p className="text-sm flex items-center mt-1">
               {paceChange.value} min/km{" "}
-              {renderChangeIndicator(paceChange, invertPaceIndicator)}
+              {renderChangeIndicator(paceChange, true)}
             </p>
           </div>
 
@@ -459,8 +431,9 @@ function ProgressTracker() {
   };
 
   const renderFrequencyMetric = () => {
-    const workoutData = progressData.workouts;
-    if (!workoutData.length) return <p>No workout frequency data available</p>;
+    const workoutData = filterDataByDateRange(progressData.workouts, dateRange);
+    if (!workoutData || workoutData.length === 0)
+      return <p>No workout frequency data available</p>;
 
     // Calculate total workouts
     const totalWorkouts = workoutData.reduce(
@@ -526,6 +499,20 @@ function ProgressTracker() {
     );
   }
 
+  if (error) {
+    return (
+      <div className="container mx-auto px-4 py-8 text-center">
+        <div
+          className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative"
+          role="alert"
+        >
+          <strong className="font-bold">Error: </strong>
+          <span className="block sm:inline">{error}</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       className={`container mx-auto px-4 py-8 ${
@@ -551,10 +538,6 @@ function ProgressTracker() {
           </select>
         </div>
       </div>
-
-      {error && (
-        <div className="bg-red-500 text-white p-4 rounded-lg mb-6">{error}</div>
-      )}
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <button

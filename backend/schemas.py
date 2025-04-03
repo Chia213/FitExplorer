@@ -1,6 +1,6 @@
 from pydantic import BaseModel, EmailStr, Field
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Dict
 
 
 class UserCreate(BaseModel):
@@ -68,6 +68,10 @@ class WorkoutBase(BaseModel):
 
 
 class WorkoutCreate(WorkoutBase):
+    bodyweight: Optional[float] = None  # Change to float for more precision
+    # Track max lifts for key exercises
+    max_lifts: Optional[Dict[str, float]] = None
+    cardio_summary: Optional[Dict[str, float]] = None  # Capture cardio details
     exercises: Optional[List[ExerciseCreate]] = []
 
 
@@ -232,3 +236,39 @@ class RoutineFolderResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class BodyCompositionEntry(BaseModel):
+    date: str
+    bodyweight: float
+
+
+class StrengthLiftEntry(BaseModel):
+    date: str
+    max_weight: float
+
+
+class StrengthLiftProgress(BaseModel):
+    Bench_Press: List[StrengthLiftEntry]
+    Squat: List[StrengthLiftEntry]
+    Deadlift: List[StrengthLiftEntry]
+
+
+class CardioProgressEntry(BaseModel):
+    date: str
+    runningDistance: float
+    runningPace: Optional[float]
+
+
+class WorkoutFrequencyEntry(BaseModel):
+    month: str
+    workouts: int
+
+# Optional: If you want more type-safe responses for your progress endpoints
+
+
+class ProgressResponse(BaseModel):
+    body_composition: List[BodyCompositionEntry]
+    strength_lifts: StrengthLiftProgress
+    cardio: List[CardioProgressEntry]
+    workout_frequency: List[WorkoutFrequencyEntry]

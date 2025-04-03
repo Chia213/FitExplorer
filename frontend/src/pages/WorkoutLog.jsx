@@ -342,6 +342,44 @@ function WorkoutLog() {
 
     const token = localStorage.getItem("token");
 
+    // Extract max lifts for strength exercises
+    const maxLifts = {};
+    const cardioSummary = {};
+
+    workoutExercises.forEach((exercise) => {
+      if (!exercise.is_cardio) {
+        // Find max weight for strength exercises
+        const maxWeight = Math.max(
+          ...exercise.sets
+            .map((set) => parseFloat(set.weight) || 0)
+            .filter((weight) => !isNaN(weight))
+        );
+
+        if (maxWeight > 0) {
+          maxLifts[exercise.name] = maxWeight;
+        }
+      } else {
+        // Aggregate cardio data
+        const totalDistance = exercise.sets.reduce(
+          (sum, set) => sum + (parseFloat(set.distance) || 0),
+          0
+        );
+        const totalDuration = exercise.sets.reduce(
+          (sum, set) => sum + (parseFloat(set.duration) || 0),
+          0
+        );
+        const intensity = exercise.sets[0].intensity || ""; // Take first set's intensity
+
+        if (totalDistance > 0 || totalDuration > 0) {
+          cardioSummary[exercise.name] = {
+            distance: totalDistance,
+            duration: totalDuration,
+            intensity: intensity,
+          };
+        }
+      }
+    });
+
     const cleanedExercises = workoutExercises.map((exercise) => ({
       name: exercise.name,
       category: exercise.category || "Uncategorized",
@@ -376,6 +414,9 @@ function WorkoutLog() {
       bodyweight: bodyweight ? parseFloat(bodyweight) : null,
       weight_unit: weightUnit,
       notes,
+      max_lifts: Object.keys(maxLifts).length > 0 ? maxLifts : undefined,
+      cardio_summary:
+        Object.keys(cardioSummary).length > 0 ? cardioSummary : undefined,
       exercises: cleanedExercises,
     };
 
