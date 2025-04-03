@@ -8,6 +8,8 @@ import {
   FaCheck,
   FaTimes,
   FaSearch,
+  FaTimesCircle,
+  FaGoogle,
   FaSort,
   FaFilter,
   FaSortAmountDown,
@@ -507,7 +509,6 @@ function AdminUsers() {
         );
       }
     }
-
     // Apply admin filter
     if (filterAdmin !== "all") {
       const isAdmin = filterAdmin === "admin";
@@ -597,6 +598,22 @@ function AdminUsers() {
             {refreshing ? "Refreshing..." : "Refresh"}
           </button>
         </div>
+      </div>
+
+      {/* User Status Legend */}
+      <div className="flex flex-wrap gap-2 mt-2 ml-2 text-xs text-gray-500 dark:text-gray-400">
+        <span className="flex items-center">
+          <span className="inline-block w-3 h-3 mr-1 bg-green-100 dark:bg-green-900 rounded-full"></span>
+          Verified: User has confirmed email
+        </span>
+        <span className="flex items-center">
+          <span className="inline-block w-3 h-3 mr-1 bg-red-100 dark:bg-red-900 rounded-full"></span>
+          Unverified: User has not confirmed email
+        </span>
+        <span className="flex items-center">
+          <span className="inline-block w-3 h-3 mr-1 bg-blue-100 dark:bg-blue-900 rounded-full"></span>
+          Google User: Authenticated via Google
+        </span>
       </div>
 
       {/* Notification */}
@@ -819,11 +836,22 @@ function AdminUsers() {
                           : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
                       }`}
                     >
-                      {user.hashed_password === "google_oauth"
-                        ? "Google User"
-                        : user.is_verified
-                        ? "Verified"
-                        : "Unverified"}
+                      {user.hashed_password === "google_oauth" ? (
+                        <>
+                          <FaGoogle className="mr-1" />
+                          Google User
+                        </>
+                      ) : user.is_verified ? (
+                        <>
+                          <FaCheckCircle className="mr-1" />
+                          Verified
+                        </>
+                      ) : (
+                        <>
+                          <FaTimesCircle className="mr-1" />
+                          Unverified
+                        </>
+                      )}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -853,7 +881,7 @@ function AdminUsers() {
                       </button>
 
                       <button
-                        onClick={() => handleResetPassword(user)}
+                        onClick={() => handleResetPassword(user.id)}
                         className="text-yellow-600 hover:text-yellow-900 dark:text-yellow-400 dark:hover:text-yellow-300"
                         title="Reset password"
                       >

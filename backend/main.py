@@ -19,7 +19,7 @@ from schemas import (
 from models import Workout, User, Exercise, Set, UserPreferences, Routine, CustomExercise, SavedWorkoutProgram, RoutineFolder
 from typing import List, Dict, Any
 from admin import router as admin_router
-from dependencies import get_current_user
+from dependencies import get_current_user, get_admin_user
 from auth import router as auth_router
 from datetime import datetime, timezone, timedelta
 from database import engine, Base, get_db
@@ -1424,3 +1424,21 @@ def get_strength_lift_progress(
         print(f"Error in strength lifts progress: {str(e)}")
         raise HTTPException(
             status_code=500, detail=f"Internal server error: {str(e)}")
+
+
+@app.post("/admin/users/{user_id}/reset-password")
+def reset_user_password(
+    user_id: int,
+    request: ResetPasswordRequest,
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_admin_user)
+):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    hashed_password = hash_password(request.new_password)
+    user.hashed_password = hashed_password
+    db.commit()
+
+    return {"message": "Password reset successful"}

@@ -272,3 +272,7 @@ class ProgressResponse(BaseModel):
     strength_lifts: StrengthLiftProgress
     cardio: List[CardioProgressEntry]
     workout_frequency: List[WorkoutFrequencyEntry]
+
+
+class ResetPasswordRequest(BaseModel):
+    new_password: str

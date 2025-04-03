@@ -1437,18 +1437,11 @@ function ExploreMuscleGuide() {
       {/* Primary Exercise Modal with improved navigation */}
       {viewingExercise && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-70 z-[2000]"
+          className="fixed top-0 left-0 right-0 bottom-0 w-screen h-screen bg-black bg-opacity-70 z-[9999] flex items-center justify-center"
           onClick={() => setViewingExercise(null)}
         >
           <div
-            className="absolute bg-white dark:bg-gray-800 rounded-lg p-4 max-w-md w-full"
-            style={{
-              top: "40%",
-              left: "50%",
-              transform: "translate(-50%, -50%)",
-              maxHeight: "80vh",
-              overflowY: "auto",
-            }}
+            className="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-lg w-full max-h-[85vh] overflow-y-auto shadow-2xl"
             ref={exerciseModalContentRef}
             onClick={(e) => e.stopPropagation()}
           >

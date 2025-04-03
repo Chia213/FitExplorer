@@ -17,6 +17,7 @@ import {
 } from "react-icons/fa";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import Card from "../../components/Card";
+
 import { useTheme } from "../../hooks/useTheme"; // Assuming you have a theme hook
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
@@ -835,8 +836,8 @@ function AdminDashboard() {
               ></div>
             </div>
             <div className="flex justify-between text-sm">
-              <span>45% used</span>
-              <span>5.4 GB / 12 GB</span>
+              <span>1% used</span>
+              <span>5.4 GB / 100 GB</span>
             </div>
           </div>
         </div>
