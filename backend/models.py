@@ -138,6 +138,8 @@ class Routine(Base):
         "workouts.id", ondelete="CASCADE"), nullable=True)
     folder_id = Column(Integer, ForeignKey(
         "routine_folders.id", ondelete="SET NULL"), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))
+    description = Column(String, nullable=True)
 
     folder = relationship("RoutineFolder", back_populates="routines")
     user = relationship("User", back_populates="routines")
