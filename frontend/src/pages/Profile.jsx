@@ -64,6 +64,7 @@ function Profile() {
   const [preferences, setPreferences] = useState({
     cardColor: "#dbeafe",
     workoutFrequencyGoal: null,
+    goalWeight: null,
   });
   const [preferencesChanged, setPreferencesChanged] = useState(false);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
@@ -158,6 +159,7 @@ function Profile() {
         setPreferences((prev) => ({
           ...prev,
           workoutFrequencyGoal: userData.preferences.workout_frequency_goal,
+          goalWeight: userData.preferences.goal_weight,
         }));
       }
 
@@ -392,6 +394,7 @@ function Profile() {
         body: JSON.stringify({
           card_color: preferences.cardColor,
           workout_frequency_goal: preferences.workoutFrequencyGoal,
+          goal_weight: preferences.goalWeight,
         }),
       });
 
@@ -403,6 +406,7 @@ function Profile() {
         setPreferences({
           cardColor: updatedPreferences.preferences.card_color,
           workoutFrequencyGoal: updatedPreferences.preferences.workout_frequency_goal,
+          goalWeight: updatedPreferences.preferences.goal_weight,
         });
         setCardColor(updatedPreferences.preferences.card_color);
         setPreferencesChanged(false);
@@ -868,10 +872,11 @@ function Profile() {
                             onClick={() => {
                               const newWeight = prompt("Enter your weight goal in kg:");
                               if (newWeight && !isNaN(newWeight)) {
-                                handlePreferenceChange({
-                                  ...preferences,
-                                  goalWeight: parseFloat(newWeight),
-                                });
+                                setPreferences(prev => ({
+                                  ...prev,
+                                  goalWeight: parseFloat(newWeight)
+                                }));
+                                setPreferencesChanged(true);
                               }
                             }}
                             className="text-purple-500 hover:text-purple-600"
@@ -887,6 +892,17 @@ function Profile() {
                       </span>
                     )}
                   </div>
+                  {preferencesChanged && (
+                    <div className="mt-2 flex justify-end">
+                      <button
+                        onClick={handlePreferenceUpdate}
+                        disabled={isSaving}
+                        className="text-xs bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600 transition-colors"
+                      >
+                        {isSaving ? "Saving..." : "Save Changes"}
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Total Workouts */}
