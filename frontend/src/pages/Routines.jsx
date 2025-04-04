@@ -16,6 +16,10 @@ import {
   FaArrowUp,
   FaArrowDown,
   FaFolderPlus,
+  FaFilter,
+  FaSort,
+  FaSearch,
+  FaExclamationTriangle,
 } from "react-icons/fa";
 import AddExercise from "./AddExercise";
 import FolderModal from "./FolderModal";
@@ -46,6 +50,18 @@ function Routines() {
   const [routineName, setRoutineName] = useState("");
   const [selectedWorkout, setSelectedWorkout] = useState(null);
   const [savingRoutine, setSavingRoutine] = useState(false);
+  const [filterOptions, setFilterOptions] = useState({
+    search: "",
+    lastUpdated: "all", // all, today, week, month
+    exerciseCount: "all", // all, none, 1-3, 4-6, 7+
+    type: "all", // all, cardio, strength, mixed
+    sortBy: "updated", // updated, created, name, exercises
+    sortOrder: "desc", // asc, desc
+  });
+  const [showDeleteAllModal, setShowDeleteAllModal] = useState(false);
+  const [deletingAll, setDeletingAll] = useState(false);
+  const [showCreateFolderModal, setShowCreateFolderModal] = useState(false);
+  const [newFolderName, setNewFolderName] = useState("");
 
   const navigate = useNavigate();
   const { theme } = useTheme();
@@ -506,6 +522,309 @@ function Routines() {
     }
   };
 
+  // Add filter functions
+  const filterRoutines = (routines) => {
+    return routines.filter(routine => {
+      // Search filter
+      if (filterOptions.search && !routine.name.toLowerCase().includes(filterOptions.search.toLowerCase())) {
+        return false;
+      }
+
+      // Last Updated filter
+      if (filterOptions.lastUpdated !== "all") {
+        const lastUpdated = new Date(routine.updated_at || routine.created_at);
+        const now = new Date();
+        switch (filterOptions.lastUpdated) {
+          case "today":
+            if (lastUpdated.toDateString() !== now.toDateString()) return false;
+            break;
+          case "week":
+            const weekAgo = new Date(now.setDate(now.getDate() - 7));
+            if (lastUpdated < weekAgo) return false;
+            break;
+          case "month":
+            const monthAgo = new Date(now.setMonth(now.getMonth() - 1));
+            if (lastUpdated < monthAgo) return false;
+            break;
+        }
+      }
+
+      // Exercise Count filter
+      const exerciseCount = routine.workout?.exercises?.length || 0;
+      if (filterOptions.exerciseCount !== "all") {
+        switch (filterOptions.exerciseCount) {
+          case "none":
+            if (exerciseCount !== 0) return false;
+            break;
+          case "1-3":
+            if (exerciseCount < 1 || exerciseCount > 3) return false;
+            break;
+          case "4-6":
+            if (exerciseCount < 4 || exerciseCount > 6) return false;
+            break;
+          case "7+":
+            if (exerciseCount < 7) return false;
+            break;
+        }
+      }
+
+      // Type filter
+      if (filterOptions.type !== "all") {
+        const hasCardio = routine.workout?.exercises?.some(e => e.is_cardio);
+        const hasStrength = routine.workout?.exercises?.some(e => !e.is_cardio);
+        switch (filterOptions.type) {
+          case "cardio":
+            if (!hasCardio || hasStrength) return false;
+            break;
+          case "strength":
+            if (hasCardio || !hasStrength) return false;
+            break;
+          case "mixed":
+            if (!hasCardio || !hasStrength) return false;
+            break;
+        }
+      }
+
+      return true;
+    }).sort((a, b) => {
+      switch (filterOptions.sortBy) {
+        case "updated":
+          return filterOptions.sortOrder === "desc"
+            ? new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at)
+            : new Date(a.updated_at || a.created_at) - new Date(b.updated_at || b.created_at);
+        case "created":
+          return filterOptions.sortOrder === "desc"
+            ? new Date(b.created_at) - new Date(a.created_at)
+            : new Date(a.created_at) - new Date(b.created_at);
+        case "name":
+          return filterOptions.sortOrder === "desc"
+            ? b.name.localeCompare(a.name)
+            : a.name.localeCompare(b.name);
+        case "exercises":
+          const aCount = a.workout?.exercises?.length || 0;
+          const bCount = b.workout?.exercises?.length || 0;
+          return filterOptions.sortOrder === "desc"
+            ? bCount - aCount
+            : aCount - bCount;
+        default:
+          return 0;
+      }
+    });
+  };
+
+  // Add the filter UI right after the header buttons
+  const renderFilterBar = () => (
+    <div className={`mb-4 p-4 ${theme === "dark" ? "bg-gray-800" : "bg-white"} rounded-lg shadow`}>
+      <div className="flex flex-wrap gap-4 items-center">
+        {/* Search */}
+        <div className="flex-1 min-w-[200px]">
+          <div className="relative">
+            <FaSearch className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`} />
+            <input
+              type="text"
+              placeholder="Search routines..."
+              value={filterOptions.search}
+              onChange={(e) => setFilterOptions(prev => ({ ...prev, search: e.target.value }))}
+              className={`w-full pl-10 pr-4 py-2 rounded-lg ${
+                theme === "dark" 
+                  ? "bg-gray-700 text-white border-gray-600" 
+                  : "bg-gray-100 text-gray-900 border-gray-300"
+              } border`}
+            />
+          </div>
+        </div>
+
+        {/* Last Updated Filter */}
+        <select
+          value={filterOptions.lastUpdated}
+          onChange={(e) => setFilterOptions(prev => ({ ...prev, lastUpdated: e.target.value }))}
+          className={`rounded-lg px-3 py-2 ${
+            theme === "dark"
+              ? "bg-gray-700 text-white border-gray-600"
+              : "bg-gray-100 text-gray-900 border-gray-300"
+          } border`}
+        >
+          <option value="all">All Time</option>
+          <option value="today">Updated Today</option>
+          <option value="week">Last 7 Days</option>
+          <option value="month">Last 30 Days</option>
+        </select>
+
+        {/* Exercise Count Filter */}
+        <select
+          value={filterOptions.exerciseCount}
+          onChange={(e) => setFilterOptions(prev => ({ ...prev, exerciseCount: e.target.value }))}
+          className={`rounded-lg px-3 py-2 ${
+            theme === "dark"
+              ? "bg-gray-700 text-white border-gray-600"
+              : "bg-gray-100 text-gray-900 border-gray-300"
+          } border`}
+        >
+          <option value="all">Any Exercises</option>
+          <option value="none">No Exercises</option>
+          <option value="1-3">1-3 Exercises</option>
+          <option value="4-6">4-6 Exercises</option>
+          <option value="7+">7+ Exercises</option>
+        </select>
+
+        {/* Type Filter */}
+        <select
+          value={filterOptions.type}
+          onChange={(e) => setFilterOptions(prev => ({ ...prev, type: e.target.value }))}
+          className={`rounded-lg px-3 py-2 ${
+            theme === "dark"
+              ? "bg-gray-700 text-white border-gray-600"
+              : "bg-gray-100 text-gray-900 border-gray-300"
+          } border`}
+        >
+          <option value="all">All Types</option>
+          <option value="cardio">Cardio Only</option>
+          <option value="strength">Strength Only</option>
+          <option value="mixed">Mixed</option>
+        </select>
+
+        {/* Sort Options */}
+        <div className="flex gap-2">
+          <select
+            value={filterOptions.sortBy}
+            onChange={(e) => setFilterOptions(prev => ({ ...prev, sortBy: e.target.value }))}
+            className={`rounded-lg px-3 py-2 ${
+              theme === "dark"
+                ? "bg-gray-700 text-white border-gray-600"
+                : "bg-gray-100 text-gray-900 border-gray-300"
+            } border`}
+          >
+            <option value="updated">Sort by Last Updated</option>
+            <option value="created">Sort by Created Date</option>
+            <option value="name">Sort by Name</option>
+            <option value="exercises">Sort by Exercise Count</option>
+          </select>
+
+          <button
+            onClick={() => setFilterOptions(prev => ({ 
+              ...prev, 
+              sortOrder: prev.sortOrder === "asc" ? "desc" : "asc" 
+            }))}
+            className={`px-3 py-2 rounded-lg border ${
+              theme === "dark"
+                ? "bg-gray-700 text-white border-gray-600 hover:bg-gray-600"
+                : "bg-gray-100 text-gray-900 border-gray-300 hover:bg-gray-200"
+            }`}
+            title={filterOptions.sortOrder === "asc" ? "Ascending" : "Descending"}
+          >
+            <FaSort className={filterOptions.sortOrder === "asc" ? "transform rotate-180" : ""} />
+          </button>
+        </div>
+
+        {/* Create Folder Button */}
+        <button
+          onClick={() => setShowCreateFolderModal(true)}
+          className={`flex items-center gap-2 px-3 py-2 rounded-lg ${
+            theme === "dark"
+              ? "bg-gray-700 text-white hover:bg-gray-600"
+              : "bg-gray-100 text-gray-900 hover:bg-gray-200"
+          }`}
+        >
+          <FaFolderPlus />
+          <span>Create Folder</span>
+        </button>
+      </div>
+    </div>
+  );
+
+  // Add this function after the other helper functions
+  const getExerciseOverview = (routine) => {
+    if (!routine.workout?.exercises?.length) return null;
+    
+    const exercises = routine.workout.exercises;
+    const maxExercises = 3; // Show up to 3 exercises in overview
+    const remainingCount = exercises.length - maxExercises;
+    
+    return (
+      <div className="mt-2">
+        <div className="flex flex-wrap gap-2">
+          {exercises.slice(0, maxExercises).map((exercise, index) => (
+            <span
+              key={index}
+              className={`px-2 py-1 rounded-full text-xs ${
+                exercise.is_cardio
+                  ? "bg-blue-100 text-blue-800"
+                  : "bg-purple-100 text-purple-800"
+              }`}
+            >
+              {exercise.name}
+            </span>
+          ))}
+          {remainingCount > 0 && (
+            <span className="px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-800">
+              +{remainingCount} more
+            </span>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  // Add this function after other handler functions
+  const handleDeleteAllRoutines = async () => {
+    if (!window.confirm("Are you sure you want to delete ALL routines? This action cannot be undone.")) {
+      return;
+    }
+
+    setDeletingAll(true);
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`${backendURL}/routines/delete-all`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete all routines");
+      }
+
+      setRoutines([]);
+      setSuccessMessage("All routines have been deleted successfully");
+    } catch (error) {
+      setError("Failed to delete all routines. Please try again.");
+    } finally {
+      setDeletingAll(false);
+      setShowDeleteAllModal(false);
+    }
+  };
+
+  // Add this function after other handler functions
+  const handleCreateFolder = async () => {
+    if (!newFolderName.trim()) {
+      setError("Folder name cannot be empty");
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`${backendURL}/routine-folders`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ name: newFolderName }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to create folder");
+      }
+
+      const newFolder = await response.json();
+      setFolders([...folders, newFolder]);
+      setShowCreateFolderModal(false);
+      setNewFolderName("");
+      setSuccessMessage("Folder created successfully");
+    } catch (error) {
+      setError("Failed to create folder. Please try again.");
+    }
+  };
+
   if (loading) {
     return (
       <div
@@ -551,11 +870,9 @@ function Routines() {
                 className={`px-4 py-2 ${
                   activeView === "all"
                     ? "bg-teal-500 text-white"
-                    : `${
-                        theme === "dark"
-                          ? "hover:bg-gray-700"
-                          : "hover:bg-gray-100"
-                      }`
+                    : theme === "dark"
+                    ? "hover:bg-gray-700"
+                    : "hover:bg-gray-100"
                 }`}
               >
                 All Routines
@@ -565,11 +882,9 @@ function Routines() {
                 className={`px-4 py-2 ${
                   activeView === "folders"
                     ? "bg-teal-500 text-white"
-                    : `${
-                        theme === "dark"
-                          ? "hover:bg-gray-700"
-                          : "hover:bg-gray-100"
-                      }`
+                    : theme === "dark"
+                    ? "hover:bg-gray-700"
+                    : "hover:bg-gray-100"
                 }`}
               >
                 By Folder
@@ -592,12 +907,21 @@ function Routines() {
             >
               Create New Routine
             </button>
+            {routines.length > 0 && (
+              <button
+                onClick={() => setShowDeleteAllModal(true)}
+                className="bg-red-500 hover:bg-red-600 px-4 py-2 text-white rounded flex items-center"
+                title="Delete all routines"
+              >
+                <FaTrash className="mr-2" />
+                Delete All
+              </button>
+            )}
           </div>
         </div>
 
-        {error && (
-          <div className="bg-red-500 text-white p-3 rounded mb-4">{error}</div>
-        )}
+        {/* Add Filter Bar */}
+        {renderFilterBar()}
 
         {routines.length === 0 ? (
           <div
@@ -620,9 +944,8 @@ function Routines() {
             </button>
           </div>
         ) : activeView === "all" ? (
-          // All routines view
           <div className="space-y-4">
-            {routines.map((routine) => (
+            {filterRoutines(routines).map((routine) => (
               <div
                 key={routine.id}
                 className={`${
@@ -635,9 +958,9 @@ function Routines() {
                   }`}
                   onClick={() => toggleRoutineExpand(routine.id)}
                 >
-                  <div>
+                  <div className="flex-1">
                     <h2 className="text-xl font-semibold">{routine.name}</h2>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 mt-1">
                       <p
                         className={`text-sm ${
                           theme === "dark" ? "text-gray-400" : "text-gray-500"
@@ -652,11 +975,21 @@ function Routines() {
                       {routine.folder_id && (
                         <span className="ml-1 flex items-center text-xs bg-blue-900 text-blue-200 px-2 py-1 rounded-full">
                           <FaFolder className="mr-1" />
-                          {folders.find((f) => f.id === routine.folder_id)
-                            ?.name || "Folder"}
+                          {folders.find((f) => f.id === routine.folder_id)?.name || "Folder"}
+                        </span>
+                      )}
+                      {routine.created_at && (
+                        <span className={`text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>
+                          • Created {new Date(routine.created_at).toLocaleDateString()} at {new Date(routine.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      )}
+                      {routine.updated_at && routine.updated_at !== routine.created_at && (
+                        <span className={`text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>
+                          • Last modified {new Date(routine.updated_at).toLocaleDateString()} at {new Date(routine.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </span>
                       )}
                     </div>
+                    {getExerciseOverview(routine)}
                   </div>
                   <div className="flex items-center space-x-2">
                     <button
@@ -861,7 +1194,6 @@ function Routines() {
             ))}
           </div>
         ) : (
-          // Folder view
           <div className="space-y-6">
             {/* Unassigned routines */}
             <div
@@ -907,46 +1239,70 @@ function Routines() {
 
               {expandedFolders["unassigned"] && (
                 <div className="p-3">
-                  {getUnassignedRoutines().length === 0 ? (
-                    <p
-                      className={`text-center py-3 ${
-                        theme === "dark" ? "text-gray-400" : "text-gray-500"
-                      }`}
+                  {filterRoutines(getUnassignedRoutines()).map((routine) => (
+                    <div
+                      key={routine.id}
+                      className={`${
+                        theme === "dark" ? "bg-gray-700" : "bg-gray-50"
+                      } p-3 rounded-lg`}
                     >
-                      No unassigned routines
-                    </p>
-                  ) : (
-                    <div className="space-y-2">
-                      {getUnassignedRoutines().map((routine) => (
-                        <div
-                          key={routine.id}
-                          className={`${
-                            theme === "dark" ? "bg-gray-700" : "bg-gray-50"
-                          } p-3 rounded-lg`}
-                        >
-                          <div className="flex justify-between items-center">
-                            <h3 className="font-medium">{routine.name}</h3>
-                            <div className="flex space-x-2">
-                              <button
-                                onClick={() => handleStartWorkout(routine)}
-                                className="text-teal-500 hover:text-teal-400"
-                                title="Start routine"
-                              >
-                                <FaPlay />
-                              </button>
-                              <button
-                                onClick={() => openFolderModal(routine.id)}
-                                className="text-yellow-500 hover:text-yellow-400"
-                                title="Move to folder"
-                              >
-                                <FaFolder />
-                              </button>
-                            </div>
+                      <div className="flex flex-col gap-2">
+                        <div className="flex justify-between items-center">
+                          <h3 className="font-medium">{routine.name}</h3>
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() => handleStartWorkout(routine)}
+                              className="text-teal-500 hover:text-teal-400"
+                              title="Start routine"
+                            >
+                              <FaPlay />
+                            </button>
+                            <button
+                              onClick={() => openFolderModal(routine.id)}
+                              className="text-yellow-500 hover:text-yellow-400"
+                              title="Move to folder"
+                            >
+                              <FaFolder />
+                            </button>
+                            <button
+                              onClick={() => handleStartEditRoutine(routine)}
+                              className="text-blue-500 hover:text-blue-400"
+                              title="Edit routine"
+                            >
+                              <FaEdit />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteRoutine(routine.id)}
+                              className="text-red-500 hover:text-red-400"
+                              title="Delete routine"
+                            >
+                              <FaTrash />
+                            </button>
                           </div>
                         </div>
-                      ))}
+                        <div className="flex items-center gap-2 text-sm">
+                          <span className={`${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>
+                            {routine.workout && routine.workout.exercises
+                              ? `${routine.workout.exercises.length} Exercise${
+                                  routine.workout.exercises.length !== 1 ? "s" : ""
+                                }`
+                              : "0 Exercises"}
+                          </span>
+                          {routine.created_at && (
+                            <span className={`${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>
+                              • Created {new Date(routine.created_at).toLocaleDateString()} at {new Date(routine.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          )}
+                          {routine.updated_at && routine.updated_at !== routine.created_at && (
+                            <span className={`${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>
+                              • Last modified {new Date(routine.updated_at).toLocaleDateString()} at {new Date(routine.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          )}
+                        </div>
+                        {getExerciseOverview(routine)}
+                      </div>
                     </div>
-                  )}
+                  ))}
                 </div>
               )}
             </div>
@@ -997,64 +1353,70 @@ function Routines() {
 
                 {expandedFolders[folder.id] && (
                   <div className="p-3">
-                    {folder.routines.length === 0 ? (
-                      <p
-                        className={`text-center py-3 ${
-                          theme === "dark" ? "text-gray-400" : "text-gray-500"
-                        }`}
+                    {filterRoutines(folder.routines).map((routine) => (
+                      <div
+                        key={routine.id}
+                        className={`${
+                          theme === "dark" ? "bg-gray-700" : "bg-gray-50"
+                        } p-3 rounded-lg`}
                       >
-                        No routines in this folder
-                      </p>
-                    ) : (
-                      <div className="space-y-2">
-                        {folder.routines.map((routine) => (
-                          <div
-                            key={routine.id}
-                            className={`${
-                              theme === "dark" ? "bg-gray-700" : "bg-gray-50"
-                            } p-3 rounded-lg`}
-                          >
-                            <div className="flex justify-between items-center">
-                              <h3 className="font-medium">{routine.name}</h3>
-                              <div className="flex space-x-2">
-                                <button
-                                  onClick={() => handleStartWorkout(routine)}
-                                  className="text-teal-500 hover:text-teal-400"
-                                  title="Start routine"
-                                >
-                                  <FaPlay />
-                                </button>
-                                <button
-                                  onClick={() => openFolderModal(routine.id)}
-                                  className="text-yellow-500 hover:text-yellow-400"
-                                  title="Move to different folder"
-                                >
-                                  <FaFolder />
-                                </button>
-                                <button
-                                  onClick={() =>
-                                    handleStartEditRoutine(routine)
-                                  }
-                                  className="text-blue-500 hover:text-blue-400"
-                                  title="Edit routine"
-                                >
-                                  <FaEdit />
-                                </button>
-                                <button
-                                  onClick={() =>
-                                    handleDeleteRoutine(routine.id)
-                                  }
-                                  className="text-red-500 hover:text-red-400"
-                                  title="Delete routine"
-                                >
-                                  <FaTrash />
-                                </button>
-                              </div>
+                        <div className="flex flex-col gap-2">
+                          <div className="flex justify-between items-center">
+                            <h3 className="font-medium">{routine.name}</h3>
+                            <div className="flex space-x-2">
+                              <button
+                                onClick={() => handleStartWorkout(routine)}
+                                className="text-teal-500 hover:text-teal-400"
+                                title="Start routine"
+                              >
+                                <FaPlay />
+                              </button>
+                              <button
+                                onClick={() => openFolderModal(routine.id)}
+                                className="text-yellow-500 hover:text-yellow-400"
+                                title="Move to different folder"
+                              >
+                                <FaFolder />
+                              </button>
+                              <button
+                                onClick={() => handleStartEditRoutine(routine)}
+                                className="text-blue-500 hover:text-blue-400"
+                                title="Edit routine"
+                              >
+                                <FaEdit />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteRoutine(routine.id)}
+                                className="text-red-500 hover:text-red-400"
+                                title="Delete routine"
+                              >
+                                <FaTrash />
+                              </button>
                             </div>
                           </div>
-                        ))}
+                          <div className="flex items-center gap-2 text-sm">
+                            <span className={`${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>
+                              {routine.workout && routine.workout.exercises
+                                ? `${routine.workout.exercises.length} Exercise${
+                                    routine.workout.exercises.length !== 1 ? "s" : ""
+                                  }`
+                                : "0 Exercises"}
+                            </span>
+                            {routine.created_at && (
+                              <span className={`${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>
+                                • Created {new Date(routine.created_at).toLocaleDateString()} at {new Date(routine.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            )}
+                            {routine.updated_at && routine.updated_at !== routine.created_at && (
+                              <span className={`${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>
+                                • Last modified {new Date(routine.updated_at).toLocaleDateString()} at {new Date(routine.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            )}
+                          </div>
+                          {getExerciseOverview(routine)}
+                        </div>
                       </div>
-                    )}
+                    ))}
                   </div>
                 )}
               </div>
@@ -1511,6 +1873,101 @@ function Routines() {
           onSelectFolder={handleAssignToFolder}
           selectedRoutineId={selectedRoutineForFolder}
         />
+      )}
+
+      {/* Add Delete All Confirmation Modal */}
+      {showDeleteAllModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className={`${theme === "dark" ? "bg-gray-800" : "bg-white"} rounded-lg p-6 max-w-md w-full mx-4`}>
+            <div className="flex items-center mb-4">
+              <FaExclamationTriangle className="text-red-500 text-2xl mr-2" />
+              <h2 className="text-xl font-bold">Delete All Routines</h2>
+            </div>
+            <p className="mb-4">
+              Are you sure you want to delete all routines? This action cannot be undone.
+              All your routines will be permanently deleted.
+            </p>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setShowDeleteAllModal(false)}
+                className={`px-4 py-2 rounded ${
+                  theme === "dark"
+                    ? "bg-gray-700 hover:bg-gray-600"
+                    : "bg-gray-200 hover:bg-gray-300"
+                }`}
+                disabled={deletingAll}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteAllRoutines}
+                className="bg-red-500 hover:bg-red-600 px-4 py-2 text-white rounded flex items-center"
+                disabled={deletingAll}
+              >
+                {deletingAll ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <FaTrash className="mr-2" />
+                    Delete All
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create Folder Modal */}
+      {showCreateFolderModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className={`${theme === "dark" ? "bg-gray-800" : "bg-white"} rounded-lg p-6 max-w-md w-full mx-4`}>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold">Create New Folder</h2>
+              <button
+                onClick={() => setShowCreateFolderModal(false)}
+                className={`${theme === "dark" ? "text-gray-400 hover:text-gray-300" : "text-gray-500 hover:text-gray-700"}`}
+              >
+                <FaTimes />
+              </button>
+            </div>
+            <div className="mb-4">
+              <input
+                type="text"
+                value={newFolderName}
+                onChange={(e) => setNewFolderName(e.target.value)}
+                placeholder="Enter folder name"
+                className={`w-full px-3 py-2 rounded-lg ${
+                  theme === "dark"
+                    ? "bg-gray-700 text-white border-gray-600"
+                    : "bg-gray-100 text-gray-900 border-gray-300"
+                } border`}
+              />
+            </div>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setShowCreateFolderModal(false)}
+                className={`px-4 py-2 rounded ${
+                  theme === "dark"
+                    ? "bg-gray-700 hover:bg-gray-600"
+                    : "bg-gray-200 hover:bg-gray-300"
+                }`}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreateFolder}
+                className="bg-teal-500 hover:bg-teal-600 px-4 py-2 text-white rounded flex items-center"
+              >
+                <FaFolderPlus className="mr-2" />
+                Create Folder
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

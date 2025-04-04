@@ -592,7 +592,8 @@ def create_routine(
             user_id=user.id,
             workout_id=new_workout.id,
             weight_unit=routine.weight_unit if hasattr(
-                routine, 'weight_unit') else "kg"
+                routine, 'weight_unit') else "kg",
+            created_at=datetime.now(timezone.utc)
         )
         db.add(new_routine)
 
@@ -675,7 +676,12 @@ def update_routine(
     if not routine:
         raise HTTPException(status_code=404, detail="Routine not found")
 
+    # Update routine details but preserve created_at
     routine.name = routine_data.name
+    routine.weight_unit = routine_data.weight_unit if hasattr(
+        routine_data, 'weight_unit') else "kg"
+    routine.updated_at = datetime.now(timezone.utc)  # Update the last modified time
+    # Note: We don't update created_at here to preserve the original creation time
 
     if routine.workout_id:
         # Delete existing sets first
@@ -773,6 +779,7 @@ def get_routines(user: User = Depends(get_current_user), db: Session = Depends(g
                 .joinedload(Exercise.sets)
         )\
             .filter(Routine.user_id == user.id)\
+            .order_by(Routine.created_at.desc())\
             .all()
 
         # Transform routines to include folder_name
@@ -783,7 +790,9 @@ def get_routines(user: User = Depends(get_current_user), db: Session = Depends(g
                 "workout_id": routine.workout_id,
                 "folder_id": routine.folder_id,
                 "folder_name": routine.folder.name if routine.folder else None,
-                "workout": routine.workout
+                "workout": routine.workout,
+                "created_at": routine.created_at,
+                "updated_at": routine.updated_at
             }
             for routine in routines
         ]

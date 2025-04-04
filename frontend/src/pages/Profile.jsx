@@ -174,11 +174,7 @@ function Profile() {
       // Handle last saved routine
       if (routineRes.ok) {
         const routineData = await routineRes.json();
-        console.log("Last saved routine data:", routineData);
-        if (routineData.message === "No saved routines found") {
-          console.log("No saved routines found");
-          setLastSavedRoutine(null);
-        } else {
+        if (routineData.message !== "No saved routines found") {
           setLastSavedRoutine(routineData);
         }
       } else if (routineRes.status !== 404) {
@@ -879,14 +875,16 @@ function Profile() {
                               {lastSavedRoutine.name}
                             </span>
                             <button
-                              onClick={() => navigate(`/saved-programs/${lastSavedRoutine.id}`)}
-                              className="text-yellow-500 hover:text-yellow-600"
+                              onClick={() => navigate(`/routines`)}
+                              className="text-yellow-500 hover:text-yellow-600 flex items-center space-x-1"
+                              title="View in Routines"
                             >
+                              <span className="text-xs">View</span>
                               <FaExternalLinkAlt className="w-3 h-3" />
                             </button>
                           </div>
                           <p className="text-xs text-gray-500 dark:text-gray-400">
-                            {new Date(lastSavedRoutine.created_at).toLocaleDateString()}
+                            Saved on {new Date(lastSavedRoutine.created_at).toLocaleDateString()}
                           </p>
                         </div>
                       </div>

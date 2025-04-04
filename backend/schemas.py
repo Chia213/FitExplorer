@@ -192,6 +192,8 @@ class RoutineResponse(BaseModel):
     folder_id: Optional[int] = None
     folder_name: Optional[str] = None
     workout: Optional[WorkoutResponse] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
