@@ -1,9 +1,14 @@
 import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
+import react from "@vitejs/plugin-react-swc";
 import tailwindcss from "tailwindcss";
 
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [
+    react({
+      jsxRuntime: 'automatic'
+    }), 
+    tailwindcss()
+  ],
   server: {
     port: 5173,
   },
@@ -12,4 +17,7 @@ export default defineConfig({
       process.env.VITE_BACKEND_URL || "http://localhost:8000"
     ),
   },
+  esbuild: {
+    jsxInject: `import React from 'react'`
+  }
 });

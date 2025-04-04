@@ -1,3 +1,4 @@
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Layout from "./components/Layout";
@@ -77,10 +78,10 @@ const WelcomeModalWrapper = () => {
 function App() {
   return (
     <LanguageProvider>
-      <Router>
-        <ThemeProvider>
-          <WelcomeProvider>
-            <NotificationProvider>
+      <ThemeProvider>
+        <WelcomeProvider>
+          <NotificationProvider>
+            <Router>
               <ScrollToTop />
               <Navbar />
               <Layout>
@@ -109,7 +110,7 @@ function App() {
                     <Route path="/add-exercise" element={<AddExercise />} />
                     <Route path="/confirm-deletion" element={<ConfirmDeletion />} />
                     <Route path="/profile" element={<Profile />} />
-                    <Route path="/saved-programs" element={<SavedPrograms />} />
+                    <Route path="/saved-programs" element={<SavedPrograms />} />Ö
                     <Route path="/program-tracker" element={<ProgramTracker />} />
                     <Route path="/change-password" element={<ChangePassword />} />
                     <Route path="/settings" element={<Settings />} />
@@ -124,13 +125,12 @@ function App() {
                   </Routes>
                 </PageTransition>
               </Layout>
-
               {/* Welcome Back Modal */}
               <WelcomeModalWrapper />
-            </NotificationProvider>
-          </WelcomeProvider>
-        </ThemeProvider>
-      </Router>
+            </Router>
+          </NotificationProvider>
+        </WelcomeProvider>
+      </ThemeProvider>
     </LanguageProvider>
   );
 }

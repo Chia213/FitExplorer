@@ -360,7 +360,7 @@ def get_all_users(
         "created_at": user.created_at,
         "is_admin": user.is_admin,
         "workout_count": len(user.workouts),
-        "has_preferences": user.preferences is not None
+        "has_preferences": user.workout_preferences is not None
     } for user in users]
 
 
