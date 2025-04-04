@@ -3,14 +3,17 @@ from datetime import datetime
 from typing import Optional, List, Dict, Any
 
 
-class UserCreate(BaseModel):
+class UserBase(BaseModel):
+    email: str
     username: str
-    email: EmailStr
+
+
+class UserCreate(UserBase):
     password: str
 
 
 class UserLogin(BaseModel):
-    email: EmailStr
+    email: str
     password: str
 
 
@@ -92,44 +95,38 @@ class ProfileUpdateRequest(BaseModel):
     )
 
 
-class UserPreferencesUpdate(BaseModel):
-    goal_weight: Optional[float] = Field(
-        None,
-        gt=0,
-        description="Goal weight must be a positive number"
-    )
-    email_notifications: Optional[bool] = None
+class UserProfileBase(BaseModel):
+    goal_weight: Optional[float] = None
+    email_notifications: bool = True
     summary_frequency: Optional[str] = None
-    card_color: Optional[str] = Field(
-        None,
-        pattern="^#[0-9A-Fa-f]{6}$",
-        description="Card color in hex format (e.g., #dbeafe)"
-    )
+    summary_day: Optional[str] = None
+    card_color: str = "#dbeafe"
 
 
-class WorkoutStatsResponse(BaseModel):
-    total_workouts: int = Field(ge=0, description="Total number of workouts")
-    favorite_exercise: Optional[str] = None
-    last_workout: Optional[datetime] = None
-    total_cardio_duration: Optional[float] = Field(
-        None,
-        ge=0,
-        description="Total cardio duration in minutes"
-    )
-    weight_progression: Optional[List[dict]] = Field(
-        None,
-        description="Historical bodyweight data"
-    )
+class UserProfileCreate(UserProfileBase):
+    pass
 
 
-class UserProfileResponse(BaseModel):
-    username: str
-    email: str
+class UserProfileUpdate(UserProfileBase):
+    pass
+
+
+class UserProfile(UserProfileBase):
+    id: int
+    user_id: int
+
+    class Config:
+        from_attributes = True
+
+
+class User(UserBase):
+    id: int
+    is_active: bool
+    is_verified: bool
     profile_picture: Optional[str] = None
-    preferences: Optional[dict] = {
-        "goal_weight": Optional[float],
-        "email_notifications": bool
-    }
+    created_at: datetime
+    last_login: Optional[datetime] = None
+    profile: Optional[UserProfile] = None
 
     class Config:
         from_attributes = True
@@ -317,6 +314,50 @@ class WorkoutPreferencesResponse(WorkoutPreferencesBase):
     user_id: int
     created_at: datetime
     updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class TokenVerificationRequest(BaseModel):
+    token: str
+
+
+class ResendVerificationRequest(BaseModel):
+    email: str
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: str
+
+
+class ConfirmAccountDeletionRequest(BaseModel):
+    token: str
+
+
+class WorkoutStatsResponse(BaseModel):
+    total_workouts: int = Field(ge=0, description="Total number of workouts")
+    favorite_exercise: Optional[str] = None
+    last_workout: Optional[datetime] = None
+    total_cardio_duration: Optional[float] = Field(
+        None,
+        ge=0,
+        description="Total cardio duration in minutes"
+    )
+    weight_progression: Optional[List[dict]] = Field(
+        None,
+        description="Historical bodyweight data"
+    )
+
+
+class UserProfileResponse(BaseModel):
+    username: str
+    email: str
+    profile_picture: Optional[str] = None
+    preferences: Optional[dict] = {
+        "goal_weight": Optional[float],
+        "email_notifications": bool
+    }
 
     class Config:
         from_attributes = True

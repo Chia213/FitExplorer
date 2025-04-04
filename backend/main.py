@@ -6,7 +6,7 @@ from schemas import (
     WorkoutCreate,
     WorkoutResponse,
     ProfileUpdateRequest,
-    UserPreferencesUpdate,
+    UserProfileUpdate,
     WorkoutStatsResponse,
     ChangePasswordRequest,
     RoutineCreate,
@@ -17,16 +17,21 @@ from schemas import (
     RoutineFolderResponse,
     WorkoutPreferencesCreate,
     WorkoutPreferencesUpdate,
-    WorkoutPreferencesResponse
+    WorkoutPreferencesResponse,
+    TokenVerificationRequest,
+    ResendVerificationRequest,
+    ForgotPasswordRequest,
+    ResetPasswordRequest,
+    ConfirmAccountDeletionRequest
 )
-from models import Workout, User, Exercise, Set, UserPreferences, Routine, CustomExercise, SavedWorkoutProgram, RoutineFolder, WorkoutPreferences
+from models import Workout, User, Exercise, Set, Routine, CustomExercise, SavedWorkoutProgram, RoutineFolder, WorkoutPreferences, UserProfile
 from typing import List, Dict, Any, Optional
 from admin import router as admin_router
 from dependencies import get_current_user, get_admin_user
 from auth import router as auth_router
 from datetime import datetime, timezone, timedelta
 from database import engine, Base, get_db
-from sqlalchemy import func, desc, extract, and_
+from sqlalchemy import func, desc, extract
 from sqlalchemy.orm import Session, joinedload
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -50,6 +55,15 @@ os.makedirs(UPLOAD_DIRECTORY, exist_ok=True)
 
 app = FastAPI()
 
+# Configure CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],  # Frontend URL
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 @app.middleware("http")
 async def add_security_headers(request, call_next):
@@ -69,14 +83,6 @@ async def startup_event():
 @app.on_event("shutdown")
 async def shutdown_event():
     print("Shutting down")
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
@@ -98,12 +104,12 @@ def trigger_email_summary(background_tasks: BackgroundTasks):
 
 @app.get("/send-summary")
 async def send_summaries(background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
-    users = db.query(User).join(UserPreferences).filter(
-        UserPreferences.email_notifications == True
+    users = db.query(User).join(UserProfile).filter(
+        UserProfile.email_notifications == True
     ).all()
 
     for user in users:
-        frequency = UserPreferences.summary_frequency if user.preferences else None
+        frequency = user.profile.summary_frequency if user.profile else None
         if frequency:
             workout_count = db.query(Workout).filter(
                 Workout.user_id == user.id
@@ -285,71 +291,88 @@ def delete_workout(
         )
 
 
-@app.get("/profile")
+@app.get("/user-profile")
 def profile(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    user_preferences = db.query(
-        UserPreferences).filter_by(user_id=user.id).first()
+    try:
+        # Get user profile
+        user_profile = db.query(UserProfile).filter(UserProfile.user_id == user.id).first()
+        
+        # If no profile exists, create one with default values
+        if not user_profile:
+            user_profile = UserProfile(
+                user_id=user.id,
+                goal_weight=None,
+                email_notifications=True,
+                summary_frequency=None,
+                summary_day=None,
+                card_color="#dbeafe"
+            )
+            db.add(user_profile)
+            db.commit()
+            db.refresh(user_profile)
 
-    return {
-        "username": user.username,
-        "email": user.email,
-        "profile_picture": user.profile_picture,
-        "created_at": user.created_at,
-        "preferences": {
-            "goal_weight": user_preferences.goal_weight if user_preferences else None,
-            "email_notifications": user_preferences.email_notifications if user_preferences else False,
-            "summary_frequency": user_preferences.summary_frequency if user_preferences else None,
-            "card_color": user_preferences.card_color if user_preferences else "#dbeafe"
+        return {
+            "username": user.username,
+            "email": user.email,
+            "created_at": user.created_at.isoformat() if user.created_at else None,
+            "profile_picture": user.profile_picture,
+            "preferences": {
+                "goal_weight": user_profile.goal_weight,
+                "email_notifications": user_profile.email_notifications,
+                "summary_frequency": user_profile.summary_frequency,
+                "summary_day": user_profile.summary_day,
+                "card_color": user_profile.card_color
+            }
         }
-    }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.put("/update-profile")
+@app.put("/user-profile")
 def update_profile(
-    profile_data: ProfileUpdateRequest,
+    preferences: UserProfileUpdate,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    if profile_data.username:
-        # Check if the new username already exists for another user
-        existing_username = db.query(User).filter(
-            User.username == profile_data.username,
-            User.id != user.id
-        ).first()
+    try:
+        # Get or create user profile
+        user_profile = db.query(UserProfile).filter(UserProfile.user_id == user.id).first()
+        if not user_profile:
+            user_profile = UserProfile(user_id=user.id)
+            db.add(user_profile)
 
-        if existing_username:
-            raise HTTPException(
-                status_code=400, detail="Username already exists")
+        # Update profile fields
+        for field, value in preferences.dict(exclude_unset=True).items():
+            setattr(user_profile, field, value)
 
-    # Update the username
-    user.username = profile_data.username
-    db.commit()
-    db.refresh(user)
+        db.commit()
+        db.refresh(user_profile)
 
-    # Generate a new access token with the updated username
-    access_token = create_access_token(
-        {"sub": user.username},
-        timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    )
+        return {
+            "message": "Profile updated successfully",
+            "preferences": {
+                "goal_weight": user_profile.goal_weight,
+                "email_notifications": user_profile.email_notifications,
+                "summary_frequency": user_profile.summary_frequency,
+                "summary_day": user_profile.summary_day,
+                "card_color": user_profile.card_color
+            }
+        }
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
 
-    return {
-        "username": user.username,
-        "email": user.email,
-        "access_token": access_token  # Return new token to client
-    }
 
-
-@app.patch("/update-preferences")
-def update_preferences(
-    preferences_data: UserPreferencesUpdate,
+@app.patch("/user/settings/notifications")
+def update_notification_preferences(
+    preferences_data: UserProfileUpdate,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    user_preferences = db.query(
-        UserPreferences).filter_by(user_id=user.id).first()
+    user_preferences = db.query(UserProfile).filter_by(user_id=user.id).first()
 
     if not user_preferences:
-        user_preferences = UserPreferences(user_id=user.id)
+        user_preferences = UserProfile(user_id=user.id)
         db.add(user_preferences)
         db.commit()
 
@@ -412,7 +435,7 @@ def delete_account(
 
         db.query(Workout).filter(Workout.user_id ==
                                  user.id).delete(synchronize_session=False)
-        db.query(UserPreferences).filter(UserPreferences.user_id ==
+        db.query(WorkoutPreferences).filter(WorkoutPreferences.user_id ==
                                          user.id).delete(synchronize_session=False)
 
         if user.profile_picture:
@@ -1047,10 +1070,6 @@ def move_routine_to_folder(
     }
 
 
-class TokenVerificationRequest(BaseModel):
-    token: str
-
-
 @app.post("/auth/verify-email")
 async def verify_email(token_data: TokenVerificationRequest, db: Session = Depends(get_db)):
     user = db.query(User).filter(
@@ -1067,10 +1086,6 @@ async def verify_email(token_data: TokenVerificationRequest, db: Session = Depen
     db.commit()
 
     return {"message": "Email verified successfully"}
-
-
-class ResendVerificationRequest(BaseModel):
-    email: str
 
 
 @app.post("/auth/resend-verification")
@@ -1107,10 +1122,6 @@ async def resend_verification(
     return {"message": "Verification email sent"}
 
 
-class ForgotPasswordRequest(BaseModel):
-    email: str
-
-
 @app.post("/auth/forgot-password")
 async def forgot_password(
     request: ForgotPasswordRequest,
@@ -1141,11 +1152,6 @@ async def forgot_password(
     )
 
     return {"message": "If an account with this email exists, a password reset link has been sent."}
-
-
-class ResetPasswordRequest(BaseModel):
-    token: str
-    new_password: str
 
 
 @app.post("/auth/reset-password")
@@ -1202,10 +1208,6 @@ async def request_account_deletion(
     )
 
     return {"message": "Account deletion request received. Please check your email to confirm."}
-
-
-class ConfirmAccountDeletionRequest(BaseModel):
-    token: str
 
 
 @app.post("/confirm-account-deletion")
@@ -1564,3 +1566,53 @@ async def update_workout_preferences(
     db.commit()
     db.refresh(preferences)
     return preferences
+
+@app.get("/last-saved-routine")
+def get_last_saved_routine(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    try:
+        # Get the most recently created routine for the user
+        last_routine = db.query(Routine)\
+            .filter(Routine.user_id == user.id)\
+            .order_by(Routine.created_at.desc())\
+            .first()
+
+        if not last_routine:
+            return {"message": "No saved routines found"}
+
+        # If the routine has a workout, load its exercises
+        if last_routine.workout_id:
+            workout = db.query(Workout)\
+                .options(
+                    joinedload(Workout.exercises)
+                    .joinedload(Exercise.sets)
+                )\
+                .filter(Workout.id == last_routine.workout_id)\
+                .first()
+            exercises = workout.exercises if workout else []
+        else:
+            exercises = []
+
+        return {
+            "id": last_routine.id,
+            "name": last_routine.name,
+            "description": last_routine.description,
+            "created_at": last_routine.created_at.isoformat(),
+            "exercises": [
+                {
+                    "id": exercise.id,
+                    "name": exercise.name,
+                    "sets": [
+                        {
+                            "id": set.id,
+                            "reps": set.reps,
+                            "weight": set.weight
+                        } for set in exercise.sets
+                    ]
+                } for exercise in exercises
+            ]
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching last routine: {str(e)}")

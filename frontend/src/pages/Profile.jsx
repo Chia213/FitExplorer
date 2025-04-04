@@ -88,20 +88,38 @@ function Profile() {
     try {
       setLoading(true);
       const [profileRes, statsRes, routineRes] = await Promise.all([
-        fetch(`${backendURL}/profile`, {
-          headers: { Authorization: `Bearer ${token}` },
+        fetch(`${backendURL}/user-profile`, {
+          headers: { 
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json"
+          },
         }),
         fetch(`${backendURL}/workout-stats`, {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { 
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json"
+          },
         }),
         fetch(`${backendURL}/last-saved-routine`, {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { 
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json"
+          },
         }),
       ]);
 
-      if (!profileRes.ok) throw new Error("Unauthorized");
-      const userData = await profileRes.json();
+      // Handle profile response
+      if (!profileRes.ok) {
+        if (profileRes.status === 401) {
+          localStorage.removeItem("token");
+          navigate("/login");
+          return;
+        }
+        const errorData = await profileRes.json();
+        throw new Error(errorData.detail || "Failed to fetch profile data");
+      }
 
+      const userData = await profileRes.json();
       setUser(userData);
       setEditedUsername(userData.username);
 
@@ -149,18 +167,26 @@ function Profile() {
           totalCardioDuration: statsData.total_cardio_duration,
           weightProgression: statsData.weight_progression,
         });
+      } else if (statsRes.status !== 404) {
+        console.error("Failed to fetch workout stats:", statsRes.status);
       }
 
       // Handle last saved routine
       if (routineRes.ok) {
         const routineData = await routineRes.json();
-        setLastSavedRoutine(routineData);
+        console.log("Last saved routine data:", routineData);
+        if (routineData.message === "No saved routines found") {
+          console.log("No saved routines found");
+          setLastSavedRoutine(null);
+        } else {
+          setLastSavedRoutine(routineData);
+        }
+      } else if (routineRes.status !== 404) {
+        console.error("Failed to fetch last saved routine:", routineRes.status);
       }
     } catch (err) {
       console.error("Error fetching user data:", err);
-      setError("Session expired. Please log in again.");
-      localStorage.removeItem("token");
-      navigate("/login");
+      setError(err.message || "Failed to load user data. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -342,8 +368,8 @@ function Profile() {
     try {
       setIsSaving(true);
       const token = localStorage.getItem("token");
-      const response = await fetch(`${backendURL}/update-preferences`, {
-        method: "PATCH",
+      const response = await fetch(`${backendURL}/user-profile`, {
+        method: "PUT",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
@@ -362,16 +388,19 @@ function Profile() {
         // Update the local state with the server response
         const updatedPreferences = await response.json();
         setPreferences({
-          goalWeight: updatedPreferences.goal_weight,
-          summaryFrequency: updatedPreferences.summary_frequency,
-          cardColor: updatedPreferences.card_color,
+          goalWeight: updatedPreferences.preferences.goal_weight,
+          summaryFrequency: updatedPreferences.preferences.summary_frequency,
+          cardColor: updatedPreferences.preferences.card_color,
         });
 
         // Update the cardColor state to ensure UI consistency
-        setCardColor(updatedPreferences.card_color);
+        setCardColor(updatedPreferences.preferences.card_color);
 
         setPreferencesChanged(false);
         setError(null);
+        
+        // Show success notification
+        await notifyProfileUpdated("Card color updated successfully!");
       }
     } catch (err) {
       setError("Something went wrong. Please try again.");
@@ -502,84 +531,105 @@ function Profile() {
       <div className="max-w-7xl mx-auto">
         {/* Profile Header */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8" style={{ backgroundColor: preferences.cardColor }}>
-          <div className="flex items-center space-x-6">
-            <div className="relative">
-              <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-blue-500">
-                {profilePicture ? (
-                  <img
-                    src={profilePicture}
-                    alt="Profile"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                    <FaUser className="w-16 h-16 text-gray-400" />
-                  </div>
-                )}
-              </div>
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="absolute bottom-0 right-0 bg-blue-500 text-white p-2 rounded-full hover:bg-blue-600"
-              >
-                <FaCamera className="w-4 h-4" />
-              </button>
-              <input
-                type="file"
-                ref={fileInputRef}
-                className="hidden"
-                accept="image/*"
-                onChange={handleProfilePictureChange}
-              />
-            </div>
-            <div className="flex-1">
-              <div className="flex items-center space-x-4">
-                {isEditing ? (
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="text"
-                      value={editedUsername}
-                      onChange={(e) => setEditedUsername(e.target.value)}
-                      className="text-2xl font-bold bg-transparent border-b-2 border-blue-500 focus:outline-none"
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-6">
+              <div className="relative">
+                <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-blue-500">
+                  {profilePicture ? (
+                    <img
+                      src={profilePicture}
+                      alt="Profile"
+                      className="w-full h-full object-cover"
                     />
-                    <button
-                      onClick={handleUpdateProfile}
-                      disabled={isSaving}
-                      className="text-green-500 hover:text-green-600"
-                    >
-                      <FaSave className="w-5 h-5" />
-                    </button>
-                    <button
-                      onClick={() => {
-                        setIsEditing(false);
-                        setEditedUsername(user.username);
-                      }}
-                      className="text-red-500 hover:text-red-600"
-                    >
-                      <FaTimes className="w-5 h-5" />
-                    </button>
-                  </div>
-                ) : (
-                  <>
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                      {user.username}
-                      {localStorage.getItem("isAdmin") === "true" && (
-                        <span className="text-xs bg-yellow-500 text-white px-2 py-0.5 rounded-full">
-                          Admin
-                        </span>
-                      )}
-                    </h1>
-                    <button
-                      onClick={() => setIsEditing(true)}
-                      className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                    >
-                      <FaEdit className="w-4 h-4" />
-                    </button>
-                  </>
-                )}
+                  ) : (
+                    <div className="w-full h-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                      <FaUser className="w-16 h-16 text-gray-400" />
+                    </div>
+                  )}
+                </div>
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="absolute bottom-0 right-0 bg-blue-500 text-white p-2 rounded-full hover:bg-blue-600"
+                >
+                  <FaCamera className="w-4 h-4" />
+                </button>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  className="hidden"
+                  accept="image/*"
+                  onChange={handleProfilePictureChange}
+                />
               </div>
-              <p className="text-gray-600 dark:text-gray-300 mt-1">
-                Member since {formatJoinDate(user.created_at)} {getMembershipDuration(user.created_at)}
-              </p>
+              <div className="flex-1">
+                <div className="flex items-center space-x-4">
+                  {isEditing ? (
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="text"
+                        value={editedUsername}
+                        onChange={(e) => setEditedUsername(e.target.value)}
+                        className="text-2xl font-bold bg-transparent border-b-2 border-blue-500 focus:outline-none"
+                      />
+                      <button
+                        onClick={handleUpdateProfile}
+                        disabled={isSaving}
+                        className="text-green-500 hover:text-green-600"
+                      >
+                        <FaSave className="w-5 h-5" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          setIsEditing(false);
+                          setEditedUsername(user.username);
+                        }}
+                        className="text-red-500 hover:text-red-600"
+                      >
+                        <FaTimes className="w-5 h-5" />
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                        {user.username}
+                        {localStorage.getItem("isAdmin") === "true" && (
+                          <span className="text-xs bg-yellow-500 text-white px-2 py-0.5 rounded-full">
+                            Admin
+                          </span>
+                        )}
+                      </h1>
+                      <button
+                        onClick={() => setIsEditing(true)}
+                        className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                      >
+                        <FaEdit className="w-4 h-4" />
+                      </button>
+                    </>
+                  )}
+                </div>
+                <p className="text-gray-600 dark:text-gray-300 mt-1">
+                  Member since {formatJoinDate(user.created_at)} {getMembershipDuration(user.created_at)}
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-col items-end space-y-2">
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-gray-600 dark:text-gray-300">Card Color</span>
+                <input
+                  type="color"
+                  value={preferences.cardColor}
+                  onChange={(e) => handleColorChange(e.target.value)}
+                  className="w-8 h-8 rounded cursor-pointer"
+                />
+              </div>
+              {preferencesChanged && (
+                <button
+                  onClick={handlePreferenceUpdate}
+                  className="text-sm bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition-colors"
+                >
+                  Save
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -836,7 +886,7 @@ function Profile() {
                             </button>
                           </div>
                           <p className="text-xs text-gray-500 dark:text-gray-400">
-                            {new Date(lastSavedRoutine.updated_at).toLocaleDateString()}
+                            {new Date(lastSavedRoutine.created_at).toLocaleDateString()}
                           </p>
                         </div>
                       </div>
@@ -863,32 +913,6 @@ function Profile() {
                 )}
               </div>
             )}
-          </div>
-
-          {/* Preferences */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-              Preferences
-            </h2>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-gray-600 dark:text-gray-300">Card Color</span>
-                <input
-                  type="color"
-                  value={preferences.cardColor}
-                  onChange={(e) => handleColorChange(e.target.value)}
-                  className="w-8 h-8 rounded cursor-pointer"
-                />
-              </div>
-              {preferencesChanged && (
-                <button
-                  onClick={handlePreferenceUpdate}
-                  className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600 transition-colors"
-                >
-                  Save Preferences
-                </button>
-              )}
-            </div>
           </div>
         </div>
 

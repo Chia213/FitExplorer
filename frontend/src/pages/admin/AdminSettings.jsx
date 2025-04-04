@@ -8,6 +8,7 @@ const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 function AdminSettings() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
   const [adminSettings, setAdminSettings] = useState({
     auto_verify_users: false,
     require_email_verification: true,
@@ -90,8 +91,12 @@ function AdminSettings() {
       }
 
       const data = await response.json();
-      setAdminSettings(data);
+      setAdminSettings(data.settings);
+      setSuccess(data.message);
       setError(null);
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
       console.error("Error saving settings:", err);
       setError("Failed to save settings. Please try again.");
@@ -133,6 +138,12 @@ function AdminSettings() {
       {error && (
         <div className="bg-red-100 dark:bg-red-900/30 border-l-4 border-red-500 text-red-700 dark:text-red-300 p-4 rounded-md mb-6">
           <p>{error}</p>
+        </div>
+      )}
+
+      {success && (
+        <div className="bg-green-100 dark:bg-green-900/30 border-l-4 border-green-500 text-green-700 dark:text-green-300 p-4 rounded-md mb-6">
+          <p>{success}</p>
         </div>
       )}
 

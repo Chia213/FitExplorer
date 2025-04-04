@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from typing import List, Dict, Any
 from database import get_db
 from dependencies import get_admin_user
-from models import User, Workout, Exercise, Set, UserPreferences, Routine, SavedWorkoutProgram
+from models import User, Workout, Exercise, Set, UserProfile, Routine, SavedWorkoutProgram, AdminSettings
 from datetime import datetime, timedelta, timezone
 from pydantic import BaseModel, EmailStr, Field
 from passlib.context import CryptContext
@@ -414,7 +414,7 @@ def delete_user(
     return {"message": f"User {user.username} has been deleted"}
 
 
-class AdminSettings(BaseModel):
+class AdminSettingsUpdate(BaseModel):
     auto_verify_users: bool = False
     require_email_verification: bool = True
     require_2fa_admins: bool = True
@@ -425,7 +425,12 @@ class AdminSettings(BaseModel):
     notify_system_alerts: bool = True
 
 
-@router.get("/settings", response_model=AdminSettings)
+class AdminSettingsResponse(BaseModel):
+    message: str
+    settings: AdminSettingsUpdate
+
+
+@router.get("/settings", response_model=AdminSettingsUpdate)
 def get_admin_settings(
     db: Session = Depends(get_db),
     admin: User = Depends(get_admin_user)
@@ -442,9 +447,9 @@ def get_admin_settings(
     return settings
 
 
-@router.post("/settings", response_model=AdminSettings)
+@router.post("/settings", response_model=AdminSettingsResponse)
 def update_admin_settings(
-    settings: AdminSettings,
+    settings_update: AdminSettingsUpdate,
     db: Session = Depends(get_db),
     admin: User = Depends(get_admin_user)
 ):
@@ -457,7 +462,7 @@ def update_admin_settings(
             db.add(existing_settings)
 
         # Update settings
-        for field, value in settings.dict().items():
+        for field, value in settings_update.dict().items():
             setattr(existing_settings, field, value)
         
         # Set update metadata
@@ -470,7 +475,10 @@ def update_admin_settings(
         # Log the settings change
         print(f"Admin settings updated by {admin.username} at {existing_settings.last_updated}")
 
-        return existing_settings
+        return {
+            "message": "Settings saved successfully",
+            "settings": existing_settings
+        }
     except Exception as e:
         db.rollback()
         raise HTTPException(

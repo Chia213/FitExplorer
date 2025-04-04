@@ -1500,7 +1500,7 @@ const allExercises = {
     type: "animation",
     src: "/src/assets/exercises/cable-lateral-raise.gif",
     description:
-      "Stand with your side to the cable machine, hold the handle with one hand, and raise your arm out to the side until it’s parallel with the floor.",
+      "Stand with your side to the cable machine, hold the handle with one hand, and raise your arm out to the side until it's parallel with the floor.",
     muscleWorked: "Shoulders",
     equipment: ["Cable Machine", "Handle"],
     difficulty: {
@@ -2226,14 +2226,16 @@ function WorkoutGenerator() {
     equipmentList,
     age,
     fitnessLevel,
-    fitnessGoal
+    fitnessGoal,
+    gender
   ) => {
     console.log(`Selecting exercises for: 
         Muscle: ${muscle}
         Equipment: ${equipmentList}
         Age: ${age}
         Fitness Level: ${fitnessLevel}
-        Fitness Goal: ${fitnessGoal}`);
+        Fitness Goal: ${fitnessGoal}
+        Gender: ${gender}`);
 
     // If no specific equipment is selected, return all exercises for the muscle
     if (equipmentList.length === 0 || equipmentList.includes("Select all")) {
@@ -2243,8 +2245,8 @@ function WorkoutGenerator() {
     const muscleExercises = exercisesByMuscle[muscle] || [];
     console.log(`Initial muscle exercises: ${muscleExercises}`);
 
-    // Expanded filtering with detailed logging
-    const equipmentFilteredExercises = muscleExercises.filter((exercise) => {
+    // Filter exercises based on equipment and gender
+    const filteredExercises = muscleExercises.filter((exercise) => {
       const exerciseInfo = allExercises[exercise];
 
       if (!exerciseInfo) {
@@ -2252,59 +2254,62 @@ function WorkoutGenerator() {
         return false;
       }
 
-      // Check equipment match
-      const equipmentMatch = exerciseInfo.equipment?.some(
-        (eq) => equipmentList.includes(eq) || eq === "Bodyweight"
-      );
+      // Check if exercise is suitable for the user's gender
+      if (exerciseInfo.gender && exerciseInfo.gender !== gender) {
+        console.log(`Gender mismatch for ${exercise}. 
+                Required: ${gender}
+                Exercise Gender: ${exerciseInfo.gender}`);
+        return false;
+      }
 
-      // Check goal variations exist
-      const goalVariationExists =
-        exerciseInfo.variations?.[fitnessGoal] !== undefined;
+      // Check if exercise matches ALL required equipment
+      const equipmentMatch = equipmentList.every((reqEquipment) => {
+        // If bodyweight is required, check if exercise is bodyweight
+        if (reqEquipment === "Bodyweight") {
+          return exerciseInfo.equipment?.includes("Bodyweight");
+        }
+        // For other equipment, check if exercise requires it
+        return exerciseInfo.equipment?.includes(reqEquipment);
+      });
 
       if (!equipmentMatch) {
         console.log(`Equipment mismatch for ${exercise}. 
                 Required: ${equipmentList}
                 Exercise Equipment: ${exerciseInfo.equipment}`);
+        return false;
       }
 
+      // Check if exercise has variations for the fitness goal
+      const goalVariationExists = exerciseInfo.variations?.[fitnessGoal] !== undefined;
       if (!goalVariationExists) {
         console.log(`Goal variation mismatch for ${exercise}. 
                 Required Goal: ${fitnessGoal}
-                Available Variations: ${Object.keys(
-                  exerciseInfo.variations || {}
-                )}`);
+                Available Variations: ${Object.keys(exerciseInfo.variations || {})}`);
+        return false;
       }
 
-      return equipmentMatch && goalVariationExists;
+      return true;
     });
 
-    console.log(
-      `Filtered exercises after equipment and goal check: ${equipmentFilteredExercises}`
-    );
+    console.log(`Filtered exercises after equipment and goal check: ${filteredExercises}`);
 
-    // Fallback strategies with logging
-    if (equipmentFilteredExercises.length === 0) {
-      console.warn(
-        `No exercises found for ${muscle} with current filters. Attempting fallbacks.`
-      );
-
-      // Fallback 1: Bodyweight exercises
-      const bodyweightExercises = muscleExercises.filter((exercise) =>
-        allExercises[exercise]?.equipment?.includes("Bodyweight")
-      );
+    // If no exercises found, try to find bodyweight alternatives
+    if (filteredExercises.length === 0 && !equipmentList.includes("Bodyweight")) {
+      console.warn(`No exercises found for ${muscle} with current equipment. Trying bodyweight alternatives.`);
+      const bodyweightExercises = muscleExercises.filter((exercise) => {
+        const exerciseInfo = allExercises[exercise];
+        return exerciseInfo.equipment?.includes("Bodyweight") && 
+               (!exerciseInfo.gender || exerciseInfo.gender === gender);
+      });
 
       if (bodyweightExercises.length > 0) {
-        console.log(`Falling back to bodyweight exercises for ${muscle}`);
+        console.log(`Found bodyweight alternatives for ${muscle}`);
         return bodyweightExercises;
       }
-
-      // Fallback 2: All muscle exercises
-      console.log(`Falling back to all exercises for ${muscle}`);
-      return muscleExercises;
     }
 
     // Age and fitness level-based modifications
-    const ageAdjustedExercises = equipmentFilteredExercises.map((exercise) => {
+    const ageAdjustedExercises = filteredExercises.map((exercise) => {
       const exerciseInfo = allExercises[exercise];
 
       // Age and difficulty modifications
@@ -2319,9 +2324,7 @@ function WorkoutGenerator() {
       return exercise;
     });
 
-    console.log(
-      `Final selected exercises after age adjustment: ${ageAdjustedExercises}`
-    );
+    console.log(`Final selected exercises after age adjustment: ${ageAdjustedExercises}`);
     return ageAdjustedExercises;
   };
 
@@ -2396,7 +2399,7 @@ function WorkoutGenerator() {
 
       // If no specific exercises are found, fall back to bodyweight exercises
       if (availableExercises.length === 0) {
-        availableExercises = getExercisesForEquipment(muscle, ["Bodyweight"]);
+        availableExercises = getExercisesForEquipment(muscle, ["Bodyweight"], prefs.age, prefs.fitnessLevel, prefs.fitnessGoal, prefs.gender);
       }
 
       // Ensure we select up to 3 unique exercises per muscle group

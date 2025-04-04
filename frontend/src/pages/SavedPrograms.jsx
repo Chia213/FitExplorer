@@ -363,11 +363,6 @@ function SavedPrograms() {
     ),
   ];
 
-  if (!isAuthenticated) {
-    navigate("/login");
-    return null;
-  }
-
   // Loading state
   if (isLoading) {
     return (
@@ -380,6 +375,10 @@ function SavedPrograms() {
         </div>
       </div>
     );
+  }
+
+  if (!isAuthenticated) {
+    return null;
   }
 
   return (

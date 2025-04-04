@@ -11,36 +11,78 @@ import {
   FaBell,
   FaRobot,
 } from "react-icons/fa";
+import { motion } from "framer-motion";
 
 function About() {
+  const cardVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { 
+      opacity: 1, 
+      y: 0,
+      transition: {
+        duration: 0.6,
+        ease: [0.4, 0, 0.2, 1]
+      }
+    }
+  };
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.2
+      }
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="relative bg-gradient-to-r from-blue-500 to-green-500 text-white py-16 mb-12">
-        <div className="container mx-auto text-center relative z-10">
-          <div className="bg-black/20 rounded-xl p-8 inline-block">
-            <h1 className="text-4xl md:text-5xl font-bold mb-4">
+      <div className="relative bg-gradient-to-r from-blue-600 via-blue-500 to-green-500 text-white py-24">
+        <div 
+          className="absolute inset-0 bg-black/10"
+          style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23FFFFFF' fill-opacity='0.1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+          }}
+        />
+        <div className="container mx-auto text-center relative z-10 px-4">
+          <motion.div 
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: [0.4, 0, 0.2, 1] }}
+            className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 inline-block shadow-2xl"
+          >
+            <h1 className="text-5xl md:text-6xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-white to-blue-100">
               Empower Your Fitness Journey
             </h1>
-            <p className="text-xl max-w-2xl mx-auto mb-8">
+            <p className="text-xl md:text-2xl max-w-2xl mx-auto mb-8 text-blue-50">
               Transform your health, build strength, and unlock your potential
               with FitExplorer
             </p>
-            <div className="flex flex-col sm:flex-row justify-center gap-4 mt-4">
+            <div className="flex flex-col sm:flex-row justify-center gap-4 mt-8">
               <Link
                 to="/signup"
-                className="bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-full text-lg font-semibold transition-all shadow-lg hover:shadow-xl"
+                className="bg-white text-blue-600 hover:bg-blue-50 py-4 px-8 rounded-full text-lg font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
               >
                 Start Your Journey
               </Link>
             </div>
-          </div>
+          </motion.div>
         </div>
       </div>
 
-      <div className="container mx-auto px-4">
-        <div className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg max-w-6xl mx-auto">
-          <div className="mb-12">
-            <h2 className="text-3xl font-bold mb-6 text-gray-900 dark:text-white text-center">
+      <div className="container mx-auto px-4 w-full -mt-16">
+        <motion.div 
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-2xl max-w-6xl mx-auto w-full backdrop-blur-lg"
+        >
+          <motion.div 
+            variants={cardVariants}
+            className="mb-16"
+          >
+            <h2 className="text-4xl font-bold mb-8 text-gray-900 dark:text-white text-center bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-green-500">
               About FitExplorer
             </h2>
             <div className="text-center">
@@ -58,15 +100,15 @@ function About() {
                 motivated.
               </p>
             </div>
-          </div>
+          </motion.div>
 
-          <div className="mb-12">
-            <h2 className="text-3xl font-bold mb-8 text-gray-900 dark:text-white text-center">
-              Choose a guide
-            </h2>
-            <div className="grid md:grid-cols-2 gap-6">
+          <motion.div 
+            variants={containerVariants}
+            className="grid md:grid-cols-2 gap-8"
+          >
+            <motion.div variants={cardVariants}>
               <Link to="/" className="block hover:no-underline">
-                <div className="bg-green-50 dark:bg-gray-700 p-6 rounded-lg hover:scale-105 hover:shadow-xl transition-all duration-300 ease-in-out h-full">
+                <div className="bg-gradient-to-br from-green-50 to-blue-50 dark:bg-gray-700 p-8 rounded-xl hover:scale-105 hover:shadow-xl transition-all duration-300 ease-in-out h-full border border-green-100 dark:border-gray-600">
                   <div className="flex items-center mb-3">
                     <FaRandom
                       className="text-green-500 dark:text-green-400 mr-3"
@@ -85,12 +127,14 @@ function About() {
                   </p>
                 </div>
               </Link>
+            </motion.div>
 
+            <motion.div variants={cardVariants}>
               <Link
                 to="/explore-muscle-guide"
                 className="block hover:no-underline"
               >
-                <div className="bg-blue-50 dark:bg-gray-700 p-6 rounded-lg hover:scale-105 hover:shadow-xl transition-all duration-300 ease-in-out h-full">
+                <div className="bg-gradient-to-br from-blue-50 to-purple-50 dark:bg-gray-700 p-8 rounded-xl hover:scale-105 hover:shadow-xl transition-all duration-300 ease-in-out h-full border border-blue-100 dark:border-gray-600">
                   <div className="flex items-center mb-3">
                     <FaDumbbell
                       className="text-blue-500 dark:text-blue-400 mr-3"
@@ -108,9 +152,11 @@ function About() {
                   </p>
                 </div>
               </Link>
+            </motion.div>
 
+            <motion.div variants={cardVariants}>
               <Link to="/workout-log" className="block hover:no-underline">
-                <div className="bg-purple-50 dark:bg-gray-700 p-6 rounded-lg hover:scale-105 hover:shadow-xl transition-all duration-300 ease-in-out h-full">
+                <div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:bg-gray-700 p-8 rounded-xl hover:scale-105 hover:shadow-xl transition-all duration-300 ease-in-out h-full border border-purple-100 dark:border-gray-600">
                   <div className="flex items-center mb-3">
                     <FaBook
                       className="text-purple-500 dark:text-purple-400 mr-3"
@@ -133,10 +179,11 @@ function About() {
                   </p>
                 </div>
               </Link>
+            </motion.div>
 
-              {/* Added Progress Tracking Card */}
+            <motion.div variants={cardVariants}>
               <Link to="/progress-tracker" className="block hover:no-underline">
-                <div className="bg-indigo-50 dark:bg-gray-700 p-6 rounded-lg hover:scale-105 hover:shadow-xl transition-all duration-300 ease-in-out h-full relative">
+                <div className="bg-gradient-to-br from-pink-50 to-indigo-50 dark:bg-gray-700 p-8 rounded-xl hover:scale-105 hover:shadow-xl transition-all duration-300 ease-in-out h-full border border-pink-100 dark:border-gray-600">
                   <div className="flex items-center mb-3">
                     <FaChartLine
                       className="text-indigo-500 dark:text-indigo-400 mr-3"
@@ -155,14 +202,16 @@ function About() {
                   </p>
                 </div>
               </Link>
+            </motion.div>
 
-              <div className="bg-indigo-50 dark:bg-gray-700 p-6 rounded-lg hover:scale-105 hover:shadow-xl transition-all duration-300 ease-in-out h-full relative overflow-hidden">
+            <motion.div variants={cardVariants}>
+              <div className="bg-gradient-to-br from-indigo-50 to-purple-50 dark:bg-gray-700 p-8 rounded-xl hover:scale-105 hover:shadow-xl transition-all duration-300 ease-in-out h-full border border-indigo-100 dark:border-gray-600">
                 <div className="absolute top-3 right-3 bg-blue-600 text-white px-3 py-1 font-bold text-sm rounded-md">
                   Coming Soon
                 </div>
                 <div className="flex items-center mb-3">
                   <FaRobot
-                    className="text-indigo-500 dark:text-indigo-400 mr-3"
+                    className="text-purple-500 dark:text-purple-400 mr-3"
                     size={24}
                   />
                   <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
@@ -177,9 +226,10 @@ function About() {
                   performance.
                 </p>
               </div>
+            </motion.div>
 
-              {/* Email Notifications Card with Coming Soon features */}
-              <div className="bg-orange-50 dark:bg-gray-700 p-6 rounded-lg hover:scale-105 hover:shadow-xl transition-all duration-300 ease-in-out h-full relative">
+            <motion.div variants={cardVariants}>
+              <div className="bg-gradient-to-br from-purple-50 to-orange-50 dark:bg-gray-700 p-8 rounded-xl hover:scale-105 hover:shadow-xl transition-all duration-300 ease-in-out h-full border border-purple-100 dark:border-gray-600">
                 <div className="absolute top-0 right-0 bg-blue-600 text-white px-4 py-1 font-bold text-sm rounded-bl-lg">
                   Coming Soon
                 </div>
@@ -200,9 +250,10 @@ function About() {
                   help you reach your fitness goals.
                 </p>
               </div>
+            </motion.div>
 
-              {/* Nutrition Card */}
-              <div className="bg-orange-50 dark:bg-gray-700 p-6 rounded-lg hover:scale-105 hover:shadow-xl transition-all duration-300 ease-in-out h-full relative">
+            <motion.div variants={cardVariants}>
+              <div className="bg-gradient-to-br from-orange-50 to-rose-50 dark:bg-gray-700 p-8 rounded-xl hover:scale-105 hover:shadow-xl transition-all duration-300 ease-in-out h-full border border-orange-100 dark:border-gray-600">
                 <div className="absolute top-0 right-0 bg-blue-600 text-white px-4 py-1 font-bold text-sm rounded-bl-lg">
                   Coming Soon
                 </div>
@@ -222,8 +273,8 @@ function About() {
                   and optimize your results.
                 </p>
               </div>
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
 
           <div className="bg-gray-100 dark:bg-gray-800 py-12 mb-12 rounded-lg">
             <div className="container mx-auto text-center">
@@ -319,7 +370,6 @@ function About() {
             </div>
           </div>
 
-          {/* Privacy Policy Section (Replacing "Powered By" section) */}
           <div className="bg-gray-50 dark:bg-gray-900 py-12 rounded-lg mb-12">
             <div className="container mx-auto text-center">
               <h2 className="text-3xl font-bold mb-6 text-gray-900 dark:text-white">
@@ -379,7 +429,7 @@ function About() {
               </a>
             </div>
           </div>
-        </div>
+        </motion.div>
       </div>
     </div>
   );

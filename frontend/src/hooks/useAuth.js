@@ -38,7 +38,7 @@ export const AuthProvider = ({ children }) => {
   // Fetch user profile data
   const fetchUserProfile = useCallback(async (token) => {
     try {
-      const response = await fetch(`${BACKEND_URL}/profile`, {
+      const response = await fetch(`${BACKEND_URL}/user-profile`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       
@@ -279,7 +279,7 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  // Change password
+  // Change password function
   const changePassword = useCallback(async (oldPassword, newPassword) => {
     setIsLoading(true);
     setError(null);
@@ -290,7 +290,7 @@ export const AuthProvider = ({ children }) => {
         throw new Error('Not authenticated');
       }
       
-      const response = await fetch(`${BACKEND_URL}/change-password`, {
+      const response = await fetch(`${BACKEND_URL}/auth/change-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -317,7 +317,7 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  // Update user profile
+  // Update profile function
   const updateProfile = useCallback(async (profileData) => {
     setIsLoading(true);
     setError(null);
@@ -328,7 +328,7 @@ export const AuthProvider = ({ children }) => {
         throw new Error('Not authenticated');
       }
       
-      const response = await fetch(`${BACKEND_URL}/update-profile`, {
+      const response = await fetch(`${BACKEND_URL}/auth/update-profile`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

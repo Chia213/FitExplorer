@@ -21,7 +21,8 @@ function Settings() {
     workoutReminders: true,
     progressReports: true,
     language: "en",
-    weeklySummaryFrequency: "monday"
+    summary_frequency: "weekly",
+    summary_day: "monday"
   });
   const [isSavingPreferences, setIsSavingPreferences] = useState(false);
 
@@ -35,7 +36,7 @@ function Settings() {
           return;
         }
 
-        const response = await fetch(`${backendURL}/profile`, {
+        const response = await fetch(`${backendURL}/user-profile`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -47,7 +48,8 @@ function Settings() {
               workoutReminders: userData.preferences.workout_reminders || false,
               progressReports: userData.preferences.progress_reports || false,
               language: userData.preferences.language || "en",
-              weeklySummaryFrequency: userData.preferences.weekly_summary_frequency || "monday"
+              summary_frequency: userData.preferences.summary_frequency || "weekly",
+              summary_day: userData.preferences.summary_day || "monday"
             });
           }
         }
@@ -123,8 +125,8 @@ function Settings() {
     setIsSavingPreferences(true);
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch(`${backendURL}/update-preferences`, {
-        method: "PUT",
+      const response = await fetch(`${backendURL}/user/settings/notifications`, {
+        method: "PATCH",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
@@ -134,7 +136,8 @@ function Settings() {
           workout_reminders: userPreferences.workoutReminders,
           progress_reports: userPreferences.progressReports,
           language: userPreferences.language,
-          weekly_summary_frequency: userPreferences.weeklySummaryFrequency
+          summary_frequency: userPreferences.summary_frequency,
+          summary_day: userPreferences.summary_day
         }),
       });
 
@@ -345,23 +348,38 @@ function Settings() {
                     <div className="ml-4 pl-4 border-l-2 border-gray-200 dark:border-gray-700">
                       <div className="space-y-2">
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                          Weekly Summary Frequency
+                          Summary Frequency
                         </label>
                         <select
-                          value={userPreferences.weeklySummaryFrequency}
-                          onChange={(e) => handlePreferenceChange("weeklySummaryFrequency", e.target.value)}
+                          value={userPreferences.summary_frequency}
+                          onChange={(e) => handlePreferenceChange("summary_frequency", e.target.value)}
                           className="w-full p-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-blue-500"
                         >
-                          <option value="monday">Every Monday</option>
-                          <option value="tuesday">Every Tuesday</option>
-                          <option value="wednesday">Every Wednesday</option>
-                          <option value="thursday">Every Thursday</option>
-                          <option value="friday">Every Friday</option>
-                          <option value="saturday">Every Saturday</option>
-                          <option value="sunday">Every Sunday</option>
+                          <option value="weekly">Weekly Summary</option>
+                          <option value="monthly">Monthly Summary</option>
                         </select>
+                        {userPreferences.summary_frequency === "weekly" && (
+                          <div className="mt-2">
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                              Summary Day
+                            </label>
+                            <select
+                              value={userPreferences.summary_day}
+                              onChange={(e) => handlePreferenceChange("summary_day", e.target.value)}
+                              className="w-full p-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-blue-500"
+                            >
+                              <option value="monday">Monday</option>
+                              <option value="tuesday">Tuesday</option>
+                              <option value="wednesday">Wednesday</option>
+                              <option value="thursday">Thursday</option>
+                              <option value="friday">Friday</option>
+                              <option value="saturday">Saturday</option>
+                              <option value="sunday">Sunday</option>
+                            </select>
+                          </div>
+                        )}
                         <p className="text-xs text-gray-500 dark:text-gray-400">
-                          Choose which day of the week you'd like to receive your weekly summary
+                          Choose how often and when you'd like to receive your workout summaries
                         </p>
                       </div>
                     </div>

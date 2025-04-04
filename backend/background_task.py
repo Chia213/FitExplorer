@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from database import SessionLocal
-from models import User, Workout, UserPreferences
+from models import User, Workout, UserProfile
 from email_service import send_summary_email
 from datetime import datetime, timedelta, timezone
 
@@ -13,8 +13,8 @@ def send_summary_emails():
     db = SessionLocal()
 
     try:
-        users = db.query(User).join(UserPreferences).filter(
-            UserPreferences.email_notifications == True
+        users = db.query(User).join(UserProfile).filter(
+            UserProfile.email_notifications == True
         ).all()
 
         # Create an event loop for async operations
@@ -22,7 +22,7 @@ def send_summary_emails():
         asyncio.set_event_loop(loop)
 
         for user in users:
-            preferences = db.query(UserPreferences).filter_by(
+            preferences = db.query(UserProfile).filter_by(
                 user_id=user.id).first()
             if not preferences or not preferences.summary_frequency:
                 continue
@@ -34,10 +34,21 @@ def send_summary_emails():
                 continue
 
             today = datetime.now(timezone.utc)
-            start_date = today - \
-                timedelta(
-                    days=7) if preferences.summary_frequency == "weekly" else today - timedelta(days=30)
-            summary_period = "Week" if preferences.summary_frequency == "weekly" else "Month"
+            
+            # Check if it's the right day for weekly summaries
+            if preferences.summary_frequency == "weekly":
+                # Convert today's weekday to lowercase string (0=Monday, 6=Sunday)
+                today_weekday = today.strftime("%A").lower()
+                if today_weekday != preferences.summary_day:
+                    continue
+                start_date = today - timedelta(days=7)
+                summary_period = "Week"
+            else:  # monthly
+                # Only send on the first day of the month
+                if today.day != 1:
+                    continue
+                start_date = today - timedelta(days=30)
+                summary_period = "Month"
 
             workouts = db.query(Workout).filter(
                 Workout.user_id == user.id, Workout.date >= start_date).all()

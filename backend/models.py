@@ -25,6 +25,8 @@ class User(Base):
     reset_token_expires_at = Column(DateTime, nullable=True)
     deletion_token = Column(String, nullable=True)
     deletion_token_expires_at = Column(DateTime, nullable=True)
+    is_active = Column(Boolean, default=True)
+    last_login = Column(DateTime, nullable=True)
 
     saved_programs = relationship(
         "SavedWorkoutProgram",
@@ -33,8 +35,7 @@ class User(Base):
     )
     workouts = relationship(
         "Workout", back_populates="user", cascade="all, delete-orphan")
-    preferences = relationship(
-        "UserPreferences", back_populates="user", uselist=False, cascade="all, delete-orphan")
+    profile = relationship("UserProfile", back_populates="user", uselist=False)
     custom_exercises = relationship(
         "CustomExercise", back_populates="user", cascade="all, delete-orphan")
     routines = relationship(
@@ -50,17 +51,18 @@ class User(Base):
     )
 
 
-class UserPreferences(Base):
-    __tablename__ = "user_preferences"
+class UserProfile(Base):
+    __tablename__ = "user_profiles"
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), unique=True)
     goal_weight = Column(Float, nullable=True)
-    email_notifications = Column(Boolean, default=False)
+    email_notifications = Column(Boolean, default=True)
     summary_frequency = Column(String, nullable=True)
+    summary_day = Column(String, nullable=True)
     card_color = Column(String, default="#dbeafe")
 
-    user = relationship("User", back_populates="preferences")
+    user = relationship("User", back_populates="profile")
 
 
 class Workout(Base):

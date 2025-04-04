@@ -6,7 +6,7 @@ from sqlalchemy import pool
 from alembic import context
 
 # Import your models and Base
-from models import User, UserPreferences, Workout, Exercise, Set, CustomExercise, Routine
+from models import User, UserProfile, Workout, Exercise, Set, CustomExercise, Routine
 from database import Base
 from config import settings
 
