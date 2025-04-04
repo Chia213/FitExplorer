@@ -16,7 +16,7 @@ class User(Base):
     hashed_password = Column(String, nullable=False)
     username = Column(String, unique=True, nullable=False)
     profile_picture = Column(String, nullable=True)
-    created_at = Column(DateTime, default=datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))
     is_admin = Column(Boolean, default=False, nullable=False)
     is_verified = Column(Boolean, default=False)
     verification_token = Column(String, nullable=True)
@@ -26,7 +26,7 @@ class User(Base):
     deletion_token = Column(String, nullable=True)
     deletion_token_expires_at = Column(DateTime, nullable=True)
     is_active = Column(Boolean, default=True)
-    last_login = Column(DateTime, nullable=True)
+    last_login = Column(DateTime(timezone=True), nullable=True)
 
     saved_programs = relationship(
         "SavedWorkoutProgram",
