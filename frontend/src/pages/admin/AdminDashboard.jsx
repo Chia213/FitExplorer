@@ -15,6 +15,8 @@ import {
   FaChevronUp,
   FaCircle,
   FaCog,
+  FaUserCheck,
+  FaUserTimes,
 } from "react-icons/fa";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import Card from "../../components/Card";
@@ -34,6 +36,13 @@ function AdminDashboard() {
   const [timeRange, setTimeRange] = useState("month"); // 'week', 'month', 'year'
   const [expandedSection, setExpandedSection] = useState("all"); // 'users', 'workouts', 'exercises', 'all'
   const [lastUpdated, setLastUpdated] = useState(null);
+  const [users, setUsers] = useState([]);
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    verifiedUsers: 0,
+    unverifiedUsers: 0,
+    totalWorkouts: 0
+  });
 
   const navigate = useNavigate();
   const { theme } = useTheme || { theme: "light" }; // Fallback if hook isn't available
@@ -101,6 +110,64 @@ function AdminDashboard() {
     fetchAdminData();
   }, [navigate, timeRange]);
 
+  useEffect(() => {
+    fetchUsers();
+    fetchStats();
+  }, []);
+
+  const fetchUsers = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_URL}/admin/users`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('API response for users:', data);
+        
+        // Normalize the is_verified field to a boolean
+        const normalizedUsers = data.map(user => ({
+          ...user,
+          is_verified: 
+            user.is_verified === true || 
+            String(user.is_verified).toLowerCase() === 'true' || 
+            user.is_verified === 1 || 
+            String(user.is_verified) === '1'
+        }));
+        
+        setUsers(normalizedUsers);
+      }
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    }
+  };
+
+  const fetchStats = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_URL}/admin/stats/users`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setStats({
+          totalUsers: data.total_users || 0,
+          verifiedUsers: data.verified_users || 0,
+          unverifiedUsers: data.unverified_users || 0,
+          totalWorkouts: data.total_workouts || 0
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+    }
+  };
+
   // Format time range for display
   const timeRangeDisplay = useMemo(() => {
     switch (timeRange) {
@@ -139,6 +206,15 @@ function AdminDashboard() {
   const handleRefresh = () => {
     setTimeRange((prev) => prev); // Trigger the useEffect without changing the time range
   };
+
+  // Add this near the top of your component to see what's coming from the API
+  useEffect(() => {
+    if (users.length > 0) {
+      console.log('First user data:', users[0]);
+      console.log('Verification status type:', typeof users[0].is_verified);
+      console.log('Verification status value:', users[0].is_verified);
+    }
+  }, [users]);
 
   if (loading) {
     return <LoadingSpinner />;
@@ -214,7 +290,7 @@ function AdminDashboard() {
                 Total Users
               </p>
               <h3 className="text-3xl font-bold mt-1">
-                {userStats?.total_users || 0}
+                {stats.totalUsers}
               </h3>
             </div>
             <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-full">
@@ -839,6 +915,88 @@ function AdminDashboard() {
             </p>
           </div>
         </div>
+      </div>
+
+      {/* Users Table */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden mt-6">
+        <h2 className="text-xl font-semibold p-4 border-b border-gray-200 dark:border-gray-700">
+          User Management
+        </h2>
+        
+        {loading ? (
+          <div className="p-4 text-center">Loading users...</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <thead className="bg-gray-50 dark:bg-gray-700">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Username
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Email
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Joined
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                {users.map(user => (
+                  <tr key={user.id}>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {user.username}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {user.email}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {user.is_verified !== undefined && (
+                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                          user.is_verified === true || 
+                          String(user.is_verified).toLowerCase() === 'true' || 
+                          user.is_verified === 1 || 
+                          String(user.is_verified) === '1' 
+                            ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
+                            : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                        }`}>
+                          {user.is_verified === true || 
+                           String(user.is_verified).toLowerCase() === 'true' || 
+                           user.is_verified === 1 || 
+                           String(user.is_verified) === '1' 
+                            ? 'Verified' 
+                            : 'Unverified'}
+                        </span>
+                      )}
+                      {user.is_verified === undefined && (
+                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200">
+                          Unknown
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {new Date(user.created_at).toLocaleDateString()}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <button className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 mr-3">
+                        Edit
+                      </button>
+                      <button className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300">
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );

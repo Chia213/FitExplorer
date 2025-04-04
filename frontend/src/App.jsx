@@ -1,11 +1,10 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Layout from "./components/Layout";
 import PageTransition from "./components/PageTransition";
 import AdminRoute from "./components/AdminRoute";
 import ScrollToTop from "./components/ScrollToTop";
-// Import NotificationProvider
 import { NotificationProvider } from "./contexts/NotificationContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
 
@@ -33,6 +32,7 @@ import FAQ from "./pages/FAQ";
 import FitnessCalculator from "./pages/FitnessCalculator";
 import Settings from "./pages/Settings";
 import Achievements from "./pages/Achievements";
+import PersonalRecords from "./pages/PersonalRecords";
 
 // Admin pages
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -47,7 +47,7 @@ import { WelcomeProvider } from "./contexts/WelcomeContext";
 import WelcomeBackModal from "./components/WelcomeBackModal";
 import { useWelcome } from "./contexts/WelcomeContext";
 
-// Import all CSS files
+// Import CSS files
 import "./styles/design-system.css";
 import "./styles/navHover.css";
 import "./styles/micro-interactions.css";
@@ -77,46 +77,42 @@ const WelcomeModalWrapper = () => {
 
 function App() {
   return (
-    <LanguageProvider>
-      <ThemeProvider>
+    <ThemeProvider>
+      <LanguageProvider>
         <WelcomeProvider>
           <NotificationProvider>
-            <Router>
-              <ScrollToTop />
+            <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
               <Navbar />
               <Layout>
+                <ScrollToTop />
                 <PageTransition>
                   <Routes>
-                    {/* Public Routes */}
                     <Route path="/" element={<WorkoutGenerator />} />
-                    <Route path="/explore-muscle-guide" element={<ExploreMuscleGuide />} />
-                    <Route path="/about" element={<About />} />
-                    <Route path="/login" element={<Login />} />
-                    <Route path="/verify-email" element={<VerifyEmail />} />
-                    <Route path="/reset-password" element={<ResetPassword />} />
-                    <Route path="/signup" element={<Signup />} />
-                    <Route path="/privacy" element={<PrivacyPolicy />} />
-                    
-                    {/* New Pages */}
-                    <Route path="/notifications" element={<Notifications />} />
-                    <Route path="/faq" element={<FAQ />} />
-                    <Route path="/fitness-calculator" element={<FitnessCalculator />} />
-                    
-                    {/* User Routes - These should be protected but we'll leave them open for now */}
-                    <Route path="/progress-tracker" element={<ProgressTracker />} />
                     <Route path="/workout-log" element={<WorkoutLog />} />
                     <Route path="/workout-history" element={<WorkoutHistory />} />
                     <Route path="/routines" element={<Routines />} />
+                    <Route path="/explore-muscle-guide" element={<ExploreMuscleGuide />} />
+                    <Route path="/progress-tracker" element={<ProgressTracker />} />
                     <Route path="/add-exercise" element={<AddExercise />} />
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/verify-email" element={<VerifyEmail />} />
+                    <Route path="/reset-password" element={<ResetPassword />} />
                     <Route path="/confirm-deletion" element={<ConfirmDeletion />} />
+                    <Route path="/signup" element={<Signup />} />
                     <Route path="/profile" element={<Profile />} />
-                    <Route path="/saved-programs" element={<SavedPrograms />} />Ö
+                    <Route path="/saved-programs" element={<SavedPrograms />} />
                     <Route path="/program-tracker" element={<ProgramTracker />} />
                     <Route path="/change-password" element={<ChangePassword />} />
+                    <Route path="/notifications" element={<Notifications />} />
+                    <Route path="/faq" element={<FAQ />} />
+                    <Route path="/fitness-calculator" element={<FitnessCalculator />} />
                     <Route path="/settings" element={<Settings />} />
                     <Route path="/achievements" element={<Achievements />} />
-
-                    {/* Admin Routes */}
+                    <Route path="/about" element={<About />} />
+                    <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+                    <Route path="/personal-records" element={<PersonalRecords />} />
+                    
+                    {/* Admin routes */}
                     <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
                     <Route path="/admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
                     <Route path="/admin/exercises" element={<AdminRoute><AdminExercises /></AdminRoute>} />
@@ -125,13 +121,12 @@ function App() {
                   </Routes>
                 </PageTransition>
               </Layout>
-              {/* Welcome Back Modal */}
               <WelcomeModalWrapper />
-            </Router>
+            </div>
           </NotificationProvider>
         </WelcomeProvider>
-      </ThemeProvider>
-    </LanguageProvider>
+      </LanguageProvider>
+    </ThemeProvider>
   );
 }
 

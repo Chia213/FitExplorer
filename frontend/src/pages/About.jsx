@@ -206,9 +206,6 @@ function About() {
 
             <motion.div variants={cardVariants}>
               <div className="bg-gradient-to-br from-indigo-50 to-purple-50 dark:bg-gray-700 p-8 rounded-xl hover:scale-105 hover:shadow-xl transition-all duration-300 ease-in-out h-full border border-indigo-100 dark:border-gray-600">
-                <div className="absolute top-3 right-3 bg-blue-600 text-white px-3 py-1 font-bold text-sm rounded-md">
-                  Coming Soon
-                </div>
                 <div className="flex items-center mb-3">
                   <FaRobot
                     className="text-purple-500 dark:text-purple-400 mr-3"
@@ -219,7 +216,7 @@ function About() {
                   </h3>
                 </div>
                 <p className="text-gray-700 dark:text-gray-300">
-                  Our advanced AI system will analyze your fitness history,
+                  Our advanced AI system analyzes your fitness history,
                   goals, and preferences to create hyper-personalized workout
                   programs. Get custom progression plans, intelligent exercise
                   selection, and automatic adjustments based on your
@@ -230,9 +227,6 @@ function About() {
 
             <motion.div variants={cardVariants}>
               <div className="bg-gradient-to-br from-purple-50 to-orange-50 dark:bg-gray-700 p-8 rounded-xl hover:scale-105 hover:shadow-xl transition-all duration-300 ease-in-out h-full border border-purple-100 dark:border-gray-600">
-                <div className="absolute top-0 right-0 bg-blue-600 text-white px-4 py-1 font-bold text-sm rounded-bl-lg">
-                  Coming Soon
-                </div>
                 <div className="flex items-center mb-3">
                   <FaBell
                     className="text-orange-500 dark:text-orange-400 mr-3"
@@ -254,9 +248,6 @@ function About() {
 
             <motion.div variants={cardVariants}>
               <div className="bg-gradient-to-br from-orange-50 to-rose-50 dark:bg-gray-700 p-8 rounded-xl hover:scale-105 hover:shadow-xl transition-all duration-300 ease-in-out h-full border border-orange-100 dark:border-gray-600">
-                <div className="absolute top-0 right-0 bg-blue-600 text-white px-4 py-1 font-bold text-sm rounded-bl-lg">
-                  Coming Soon
-                </div>
                 <div className="flex items-center mb-3">
                   <FaUtensils
                     className="text-rose-500 dark:text-rose-400 mr-3"
