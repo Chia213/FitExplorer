@@ -81,6 +81,7 @@ const WorkoutLog = () => {
   const [dropSetPercentage, setDropSetPercentage] = useState(20); // Default 20% reduction
   const [dropSetCount, setDropSetCount] = useState(1); // Number of drops to perform
   const [originalWeight, setOriginalWeight] = useState(null);
+  const [timerInterval, setTimerInterval] = useState(null);
 
   const toggleWeightUnit = () => {
     const newUnit = weightUnit === "kg" ? "lbs" : "kg";
@@ -813,30 +814,84 @@ const WorkoutLog = () => {
     saveWorkoutPreferences();
   }, [bodyweight, weightUnit, workoutExercises]);
 
+  // Clean up timer on unmount
+  useEffect(() => {
+    return () => {
+      if (timerInterval) {
+        clearInterval(timerInterval);
+      }
+    };
+  }, [timerInterval]);
+
   const handleStartRestTimer = (exercise) => {
     setCurrentExercise(exercise);
     setShowRestTimer(true);
     setTimeLeft(restTime);
+    setIsResting(false);
   };
 
   const handleRestTimerChange = (e) => {
     const newTime = parseInt(e.target.value);
-    setRestTime(newTime);
-    setTimeLeft(newTime);
+    if (!isNaN(newTime) && newTime > 0) {
+      setRestTime(newTime);
+      setTimeLeft(newTime);
+    }
   };
 
   const startRestTimer = () => {
+    // Clear any existing interval
+    if (timerInterval) {
+      clearInterval(timerInterval);
+    }
+
     setIsResting(true);
-    const timer = setInterval(() => {
+    const interval = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
-          clearInterval(timer);
+          clearInterval(interval);
           setIsResting(false);
+          setTimerInterval(null);
+          // Play sound
+          new Audio('/timer-done.mp3').play().catch(() => {});
+          // Auto close timer and update workout time
+          setShowRestTimer(false);
+          // If no end time is set, set it to current time
+          if (!endTime) {
+            setEndTime(new Date().toISOString().slice(0, 16));
+          }
           return restTime;
         }
         return prev - 1;
       });
     }, 1000);
+    setTimerInterval(interval);
+  };
+
+  const pauseRestTimer = () => {
+    if (timerInterval) {
+      clearInterval(timerInterval);
+      setTimerInterval(null);
+    }
+    setIsResting(false);
+  };
+
+  const resetRestTimer = () => {
+    if (timerInterval) {
+      clearInterval(timerInterval);
+      setTimerInterval(null);
+    }
+    setTimeLeft(restTime);
+    setIsResting(false);
+  };
+
+  const closeRestTimer = () => {
+    if (timerInterval) {
+      clearInterval(timerInterval);
+      setTimerInterval(null);
+    }
+    setShowRestTimer(false);
+    setIsResting(false);
+    setTimeLeft(restTime);
   };
 
   const handleAddDropSet = (exercise) => {
@@ -1464,47 +1519,70 @@ const WorkoutLog = () => {
         </div>
       )}
 
+      {/* Rest Timer Modal */}
       {showRestTimer && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
-            <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">
-              Rest Timer
-            </h2>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-sm">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Rest Timer - {currentExercise?.name}
+              </h3>
+              <button
+                onClick={closeRestTimer}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              >
+                <FaTimes />
+              </button>
+            </div>
+
             <div className="mb-4">
-              <label className="block text-gray-700 dark:text-gray-300 mb-2">
-                Rest Time (seconds)
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Rest Duration (seconds)
               </label>
               <input
                 type="number"
+                min="1"
                 value={restTime}
                 onChange={handleRestTimerChange}
-                className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
-                min="0"
-                max="600"
+                className="w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white"
+                disabled={isResting}
               />
             </div>
-            <div className="text-center mb-4">
-              <div className="text-4xl font-bold text-teal-500">
-                {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
+
+            <div className="text-center mb-6">
+              <div className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
+                {timeLeft}s
+              </div>
+              <div className="text-sm text-gray-500 dark:text-gray-400">
+                {isResting ? "Resting..." : "Ready to start"}
               </div>
             </div>
-            <div className="flex space-x-3">
-              <button
-                onClick={startRestTimer}
-                disabled={isResting}
-                className="flex-1 bg-teal-500 hover:bg-teal-600 text-white py-2 rounded-lg disabled:opacity-50"
-              >
-                {isResting ? "Resting..." : "Start Timer"}
-              </button>
-              <button
-                onClick={() => {
-                  setShowRestTimer(false);
-                  setIsResting(false);
-                }}
-                className="flex-1 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-white py-2 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500"
-              >
-                Close
-              </button>
+
+            <div className="grid grid-cols-2 gap-2">
+              {!isResting ? (
+                <button
+                  onClick={startRestTimer}
+                  className="col-span-2 bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 flex items-center justify-center"
+                >
+                  <FaPlayCircle className="mr-2" />
+                  Start Timer
+                </button>
+              ) : (
+                <>
+                  <button
+                    onClick={pauseRestTimer}
+                    className="bg-yellow-500 text-white py-2 px-4 rounded-lg hover:bg-yellow-600"
+                  >
+                    Pause
+                  </button>
+                  <button
+                    onClick={resetRestTimer}
+                    className="bg-red-500 text-white py-2 px-4 rounded-lg hover:bg-red-600"
+                  >
+                    Reset
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>
