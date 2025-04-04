@@ -14,6 +14,9 @@ import {
   FaBook,
   FaTimes,
   FaBalanceScale,
+  FaArrowLeft,
+  FaClock,
+  FaWeight,
 } from "react-icons/fa";
 import AddExercise from "./AddExercise";
 import { LuCalendarClock } from "react-icons/lu";
@@ -66,6 +69,18 @@ const WorkoutLog = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
+  const [showRestTimer, setShowRestTimer] = useState(false);
+  const [currentExercise, setCurrentExercise] = useState(null);
+  const [restTime, setRestTime] = useState(60); // Default 60 seconds
+  const [isResting, setIsResting] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(60);
+  const [showDropSet, setShowDropSet] = useState(false);
+  const [dropSetExercise, setDropSetExercise] = useState(null);
+  const [dropSetWeight, setDropSetWeight] = useState("");
+  const [dropSetReps, setDropSetReps] = useState("");
+  const [dropSetPercentage, setDropSetPercentage] = useState(20); // Default 20% reduction
+  const [dropSetCount, setDropSetCount] = useState(1); // Number of drops to perform
+  const [originalWeight, setOriginalWeight] = useState(null);
 
   const toggleWeightUnit = () => {
     const newUnit = weightUnit === "kg" ? "lbs" : "kg";
@@ -202,7 +217,9 @@ const WorkoutLog = () => {
       if (!response.ok) throw new Error("Failed to fetch workouts");
       const data = await response.json();
       setWorkoutHistory(data);
-    } catch (error) {}
+    } catch (error) {
+      console.error("Error fetching workout history:", error);
+    }
   }
 
   async function fetchRoutines(token) {
@@ -215,6 +232,7 @@ const WorkoutLog = () => {
       const data = await response.json();
       setRoutines(data);
     } catch (error) {
+      console.error("Error fetching routines:", error);
     } finally {
       setLoadingRoutines(false);
     }
@@ -380,6 +398,22 @@ const WorkoutLog = () => {
     }
   };
 
+  const validateExerciseSets = (exercise) => {
+    if (exercise.is_cardio) {
+      // For cardio exercises, check if either distance or duration is filled
+      return exercise.sets.every(set => 
+        (set.distance && set.distance.trim() !== "") || 
+        (set.duration && set.duration.trim() !== "")
+      );
+    } else {
+      // For strength exercises, check if both weight and reps are filled
+      return exercise.sets.every(set => 
+        set.weight && set.weight.trim() !== "" && 
+        set.reps && set.reps.trim() !== ""
+      );
+    }
+  };
+
   const handleFinishWorkout = async () => {
     if (!workoutName.trim()) {
       alert("Please enter a workout name.");
@@ -388,6 +422,14 @@ const WorkoutLog = () => {
 
     if (!workoutExercises.length) {
       alert("Please add at least one exercise.");
+      return;
+    }
+
+    // Validate all exercises have complete sets
+    const incompleteExercises = workoutExercises.filter(exercise => !validateExerciseSets(exercise));
+    if (incompleteExercises.length > 0) {
+      const exerciseNames = incompleteExercises.map(ex => ex.name).join(", ");
+      alert(`Please complete all sets for the following exercises: ${exerciseNames}\nFor strength exercises, both weight and reps are required.`);
       return;
     }
 
@@ -492,6 +534,14 @@ const WorkoutLog = () => {
   const handleSaveRoutine = async () => {
     if (!routineName.trim()) {
       alert("Please enter a routine name.");
+      return;
+    }
+
+    // Validate all exercises have complete sets
+    const incompleteExercises = workoutExercises.filter(exercise => !validateExerciseSets(exercise));
+    if (incompleteExercises.length > 0) {
+      const exerciseNames = incompleteExercises.map(ex => ex.name).join(", ");
+      alert(`Please complete all sets for the following exercises: ${exerciseNames}\nFor strength exercises, both weight and reps are required.`);
       return;
     }
 
@@ -665,8 +715,8 @@ const WorkoutLog = () => {
       prev.map((exercise, index) => {
         if (index === exerciseIndex) {
           const newSet = exercise.is_cardio
-            ? { distance: "", duration: "", intensity: "", notes: "" }
-            : { weight: "", reps: "", notes: "" };
+            ? { distance: "", duration: "", intensity: "", notes: "", is_warmup: false }
+            : { weight: "", reps: "", notes: "", is_warmup: false };
 
           return {
             ...exercise,
@@ -762,6 +812,92 @@ const WorkoutLog = () => {
   useEffect(() => {
     saveWorkoutPreferences();
   }, [bodyweight, weightUnit, workoutExercises]);
+
+  const handleStartRestTimer = (exercise) => {
+    setCurrentExercise(exercise);
+    setShowRestTimer(true);
+    setTimeLeft(restTime);
+  };
+
+  const handleRestTimerChange = (e) => {
+    const newTime = parseInt(e.target.value);
+    setRestTime(newTime);
+    setTimeLeft(newTime);
+  };
+
+  const startRestTimer = () => {
+    setIsResting(true);
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          setIsResting(false);
+          return restTime;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  const handleAddDropSet = (exercise) => {
+    // Get the last set's weight as the starting point
+    const lastSet = exercise.sets[exercise.sets.length - 1];
+    if (lastSet && lastSet.weight) {
+      setOriginalWeight(lastSet.weight);
+      setDropSetWeight(lastSet.weight);
+    }
+    setDropSetExercise(exercise);
+    setShowDropSet(true);
+  };
+
+  const calculateNextWeight = (currentWeight, percentage) => {
+    const reduction = (currentWeight * percentage) / 100;
+    return (currentWeight - reduction).toFixed(1);
+  };
+
+  const handleSaveDropSet = () => {
+    if (!dropSetExercise || !originalWeight) return;
+
+    // Validate that reps are filled
+    if (!dropSetReps || dropSetReps.trim() === "") {
+      alert("Please enter the number of reps for the drop sets.");
+      return;
+    }
+
+    const newSets = [];
+    let currentWeight = parseFloat(originalWeight);
+
+    // Create all drop sets at once
+    for (let i = 0; i < dropSetCount; i++) {
+      currentWeight = calculateNextWeight(currentWeight, dropSetPercentage);
+      newSets.push({
+        weight: currentWeight,
+        reps: dropSetReps,
+        notes: `Drop Set ${i + 1} (${dropSetPercentage}% reduction)`,
+        is_drop_set: true,
+        original_weight: originalWeight,
+        drop_number: i + 1,
+      });
+    }
+
+    setWorkoutExercises((prev) =>
+      prev.map((ex) => {
+        if (ex === dropSetExercise) {
+          return {
+            ...ex,
+            sets: [...ex.sets, ...newSets],
+          };
+        }
+        return ex;
+      })
+    );
+
+    setShowDropSet(false);
+    setDropSetExercise(null);
+    setDropSetWeight("");
+    setDropSetReps("");
+    setOriginalWeight(null);
+  };
 
   return (
     <div className="min-h-screen flex flex-col items-center p-6 bg-gray-100 dark:bg-gray-900">
@@ -906,6 +1042,24 @@ const WorkoutLog = () => {
               >
                 <FaTrash />
               </button>
+
+              <button
+                onClick={() => handleStartRestTimer(exercise)}
+                className="text-teal-500 hover:text-teal-400"
+                title="Start Rest Timer"
+              >
+                <FaClock />
+              </button>
+
+              {!exercise.is_cardio && (
+                <button
+                  onClick={() => handleAddDropSet(exercise)}
+                  className="text-blue-500 hover:text-blue-400"
+                  title="Add Drop Set"
+                >
+                  <FaWeight />
+                </button>
+              )}
             </div>
           </div>
 
@@ -914,19 +1068,73 @@ const WorkoutLog = () => {
               {exercise.sets.map((set, setIndex) => (
                 <div
                   key={setIndex}
-                  className="mt-4 border-t border-gray-200 dark:border-gray-600 pt-3"
+                  className={`mt-4 border-t border-gray-200 dark:border-gray-600 pt-3 ${
+                    set.is_drop_set ? "bg-blue-50 dark:bg-blue-900/20" : 
+                    set.is_warmup ? "bg-yellow-50 dark:bg-yellow-900/20" : ""
+                  }`}
                 >
                   <div className="flex justify-between items-center mb-2">
-                    <span className="font-medium text-gray-700 dark:text-gray-300">
-                      Set {setIndex + 1}
-                    </span>
-                    <button
-                      onClick={() => handleDeleteSet(exerciseIndex, setIndex)}
-                      className="text-red-500 hover:text-red-400"
-                      disabled={exercise.sets.length === 1}
-                    >
-                      <FaTrash />
-                    </button>
+                    <div className="flex items-center space-x-2">
+                      <span className="font-medium text-gray-700 dark:text-gray-300">
+                        Set {setIndex + 1}
+                      </span>
+                      {set.is_drop_set ? (
+                        <div className="flex items-center space-x-2">
+                          <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded-full">
+                            Drop Set {set.drop_number}
+                          </span>
+                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                            ({set.original_weight} {weightUnit} → {set.weight} {weightUnit})
+                          </span>
+                        </div>
+                      ) : set.is_warmup ? (
+                        <span className="text-xs bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 px-2 py-1 rounded-full">
+                          Warm-up Set
+                        </span>
+                      ) : (
+                        <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-1 rounded-full">
+                          Working Set
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      {!exercise.is_cardio && !set.is_drop_set && (
+                        <button
+                          onClick={() => {
+                            setWorkoutExercises((prev) =>
+                              prev.map((ex, eIndex) => {
+                                if (eIndex === exerciseIndex) {
+                                  return {
+                                    ...ex,
+                                    sets: ex.sets.map((s, sIndex) => {
+                                      if (sIndex === setIndex) {
+                                        return { ...s, is_warmup: !s.is_warmup };
+                                      }
+                                      return s;
+                                    }),
+                                  };
+                                }
+                                return ex;
+                              })
+                            );
+                          }}
+                          className={`text-sm px-2 py-1 rounded ${
+                            set.is_warmup
+                              ? "bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200"
+                              : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
+                          }`}
+                        >
+                          {set.is_warmup ? "Mark as Working Set" : "Mark as Warm-up"}
+                        </button>
+                      )}
+                      <button
+                        onClick={() => handleDeleteSet(exerciseIndex, setIndex)}
+                        className="text-red-500 hover:text-red-400"
+                        disabled={exercise.sets.length === 1}
+                      >
+                        <FaTrash />
+                      </button>
+                    </div>
                   </div>
 
                   {exercise.is_cardio ? (
@@ -1247,6 +1455,156 @@ const WorkoutLog = () => {
               </button>
               <button
                 onClick={() => setShowSaveRoutineModal(false)}
+                className="flex-1 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-white py-2 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showRestTimer && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
+            <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">
+              Rest Timer
+            </h2>
+            <div className="mb-4">
+              <label className="block text-gray-700 dark:text-gray-300 mb-2">
+                Rest Time (seconds)
+              </label>
+              <input
+                type="number"
+                value={restTime}
+                onChange={handleRestTimerChange}
+                className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
+                min="0"
+                max="600"
+              />
+            </div>
+            <div className="text-center mb-4">
+              <div className="text-4xl font-bold text-teal-500">
+                {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
+              </div>
+            </div>
+            <div className="flex space-x-3">
+              <button
+                onClick={startRestTimer}
+                disabled={isResting}
+                className="flex-1 bg-teal-500 hover:bg-teal-600 text-white py-2 rounded-lg disabled:opacity-50"
+              >
+                {isResting ? "Resting..." : "Start Timer"}
+              </button>
+              <button
+                onClick={() => {
+                  setShowRestTimer(false);
+                  setIsResting(false);
+                }}
+                className="flex-1 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-white py-2 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDropSet && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
+            <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">
+              Add Drop Sets
+            </h2>
+            <div className="mb-4">
+              <label className="block text-gray-700 dark:text-gray-300 mb-2">
+                Original Weight ({weightUnit})
+              </label>
+              <input
+                type="number"
+                value={originalWeight || ""}
+                onChange={(e) => {
+                  setOriginalWeight(e.target.value);
+                  setDropSetWeight(e.target.value);
+                }}
+                className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
+                placeholder="Enter original weight"
+              />
+            </div>
+            <div className="mb-4">
+              <label className="block text-gray-700 dark:text-gray-300 mb-2">
+                Weight Reduction (%)
+              </label>
+              <input
+                type="number"
+                value={dropSetPercentage}
+                onChange={(e) => setDropSetPercentage(parseInt(e.target.value))}
+                className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
+                min="5"
+                max="50"
+              />
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                Each drop will reduce the weight by this percentage
+              </p>
+            </div>
+            <div className="mb-4">
+              <label className="block text-gray-700 dark:text-gray-300 mb-2">
+                Number of Drops
+              </label>
+              <input
+                type="number"
+                value={dropSetCount}
+                onChange={(e) => setDropSetCount(parseInt(e.target.value))}
+                className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
+                min="1"
+                max="5"
+              />
+            </div>
+            <div className="mb-4">
+              <label className="block text-gray-700 dark:text-gray-300 mb-2">
+                Reps per Drop
+              </label>
+              <input
+                type="number"
+                value={dropSetReps}
+                onChange={(e) => setDropSetReps(e.target.value)}
+                className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
+                placeholder="Enter reps"
+              />
+            </div>
+            {originalWeight && (
+              <div className="mb-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                <h3 className="font-medium mb-2">Drop Set Preview:</h3>
+                <div className="space-y-1">
+                  {Array.from({ length: dropSetCount }).map((_, i) => {
+                    const weight = calculateNextWeight(
+                      parseFloat(originalWeight),
+                      dropSetPercentage * (i + 1)
+                    );
+                    return (
+                      <div key={i} className="text-sm">
+                        Drop {i + 1}: {weight} {weightUnit} ({dropSetPercentage}% reduction)
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+            <div className="flex space-x-3">
+              <button
+                onClick={handleSaveDropSet}
+                className="flex-1 bg-teal-500 hover:bg-teal-600 text-white py-2 rounded-lg"
+              >
+                Add Drop Sets
+              </button>
+              <button
+                onClick={() => {
+                  setShowDropSet(false);
+                  setDropSetExercise(null);
+                  setDropSetWeight("");
+                  setDropSetReps("");
+                  setOriginalWeight(null);
+                }}
                 className="flex-1 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-white py-2 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500"
               >
                 Cancel

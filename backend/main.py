@@ -22,9 +22,13 @@ from schemas import (
     ResendVerificationRequest,
     ForgotPasswordRequest,
     ResetPasswordRequest,
-    ConfirmAccountDeletionRequest
+    ConfirmAccountDeletionRequest,
+    UserProfileUpdateRequest,
+    AchievementCreate,
+    Achievement as AchievementSchema,
+    UserAchievementResponse
 )
-from models import Workout, User, Exercise, Set, Routine, CustomExercise, SavedWorkoutProgram, RoutineFolder, WorkoutPreferences, UserProfile
+from models import Workout, User, Exercise, Set, Routine, CustomExercise, SavedWorkoutProgram, RoutineFolder, WorkoutPreferences, UserProfile, Achievement, UserAchievement
 from typing import List, Dict, Any, Optional
 from admin import router as admin_router
 from dependencies import get_current_user, get_admin_user
@@ -133,105 +137,63 @@ def get_workouts(user: User = Depends(get_current_user), db: Session = Depends(g
 
 
 @app.post("/workouts", response_model=WorkoutResponse)
-def add_workout(workout: WorkoutCreate, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def create_workout(
+    workout: WorkoutCreate,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     try:
-        new_workout = Workout(
+        # Create the workout
+        db_workout = Workout(
             name=workout.name,
-            date=workout.date,
+            date=datetime.now(timezone.utc),
             start_time=workout.start_time,
             end_time=workout.end_time,
             bodyweight=workout.bodyweight,
-            weight_unit=workout.weight_unit,
             notes=workout.notes,
-            user_id=user.id
+            user_id=user.id,
+            weight_unit=workout.weight_unit,
+            is_template=False
         )
-        db.add(new_workout)
+        db.add(db_workout)
         db.commit()
-        db.refresh(new_workout)
+        db.refresh(db_workout)
 
-        # Add exercises and their sets
-        if workout.exercises:
-            for exercise_data in workout.exercises:
-                exercise = Exercise(
-                    name=exercise_data.name,
-                    category=exercise_data.category,
-                    is_cardio=exercise_data.is_cardio,
-                    workout_id=new_workout.id
-                )
-                db.add(exercise)
-                db.commit()
-                db.refresh(exercise)
-
-                # Add sets for this exercise
-                if exercise_data.sets:
-                    for set_data in exercise_data.sets:
-                        set_obj = Set(
-                            weight=set_data.weight,
-                            reps=set_data.reps,
-                            distance=set_data.distance,
-                            duration=set_data.duration,
-                            intensity=set_data.intensity,
-                            notes=set_data.notes,
-                            exercise_id=exercise.id
-                        )
-                        db.add(set_obj)
-                db.commit()
-
-        # Process max lifts if provided
-        if workout.max_lifts:
-            for exercise_name, max_weight in workout.max_lifts.items():
-                exercise = db.query(Exercise).filter(
-                    Exercise.workout_id == new_workout.id,
-                    Exercise.name == exercise_name
-                ).first()
-
-                if not exercise:
-                    exercise = Exercise(
-                        name=exercise_name,
-                        workout_id=new_workout.id,
-                        category=_determine_exercise_category(exercise_name)
-                    )
-                    db.add(exercise)
-                    db.commit()
-                    db.refresh(exercise)
-
-                max_lift_set = Set(
-                    weight=max_weight,
-                    exercise_id=exercise.id,
-                    notes="Max lift tracking"
-                )
-                db.add(max_lift_set)
-
-        # Process cardio summary
-        if workout.cardio_summary:
-            cardio_exercise = Exercise(
-                name="Cardio",
-                is_cardio=True,
-                workout_id=new_workout.id
+        # Add exercises and sets
+        for exercise_data in workout.exercises:
+            new_exercise = Exercise(
+                name=exercise_data.name,
+                category=exercise_data.category or "Uncategorized",
+                is_cardio=exercise_data.is_cardio,
+                workout_id=db_workout.id
             )
-            db.add(cardio_exercise)
+            db.add(new_exercise)
             db.commit()
-            db.refresh(cardio_exercise)
+            db.refresh(new_exercise)
 
-            cardio_set = Set(
-                distance=workout.cardio_summary.get('distance'),
-                duration=workout.cardio_summary.get('duration'),
-                intensity=workout.cardio_summary.get('intensity', ''),
-                exercise_id=cardio_exercise.id
-            )
-            db.add(cardio_set)
+            # Add sets
+            for set_data in exercise_data.sets:
+                new_set = Set(
+                    weight=set_data.weight,
+                    reps=set_data.reps,
+                    distance=set_data.distance,
+                    duration=set_data.duration,
+                    intensity=set_data.intensity,
+                    notes=set_data.notes,
+                    exercise_id=new_exercise.id
+                )
+                db.add(new_set)
 
         db.commit()
+        db.refresh(db_workout)
 
-        # Return the complete workout with all relationships loaded
-        return db.query(Workout)\
-            .options(joinedload(Workout.exercises).joinedload(Exercise.sets))\
-            .filter(Workout.id == new_workout.id)\
-            .first()
+        # Check achievements after workout creation
+        check_achievements(user, db)
 
+        return db_workout
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=422, detail=f"Error creating workout: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 def _determine_exercise_category(exercise_name):
@@ -316,6 +278,12 @@ def profile(user: User = Depends(get_current_user), db: Session = Depends(get_db
             "email": user.email,
             "created_at": user.created_at.isoformat() if user.created_at else None,
             "profile_picture": user.profile_picture,
+            "height": user.height,
+            "weight": user.weight,
+            "age": user.age,
+            "gender": user.gender,
+            "fitness_goals": user.fitness_goals,
+            "bio": user.bio,
             "preferences": {
                 "goal_weight": user_profile.goal_weight,
                 "email_notifications": user_profile.email_notifications,
@@ -1504,34 +1472,72 @@ def get_workout_streak(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    # Get user's workout frequency goal
+    preferences = db.query(WorkoutPreferences).filter(WorkoutPreferences.user_id == user.id).first()
+    frequency_goal = preferences.workout_frequency_goal if preferences else None
+
     # Get all workouts for the user, ordered by date
     workouts = db.query(Workout).filter(
         Workout.user_id == user.id
     ).order_by(Workout.date.desc()).all()
 
     if not workouts:
-        return {"streak": 0, "last_workout": None}
+        return {"streak": 0, "last_workout": None, "frequency_goal": frequency_goal}
 
     # Get the last workout date
     last_workout = workouts[0].date
     today = datetime.now(timezone.utc).date()
     
-    # If the last workout was not today, streak is broken
-    if last_workout.date() != today:
-        return {"streak": 0, "last_workout": last_workout}
+    # If no frequency goal is set, use daily streak logic
+    if not frequency_goal:
+        if last_workout.date() != today:
+            return {"streak": 0, "last_workout": last_workout, "frequency_goal": frequency_goal}
 
-    # Calculate the streak
-    streak = 1
-    current_date = today - timedelta(days=1)
-    
-    for workout in workouts[1:]:
-        if workout.date.date() == current_date:
-            streak += 1
-            current_date -= timedelta(days=1)
-        else:
-            break
+        streak = 1
+        current_date = today - timedelta(days=1)
+        
+        for workout in workouts[1:]:
+            if workout.date.date() == current_date:
+                streak += 1
+                current_date -= timedelta(days=1)
+            else:
+                break
+    else:
+        # Calculate weekly streak based on frequency goal
+        streak = 0
+        current_week = today.isocalendar()[1]
+        current_year = today.year
+        
+        # Count workouts in the current week
+        workouts_this_week = sum(1 for w in workouts 
+                               if w.date.date().isocalendar()[1] == current_week 
+                               and w.date.date().year == current_year)
+        
+        if workouts_this_week >= frequency_goal:
+            streak = 1
+            
+            # Check previous weeks
+            week = current_week - 1
+            year = current_year
+            if week == 0:
+                week = 52
+                year -= 1
+                
+            while True:
+                workouts_in_week = sum(1 for w in workouts 
+                                     if w.date.date().isocalendar()[1] == week 
+                                     and w.date.date().year == year)
+                
+                if workouts_in_week >= frequency_goal:
+                    streak += 1
+                    week -= 1
+                    if week == 0:
+                        week = 52
+                        year -= 1
+                else:
+                    break
 
-    return {"streak": streak, "last_workout": last_workout}
+    return {"streak": streak, "last_workout": last_workout, "frequency_goal": frequency_goal}
 
 
 @app.get("/workout-preferences", response_model=WorkoutPreferencesResponse)
@@ -1625,3 +1631,147 @@ def get_last_saved_routine(
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fetching last routine: {str(e)}")
+
+
+@app.put("/update-profile")
+def update_user_profile(
+    profile_data: UserProfileUpdateRequest,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    try:
+        # Update user fields from request data
+        for field, value in profile_data.dict(exclude_unset=True).items():
+            setattr(user, field, value)
+
+        db.commit()
+        db.refresh(user)
+
+        return {
+            "message": "Profile updated successfully",
+            "height": user.height,
+            "weight": user.weight,
+            "age": user.age,
+            "gender": user.gender,
+            "fitness_goals": user.fitness_goals,
+            "bio": user.bio
+        }
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/achievements", response_model=List[UserAchievementResponse])
+def get_user_achievements(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    try:
+        # Get all achievements
+        all_achievements = db.query(Achievement).all()
+        
+        # Get user's achievements
+        user_achievements = db.query(UserAchievement).filter(
+            UserAchievement.user_id == user.id
+        ).all()
+        
+        # Create a map of achievement_id to user_achievement for quick lookup
+        user_achievement_map = {ua.achievement_id: ua for ua in user_achievements}
+        
+        # Prepare response with progress for all achievements
+        response = []
+        for achievement in all_achievements:
+            user_achievement = user_achievement_map.get(achievement.id)
+            response.append({
+                "id": achievement.id,
+                "name": achievement.name,
+                "description": achievement.description,
+                "icon": achievement.icon,
+                "category": achievement.category,
+                "requirement": achievement.requirement,
+                "progress": user_achievement.progress if user_achievement else 0,
+                "achieved_at": user_achievement.achieved_at if user_achievement else None,
+                "is_achieved": bool(user_achievement and user_achievement.progress >= achievement.requirement)
+            })
+        
+        return response
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/achievements/check")
+def check_achievements(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    try:
+        # Get all achievements
+        achievements = db.query(Achievement).all()
+        updated_achievements = []
+
+        # Check each achievement
+        for achievement in achievements:
+            # Get or create user achievement
+            user_achievement = db.query(UserAchievement).filter(
+                UserAchievement.user_id == user.id,
+                UserAchievement.achievement_id == achievement.id
+            ).first()
+
+            if not user_achievement:
+                user_achievement = UserAchievement(
+                    user_id=user.id,
+                    achievement_id=achievement.id,
+                    progress=0
+                )
+                db.add(user_achievement)
+
+            # Update progress based on achievement category
+            if achievement.category == "workout":
+                # Count total workouts
+                progress = db.query(Workout).filter(
+                    Workout.user_id == user.id
+                ).count()
+            elif achievement.category == "streak":
+                # Calculate current streak
+                progress = calculate_workout_streak(user.id, db)
+            # Add more categories as needed
+
+            # Update progress if changed
+            if progress != user_achievement.progress:
+                user_achievement.progress = progress
+                if progress >= achievement.requirement and not user_achievement.achieved_at:
+                    user_achievement.achieved_at = datetime.now(timezone.utc)
+                updated_achievements.append(achievement.name)
+
+        db.commit()
+        
+        if updated_achievements:
+            return {"message": f"Updated achievements: {', '.join(updated_achievements)}"}
+        return {"message": "No achievements updated"}
+
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+def calculate_workout_streak(user_id: int, db: Session) -> int:
+    # Get user's workouts ordered by date
+    workouts = db.query(Workout).filter(
+        Workout.user_id == user_id
+    ).order_by(Workout.created_at.desc()).all()
+
+    if not workouts:
+        return 0
+
+    streak = 1
+    current_date = workouts[0].created_at.date()
+    previous_date = current_date - timedelta(days=1)
+
+    for workout in workouts[1:]:
+        workout_date = workout.created_at.date()
+        if workout_date == previous_date:
+            previous_date -= timedelta(days=1)
+            streak += 1
+        else:
+            break
+
+    return streak

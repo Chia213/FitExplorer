@@ -1,11 +1,14 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaLock, FaEye, FaEyeSlash, FaSave, FaTimes, FaUser, FaBell, FaLanguage } from "react-icons/fa";
+import { getTranslation } from "../utils/translations";
+import { useLanguage } from "../contexts/LanguageContext";
 
 const backendURL = "http://localhost:8000";
 
 function Settings() {
   const navigate = useNavigate();
+  const { language, changeLanguage, t } = useLanguage();
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -25,6 +28,11 @@ function Settings() {
     summary_day: "monday"
   });
   const [isSavingPreferences, setIsSavingPreferences] = useState(false);
+
+  // Apply language to the document
+  useEffect(() => {
+    document.documentElement.lang = userPreferences.language;
+  }, [userPreferences.language]);
 
   useEffect(() => {
     // Fetch user preferences when component mounts
@@ -114,7 +122,17 @@ function Settings() {
     }
   };
 
-  const handlePreferenceChange = (key, value) => {
+  const handlePreferenceChange = async (key, value) => {
+    if (key === 'language') {
+      const success = await changeLanguage(value);
+      if (success) {
+        setUserPreferences(prev => ({
+          ...prev,
+          language: value
+        }));
+      }
+      return;
+    }
     setUserPreferences(prev => ({
       ...prev,
       [key]: value
@@ -135,30 +153,30 @@ function Settings() {
           email_notifications: userPreferences.emailNotifications,
           workout_reminders: userPreferences.workoutReminders,
           progress_reports: userPreferences.progressReports,
-          language: userPreferences.language,
+          language: language,
           summary_frequency: userPreferences.summary_frequency,
           summary_day: userPreferences.summary_day
         }),
       });
 
       if (response.ok) {
-        setSuccess("Preferences saved successfully");
+        setSuccess(t("preferencesSaved"));
         setTimeout(() => setSuccess(null), 3000);
       } else {
         const data = await response.json();
-        setError(data.detail || "Failed to save preferences");
+        setError(data.detail || t("failedToSavePreferences"));
       }
     } catch (err) {
-      setError("Something went wrong. Please try again.");
+      setError(t("somethingWentWrong"));
     } finally {
       setIsSavingPreferences(false);
     }
   };
 
   const tabs = [
-    { id: "account", label: "Account", icon: <FaUser className="w-5 h-5" /> },
-    { id: "notifications", label: "Notifications", icon: <FaBell className="w-5 h-5" /> },
-    { id: "language", label: "Language", icon: <FaLanguage className="w-5 h-5" /> }
+    { id: "account", label: getTranslation("account", userPreferences.language), icon: <FaUser className="w-5 h-5" /> },
+    { id: "notifications", label: getTranslation("notifications", userPreferences.language), icon: <FaBell className="w-5 h-5" /> },
+    { id: "language", label: getTranslation("language", userPreferences.language), icon: <FaLanguage className="w-5 h-5" /> }
   ];
 
   return (
@@ -168,10 +186,10 @@ function Settings() {
           {/* Header */}
           <div className="p-6 border-b border-gray-200 dark:border-gray-700">
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-              Settings
+              {getTranslation("settings", userPreferences.language)}
             </h1>
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              Manage your account settings and preferences
+              {getTranslation("manageSettings", userPreferences.language)}
             </p>
           </div>
 
@@ -426,12 +444,12 @@ function Settings() {
                       {isSavingPreferences ? (
                         <>
                           <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                          <span>Saving...</span>
+                          <span>{getTranslation("saving", userPreferences.language)}</span>
                         </>
                       ) : (
                         <>
                           <FaSave className="w-5 h-5" />
-                          <span>Save Preferences</span>
+                          <span>{getTranslation("savePreferences", userPreferences.language)}</span>
                         </>
                       )}
                     </button>
@@ -444,12 +462,12 @@ function Settings() {
             {activeTab === "language" && (
               <div className="space-y-6">
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                  Language Settings
+                  {getTranslation("languageSettings", userPreferences.language)}
                 </h2>
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Select Language
+                      {getTranslation("selectLanguage", userPreferences.language)}
                     </label>
                     <select
                       value={userPreferences.language}
@@ -457,6 +475,7 @@ function Settings() {
                       className="w-full p-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="en">English</option>
+                      <option value="sv">Svenska</option>
                       <option value="es">Español</option>
                       <option value="fr">Français</option>
                       <option value="de">Deutsch</option>
@@ -477,12 +496,12 @@ function Settings() {
                       {isSavingPreferences ? (
                         <>
                           <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                          <span>Saving...</span>
+                          <span>{getTranslation("saving", userPreferences.language)}</span>
                         </>
                       ) : (
                         <>
                           <FaSave className="w-5 h-5" />
-                          <span>Save Preferences</span>
+                          <span>{getTranslation("savePreferences", userPreferences.language)}</span>
                         </>
                       )}
                     </button>
@@ -499,7 +518,7 @@ function Settings() {
               className="px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white flex items-center"
             >
               <FaTimes className="w-5 h-5 mr-2" />
-              <span>Back to Profile</span>
+              <span>{getTranslation("back", userPreferences.language)}</span>
             </button>
           </div>
         </div>

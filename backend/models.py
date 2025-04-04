@@ -27,6 +27,14 @@ class User(Base):
     deletion_token_expires_at = Column(DateTime, nullable=True)
     is_active = Column(Boolean, default=True)
     last_login = Column(DateTime(timezone=True), nullable=True)
+    
+    # Add new profile fields
+    height = Column(Float, nullable=True)
+    weight = Column(Float, nullable=True)
+    age = Column(Integer, nullable=True)
+    gender = Column(String, nullable=True)
+    fitness_goals = Column(String, nullable=True)
+    bio = Column(String, nullable=True)
 
     saved_programs = relationship(
         "SavedWorkoutProgram",
@@ -49,6 +57,7 @@ class User(Base):
     admin_settings_updates = relationship(
         "AdminSettings", back_populates="updated_by_user", cascade="all, delete-orphan"
     )
+    achievements = relationship("UserAchievement", back_populates="user")
 
 
 class UserProfile(Base):
@@ -202,6 +211,7 @@ class WorkoutPreferences(Base):
     last_exercises = Column(JSON, nullable=True)  # Store last used exercises and their sets
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    workout_frequency_goal = Column(Integer, nullable=True)  # Number of workouts per week (1-7)
 
     user = relationship("User", back_populates="workout_preferences")
 
@@ -221,3 +231,30 @@ class AdminSettings(Base):
     last_updated = Column(DateTime, default=datetime.now(timezone.utc))
     updated_by = Column(Integer, ForeignKey("users.id"))
     updated_by_user = relationship("User", back_populates="admin_settings_updates")
+
+
+class Achievement(Base):
+    __tablename__ = "achievements"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    description = Column(String, nullable=False)
+    icon = Column(String, nullable=False)  # Icon name from react-icons
+    category = Column(String, nullable=False)  # e.g., 'workout', 'streak', 'personal'
+    requirement = Column(Integer, nullable=False)  # e.g., number of workouts needed
+    created_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))
+
+    users = relationship("UserAchievement", back_populates="achievement")
+
+
+class UserAchievement(Base):
+    __tablename__ = "user_achievements"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    achievement_id = Column(Integer, ForeignKey("achievements.id"))
+    achieved_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))
+    progress = Column(Integer, default=0)  # Track progress towards achievement
+
+    user = relationship("User", back_populates="achievements")
+    achievement = relationship("Achievement", back_populates="users")

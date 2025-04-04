@@ -2,6 +2,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "../hooks/useTheme";
 import { notifyProfileUpdated, notifyUsernameChanged } from '../utils/notificationsHelpers';
+import AchievementsSection from '../components/AchievementsSection';
 import {
   FaEdit,
   FaTrash,
@@ -59,14 +60,15 @@ function Profile() {
     fitnessGoals: "",
     bio: ""
   });
+  const [personalInfoError, setPersonalInfoError] = useState("");
   const [preferences, setPreferences] = useState({
-    goalWeight: null,
-    summaryFrequency: null,
     cardColor: "#dbeafe",
+    workoutFrequencyGoal: null,
   });
   const [preferencesChanged, setPreferencesChanged] = useState(false);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
   const fileInputRef = useRef(null);
 
   const navigate = useNavigate();
@@ -123,6 +125,16 @@ function Profile() {
       setUser(userData);
       setEditedUsername(userData.username);
 
+      // Initialize personal information from user data
+      setPersonalInfo({
+        height: userData.height?.toString() || "",
+        weight: userData.weight?.toString() || "",
+        age: userData.age?.toString() || "",
+        gender: userData.gender || "",
+        fitnessGoals: userData.fitness_goals || "",
+        bio: userData.bio || ""
+      });
+
       // Handle card color setting
       if (userData.preferences?.card_color) {
         setCardColor(userData.preferences.card_color);
@@ -145,8 +157,7 @@ function Profile() {
       if (userData.preferences) {
         setPreferences((prev) => ({
           ...prev,
-          goalWeight: userData.preferences.goal_weight,
-          summaryFrequency: userData.preferences.summary_frequency,
+          workoutFrequencyGoal: userData.preferences.workout_frequency_goal,
         }));
       }
 
@@ -233,9 +244,17 @@ function Profile() {
 
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return "Good morning";
-    if (hour < 18) return "Good afternoon";
-    return "Good evening";
+    const username = user?.username || '';
+    
+    if (hour >= 5 && hour < 12) {
+      return `Good morning, ${username}! Ready for a great workout?`;
+    } else if (hour >= 12 && hour < 17) {
+      return `Good afternoon, ${username}! Keep pushing towards your goals!`;
+    } else if (hour >= 17 && hour < 22) {
+      return `Good evening, ${username}! Time to finish strong!`;
+    } else {
+      return `Hi ${username}! A true champion trains at all hours!`;
+    }
   };
 
   const handleUpdateProfile = async () => {
@@ -371,9 +390,8 @@ function Profile() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          goal_weight: preferences.goalWeight,
-          summary_frequency: preferences.summaryFrequency,
           card_color: preferences.cardColor,
+          workout_frequency_goal: preferences.workoutFrequencyGoal,
         }),
       });
 
@@ -381,22 +399,15 @@ function Profile() {
         const errorData = await response.json();
         setError(errorData.detail || "Failed to update preferences");
       } else {
-        // Update the local state with the server response
         const updatedPreferences = await response.json();
         setPreferences({
-          goalWeight: updatedPreferences.preferences.goal_weight,
-          summaryFrequency: updatedPreferences.preferences.summary_frequency,
           cardColor: updatedPreferences.preferences.card_color,
+          workoutFrequencyGoal: updatedPreferences.preferences.workout_frequency_goal,
         });
-
-        // Update the cardColor state to ensure UI consistency
         setCardColor(updatedPreferences.preferences.card_color);
-
         setPreferencesChanged(false);
         setError(null);
-        
-        // Show success notification
-        await notifyProfileUpdated("Card color updated successfully!");
+        await notifyProfileUpdated("Preferences updated successfully!");
       }
     } catch (err) {
       setError("Something went wrong. Please try again.");
@@ -444,6 +455,8 @@ function Profile() {
     try {
       setIsSaving(true);
       const token = localStorage.getItem("token");
+
+      // Update user profile using the correct endpoint
       const response = await fetch(`${backendURL}/update-profile`, {
         method: "PUT",
         headers: {
@@ -451,10 +464,9 @@ function Profile() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          username: user.username,
-          height: personalInfo.height,
-          weight: personalInfo.weight,
-          age: personalInfo.age,
+          height: parseFloat(personalInfo.height) || null,
+          weight: parseFloat(personalInfo.weight) || null,
+          age: parseInt(personalInfo.age) || null,
           gender: personalInfo.gender,
           fitness_goals: personalInfo.fitnessGoals,
           bio: personalInfo.bio
@@ -462,39 +474,53 @@ function Profile() {
       });
 
       if (response.ok) {
-        const updatedUser = await response.json();
+        const updatedData = await response.json();
+        
+        // Update the local state with the response data
         setUser(prevUser => ({
           ...prevUser,
-          height: updatedUser.height,
-          weight: updatedUser.weight,
-          age: updatedUser.age,
-          gender: updatedUser.gender,
-          fitness_goals: updatedUser.fitness_goals,
-          bio: updatedUser.bio
+          height: updatedData.height,
+          weight: updatedData.weight,
+          age: updatedData.age,
+          gender: updatedData.gender,
+          fitness_goals: updatedData.fitness_goals,
+          bio: updatedData.bio
         }));
+
+        // Update personal info state to match the response
+        setPersonalInfo({
+          height: updatedData.height?.toString() || "",
+          weight: updatedData.weight?.toString() || "",
+          age: updatedData.age?.toString() || "",
+          gender: updatedData.gender || "",
+          fitnessGoals: updatedData.fitness_goals || "",
+          bio: updatedData.bio || ""
+        });
+
         setIsEditingPersonalInfo(false);
-        setError(null);
+        setPersonalInfoError("");
+        setSuccessMessage("Personal information updated successfully");
       } else if (response.status === 401) {
-        // Handle unauthorized (token expired)
-        setError("Session expired. Please log in again.");
+        setPersonalInfoError("Session expired. Please log in again.");
         localStorage.removeItem("token");
         navigate("/login");
       } else {
-        const errorData = await response.json();
-        setError(errorData.detail || "Failed to update personal information");
+        const data = await response.json();
+        const errorMessage = data.detail || "Failed to update personal information";
+        setPersonalInfoError(errorMessage);
       }
     } catch (err) {
-      console.error("Error updating personal information:", err);
-      setError("Something went wrong. Please try again.");
+      setPersonalInfoError("Failed to update personal information. Please try again.");
     } finally {
       setIsSaving(false);
     }
   };
 
   const quickAccessLinks = [
-    { icon: <FaDumbbell className="w-6 h-6" />, label: "Workouts", path: "/workout-log" },
+    { icon: <FaDumbbell className="w-6 h-6" />, label: "Start doing your workouts!", path: "/workout-log" },
     { icon: <FaChartLine className="w-6 h-6" />, label: "Progress", path: "/progress-tracker" },
     { icon: <FaHistory className="w-6 h-6" />, label: "History", path: "/workout-history" },
+    { icon: <FaTrophy className="w-6 h-6" />, label: "Achievements", path: "/achievements" },
     { icon: <FaCog className="w-6 h-6" />, label: "Settings", path: "/settings" },
   ];
 
@@ -523,7 +549,7 @@ function Profile() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 px-4 sm:px-6 lg:px-8">
+    <div className={`min-h-screen ${theme === "dark" ? "bg-gray-900" : "bg-gray-100"} ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
       <div className="max-w-7xl mx-auto">
         {/* Profile Header */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8" style={{ backgroundColor: preferences.cardColor }}>
@@ -586,25 +612,21 @@ function Profile() {
                     </div>
                   ) : (
                     <>
-                      <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                        {user.username}
-                        {localStorage.getItem("isAdmin") === "true" && (
-                          <span className="text-xs bg-yellow-500 text-white px-2 py-0.5 rounded-full">
-                            Admin
-                          </span>
-                        )}
-                      </h1>
+                      <h1 className="text-2xl font-bold">{user?.username}</h1>
                       <button
                         onClick={() => setIsEditing(true)}
-                        className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                        className="text-blue-500 hover:text-blue-600"
                       >
-                        <FaEdit className="w-4 h-4" />
+                        <FaEdit className="w-5 h-5" />
                       </button>
                     </>
                   )}
                 </div>
-                <p className="text-gray-600 dark:text-gray-300 mt-1">
-                  Member since {formatJoinDate(user.created_at)} {getMembershipDuration(user.created_at)}
+                <p className="text-gray-600 dark:text-gray-400 text-sm mt-1 italic">
+                  {getGreeting()}
+                </p>
+                <p className="text-gray-500 dark:text-gray-400 text-xs mt-1">
+                  Member since {formatJoinDate(user?.created_at)} {getMembershipDuration(user?.created_at)}
                 </p>
               </div>
             </div>
@@ -649,122 +671,179 @@ function Profile() {
         {/* Stats and Preferences */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Personal Information */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Personal Information
-              </h2>
-              <button
-                onClick={() => setIsEditingPersonalInfo(!isEditingPersonalInfo)}
-                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-              >
-                <FaEdit className="w-4 h-4" />
-              </button>
-            </div>
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-2">
-                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-300">Height (cm)</label>
-                  {isEditingPersonalInfo ? (
-                    <input
-                      type="number"
-                      value={personalInfo.height}
-                      onChange={(e) => setPersonalInfo(prev => ({ ...prev, height: e.target.value }))}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-600 dark:border-gray-500 text-sm"
-                    />
-                  ) : (
-                    <p className="mt-1 text-sm text-gray-900 dark:text-white">{personalInfo.height || "Not set"}</p>
-                  )}
-                </div>
-                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-2">
-                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-300">Weight (kg)</label>
-                  {isEditingPersonalInfo ? (
-                    <input
-                      type="number"
-                      value={personalInfo.weight}
-                      onChange={(e) => setPersonalInfo(prev => ({ ...prev, weight: e.target.value }))}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-600 dark:border-gray-500 text-sm"
-                    />
-                  ) : (
-                    <p className="mt-1 text-sm text-gray-900 dark:text-white">{personalInfo.weight || "Not set"}</p>
-                  )}
-                </div>
-                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-2">
-                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-300">Age</label>
-                  {isEditingPersonalInfo ? (
-                    <input
-                      type="number"
-                      value={personalInfo.age}
-                      onChange={(e) => setPersonalInfo(prev => ({ ...prev, age: e.target.value }))}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-600 dark:border-gray-500 text-sm"
-                    />
-                  ) : (
-                    <p className="mt-1 text-sm text-gray-900 dark:text-white">{personalInfo.age || "Not set"}</p>
-                  )}
-                </div>
-                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-2">
-                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-300">Gender</label>
-                  {isEditingPersonalInfo ? (
-                    <select
-                      value={personalInfo.gender}
-                      onChange={(e) => setPersonalInfo(prev => ({ ...prev, gender: e.target.value }))}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-600 dark:border-gray-500 text-sm"
-                    >
-                      <option value="">Select</option>
-                      <option value="male">Male</option>
-                      <option value="female">Female</option>
-                      <option value="other">Other</option>
-                      <option value="prefer_not_to_say">Prefer not to say</option>
-                    </select>
-                  ) : (
-                    <p className="mt-1 text-sm text-gray-900 dark:text-white">{personalInfo.gender || "Not set"}</p>
-                  )}
-                </div>
-              </div>
-              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-2">
-                <label className="block text-xs font-medium text-gray-600 dark:text-gray-300">Fitness Goals</label>
-                {isEditingPersonalInfo ? (
-                  <textarea
-                    value={personalInfo.fitnessGoals}
-                    onChange={(e) => setPersonalInfo(prev => ({ ...prev, fitnessGoals: e.target.value }))}
-                    rows="2"
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-600 dark:border-gray-500 text-sm"
-                  />
-                ) : (
-                  <p className="mt-1 text-sm text-gray-900 dark:text-white">{personalInfo.fitnessGoals || "Not set"}</p>
-                )}
-              </div>
-              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-2">
-                <label className="block text-xs font-medium text-gray-600 dark:text-gray-300">Bio</label>
-                {isEditingPersonalInfo ? (
-                  <textarea
-                    value={personalInfo.bio}
-                    onChange={(e) => setPersonalInfo(prev => ({ ...prev, bio: e.target.value }))}
-                    rows="2"
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-600 dark:border-gray-500 text-sm"
-                  />
-                ) : (
-                  <p className="mt-1 text-sm text-gray-900 dark:text-white">{personalInfo.bio || "Not set"}</p>
-                )}
-              </div>
-              {isEditingPersonalInfo && (
-                <div className="flex justify-end space-x-2">
-                  <button
-                    onClick={() => setIsEditingPersonalInfo(false)}
-                    className="px-3 py-1 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white"
-                  >
-                    Cancel
-                  </button>
+          <div className={`${theme === "dark" ? "bg-gray-800" : "bg-white"} rounded-lg shadow p-6 mb-6`}>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold">Personal Information</h2>
+              {!isEditingPersonalInfo ? (
+                <button
+                  onClick={() => {
+                    setPersonalInfo({
+                      height: user?.height?.toString() || "",
+                      weight: user?.weight?.toString() || "",
+                      age: user?.age?.toString() || "",
+                      gender: user?.gender || "",
+                      fitnessGoals: user?.fitness_goals || "",
+                      bio: user?.bio || ""
+                    });
+                    setIsEditingPersonalInfo(true);
+                    setPersonalInfoError("");
+                  }}
+                  className="text-teal-500 hover:text-teal-400"
+                >
+                  <FaEdit />
+                </button>
+              ) : (
+                <div className="flex space-x-2">
                   <button
                     onClick={handlePersonalInfoUpdate}
+                    className="text-teal-500 hover:text-teal-400"
+                    title="Save changes"
                     disabled={isSaving}
-                    className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
                   >
-                    Save
+                    {isSaving ? (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    ) : (
+                      <FaSave />
+                    )}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsEditingPersonalInfo(false);
+                      setPersonalInfoError("");
+                    }}
+                    className="text-gray-500 hover:text-gray-400"
+                    title="Cancel"
+                  >
+                    <FaTimes />
                   </button>
                 </div>
               )}
             </div>
+
+            {personalInfoError && (
+              <div className="bg-red-500 text-white p-3 rounded mb-4">{personalInfoError}</div>
+            )}
+
+            {isEditingPersonalInfo ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Height (cm)</label>
+                  <input
+                    type="number"
+                    name="height"
+                    value={personalInfo.height}
+                    onChange={(e) => setPersonalInfo(prev => ({ ...prev, height: e.target.value }))}
+                    className={`w-full px-3 py-2 rounded-lg ${
+                      theme === "dark"
+                        ? "bg-gray-700 text-white border-gray-600"
+                        : "bg-gray-100 text-gray-900 border-gray-300"
+                    } border`}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Weight (kg)</label>
+                  <input
+                    type="number"
+                    name="weight"
+                    value={personalInfo.weight}
+                    onChange={(e) => setPersonalInfo(prev => ({ ...prev, weight: e.target.value }))}
+                    className={`w-full px-3 py-2 rounded-lg ${
+                      theme === "dark"
+                        ? "bg-gray-700 text-white border-gray-600"
+                        : "bg-gray-100 text-gray-900 border-gray-300"
+                    } border`}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Age</label>
+                  <input
+                    type="number"
+                    name="age"
+                    value={personalInfo.age}
+                    onChange={(e) => setPersonalInfo(prev => ({ ...prev, age: e.target.value }))}
+                    className={`w-full px-3 py-2 rounded-lg ${
+                      theme === "dark"
+                        ? "bg-gray-700 text-white border-gray-600"
+                        : "bg-gray-100 text-gray-900 border-gray-300"
+                    } border`}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Gender</label>
+                  <select
+                    name="gender"
+                    value={personalInfo.gender}
+                    onChange={(e) => setPersonalInfo(prev => ({ ...prev, gender: e.target.value }))}
+                    className={`w-full px-3 py-2 rounded-lg ${
+                      theme === "dark"
+                        ? "bg-gray-700 text-white border-gray-600"
+                        : "bg-gray-100 text-gray-900 border-gray-300"
+                    } border`}
+                  >
+                    <option value="">Select gender</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="other">Other</option>
+                    <option value="prefer_not_to_say">Prefer not to say</option>
+                  </select>
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium mb-1">Fitness Goals</label>
+                  <textarea
+                    name="fitnessGoals"
+                    value={personalInfo.fitnessGoals}
+                    onChange={(e) => setPersonalInfo(prev => ({ ...prev, fitnessGoals: e.target.value }))}
+                    rows="3"
+                    className={`w-full px-3 py-2 rounded-lg ${
+                      theme === "dark"
+                        ? "bg-gray-700 text-white border-gray-600"
+                        : "bg-gray-100 text-gray-900 border-gray-300"
+                    } border`}
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium mb-1">Bio</label>
+                  <textarea
+                    name="bio"
+                    value={personalInfo.bio}
+                    onChange={(e) => setPersonalInfo(prev => ({ ...prev, bio: e.target.value }))}
+                    rows="3"
+                    className={`w-full px-3 py-2 rounded-lg ${
+                      theme === "dark"
+                        ? "bg-gray-700 text-white border-gray-600"
+                        : "bg-gray-100 text-gray-900 border-gray-300"
+                    } border`}
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-gray-500">Height</p>
+                  <p className="font-medium">{user?.height ? `${user.height} cm` : "Not set"}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Weight</p>
+                  <p className="font-medium">{user?.weight ? `${user.weight} kg` : "Not set"}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Age</p>
+                  <p className="font-medium">{user?.age || "Not set"}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Gender</p>
+                  <p className="font-medium">{user?.gender ? user.gender.charAt(0).toUpperCase() + user.gender.slice(1) : "Not set"}</p>
+                </div>
+                <div className="md:col-span-2">
+                  <p className="text-sm text-gray-500">Fitness Goals</p>
+                  <p className="font-medium">{user?.fitness_goals || "Not set"}</p>
+                </div>
+                <div className="md:col-span-2">
+                  <p className="text-sm text-gray-500">Bio</p>
+                  <p className="font-medium">{user?.bio || "Not set"}</p>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Workout Stats */}
@@ -833,8 +912,36 @@ function Profile() {
                       <div>
                         <p className="text-sm text-gray-600 dark:text-gray-300">Current Streak</p>
                         <span className="font-medium text-gray-900 dark:text-white">
-                          {workoutStats.currentStreak || 0} days
+                          {workoutStats.currentStreak || 0} {workoutStats.frequencyGoal ? 'weeks' : 'days'}
                         </span>
+                        <div className="mt-2">
+                          <label className="text-xs text-gray-500 dark:text-gray-400">Workout Frequency Goal:</label>
+                          <div className="flex items-center space-x-2">
+                            <select
+                              value={preferences.workoutFrequencyGoal || ""}
+                              onChange={(e) => handlePreferenceChange({ ...preferences, workoutFrequencyGoal: e.target.value })}
+                              className="w-full mt-1 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                            >
+                              <option value="">Daily Streak</option>
+                              <option value="1">1 workout/week</option>
+                              <option value="2">2 workouts/week</option>
+                              <option value="3">3 workouts/week</option>
+                              <option value="4">4 workouts/week</option>
+                              <option value="5">5 workouts/week</option>
+                              <option value="6">6 workouts/week</option>
+                              <option value="7">7 workouts/week</option>
+                            </select>
+                            {preferencesChanged && (
+                              <button
+                                onClick={handlePreferenceUpdate}
+                                disabled={isSaving}
+                                className="text-xs bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600 transition-colors"
+                              >
+                                {isSaving ? "Saving..." : "Save"}
+                              </button>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -876,15 +983,13 @@ function Profile() {
                             </span>
                             <button
                               onClick={() => navigate(`/routines`)}
-                              className="text-yellow-500 hover:text-yellow-600 flex items-center space-x-1"
-                              title="View in Routines"
+                              className="text-yellow-500 hover:text-yellow-600"
                             >
-                              <span className="text-xs">View</span>
                               <FaExternalLinkAlt className="w-3 h-3" />
                             </button>
                           </div>
                           <p className="text-xs text-gray-500 dark:text-gray-400">
-                            Saved on {new Date(lastSavedRoutine.created_at).toLocaleDateString()}
+                            {new Date(lastSavedRoutine.created_at).toLocaleDateString()}
                           </p>
                         </div>
                       </div>
@@ -912,6 +1017,11 @@ function Profile() {
               </div>
             )}
           </div>
+        </div>
+
+        {/* Achievements Section */}
+        <div className="mt-8" id="achievements">
+          <AchievementsSection backendURL={backendURL} />
         </div>
 
         {/* Account Actions */}

@@ -134,23 +134,32 @@ export const NotificationProvider = ({ children }) => {
   // Clear all notifications
   const clearAll = async () => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) return;
+      const token = localStorage.getItem("token");
+      if (!token) {
+        throw new Error("You need to be logged in to clear notifications");
+      }
 
       const response = await fetch(`${apiUrl}/notifications/clear-all`, {
-        method: 'DELETE',
+        method: "DELETE",
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          'Authorization': `Bearer ${token}`,
+        },
       });
 
       if (!response.ok) {
-        throw new Error('Failed to clear notifications');
+        const text = await response.text();
+        try {
+          const data = JSON.parse(text);
+          throw new Error(data.detail || "Failed to clear notifications");
+        } catch (e) {
+          throw new Error(text || "Failed to clear notifications");
+        }
       }
 
-      setNotifications([]);
+      setNotifications([]); // Clear the notifications state
     } catch (error) {
-      console.error('Error clearing notifications:', error);
+      console.error("Error clearing notifications:", error);
+      throw error; // Re-throw the error to be handled by the component
     }
   };
 

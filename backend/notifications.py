@@ -101,29 +101,6 @@ def update_notification(
     return {"message": "Notification updated successfully"}
 
 
-@router.delete("/{notification_id}")
-def delete_notification(
-    notification_id: int,
-    user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """Delete a notification"""
-    notification = db.query(Notification)\
-        .filter(
-            Notification.id == notification_id,
-            Notification.user_id == user.id
-        )\
-        .first()
-    
-    if not notification:
-        raise HTTPException(status_code=404, detail="Notification not found")
-    
-    db.delete(notification)
-    db.commit()
-    
-    return {"message": "Notification deleted successfully"}
-
-
 @router.post("/mark-all-read")
 def mark_all_as_read(
     user: User = Depends(get_current_user),
@@ -148,10 +125,36 @@ def clear_all_notifications(
     db: Session = Depends(get_db)
 ):
     """Delete all notifications"""
-    db.query(Notification)\
-        .filter(Notification.user_id == user.id)\
-        .delete()
+    try:
+        db.query(Notification)\
+            .filter(Notification.user_id == user.id)\
+            .delete(synchronize_session='fetch')
+        
+        db.commit()
+        return {"message": "All notifications cleared"}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/{notification_id}")
+def delete_notification(
+    notification_id: int,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Delete a notification"""
+    notification = db.query(Notification)\
+        .filter(
+            Notification.id == notification_id,
+            Notification.user_id == user.id
+        )\
+        .first()
     
+    if not notification:
+        raise HTTPException(status_code=404, detail="Notification not found")
+    
+    db.delete(notification)
     db.commit()
     
-    return {"message": "All notifications cleared"}
+    return {"message": "Notification deleted successfully"}

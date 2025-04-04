@@ -46,6 +46,8 @@ function WorkoutHistory() {
   const [savingRoutine, setSavingRoutine] = useState(false);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [workoutToDelete, setWorkoutToDelete] = useState(null);
+  const [selectedWorkouts, setSelectedWorkouts] = useState(new Set());
+  const [showBulkDeleteConfirmation, setShowBulkDeleteConfirmation] = useState(false);
   const [weightUnit, setWeightUnit] = useState(() => {
     return localStorage.getItem("weightUnit") || "kg";
   });
@@ -488,6 +490,64 @@ function WorkoutHistory() {
     return matchesDate && matchesExercise && matchesSearch;
   });
 
+  const handleSelectAll = (checked) => {
+    if (checked) {
+      const allWorkoutIds = filteredWorkouts.map(workout => workout.id);
+      setSelectedWorkouts(new Set(allWorkoutIds));
+    } else {
+      setSelectedWorkouts(new Set());
+    }
+  };
+
+  const handleSelectWorkout = (workoutId, checked) => {
+    const newSelected = new Set(selectedWorkouts);
+    if (checked) {
+      newSelected.add(workoutId);
+    } else {
+      newSelected.delete(workoutId);
+    }
+    setSelectedWorkouts(newSelected);
+  };
+
+  const handleBulkDelete = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        alert("You need to be logged in to delete workouts.");
+        navigate("/login");
+        return;
+      }
+
+      // Delete each selected workout
+      for (const workoutId of selectedWorkouts) {
+        const response = await fetch(
+          `${API_BASE_URL}/workouts/${workoutId}`,
+          {
+            method: "DELETE",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error(`Failed to delete workout: ${response.status}`);
+        }
+      }
+
+      // Remove the workouts from state
+      setWorkoutHistory(
+        workoutHistory.filter((workout) => !selectedWorkouts.has(workout.id))
+      );
+      setShowBulkDeleteConfirmation(false);
+      setSelectedWorkouts(new Set());
+
+      alert("Workouts deleted successfully!");
+    } catch (error) {
+      alert(`Error deleting workouts: ${error.message}. Please try again.`);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-6">
       <div className="max-w-4xl mx-auto">
@@ -495,19 +555,30 @@ function WorkoutHistory() {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
             Workout History
           </h1>
-          <button
-            onClick={toggleWeightUnit}
-            className="flex items-center bg-gray-200 dark:bg-gray-700 px-3 py-2 rounded-lg text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-          >
-            <FaBalanceScale className="mr-2" />
-            <span>{weightUnit.toUpperCase()}</span>
-          </button>
-          <button
-            onClick={() => navigate("/workout-log")}
-            className="flex items-center text-teal-500 hover:text-teal-400"
-          >
-            <FaArrowLeft className="mr-2" /> Back to Workout
-          </button>
+          <div className="flex items-center space-x-4">
+            {selectedWorkouts.size > 0 && (
+              <button
+                onClick={() => setShowBulkDeleteConfirmation(true)}
+                className="flex items-center bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg"
+              >
+                <FaTrash className="mr-2" />
+                Delete Selected ({selectedWorkouts.size})
+              </button>
+            )}
+            <button
+              onClick={toggleWeightUnit}
+              className="flex items-center bg-gray-200 dark:bg-gray-700 px-3 py-2 rounded-lg text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+            >
+              <FaBalanceScale className="mr-2" />
+              <span>{weightUnit.toUpperCase()}</span>
+            </button>
+            <button
+              onClick={() => navigate("/workout-log")}
+              className="flex items-center text-teal-500 hover:text-teal-400"
+            >
+              <FaArrowLeft className="mr-2" /> Back to Workout
+            </button>
+          </div>
         </div>
 
         {error && (
@@ -582,11 +653,8 @@ function WorkoutHistory() {
         </div>
 
         {loading ? (
-          <div className="text-center py-8">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-500 mx-auto"></div>
-            <p className="mt-4 text-gray-600 dark:text-gray-400">
-              Loading workout history...
-            </p>
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-500"></div>
           </div>
         ) : filteredWorkouts.length === 0 ? (
           <div className="text-center py-8 bg-white dark:bg-gray-800 rounded-lg shadow">
@@ -598,52 +666,73 @@ function WorkoutHistory() {
           </div>
         ) : (
           <div className="space-y-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-4">
+              <label className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  checked={selectedWorkouts.size === filteredWorkouts.length}
+                  onChange={(e) => handleSelectAll(e.target.checked)}
+                  className="rounded text-teal-500 focus:ring-teal-500"
+                />
+                <span className="text-gray-700 dark:text-gray-300">Select All</span>
+              </label>
+            </div>
             {filteredWorkouts.map((workout, index) => (
               <div
                 key={workout.id || index}
                 className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden"
               >
-                <div
-                  className="p-4 flex justify-between items-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
-                  onClick={() => toggleWorkoutExpand(workout.id || index)}
-                >
-                  <div>
-                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                      {workout.name}
-                    </h2>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-2 text-sm text-gray-600 dark:text-gray-400">
-                      <div className="flex items-center">
-                        <FaCalendarAlt className="mr-1" />
-                        {formatDate(workout.date || workout.start_time)}
-                      </div>
-                      {workout.bodyweight && (
-                        <div className="flex items-center">
-                          <FaWeight className="mr-1" />
-                          {formatWeight(
-                            workout.bodyweight,
-                            workout.weight_unit || "kg"
+                <div className="p-4 flex justify-between items-center">
+                  <div className="flex items-center space-x-4">
+                    <input
+                      type="checkbox"
+                      checked={selectedWorkouts.has(workout.id)}
+                      onChange={(e) => handleSelectWorkout(workout.id, e.target.checked)}
+                      className="rounded text-teal-500 focus:ring-teal-500"
+                    />
+                    <div
+                      className="flex-1 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
+                      onClick={() => toggleWorkoutExpand(workout.id || index)}
+                    >
+                      <div>
+                        <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                          {workout.name}
+                        </h2>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-2 text-sm text-gray-600 dark:text-gray-400">
+                          <div className="flex items-center">
+                            <FaCalendarAlt className="mr-1" />
+                            {formatDate(workout.date || workout.start_time)}
+                          </div>
+                          {workout.bodyweight && (
+                            <div className="flex items-center">
+                              <FaWeight className="mr-1" />
+                              {formatWeight(
+                                workout.bodyweight,
+                                workout.weight_unit || "kg"
+                              )}
+                            </div>
+                          )}
+                          <div className="flex items-center">
+                            <FaClock className="mr-1" />
+                            {calculateDuration(
+                              workout.start_time,
+                              workout.end_time
+                            )}
+                          </div>
+                          {calculateTotalDistance(workout) > 0 && (
+                            <div className="flex items-center">
+                              <span className="font-medium">Distance: </span>&nbsp;
+                              {calculateTotalDistance(workout)} km
+                            </div>
+                          )}
+                          {calculateTotalDuration(workout) > 0 && (
+                            <div className="flex items-center">
+                              <span className="font-medium">Cardio: </span>&nbsp;
+                              {calculateTotalDuration(workout)} min
+                            </div>
                           )}
                         </div>
-                      )}
-                      <div className="flex items-center">
-                        <FaClock className="mr-1" />
-                        {calculateDuration(
-                          workout.start_time,
-                          workout.end_time
-                        )}
                       </div>
-                      {calculateTotalDistance(workout) > 0 && (
-                        <div className="flex items-center">
-                          <span className="font-medium">Distance: </span>&nbsp;
-                          {calculateTotalDistance(workout)} km
-                        </div>
-                      )}
-                      {calculateTotalDuration(workout) > 0 && (
-                        <div className="flex items-center">
-                          <span className="font-medium">Cardio: </span>&nbsp;
-                          {calculateTotalDuration(workout)} min
-                        </div>
-                      )}
                     </div>
                   </div>
                   <div className="flex items-center">
@@ -906,6 +995,36 @@ function WorkoutHistory() {
                 onClick={() => {
                   setShowDeleteConfirmation(false);
                   setWorkoutToDelete(null);
+                }}
+                className="flex-1 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-white py-2 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showBulkDeleteConfirmation && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
+            <h2 className="text-xl font-bold mb-4 text-red-600 dark:text-red-500">
+              Delete Selected Workouts
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
+              Are you sure you want to delete {selectedWorkouts.size} selected workouts? This action cannot be undone.
+            </p>
+
+            <div className="flex space-x-3">
+              <button
+                onClick={handleBulkDelete}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg"
+              >
+                Delete
+              </button>
+              <button
+                onClick={() => {
+                  setShowBulkDeleteConfirmation(false);
                 }}
                 className="flex-1 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-white py-2 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500"
               >

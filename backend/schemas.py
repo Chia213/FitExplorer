@@ -363,3 +363,66 @@ class UserProfileResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class UserProfileUpdateRequest(BaseModel):
+    height: Optional[float] = None
+    weight: Optional[float] = None
+    age: Optional[int] = None
+    gender: Optional[str] = None
+    fitness_goals: Optional[str] = None
+    bio: Optional[str] = None
+
+
+class AchievementBase(BaseModel):
+    name: str
+    description: str
+    icon: str
+    category: str
+    requirement: int
+
+
+class AchievementCreate(AchievementBase):
+    pass
+
+
+class Achievement(AchievementBase):
+    id: int
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class UserAchievementBase(BaseModel):
+    achievement_id: int
+    progress: int = 0
+
+
+class UserAchievementCreate(UserAchievementBase):
+    pass
+
+
+class UserAchievement(UserAchievementBase):
+    id: int
+    user_id: int
+    achieved_at: Optional[datetime] = None
+    achievement: Achievement
+
+    class Config:
+        from_attributes = True
+
+
+class UserAchievementResponse(BaseModel):
+    id: int
+    name: str
+    description: str
+    icon: str
+    category: str
+    requirement: int
+    progress: int
+    achieved_at: Optional[datetime] = None
+    is_achieved: bool
+
+    class Config:
+        from_attributes = True

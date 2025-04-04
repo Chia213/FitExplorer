@@ -18,12 +18,24 @@ const Notifications = () => {
   } = useNotifications();
   
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [showClearAllConfirm, setShowClearAllConfirm] = useState(false);
 
   // Handle manual refresh
   const handleRefresh = async () => {
     setIsRefreshing(true);
     await refreshNotifications();
     setTimeout(() => setIsRefreshing(false), 500); // Show spinner for at least 500ms
+  };
+
+  // Handle clear all with confirmation
+  const handleClearAll = async () => {
+    try {
+      await clearAll();
+      setShowClearAllConfirm(false);
+    } catch (error) {
+      // Convert any error to string before displaying
+      alert(typeof error === 'string' ? error : 'Failed to clear notifications. Please try again.');
+    }
   };
 
   // Format date to relative time (e.g., "2 hours ago")
@@ -97,7 +109,7 @@ const Notifications = () => {
                   Mark all as read
                 </button>
                 <button 
-                  onClick={clearAll}
+                  onClick={() => setShowClearAllConfirm(true)}
                   className="px-3 py-1 text-sm bg-red-500 text-white rounded hover:bg-red-600 transition"
                 >
                   Clear all
@@ -106,6 +118,32 @@ const Notifications = () => {
             )}
           </div>
         </div>
+
+        {/* Clear All Confirmation Modal */}
+        {showClearAllConfirm && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
+              <h3 className="text-lg font-semibold mb-4">Clear All Notifications</h3>
+              <p className="text-gray-600 dark:text-gray-300 mb-6">
+                Are you sure you want to delete all notifications? This action cannot be undone.
+              </p>
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={() => setShowClearAllConfirm(false)}
+                  className="px-4 py-2 text-sm bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleClearAll}
+                  className="px-4 py-2 text-sm bg-red-500 text-white rounded hover:bg-red-600 transition"
+                >
+                  Clear All
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {loading ? (
           <div className="flex justify-center items-center h-64">

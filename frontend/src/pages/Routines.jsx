@@ -60,8 +60,6 @@ function Routines() {
   });
   const [showDeleteAllModal, setShowDeleteAllModal] = useState(false);
   const [deletingAll, setDeletingAll] = useState(false);
-  const [showCreateFolderModal, setShowCreateFolderModal] = useState(false);
-  const [newFolderName, setNewFolderName] = useState("");
 
   const navigate = useNavigate();
   const { theme } = useTheme();
@@ -715,19 +713,6 @@ function Routines() {
             <FaSort className={filterOptions.sortOrder === "asc" ? "transform rotate-180" : ""} />
           </button>
         </div>
-
-        {/* Create Folder Button */}
-        <button
-          onClick={() => setShowCreateFolderModal(true)}
-          className={`flex items-center gap-2 px-3 py-2 rounded-lg ${
-            theme === "dark"
-              ? "bg-gray-700 text-white hover:bg-gray-600"
-              : "bg-gray-100 text-gray-900 hover:bg-gray-200"
-          }`}
-        >
-          <FaFolderPlus />
-          <span>Create Folder</span>
-        </button>
       </div>
     </div>
   );
@@ -790,38 +775,6 @@ function Routines() {
     } finally {
       setDeletingAll(false);
       setShowDeleteAllModal(false);
-    }
-  };
-
-  // Add this function after other handler functions
-  const handleCreateFolder = async () => {
-    if (!newFolderName.trim()) {
-      setError("Folder name cannot be empty");
-      return;
-    }
-
-    try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(`${backendURL}/routine-folders`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ name: newFolderName }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to create folder");
-      }
-
-      const newFolder = await response.json();
-      setFolders([...folders, newFolder]);
-      setShowCreateFolderModal(false);
-      setNewFolderName("");
-      setSuccessMessage("Folder created successfully");
-    } catch (error) {
-      setError("Failed to create folder. Please try again.");
     }
   };
 
@@ -1915,55 +1868,6 @@ function Routines() {
                     Delete All
                   </>
                 )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Create Folder Modal */}
-      {showCreateFolderModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className={`${theme === "dark" ? "bg-gray-800" : "bg-white"} rounded-lg p-6 max-w-md w-full mx-4`}>
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold">Create New Folder</h2>
-              <button
-                onClick={() => setShowCreateFolderModal(false)}
-                className={`${theme === "dark" ? "text-gray-400 hover:text-gray-300" : "text-gray-500 hover:text-gray-700"}`}
-              >
-                <FaTimes />
-              </button>
-            </div>
-            <div className="mb-4">
-              <input
-                type="text"
-                value={newFolderName}
-                onChange={(e) => setNewFolderName(e.target.value)}
-                placeholder="Enter folder name"
-                className={`w-full px-3 py-2 rounded-lg ${
-                  theme === "dark"
-                    ? "bg-gray-700 text-white border-gray-600"
-                    : "bg-gray-100 text-gray-900 border-gray-300"
-                } border`}
-              />
-            </div>
-            <div className="flex justify-end space-x-3">
-              <button
-                onClick={() => setShowCreateFolderModal(false)}
-                className={`px-4 py-2 rounded ${
-                  theme === "dark"
-                    ? "bg-gray-700 hover:bg-gray-600"
-                    : "bg-gray-200 hover:bg-gray-300"
-                }`}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleCreateFolder}
-                className="bg-teal-500 hover:bg-teal-600 px-4 py-2 text-white rounded flex items-center"
-              >
-                <FaFolderPlus className="mr-2" />
-                Create Folder
               </button>
             </div>
           </div>
