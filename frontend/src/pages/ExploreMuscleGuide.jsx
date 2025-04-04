@@ -902,15 +902,36 @@ function ExploreMuscleGuide() {
     }));
   }, []);
 
-  const handleViewAlternative = useCallback((alternativeName, parentExerciseName) => {
-    setState(prev => ({
-      ...prev,
-      navigationHistory: [...prev.navigationHistory, parentExerciseName],
-      parentExercise: parentExerciseName,
-      viewingExercise: null,
-      viewingAlternativeExercise: alternativeName
-    }));
-  }, []);
+  const handleViewAlternative = (alternativeExercise, parentExercise) => {
+    // If we're viewing an exercise and want to see an alternative
+    if (parentExercise) {
+      setState(prev => ({
+        ...prev,
+        viewingExercise: null,
+        viewingAlternativeExercise: alternativeExercise,
+        parentExercise: parentExercise,
+        navigationHistory: [...prev.navigationHistory, parentExercise]
+      }));
+    } 
+    // If we're going back from an alternative to the parent exercise
+    else {
+      // Get the last item from navigation history
+      const lastParent = state.navigationHistory[state.navigationHistory.length - 1] || null;
+      
+      // Remove the last item from navigation history
+      const newHistory = [...state.navigationHistory];
+      if (newHistory.length > 0) {
+        newHistory.pop();
+      }
+      
+      setState(prev => ({
+        ...prev,
+        viewingExercise: lastParent,
+        viewingAlternativeExercise: null,
+        navigationHistory: newHistory
+      }));
+    }
+  };
 
   // Track scrolling with debounce
   useEffect(() => {
@@ -1396,7 +1417,16 @@ function ExploreMuscleGuide() {
                 {getCurrentMuscleName()}
               </button>
               <span className="mx-1">›</span>
-              <button onClick={handleViewAlternative} className="hover:underline">
+              <button 
+                onClick={() => {
+                  setState(prev => ({
+                    ...prev,
+                    viewingExercise: state.parentExercise,
+                    viewingAlternativeExercise: null
+                  }));
+                }} 
+                className="hover:underline"
+              >
                 {state.parentExercise}
               </button>
               <span className="mx-1">›</span>
