@@ -4,9 +4,7 @@ import tailwindcss from "tailwindcss";
 
 export default defineConfig({
   plugins: [
-    react({
-      jsxRuntime: 'automatic'
-    }), 
+    react(), 
     tailwindcss()
   ],
   server: {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   FaCalendarAlt,
@@ -11,7 +11,9 @@ import {
   FaSearch,
   FaTrash,
   FaBalanceScale,
+  FaTrophy,
 } from "react-icons/fa";
+import { Line } from 'react-chartjs-2';
 
 const API_BASE_URL = "http://localhost:8000";
 
@@ -46,11 +48,12 @@ function WorkoutHistory() {
   const [savingRoutine, setSavingRoutine] = useState(false);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [workoutToDelete, setWorkoutToDelete] = useState(null);
-  const [selectedWorkouts, setSelectedWorkouts] = useState(new Set());
-  const [showBulkDeleteConfirmation, setShowBulkDeleteConfirmation] = useState(false);
   const [weightUnit, setWeightUnit] = useState(() => {
     return localStorage.getItem("weightUnit") || "kg";
   });
+  const [viewMode, setViewMode] = useState('list'); // 'list' or 'calendar'
+  const [compareMode, setCompareMode] = useState(false);
+  const [selectedWorkouts, setSelectedWorkouts] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -79,8 +82,14 @@ function WorkoutHistory() {
       if (!response.ok) throw new Error("Failed to fetch workouts");
 
       const data = await response.json();
+      console.log("Fetched workout data:", data);
 
-      const processedWorkouts = data.map((workout) => {
+      // Sort workouts by date in descending order (newest first)
+      const sortedWorkouts = data.sort((a, b) => {
+        return new Date(b.date) - new Date(a.date);
+      });
+
+      const processedWorkouts = sortedWorkouts.map((workout) => {
         if (!workout.exercises) {
           workout.exercises = [];
           return workout;
@@ -90,6 +99,7 @@ function WorkoutHistory() {
           try {
             workout.exercises = JSON.parse(workout.exercises);
           } catch (e) {
+            console.error("Error parsing exercises JSON:", e);
             workout.exercises = [];
           }
         }
@@ -122,21 +132,43 @@ function WorkoutHistory() {
       setWorkoutHistory(processedWorkouts);
       setError(null);
     } catch (error) {
+      console.error("Error fetching workouts:", error);
       setError("Failed to load workout history. Please try again later.");
     } finally {
       setLoading(false);
     }
   }
 
-  const handleSaveAsRoutine = (workout) => {
-    if (!workout || !workout.exercises || workout.exercises.length === 0) {
-      alert("Cannot save a workout without exercises as a routine.");
-      return;
-    }
+  const handleSaveAsRoutine = async (workout) => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        alert("You need to be logged in to save routines.");
+        navigate("/login");
+        return;
+      }
 
-    setSelectedWorkout(workout);
-    setRoutineName(workout.name || "");
-    setShowSaveRoutineModal(true);
+      // Show name input dialog
+      const routineName = prompt(
+        "Enter a name for this routine:",
+        workout.name
+      );
+      if (!routineName) {
+        return; // User cancelled
+      }
+
+      // Prepare workout data with new name
+      const workoutToSave = {
+        ...workout,
+        name: routineName,
+      };
+
+      await saveWorkoutAsRoutine(workoutToSave, token);
+      alert("Workout saved as routine successfully!");
+    } catch (error) {
+      console.error("Error saving routine:", error);
+      alert(`Error saving routine: ${error.message}. Please try again.`);
+    }
   };
 
   const handleSaveRoutine = async () => {
@@ -183,113 +215,12 @@ function WorkoutHistory() {
         })),
       };
 
-      // Use the dedicated endpoint to check for duplicates
-      const checkResponse = await fetch(`${API_BASE_URL}/routines/check-name`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ name: routineName }),
-      });
-
-      if (!checkResponse.ok) {
-        throw new Error("Failed to check existing routines");
-      }
-
-      const { exists, id, name } = await checkResponse.json();
-
-      // If a duplicate exists, ask user to confirm overwrite
-      if (exists) {
-        const confirmed = window.confirm(
-          `A routine named "${name}" already exists. Do you want to overwrite it?`
-        );
-
-        if (confirmed) {
-          // Use the existing PUT endpoint to update the routine
-          const updateResponse = await fetch(`${API_BASE_URL}/routines/${id}`, {
-            method: "PUT",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify(routineData),
-          });
-
-          if (!updateResponse.ok) {
-            const errorText = await updateResponse.text();
-            throw new Error(
-              `Failed to update routine: ${updateResponse.status}`
-            );
-          }
-
-          alert("Routine updated successfully!");
-          setShowSaveRoutineModal(false);
-          return;
-        } else {
-          alert("Operation cancelled. Routine was not overwritten.");
-          setShowSaveRoutineModal(false);
-          setSavingRoutine(false);
-          return;
-        }
-      }
-
-      // If no duplicate exists, create a new routine
-      const response = await fetch(`${API_BASE_URL}/routines`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(routineData),
-      });
-
-      // Handle server-side conflict detection as a fallback
-      if (response.status === 409) {
-        const data = await response.json();
-        const confirmed = window.confirm(
-          `A routine named "${routineName}" already exists. Do you want to overwrite it?`
-        );
-
-        if (confirmed) {
-          const overwriteResponse = await fetch(
-            `${API_BASE_URL}/routines/${data.routine_id}`,
-            {
-              method: "PUT",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-              },
-              body: JSON.stringify(routineData),
-            }
-          );
-
-          if (!overwriteResponse.ok) {
-            const errorText = await overwriteResponse.text();
-            throw new Error(
-              `Failed to overwrite routine: ${overwriteResponse.status}`
-            );
-          }
-
-          alert("Routine updated successfully!");
-        } else {
-          alert("Operation cancelled. Routine was not overwritten.");
-        }
-
-        setShowSaveRoutineModal(false);
-        setSavingRoutine(false);
-        return;
-      }
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Server error: ${response.status}`);
-      }
-
-      // Successfully created a new routine
+      // Use handleSaveAsRoutine instead of duplicating logic
+      await saveWorkoutAsRoutine(routineData, token);
       alert("Routine saved successfully!");
       setShowSaveRoutineModal(false);
     } catch (error) {
+      console.error("Error saving routine:", error);
       alert(`Error saving routine: ${error.message}. Please try again.`);
     } finally {
       setSavingRoutine(false);
@@ -333,6 +264,7 @@ function WorkoutHistory() {
 
       alert("Workout deleted successfully!");
     } catch (error) {
+      console.error("Error deleting workout:", error);
       alert(`Error deleting workout: ${error.message}. Please try again.`);
     }
   };
@@ -490,61 +422,194 @@ function WorkoutHistory() {
     return matchesDate && matchesExercise && matchesSearch;
   });
 
-  const handleSelectAll = (checked) => {
-    if (checked) {
-      const allWorkoutIds = filteredWorkouts.map(workout => workout.id);
-      setSelectedWorkouts(new Set(allWorkoutIds));
-    } else {
-      setSelectedWorkouts(new Set());
-    }
+  const generateExerciseProgressData = (exerciseName) => {
+    const data = workoutHistory
+      .filter(workout => 
+        workout.exercises?.some(ex => ex.name === exerciseName)
+      )
+      .map(workout => {
+        const exercise = workout.exercises.find(ex => ex.name === exerciseName);
+        // For strength exercises, find the max weight used
+        if (!exercise.is_cardio) {
+          const maxWeight = Math.max(...exercise.sets.map(set => set.weight || 0));
+          return {
+            date: new Date(workout.date || workout.start_time),
+            value: maxWeight
+          };
+        }
+        // For cardio, use distance or duration
+        return {
+          date: new Date(workout.date || workout.start_time),
+          value: exercise.sets.reduce((sum, set) => sum + (set.distance || 0), 0)
+        };
+      })
+      .sort((a, b) => a.date - b.date);
+      
+    return {
+      labels: data.map(d => d.date.toLocaleDateString()),
+      datasets: [{
+        label: exerciseName,
+        data: data.map(d => d.value),
+        borderColor: '#4F46E5',
+        tension: 0.1
+      }]
+    };
   };
 
-  const handleSelectWorkout = (workoutId, checked) => {
-    const newSelected = new Set(selectedWorkouts);
-    if (checked) {
-      newSelected.add(workoutId);
-    } else {
-      newSelected.delete(workoutId);
-    }
-    setSelectedWorkouts(newSelected);
+  const workoutStats = useMemo(() => {
+    if (workoutHistory.length === 0) return null;
+    
+    const totalWorkouts = workoutHistory.length;
+    const thisMonth = workoutHistory.filter(w => {
+      const date = new Date(w.date || w.start_time);
+      const now = new Date();
+      return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+    }).length;
+    
+    const avgDuration = workoutHistory.reduce((sum, w) => {
+      const start = new Date(w.start_time);
+      const end = new Date(w.end_time);
+      return sum + (end - start) / (1000 * 60); // in minutes
+    }, 0) / totalWorkouts;
+    
+    const mostFrequentExercise = Object.entries(
+      workoutHistory.flatMap(w => w.exercises?.map(e => e.name) || [])
+        .reduce((acc, name) => {
+          acc[name] = (acc[name] || 0) + 1;
+          return acc;
+        }, {})
+    ).sort((a, b) => b[1] - a[1])[0];
+    
+    return {
+      totalWorkouts,
+      thisMonth,
+      avgDuration: Math.round(avgDuration),
+      mostFrequentExercise: mostFrequentExercise ? mostFrequentExercise[0] : 'None'
+    };
+  }, [workoutHistory]);
+
+  const personalRecords = useMemo(() => {
+    const records = {};
+    
+    workoutHistory.forEach(workout => {
+      workout.exercises?.forEach(exercise => {
+        if (exercise.is_cardio) {
+          // For cardio, track fastest pace or longest distance
+          const totalDistance = exercise.sets?.reduce((sum, set) => sum + (parseFloat(set.distance) || 0), 0) || 0;
+          const totalDuration = exercise.sets?.reduce((sum, set) => sum + (parseFloat(set.duration) || 0), 0) || 0;
+          
+          if (totalDistance > 0 && totalDuration > 0) {
+            const pace = totalDuration / totalDistance; // min/km
+            
+            if (!records[exercise.name] || 
+                (records[exercise.name].type === 'pace' && pace < records[exercise.name].value)) {
+              records[exercise.name] = {
+                type: 'pace',
+                value: pace,
+                display: `${pace.toFixed(2)} min/km`,
+                date: workout.date || workout.start_time
+              };
+            }
+            
+            if (!records[`${exercise.name}_distance`] || 
+                totalDistance > records[`${exercise.name}_distance`].value) {
+              records[`${exercise.name}_distance`] = {
+                type: 'distance',
+                value: totalDistance,
+                display: `${totalDistance.toFixed(2)} km`,
+                date: workout.date || workout.start_time
+              };
+            }
+          }
+        } else {
+          // For strength, track max weight
+          exercise.sets?.forEach(set => {
+            if (set.weight && set.reps) {
+              const key = `${exercise.name}_${set.reps}reps`;
+              if (!records[key] || parseFloat(set.weight) > records[key].value) {
+                records[key] = {
+                  type: 'weight',
+                  value: parseFloat(set.weight),
+                  display: `${set.weight}${workout.weight_unit || 'kg'} × ${set.reps}`,
+                  date: workout.date || workout.start_time
+                };
+              }
+            }
+          });
+        }
+      });
+    });
+    
+    return Object.entries(records)
+      .filter(([key]) => !key.includes('_distance')) // Filter out duplicate records
+      .map(([key, record]) => ({
+        name: key.split('_')[0],
+        ...record
+      }));
+  }, [workoutHistory]);
+
+  const exportWorkoutHistory = () => {
+    const dataStr = JSON.stringify(workoutHistory, null, 2);
+    const dataUri = `data:application/json;charset=utf-8,${encodeURIComponent(dataStr)}`;
+    
+    const exportFileDefaultName = `workout-history-${new Date().toISOString().slice(0, 10)}.json`;
+    
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileDefaultName);
+    linkElement.click();
   };
 
-  const handleBulkDelete = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        alert("You need to be logged in to delete workouts.");
-        navigate("/login");
+  const exportWorkoutHistoryCSV = () => {
+    // Create CSV header
+    let csv = 'Date,Workout Name,Duration,Exercise,Sets,Weight,Reps,Distance,Duration\n';
+    
+    // Add data rows
+    workoutHistory.forEach(workout => {
+      const date = new Date(workout.date || workout.start_time).toLocaleDateString();
+      const duration = calculateDuration(workout.start_time, workout.end_time);
+      
+      if (!workout.exercises || workout.exercises.length === 0) {
+        csv += `${date},"${workout.name}",${duration},,,,,,\n`;
         return;
       }
-
-      // Delete each selected workout
-      for (const workoutId of selectedWorkouts) {
-        const response = await fetch(
-          `${API_BASE_URL}/workouts/${workoutId}`,
-          {
-            method: "DELETE",
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error(`Failed to delete workout: ${response.status}`);
+      
+      workout.exercises.forEach(exercise => {
+        if (!exercise.sets || exercise.sets.length === 0) {
+          csv += `${date},"${workout.name}",${duration},,,,,,\n`;
+          return;
         }
+        
+        exercise.sets.forEach((set, idx) => {
+          csv += `${date},"${workout.name}",${duration},"${exercise.name}",${idx+1},`;
+          
+          if (exercise.is_cardio) {
+            csv += `,,${set.distance || ''},${set.duration || ''}\n`;
+          } else {
+            csv += `${set.weight || ''},${set.reps || ''},,\n`;
+          }
+        });
+      });
+    });
+    
+    const dataUri = `data:text/csv;charset=utf-8,${encodeURIComponent(csv)}`;
+    const exportFileDefaultName = `workout-history-${new Date().toISOString().slice(0, 10)}.csv`;
+    
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileDefaultName);
+    linkElement.click();
+  };
+
+  const toggleWorkoutSelection = (workout) => {
+    if (selectedWorkouts.some(w => w.id === workout.id)) {
+      setSelectedWorkouts(selectedWorkouts.filter(w => w.id !== workout.id));
+    } else {
+      if (selectedWorkouts.length < 2) {
+        setSelectedWorkouts([...selectedWorkouts, workout]);
+      } else {
+        alert("You can only compare two workouts at a time.");
       }
-
-      // Remove the workouts from state
-      setWorkoutHistory(
-        workoutHistory.filter((workout) => !selectedWorkouts.has(workout.id))
-      );
-      setShowBulkDeleteConfirmation(false);
-      setSelectedWorkouts(new Set());
-
-      alert("Workouts deleted successfully!");
-    } catch (error) {
-      alert(`Error deleting workouts: ${error.message}. Please try again.`);
     }
   };
 
@@ -555,16 +620,27 @@ function WorkoutHistory() {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
             Workout History
           </h1>
-          <div className="flex items-center space-x-4">
-            {selectedWorkouts.size > 0 && (
-              <button
-                onClick={() => setShowBulkDeleteConfirmation(true)}
-                className="flex items-center bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg"
-              >
-                <FaTrash className="mr-2" />
-                Delete Selected ({selectedWorkouts.size})
-              </button>
-            )}
+          <div className="flex space-x-2">
+            <button
+              onClick={() => setViewMode('list')}
+              className={`px-3 py-1 rounded ${
+                viewMode === 'list' 
+                  ? 'bg-blue-500 text-white' 
+                  : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
+              }`}
+            >
+              List View
+            </button>
+            <button
+              onClick={() => setViewMode('calendar')}
+              className={`px-3 py-1 rounded ${
+                viewMode === 'calendar' 
+                  ? 'bg-blue-500 text-white' 
+                  : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
+              }`}
+            >
+              Calendar View
+            </button>
             <button
               onClick={toggleWeightUnit}
               className="flex items-center bg-gray-200 dark:bg-gray-700 px-3 py-2 rounded-lg text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
@@ -572,18 +648,42 @@ function WorkoutHistory() {
               <FaBalanceScale className="mr-2" />
               <span>{weightUnit.toUpperCase()}</span>
             </button>
-            <button
-              onClick={() => navigate("/workout-log")}
-              className="flex items-center text-teal-500 hover:text-teal-400"
-            >
-              <FaArrowLeft className="mr-2" /> Back to Workout
-            </button>
           </div>
+          <button
+            onClick={() => navigate("/workout-log")}
+            className="flex items-center text-teal-500 hover:text-teal-400"
+          >
+            <FaArrowLeft className="mr-2" /> Back to Workout
+          </button>
         </div>
 
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
             {error}
+          </div>
+        )}
+
+        {workoutStats && (
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
+            <h2 className="text-lg font-semibold mb-3">Your Workout Summary</h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-blue-50 dark:bg-blue-900/30 p-3 rounded-lg">
+                <p className="text-sm text-gray-500 dark:text-gray-400">Total Workouts</p>
+                <p className="text-2xl font-bold">{workoutStats.totalWorkouts}</p>
+              </div>
+              <div className="bg-green-50 dark:bg-green-900/30 p-3 rounded-lg">
+                <p className="text-sm text-gray-500 dark:text-gray-400">This Month</p>
+                <p className="text-2xl font-bold">{workoutStats.thisMonth}</p>
+              </div>
+              <div className="bg-purple-50 dark:bg-purple-900/30 p-3 rounded-lg">
+                <p className="text-sm text-gray-500 dark:text-gray-400">Avg Duration</p>
+                <p className="text-2xl font-bold">{workoutStats.avgDuration} min</p>
+              </div>
+              <div className="bg-yellow-50 dark:bg-yellow-900/30 p-3 rounded-lg">
+                <p className="text-sm text-gray-500 dark:text-gray-400">Favorite Exercise</p>
+                <p className="text-xl font-bold truncate">{workoutStats.mostFrequentExercise}</p>
+              </div>
+            </div>
           </div>
         )}
 
@@ -624,7 +724,16 @@ function WorkoutHistory() {
               </select>
             </div>
           </div>
-          <div className="mt-4 flex justify-end">
+          
+          <div className="mt-4 flex justify-between items-center">
+            <button
+              onClick={() => navigate("/personal-records")}
+              className="bg-gradient-to-r from-purple-500 to-indigo-600 text-white px-4 py-2 rounded-lg shadow-md hover:from-purple-600 hover:to-indigo-700 transition-all flex items-center"
+            >
+              <FaTrophy className="text-yellow-300 mr-2" />
+              <span>View Personal Records</span>
+            </button>
+            
             <button
               onClick={() => {
                 setFilterDate("");
@@ -635,7 +744,8 @@ function WorkoutHistory() {
               Clear Filters
             </button>
           </div>
-          <div>
+          
+          <div className="mt-4">
             <label className="block text-gray-700 dark:text-gray-300 mb-2">
               Search Workouts
             </label>
@@ -652,9 +762,45 @@ function WorkoutHistory() {
           </div>
         </div>
 
+        {viewMode === 'calendar' && (
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
+            <div className="grid grid-cols-7 gap-1">
+              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                <div key={day} className="text-center font-medium p-2">{day}</div>
+              ))}
+              
+              {/* Generate calendar days */}
+              {generateCalendarDays().map((day, i) => (
+                <div 
+                  key={i} 
+                  className={`p-2 min-h-[80px] border rounded ${
+                    day.isCurrentMonth 
+                      ? 'border-gray-200 dark:border-gray-700' 
+                      : 'border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 text-gray-400'
+                  } ${day.isToday ? 'ring-2 ring-blue-500' : ''}`}
+                >
+                  <div className="text-right mb-1">{day.date.getDate()}</div>
+                  {day.workouts.map((workout, idx) => (
+                    <div 
+                      key={idx}
+                      onClick={() => toggleWorkoutExpand(workout.id)}
+                      className="text-xs p-1 mb-1 rounded bg-blue-100 dark:bg-blue-900/30 cursor-pointer truncate"
+                    >
+                      {workout.name}
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {loading ? (
-          <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-500"></div>
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-500 mx-auto"></div>
+            <p className="mt-4 text-gray-600 dark:text-gray-400">
+              Loading workout history...
+            </p>
           </div>
         ) : filteredWorkouts.length === 0 ? (
           <div className="text-center py-8 bg-white dark:bg-gray-800 rounded-lg shadow">
@@ -666,73 +812,56 @@ function WorkoutHistory() {
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-4">
-              <label className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  checked={selectedWorkouts.size === filteredWorkouts.length}
-                  onChange={(e) => handleSelectAll(e.target.checked)}
-                  className="rounded text-teal-500 focus:ring-teal-500"
-                />
-                <span className="text-gray-700 dark:text-gray-300">Select All</span>
-              </label>
-            </div>
             {filteredWorkouts.map((workout, index) => (
               <div
                 key={workout.id || index}
                 className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden"
               >
-                <div className="p-4 flex justify-between items-center">
-                  <div className="flex items-center space-x-4">
-                    <input
-                      type="checkbox"
-                      checked={selectedWorkouts.has(workout.id)}
-                      onChange={(e) => handleSelectWorkout(workout.id, e.target.checked)}
-                      className="rounded text-teal-500 focus:ring-teal-500"
-                    />
-                    <div
-                      className="flex-1 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
-                      onClick={() => toggleWorkoutExpand(workout.id || index)}
-                    >
-                      <div>
-                        <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                          {workout.name}
-                        </h2>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-2 text-sm text-gray-600 dark:text-gray-400">
-                          <div className="flex items-center">
-                            <FaCalendarAlt className="mr-1" />
-                            {formatDate(workout.date || workout.start_time)}
-                          </div>
-                          {workout.bodyweight && (
-                            <div className="flex items-center">
-                              <FaWeight className="mr-1" />
-                              {formatWeight(
-                                workout.bodyweight,
-                                workout.weight_unit || "kg"
-                              )}
-                            </div>
-                          )}
-                          <div className="flex items-center">
-                            <FaClock className="mr-1" />
-                            {calculateDuration(
-                              workout.start_time,
-                              workout.end_time
-                            )}
-                          </div>
-                          {calculateTotalDistance(workout) > 0 && (
-                            <div className="flex items-center">
-                              <span className="font-medium">Distance: </span>&nbsp;
-                              {calculateTotalDistance(workout)} km
-                            </div>
-                          )}
-                          {calculateTotalDuration(workout) > 0 && (
-                            <div className="flex items-center">
-                              <span className="font-medium">Cardio: </span>&nbsp;
-                              {calculateTotalDuration(workout)} min
-                            </div>
+                <div
+                  className="p-4 flex justify-between items-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
+                  onClick={() => toggleWorkoutExpand(workout.id || index)}
+                >
+                  <div>
+                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                      {workout.name}
+                    </h2>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-2 text-sm text-gray-600 dark:text-gray-400">
+                      <div className="flex items-center">
+                        <FaCalendarAlt className="mr-1" />
+                        {formatDate(workout.date || workout.start_time)}
+                      </div>
+                      {workout.bodyweight && (
+                        <div className="flex items-center">
+                          <FaWeight className="mr-1" />
+                          {formatWeight(
+                            workout.bodyweight,
+                            workout.weight_unit || "kg"
                           )}
                         </div>
+                      )}
+                      <div className="flex items-center">
+                        <FaClock className="mr-1" />
+                        {calculateDuration(
+                          workout.start_time,
+                          workout.end_time
+                        )}
                       </div>
+                      <div className="flex items-center">
+                        <span className="font-medium">Time: </span>&nbsp;
+                        {formatTime(workout.start_time)} - {formatTime(workout.end_time)}
+                      </div>
+                      {calculateTotalDistance(workout) > 0 && (
+                        <div className="flex items-center">
+                          <span className="font-medium">Distance: </span>&nbsp;
+                          {calculateTotalDistance(workout)} km
+                        </div>
+                      )}
+                      {calculateTotalDuration(workout) > 0 && (
+                        <div className="flex items-center">
+                          <span className="font-medium">Cardio: </span>&nbsp;
+                          {calculateTotalDuration(workout)} min
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center">
@@ -920,6 +1049,81 @@ function WorkoutHistory() {
             ))}
           </div>
         )}
+
+        <div className="flex justify-end mb-4">
+          <div className="dropdown relative">
+            <button className="bg-blue-500 text-white px-4 py-2 rounded-lg flex items-center">
+              Export Data <FaChevronDown className="ml-2" />
+            </button>
+            <div className="dropdown-menu absolute right-0 mt-2 bg-white dark:bg-gray-800 shadow-lg rounded-lg overflow-hidden hidden">
+              <button 
+                onClick={exportWorkoutHistory}
+                className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700"
+              >
+                Export as JSON
+              </button>
+              <button 
+                onClick={exportWorkoutHistoryCSV}
+                className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700"
+              >
+                Export as CSV
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <button
+          onClick={() => setCompareMode(!compareMode)}
+          className={`px-4 py-2 rounded-lg ${
+            compareMode ? 'bg-red-500 text-white' : 'bg-blue-500 text-white'
+          }`}
+        >
+          {compareMode ? 'Cancel Compare' : 'Compare Workouts'}
+        </button>
+
+        {compareMode && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full p-6 max-h-[90vh] overflow-y-auto">
+              <h2 className="text-xl font-bold mb-4">Workout Comparison</h2>
+              
+              <div className="grid grid-cols-2 gap-4">
+                {selectedWorkouts.map((workout, idx) => (
+                  <div key={idx} className="border rounded-lg p-4">
+                    <h3 className="font-bold text-lg">{workout.name}</h3>
+                    <p>{formatDate(workout.date || workout.start_time)}</p>
+                    <p>Duration: {calculateDuration(workout.start_time, workout.end_time)}</p>
+                    
+                    <h4 className="font-medium mt-4 mb-2">Exercises</h4>
+                    {workout.exercises?.map((exercise, eIdx) => (
+                      <div key={eIdx} className="mb-3">
+                        <p className="font-medium">{exercise.name}</p>
+                        <ul className="pl-4">
+                          {exercise.sets?.map((set, sIdx) => (
+                            <li key={sIdx}>
+                              {exercise.is_cardio 
+                                ? `${set.distance || 0}km in ${set.duration || 0}min` 
+                                : `${set.weight || 0}${workout.weight_unit || 'kg'} × ${set.reps || 0}`}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+              
+              <button
+                onClick={() => {
+                  setSelectedWorkouts([]);
+                  setCompareMode(false);
+                }}
+                className="mt-4 bg-blue-500 text-white px-4 py-2 rounded-lg"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {showSaveRoutineModal && (
@@ -995,36 +1199,6 @@ function WorkoutHistory() {
                 onClick={() => {
                   setShowDeleteConfirmation(false);
                   setWorkoutToDelete(null);
-                }}
-                className="flex-1 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-white py-2 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showBulkDeleteConfirmation && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
-            <h2 className="text-xl font-bold mb-4 text-red-600 dark:text-red-500">
-              Delete Selected Workouts
-            </h2>
-            <p className="text-gray-600 dark:text-gray-400 mb-4">
-              Are you sure you want to delete {selectedWorkouts.size} selected workouts? This action cannot be undone.
-            </p>
-
-            <div className="flex space-x-3">
-              <button
-                onClick={handleBulkDelete}
-                className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg"
-              >
-                Delete
-              </button>
-              <button
-                onClick={() => {
-                  setShowBulkDeleteConfirmation(false);
                 }}
                 className="flex-1 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-white py-2 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500"
               >

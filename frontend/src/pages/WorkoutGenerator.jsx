@@ -2166,7 +2166,7 @@ function WorkoutGenerator() {
     switch (currentStep) {
       case 1:
         if (!preferences.gender) {
-          alert("Please select your gender");
+          alert("Please Select Your Sex");
         }
         break;
       case 2:
@@ -2280,26 +2280,38 @@ function WorkoutGenerator() {
       }
 
       // Check if exercise has variations for the fitness goal
-      const goalVariationExists = exerciseInfo.variations?.[fitnessGoal] !== undefined;
+      const goalVariationExists =
+        exerciseInfo.variations?.[fitnessGoal] !== undefined;
       if (!goalVariationExists) {
         console.log(`Goal variation mismatch for ${exercise}. 
                 Required Goal: ${fitnessGoal}
-                Available Variations: ${Object.keys(exerciseInfo.variations || {})}`);
+                Available Variations: ${Object.keys(
+                  exerciseInfo.variations || {}
+                )}`);
         return false;
       }
 
       return true;
     });
 
-    console.log(`Filtered exercises after equipment and goal check: ${filteredExercises}`);
+    console.log(
+      `Filtered exercises after equipment and goal check: ${filteredExercises}`
+    );
 
     // If no exercises found, try to find bodyweight alternatives
-    if (filteredExercises.length === 0 && !equipmentList.includes("Bodyweight")) {
-      console.warn(`No exercises found for ${muscle} with current equipment. Trying bodyweight alternatives.`);
+    if (
+      filteredExercises.length === 0 &&
+      !equipmentList.includes("Bodyweight")
+    ) {
+      console.warn(
+        `No exercises found for ${muscle} with current equipment. Trying bodyweight alternatives.`
+      );
       const bodyweightExercises = muscleExercises.filter((exercise) => {
         const exerciseInfo = allExercises[exercise];
-        return exerciseInfo.equipment?.includes("Bodyweight") && 
-               (!exerciseInfo.gender || exerciseInfo.gender === gender);
+        return (
+          exerciseInfo.equipment?.includes("Bodyweight") &&
+          (!exerciseInfo.gender || exerciseInfo.gender === gender)
+        );
       });
 
       if (bodyweightExercises.length > 0) {
@@ -2324,7 +2336,9 @@ function WorkoutGenerator() {
       return exercise;
     });
 
-    console.log(`Final selected exercises after age adjustment: ${ageAdjustedExercises}`);
+    console.log(
+      `Final selected exercises after age adjustment: ${ageAdjustedExercises}`
+    );
     return ageAdjustedExercises;
   };
 
@@ -2399,7 +2413,14 @@ function WorkoutGenerator() {
 
       // If no specific exercises are found, fall back to bodyweight exercises
       if (availableExercises.length === 0) {
-        availableExercises = getExercisesForEquipment(muscle, ["Bodyweight"], prefs.age, prefs.fitnessLevel, prefs.fitnessGoal, prefs.gender);
+        availableExercises = getExercisesForEquipment(
+          muscle,
+          ["Bodyweight"],
+          prefs.age,
+          prefs.fitnessLevel,
+          prefs.fitnessGoal,
+          prefs.gender
+        );
       }
 
       // Ensure we select up to 3 unique exercises per muscle group
@@ -2958,7 +2979,7 @@ function WorkoutGenerator() {
         return (
           <div className="mb-8">
             <h2 className="text-xl font-bold mb-4 flex items-center">
-              <FaVenusMars className="mr-2 text-blue-500" /> Select Your Gender
+              <FaVenusMars className="mr-2 text-blue-500" /> Select Your Sex
             </h2>
             <div className="grid grid-cols-2 gap-4">
               {["Male", "Female"].map((gender) => (
