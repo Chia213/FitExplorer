@@ -25,6 +25,8 @@ import {
   FaArrowUp,
   FaArrowDown,
   FaMinus,
+  FaDownload,
+  FaPrint,
 } from "react-icons/fa";
 
 const backendURL = import.meta.env.VITE_BACKEND_URL;
@@ -40,6 +42,19 @@ function ProgressTracker() {
   });
   const [activeMetric, setActiveMetric] = useState("weight");
   const [dateRange, setDateRange] = useState("3m"); // 1m, 3m, 6m, 1y, all
+  const [goals, setGoals] = useState({
+    weight: { target: '', deadline: '' },
+    benchPress: { target: '', deadline: '' },
+    squat: { target: '', deadline: '' },
+    deadlift: { target: '', deadline: '' },
+    runningPace: { target: '', deadline: '' }
+  });
+  const [showGoalModal, setShowGoalModal] = useState(false);
+  const [activeGoal, setActiveGoal] = useState('weight');
+  const [compareMode, setCompareMode] = useState(false);
+  const [comparisonRange, setComparisonRange] = useState("3m");
+  const [smoothData, setSmoothData] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
 
   const { theme } = useTheme();
   const navigate = useNavigate();
@@ -102,16 +117,23 @@ function ProgressTracker() {
         });
       } catch (err) {
         console.error("Error fetching progress data:", err);
-        setError("Failed to load progress data. Please try again later.");
+        
+        // Improved error message with more details
+        const errorMessage = err.response?.data?.message || err.message || "Failed to load progress data";
+        setError(`${errorMessage}. Please try again later.`);
       } finally {
         setLoading(false);
       }
     };
 
     fetchProgressData();
-  }, [navigate, dateRange]);
+  }, [navigate, dateRange, retryCount]);
 
-  const filterDataByDateRange = (data, range) => {
+  const toggleCompareMode = () => {
+    setCompareMode(!compareMode);
+  };
+
+  const filterDataByDateRange = (data, range, isComparison = false) => {
     if (!data || data.length === 0) return data;
 
     const now = new Date();
@@ -124,6 +146,19 @@ function ProgressTracker() {
     };
 
     const daysToSubtract = rangeMap[range] || 90;
+    
+    if (isComparison) {
+      // For comparison, get data from the previous period
+      const endDate = new Date();
+      endDate.setDate(endDate.getDate() - daysToSubtract);
+      const startDate = new Date(endDate);
+      startDate.setDate(startDate.getDate() - daysToSubtract);
+      
+      return data.filter((entry) => {
+        const entryDate = new Date(entry.date);
+        return entryDate >= startDate && entryDate <= endDate;
+      });
+    }
 
     return data.filter((entry) => {
       const entryDate = new Date(entry.date);
@@ -182,11 +217,43 @@ function ProgressTracker() {
     }
   };
 
+  const getSmoothedData = (data, key, windowSize = 3) => {
+    if (!data || data.length < windowSize) return data;
+    
+    return data.map((item, index) => {
+      if (index < windowSize - 1) return item;
+      
+      let sum = 0;
+      for (let i = 0; i < windowSize; i++) {
+        sum += data[index - i][key];
+      }
+      
+      return {
+        ...item,
+        [key]: sum / windowSize
+      };
+    });
+  };
+
   const renderWeightMetric = () => {
-    const weightData = filterDataByDateRange(progressData.weight, dateRange);
+    let weightData = filterDataByDateRange(progressData.weight, dateRange);
     const weightChange = calculateChange(weightData, "bodyweight");
+    
+    if (smoothData && weightData.length > 3) {
+      weightData = getSmoothedData(weightData, "bodyweight");
+    }
+
+    let comparisonData = [];
+    if (compareMode) {
+      comparisonData = filterDataByDateRange(progressData.weight, dateRange, true);
+    }
 
     const processedData = weightData.map((entry) => ({
+      ...entry,
+      formattedDate: formatDate(entry.date),
+    }));
+    
+    const processedComparisonData = comparisonData.map((entry) => ({
       ...entry,
       formattedDate: formatDate(entry.date),
     }));
@@ -227,26 +294,128 @@ function ProgressTracker() {
                 : "N/A"}
             </p>
           </div>
+
+          <div className="bg-white dark:bg-gray-700 rounded-lg shadow p-4">
+            <h3 className="text-sm text-gray-500 dark:text-gray-400 mb-1">
+              Weight Goal
+            </h3>
+            {goals.weight.target ? (
+              <>
+                <p className="text-2xl font-bold">{goals.weight.target} kg</p>
+                <p className="text-sm text-gray-500">
+                  By {new Date(goals.weight.deadline).toLocaleDateString()}
+                </p>
+                <button 
+                  onClick={() => {
+                    setActiveGoal('weight');
+                    setShowGoalModal(true);
+                  }}
+                  className="text-blue-500 text-sm mt-2 hover:underline"
+                >
+                  Update Goal
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => {
+                  setActiveGoal('weight');
+                  setShowGoalModal(true);
+                }}
+                className="mt-2 text-blue-500 hover:underline"
+              >
+                Set Goal
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="bg-white dark:bg-gray-700 rounded-lg shadow p-4 mb-6">
-          <h3 className="text-lg font-semibold mb-4">Weight Progression</h3>
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold">Weight Progression</h3>
+            <div className="flex items-center">
+              <label className="mr-2 text-sm">Compare with previous period</label>
+              <input
+                type="checkbox"
+                checked={compareMode}
+                onChange={toggleCompareMode}
+                className="form-checkbox h-5 w-5 text-blue-500"
+              />
+            </div>
+          </div>
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={processedData}>
+              <LineChart>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="formattedDate" />
+                <XAxis dataKey="formattedDate" allowDuplicatedCategory={false} />
                 <YAxis domain={["dataMin - 2", "dataMax + 2"]} />
                 <Tooltip />
                 <Legend />
                 <Line
+                  data={processedData}
                   type="monotone"
                   dataKey="bodyweight"
-                  name="Weight (kg)"
+                  name="Current Period"
                   stroke="#3b82f6"
                   activeDot={{ r: 8 }}
                   strokeWidth={2}
                 />
+                {compareMode && (
+                  <Line
+                    data={processedComparisonData}
+                    type="monotone"
+                    dataKey="bodyweight"
+                    name="Previous Period"
+                    stroke="#ef4444"
+                    strokeDasharray="5 5"
+                    strokeWidth={2}
+                  />
+                )}
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-gray-700 rounded-lg shadow p-4 mb-6">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold">Weight Progression</h3>
+            <div className="flex items-center">
+              <label className="mr-2 text-sm">Smooth data</label>
+              <input
+                type="checkbox"
+                checked={smoothData}
+                onChange={() => setSmoothData(!smoothData)}
+                className="form-checkbox h-5 w-5 text-blue-500"
+              />
+            </div>
+          </div>
+          <div className="h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="formattedDate" allowDuplicatedCategory={false} />
+                <YAxis domain={["dataMin - 2", "dataMax + 2"]} />
+                <Tooltip />
+                <Legend />
+                <Line
+                  data={processedData}
+                  type="monotone"
+                  dataKey="bodyweight"
+                  name="Current Period"
+                  stroke="#3b82f6"
+                  activeDot={{ r: 8 }}
+                  strokeWidth={2}
+                />
+                {compareMode && (
+                  <Line
+                    data={processedComparisonData}
+                    type="monotone"
+                    dataKey="bodyweight"
+                    name="Previous Period"
+                    stroke="#ef4444"
+                    strokeDasharray="5 5"
+                    strokeWidth={2}
+                  />
+                )}
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -488,13 +657,135 @@ function ProgressTracker() {
     );
   };
 
+  const exportProgressData = () => {
+    const dataToExport = {
+      weight: progressData.weight,
+      strength: progressData.strength,
+      cardio: progressData.cardio,
+      workouts: progressData.workouts,
+      exportDate: new Date().toISOString(),
+    };
+    
+    const dataStr = JSON.stringify(dataToExport, null, 2);
+    const dataUri = `data:application/json;charset=utf-8,${encodeURIComponent(dataStr)}`;
+    
+    const exportFileDefaultName = `fitness-progress-${new Date().toISOString().split('T')[0]}.json`;
+    
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileDefaultName);
+    linkElement.click();
+  };
+
+  const handleGoalChange = (e) => {
+    const { name, value } = e.target;
+    const [goalType, field] = name.split('.');
+    
+    setGoals(prev => ({
+      ...prev,
+      [goalType]: {
+        ...prev[goalType],
+        [field]: value
+      }
+    }));
+  };
+  
+  const saveGoal = () => {
+    // Here you would typically save the goal to your backend
+    // For now, we'll just close the modal
+    setShowGoalModal(false);
+    
+    // In a real implementation, you would add code like:
+    // axios.post(`${backendURL}/goals`, { goals }, { headers: { Authorization: `Bearer ${token}` } });
+  };
+  
+  const renderGoalModal = () => {
+    if (!showGoalModal) return null;
+    
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
+          <h2 className="text-xl font-bold mb-4">Set {activeGoal.charAt(0).toUpperCase() + activeGoal.slice(1)} Goal</h2>
+          
+          <div className="mb-4">
+            <label className="block text-sm font-medium mb-1">Target Value</label>
+            <input
+              type="number"
+              name={`${activeGoal}.target`}
+              value={goals[activeGoal].target}
+              onChange={handleGoalChange}
+              className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600"
+              placeholder={`Enter target ${activeGoal}`}
+            />
+          </div>
+          
+          <div className="mb-6">
+            <label className="block text-sm font-medium mb-1">Target Date</label>
+            <input
+              type="date"
+              name={`${activeGoal}.deadline`}
+              value={goals[activeGoal].deadline}
+              onChange={handleGoalChange}
+              className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600"
+            />
+          </div>
+          
+          <div className="flex justify-end space-x-3">
+            <button
+              onClick={() => setShowGoalModal(false)}
+              className="px-4 py-2 border rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={saveGoal}
+              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            >
+              Save Goal
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const handleRetry = () => {
+    setRetryCount(prev => prev + 1);
+  };
+
+  const renderSkeletonLoader = () => {
+    return (
+      <div className="animate-pulse">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+          <div className="h-10 w-64 bg-gray-300 dark:bg-gray-700 rounded mb-4 md:mb-0"></div>
+          <div className="h-10 w-40 bg-gray-300 dark:bg-gray-700 rounded"></div>
+        </div>
+        
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="h-24 bg-gray-300 dark:bg-gray-700 rounded-lg"></div>
+          ))}
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="h-32 bg-gray-300 dark:bg-gray-700 rounded-lg"></div>
+          ))}
+        </div>
+        
+        <div className="h-80 bg-gray-300 dark:bg-gray-700 rounded-lg mb-6"></div>
+      </div>
+    );
+  };
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="flex flex-col items-center">
-          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-          <p className="mt-4 text-lg">Loading your progress data...</p>
-        </div>
+      <div className="container mx-auto px-4 py-8">
+        {renderSkeletonLoader()}
       </div>
     );
   }
@@ -508,6 +799,12 @@ function ProgressTracker() {
         >
           <strong className="font-bold">Error: </strong>
           <span className="block sm:inline">{error}</span>
+          <button 
+            onClick={handleRetry}
+            className="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+          >
+            Retry
+          </button>
         </div>
       </div>
     );
@@ -517,14 +814,14 @@ function ProgressTracker() {
     <div
       className={`container mx-auto px-4 py-8 ${
         theme === "dark" ? "text-white" : "text-gray-900"
-      }`}
+      } print:text-black print:bg-white`}
     >
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 print:mb-4">
         <h1 className="text-3xl font-bold mb-4 md:mb-0 flex items-center">
-          <FaChartLine className="mr-3 text-blue-500" /> Progress Tracker
+          <FaChartLine className="mr-3 text-blue-500 print:text-black" /> Progress Tracker
         </h1>
 
-        <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex flex-col sm:flex-row gap-4 print:hidden">
           <select
             value={dateRange}
             onChange={(e) => setDateRange(e.target.value)}
@@ -536,10 +833,24 @@ function ProgressTracker() {
             <option value="1y">Last Year</option>
             <option value="all">All Time</option>
           </select>
+          
+          <button
+            onClick={exportProgressData}
+            className="px-4 py-2 bg-blue-500 text-white rounded-lg flex items-center justify-center hover:bg-blue-600 transition-colors"
+          >
+            <FaDownload className="mr-2" /> Export Data
+          </button>
+          
+          <button
+            onClick={handlePrint}
+            className="px-4 py-2 bg-green-500 text-white rounded-lg flex items-center justify-center hover:bg-green-600 transition-colors"
+          >
+            <FaPrint className="mr-2" /> Print Report
+          </button>
         </div>
       </div>
-
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      
+      <div className="print:hidden grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <button
           onClick={() => setActiveMetric("weight")}
           className={`p-4 rounded-lg text-center transition-colors ${
@@ -588,32 +899,16 @@ function ProgressTracker() {
           <span className="block">Frequency</span>
         </button>
       </div>
-
-      {renderMetricContent()}
-
-      <div className="bg-white dark:bg-gray-700 rounded-lg shadow p-6 mb-6">
-        <h3 className="text-lg font-semibold mb-4">Tips for Progress</h3>
-        <ul className="list-disc pl-5 space-y-2">
-          <li>
-            Consistency is key - aim for regular workouts rather than sporadic
-            intense sessions
-          </li>
-          <li>
-            Track your nutrition alongside your workouts for optimal results
-          </li>
-          <li>
-            Ensure you're getting enough rest and recovery between training
-            sessions
-          </li>
-          <li>
-            Set realistic goals and celebrate small victories along the way
-          </li>
-          <li>
-            Consider taking progress photos to visually track changes that
-            numbers might not show
-          </li>
-        </ul>
+      
+      <div className="print:block">
+        {renderMetricContent()}
       </div>
+      
+      <div className="hidden print:block mt-8 pt-4 border-t text-center text-sm text-gray-500">
+        <p>Generated on {new Date().toLocaleDateString()} from FitTrackr</p>
+      </div>
+
+      {renderGoalModal()}
     </div>
   );
 }

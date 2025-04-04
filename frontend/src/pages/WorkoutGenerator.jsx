@@ -3908,6 +3908,15 @@ function WorkoutGenerator() {
     }
   };
 
+  const handlePrintWorkout = () => {
+    if (!isAuthenticated) {
+      setShowLoginPrompt(true);
+      return;
+    }
+    
+    window.print();
+  };
+
   return (
     <div className="min-h-screen p-4 md:p-6">
       <h1 className="text-2xl md:text-3xl font-bold mb-2 text-center">
@@ -4272,7 +4281,7 @@ function WorkoutGenerator() {
 
             <div className="mt-6 flex gap-4">
               <button
-                onClick={() => window.print()}
+                onClick={handlePrintWorkout}
                 className="flex-1 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors flex items-center justify-center"
               >
                 <FaPrint className="mr-2" /> Print Workout

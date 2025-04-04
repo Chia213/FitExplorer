@@ -12,8 +12,11 @@ import {
   FaTrash,
   FaBalanceScale,
   FaTrophy,
+  FaEye,
+  FaChevronLeft,
+  FaChevronRight,
 } from "react-icons/fa";
-import { Line } from 'react-chartjs-2';
+import { Line } from "react-chartjs-2";
 
 const API_BASE_URL = "http://localhost:8000";
 
@@ -51,9 +54,8 @@ function WorkoutHistory() {
   const [weightUnit, setWeightUnit] = useState(() => {
     return localStorage.getItem("weightUnit") || "kg";
   });
-  const [viewMode, setViewMode] = useState('list'); // 'list' or 'calendar'
-  const [compareMode, setCompareMode] = useState(false);
-  const [selectedWorkouts, setSelectedWorkouts] = useState([]);
+  const [viewMode, setViewMode] = useState("list"); // 'list' or 'calendar'
+  const [currentMonth, setCurrentMonth] = useState(new Date());
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -269,7 +271,7 @@ function WorkoutHistory() {
     }
   };
 
-  const toggleWorkoutExpand = (workoutId) => {
+  const toggleWorkoutExpansion = (workoutId) => {
     setExpandedWorkouts((prev) => ({
       ...prev,
       [workoutId]: !prev[workoutId],
@@ -424,114 +426,148 @@ function WorkoutHistory() {
 
   const generateExerciseProgressData = (exerciseName) => {
     const data = workoutHistory
-      .filter(workout => 
-        workout.exercises?.some(ex => ex.name === exerciseName)
+      .filter((workout) =>
+        workout.exercises?.some((ex) => ex.name === exerciseName)
       )
-      .map(workout => {
-        const exercise = workout.exercises.find(ex => ex.name === exerciseName);
+      .map((workout) => {
+        const exercise = workout.exercises.find(
+          (ex) => ex.name === exerciseName
+        );
         // For strength exercises, find the max weight used
         if (!exercise.is_cardio) {
-          const maxWeight = Math.max(...exercise.sets.map(set => set.weight || 0));
+          const maxWeight = Math.max(
+            ...exercise.sets.map((set) => set.weight || 0)
+          );
           return {
             date: new Date(workout.date || workout.start_time),
-            value: maxWeight
+            value: maxWeight,
           };
         }
         // For cardio, use distance or duration
         return {
           date: new Date(workout.date || workout.start_time),
-          value: exercise.sets.reduce((sum, set) => sum + (set.distance || 0), 0)
+          value: exercise.sets.reduce(
+            (sum, set) => sum + (set.distance || 0),
+            0
+          ),
         };
       })
       .sort((a, b) => a.date - b.date);
-      
+
     return {
-      labels: data.map(d => d.date.toLocaleDateString()),
-      datasets: [{
-        label: exerciseName,
-        data: data.map(d => d.value),
-        borderColor: '#4F46E5',
-        tension: 0.1
-      }]
+      labels: data.map((d) => d.date.toLocaleDateString()),
+      datasets: [
+        {
+          label: exerciseName,
+          data: data.map((d) => d.value),
+          borderColor: "#4F46E5",
+          tension: 0.1,
+        },
+      ],
     };
   };
 
   const workoutStats = useMemo(() => {
     if (workoutHistory.length === 0) return null;
-    
+
     const totalWorkouts = workoutHistory.length;
-    const thisMonth = workoutHistory.filter(w => {
+    const thisMonth = workoutHistory.filter((w) => {
       const date = new Date(w.date || w.start_time);
       const now = new Date();
-      return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+      return (
+        date.getMonth() === now.getMonth() &&
+        date.getFullYear() === now.getFullYear()
+      );
     }).length;
-    
-    const avgDuration = workoutHistory.reduce((sum, w) => {
-      const start = new Date(w.start_time);
-      const end = new Date(w.end_time);
-      return sum + (end - start) / (1000 * 60); // in minutes
-    }, 0) / totalWorkouts;
-    
+
+    const avgDuration =
+      workoutHistory.reduce((sum, w) => {
+        const start = new Date(w.start_time);
+        const end = new Date(w.end_time);
+        return sum + (end - start) / (1000 * 60); // in minutes
+      }, 0) / totalWorkouts;
+
     const mostFrequentExercise = Object.entries(
-      workoutHistory.flatMap(w => w.exercises?.map(e => e.name) || [])
+      workoutHistory
+        .flatMap((w) => w.exercises?.map((e) => e.name) || [])
         .reduce((acc, name) => {
           acc[name] = (acc[name] || 0) + 1;
           return acc;
         }, {})
     ).sort((a, b) => b[1] - a[1])[0];
-    
+
     return {
       totalWorkouts,
       thisMonth,
       avgDuration: Math.round(avgDuration),
-      mostFrequentExercise: mostFrequentExercise ? mostFrequentExercise[0] : 'None'
+      mostFrequentExercise: mostFrequentExercise
+        ? mostFrequentExercise[0]
+        : "None",
     };
   }, [workoutHistory]);
 
   const personalRecords = useMemo(() => {
     const records = {};
-    
-    workoutHistory.forEach(workout => {
-      workout.exercises?.forEach(exercise => {
+
+    workoutHistory.forEach((workout) => {
+      workout.exercises?.forEach((exercise) => {
         if (exercise.is_cardio) {
           // For cardio, track fastest pace or longest distance
-          const totalDistance = exercise.sets?.reduce((sum, set) => sum + (parseFloat(set.distance) || 0), 0) || 0;
-          const totalDuration = exercise.sets?.reduce((sum, set) => sum + (parseFloat(set.duration) || 0), 0) || 0;
-          
+          const totalDistance =
+            exercise.sets?.reduce(
+              (sum, set) => sum + (parseFloat(set.distance) || 0),
+              0
+            ) || 0;
+          const totalDuration =
+            exercise.sets?.reduce(
+              (sum, set) => sum + (parseFloat(set.duration) || 0),
+              0
+            ) || 0;
+
           if (totalDistance > 0 && totalDuration > 0) {
             const pace = totalDuration / totalDistance; // min/km
-            
-            if (!records[exercise.name] || 
-                (records[exercise.name].type === 'pace' && pace < records[exercise.name].value)) {
+
+            if (
+              !records[exercise.name] ||
+              (records[exercise.name].type === "pace" &&
+                pace < records[exercise.name].value)
+            ) {
               records[exercise.name] = {
-                type: 'pace',
+                type: "pace",
                 value: pace,
                 display: `${pace.toFixed(2)} min/km`,
-                date: workout.date || workout.start_time
+                date: workout.date || workout.start_time,
               };
             }
-            
-            if (!records[`${exercise.name}_distance`] || 
-                totalDistance > records[`${exercise.name}_distance`].value) {
+
+            if (
+              !records[`${exercise.name}_distance`] ||
+              totalDistance > records[`${exercise.name}_distance`].value
+            ) {
               records[`${exercise.name}_distance`] = {
-                type: 'distance',
+                type: "distance",
                 value: totalDistance,
                 display: `${totalDistance.toFixed(2)} km`,
-                date: workout.date || workout.start_time
+                date: workout.date || workout.start_time,
               };
             }
           }
         } else {
           // For strength, track max weight
-          exercise.sets?.forEach(set => {
+          exercise.sets?.forEach((set) => {
             if (set.weight && set.reps) {
               const key = `${exercise.name}_${set.reps}reps`;
-              if (!records[key] || parseFloat(set.weight) > records[key].value) {
+              if (
+                !records[key] ||
+                parseFloat(set.weight) > records[key].value
+              ) {
                 records[key] = {
-                  type: 'weight',
+                  type: "weight",
                   value: parseFloat(set.weight),
-                  display: `${set.weight}${workout.weight_unit || 'kg'} × ${set.reps}`,
-                  date: workout.date || workout.start_time
+                  display: `${set.weight}${workout.weight_unit || "kg"} × ${
+                    set.reps
+                  }`,
+                  date: workout.date || workout.start_time,
                 };
               }
             }
@@ -539,78 +575,78 @@ function WorkoutHistory() {
         }
       });
     });
-    
+
     return Object.entries(records)
-      .filter(([key]) => !key.includes('_distance')) // Filter out duplicate records
+      .filter(([key]) => !key.includes("_distance")) // Filter out duplicate records
       .map(([key, record]) => ({
-        name: key.split('_')[0],
-        ...record
+        name: key.split("_")[0],
+        ...record,
       }));
   }, [workoutHistory]);
 
-  const exportWorkoutHistory = () => {
-    const dataStr = JSON.stringify(workoutHistory, null, 2);
-    const dataUri = `data:application/json;charset=utf-8,${encodeURIComponent(dataStr)}`;
-    
-    const exportFileDefaultName = `workout-history-${new Date().toISOString().slice(0, 10)}.json`;
-    
-    const linkElement = document.createElement('a');
-    linkElement.setAttribute('href', dataUri);
-    linkElement.setAttribute('download', exportFileDefaultName);
-    linkElement.click();
-  };
+  const generateCalendarDays = () => {
+    const days = [];
+    const firstDay = new Date(
+      currentMonth.getFullYear(),
+      currentMonth.getMonth(),
+      1
+    ).getDay();
+    const totalDays = new Date(
+      currentMonth.getFullYear(),
+      currentMonth.getMonth() + 1,
+      0
+    ).getDate();
 
-  const exportWorkoutHistoryCSV = () => {
-    // Create CSV header
-    let csv = 'Date,Workout Name,Duration,Exercise,Sets,Weight,Reps,Distance,Duration\n';
-    
-    // Add data rows
-    workoutHistory.forEach(workout => {
-      const date = new Date(workout.date || workout.start_time).toLocaleDateString();
-      const duration = calculateDuration(workout.start_time, workout.end_time);
-      
-      if (!workout.exercises || workout.exercises.length === 0) {
-        csv += `${date},"${workout.name}",${duration},,,,,,\n`;
-        return;
-      }
-      
-      workout.exercises.forEach(exercise => {
-        if (!exercise.sets || exercise.sets.length === 0) {
-          csv += `${date},"${workout.name}",${duration},,,,,,\n`;
-          return;
-        }
-        
-        exercise.sets.forEach((set, idx) => {
-          csv += `${date},"${workout.name}",${duration},"${exercise.name}",${idx+1},`;
-          
-          if (exercise.is_cardio) {
-            csv += `,,${set.distance || ''},${set.duration || ''}\n`;
-          } else {
-            csv += `${set.weight || ''},${set.reps || ''},,\n`;
-          }
-        });
+    for (let i = 0; i < firstDay; i++) {
+      days.push({
+        date: new Date(
+          currentMonth.getFullYear(),
+          currentMonth.getMonth(),
+          0 - i
+        ),
+        workouts: [],
+        isCurrentMonth: false,
+        isToday: false,
       });
-    });
-    
-    const dataUri = `data:text/csv;charset=utf-8,${encodeURIComponent(csv)}`;
-    const exportFileDefaultName = `workout-history-${new Date().toISOString().slice(0, 10)}.csv`;
-    
-    const linkElement = document.createElement('a');
-    linkElement.setAttribute('href', dataUri);
-    linkElement.setAttribute('download', exportFileDefaultName);
-    linkElement.click();
+    }
+
+    for (let day = 1; day <= totalDays; day++) {
+      const date = new Date(
+        currentMonth.getFullYear(),
+        currentMonth.getMonth(),
+        day
+      );
+      const workouts = workoutHistory.filter((workout) => {
+        const workoutDate = new Date(workout.date || workout.start_time);
+        return (
+          workoutDate.getDate() === day &&
+          workoutDate.getMonth() === currentMonth.getMonth()
+        );
+      });
+      const isToday = date.toDateString() === new Date().toDateString();
+      days.push({ date, workouts, isCurrentMonth: true, isToday });
+    }
+
+    const remainingDays = 7 - (days.length % 7);
+    for (let i = 0; i < remainingDays; i++) {
+      days.push({
+        date: new Date(
+          currentMonth.getFullYear(),
+          currentMonth.getMonth() + 1,
+          i + 1
+        ),
+        workouts: [],
+        isCurrentMonth: false,
+        isToday: false,
+      });
+    }
+
+    return days;
   };
 
-  const toggleWorkoutSelection = (workout) => {
-    if (selectedWorkouts.some(w => w.id === workout.id)) {
-      setSelectedWorkouts(selectedWorkouts.filter(w => w.id !== workout.id));
-    } else {
-      if (selectedWorkouts.length < 2) {
-        setSelectedWorkouts([...selectedWorkouts, workout]);
-      } else {
-        alert("You can only compare two workouts at a time.");
-      }
-    }
+  const handleViewWorkout = (workout) => {
+    setSelectedWorkout(workout);
+    setShowSaveRoutineModal(true);
   };
 
   return (
@@ -622,21 +658,21 @@ function WorkoutHistory() {
           </h1>
           <div className="flex space-x-2">
             <button
-              onClick={() => setViewMode('list')}
+              onClick={() => setViewMode("list")}
               className={`px-3 py-1 rounded ${
-                viewMode === 'list' 
-                  ? 'bg-blue-500 text-white' 
-                  : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
+                viewMode === "list"
+                  ? "bg-blue-500 text-white"
+                  : "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
               }`}
             >
-              List View
+              View Listed Workouts
             </button>
             <button
-              onClick={() => setViewMode('calendar')}
+              onClick={() => setViewMode("calendar")}
               className={`px-3 py-1 rounded ${
-                viewMode === 'calendar' 
-                  ? 'bg-blue-500 text-white' 
-                  : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
+                viewMode === "calendar"
+                  ? "bg-blue-500 text-white"
+                  : "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
               }`}
             >
               Calendar View
@@ -668,20 +704,34 @@ function WorkoutHistory() {
             <h2 className="text-lg font-semibold mb-3">Your Workout Summary</h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="bg-blue-50 dark:bg-blue-900/30 p-3 rounded-lg">
-                <p className="text-sm text-gray-500 dark:text-gray-400">Total Workouts</p>
-                <p className="text-2xl font-bold">{workoutStats.totalWorkouts}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Total Workouts
+                </p>
+                <p className="text-2xl font-bold">
+                  {workoutStats.totalWorkouts}
+                </p>
               </div>
               <div className="bg-green-50 dark:bg-green-900/30 p-3 rounded-lg">
-                <p className="text-sm text-gray-500 dark:text-gray-400">This Month</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  This Month
+                </p>
                 <p className="text-2xl font-bold">{workoutStats.thisMonth}</p>
               </div>
               <div className="bg-purple-50 dark:bg-purple-900/30 p-3 rounded-lg">
-                <p className="text-sm text-gray-500 dark:text-gray-400">Avg Duration</p>
-                <p className="text-2xl font-bold">{workoutStats.avgDuration} min</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Avg Duration
+                </p>
+                <p className="text-2xl font-bold">
+                  {workoutStats.avgDuration} min
+                </p>
               </div>
               <div className="bg-yellow-50 dark:bg-yellow-900/30 p-3 rounded-lg">
-                <p className="text-sm text-gray-500 dark:text-gray-400">Favorite Exercise</p>
-                <p className="text-xl font-bold truncate">{workoutStats.mostFrequentExercise}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Favorite Exercise
+                </p>
+                <p className="text-xl font-bold truncate">
+                  {workoutStats.mostFrequentExercise}
+                </p>
               </div>
             </div>
           </div>
@@ -724,7 +774,7 @@ function WorkoutHistory() {
               </select>
             </div>
           </div>
-          
+
           <div className="mt-4 flex justify-between items-center">
             <button
               onClick={() => navigate("/personal-records")}
@@ -733,7 +783,7 @@ function WorkoutHistory() {
               <FaTrophy className="text-yellow-300 mr-2" />
               <span>View Personal Records</span>
             </button>
-            
+
             <button
               onClick={() => {
                 setFilterDate("");
@@ -744,7 +794,7 @@ function WorkoutHistory() {
               Clear Filters
             </button>
           </div>
-          
+
           <div className="mt-4">
             <label className="block text-gray-700 dark:text-gray-300 mb-2">
               Search Workouts
@@ -762,29 +812,62 @@ function WorkoutHistory() {
           </div>
         </div>
 
-        {viewMode === 'calendar' && (
+        {viewMode === "calendar" && (
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
+            <div className="mb-4 flex justify-between items-center">
+              <button
+                onClick={() => {
+                  const newDate = new Date(currentMonth);
+                  newDate.setMonth(newDate.getMonth() - 1);
+                  setCurrentMonth(newDate);
+                }}
+                className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
+              >
+                <FaChevronLeft />
+              </button>
+
+              <h3 className="text-lg font-medium">
+                {new Date(currentMonth).toLocaleDateString("en-US", {
+                  month: "long",
+                  year: "numeric",
+                })}
+              </h3>
+
+              <button
+                onClick={() => {
+                  const newDate = new Date(currentMonth);
+                  newDate.setMonth(newDate.getMonth() + 1);
+                  setCurrentMonth(newDate);
+                }}
+                className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
+              >
+                <FaChevronRight />
+              </button>
+            </div>
+
             <div className="grid grid-cols-7 gap-1">
-              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                <div key={day} className="text-center font-medium p-2">{day}</div>
+              {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+                <div key={day} className="text-center font-medium p-2">
+                  {day}
+                </div>
               ))}
-              
+
               {/* Generate calendar days */}
               {generateCalendarDays().map((day, i) => (
-                <div 
-                  key={i} 
+                <div
+                  key={i}
                   className={`p-2 min-h-[80px] border rounded ${
-                    day.isCurrentMonth 
-                      ? 'border-gray-200 dark:border-gray-700' 
-                      : 'border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 text-gray-400'
-                  } ${day.isToday ? 'ring-2 ring-blue-500' : ''}`}
+                    day.isCurrentMonth
+                      ? "border-gray-200 dark:border-gray-700"
+                      : "border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 text-gray-400"
+                  } ${day.isToday ? "ring-2 ring-blue-500" : ""}`}
                 >
                   <div className="text-right mb-1">{day.date.getDate()}</div>
                   {day.workouts.map((workout, idx) => (
-                    <div 
+                    <div
                       key={idx}
-                      onClick={() => toggleWorkoutExpand(workout.id)}
-                      className="text-xs p-1 mb-1 rounded bg-blue-100 dark:bg-blue-900/30 cursor-pointer truncate"
+                      onClick={() => handleViewWorkout(workout)}
+                      className="text-xs p-1 mb-1 rounded bg-blue-100 dark:bg-blue-900/30 cursor-pointer truncate hover:bg-blue-200 dark:hover:bg-blue-800/30"
                     >
                       {workout.name}
                     </div>
@@ -815,11 +898,14 @@ function WorkoutHistory() {
             {filteredWorkouts.map((workout, index) => (
               <div
                 key={workout.id || index}
-                className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden"
+                className={`bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden`}
               >
                 <div
                   className="p-4 flex justify-between items-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
-                  onClick={() => toggleWorkoutExpand(workout.id || index)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleWorkoutExpansion(workout.id || index);
+                  }}
                 >
                   <div>
                     <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
@@ -848,7 +934,8 @@ function WorkoutHistory() {
                       </div>
                       <div className="flex items-center">
                         <span className="font-medium">Time: </span>&nbsp;
-                        {formatTime(workout.start_time)} - {formatTime(workout.end_time)}
+                        {formatTime(workout.start_time)} -{" "}
+                        {formatTime(workout.end_time)}
                       </div>
                       {calculateTotalDistance(workout) > 0 && (
                         <div className="flex items-center">
@@ -1047,81 +1134,6 @@ function WorkoutHistory() {
                 )}
               </div>
             ))}
-          </div>
-        )}
-
-        <div className="flex justify-end mb-4">
-          <div className="dropdown relative">
-            <button className="bg-blue-500 text-white px-4 py-2 rounded-lg flex items-center">
-              Export Data <FaChevronDown className="ml-2" />
-            </button>
-            <div className="dropdown-menu absolute right-0 mt-2 bg-white dark:bg-gray-800 shadow-lg rounded-lg overflow-hidden hidden">
-              <button 
-                onClick={exportWorkoutHistory}
-                className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700"
-              >
-                Export as JSON
-              </button>
-              <button 
-                onClick={exportWorkoutHistoryCSV}
-                className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700"
-              >
-                Export as CSV
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <button
-          onClick={() => setCompareMode(!compareMode)}
-          className={`px-4 py-2 rounded-lg ${
-            compareMode ? 'bg-red-500 text-white' : 'bg-blue-500 text-white'
-          }`}
-        >
-          {compareMode ? 'Cancel Compare' : 'Compare Workouts'}
-        </button>
-
-        {compareMode && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full p-6 max-h-[90vh] overflow-y-auto">
-              <h2 className="text-xl font-bold mb-4">Workout Comparison</h2>
-              
-              <div className="grid grid-cols-2 gap-4">
-                {selectedWorkouts.map((workout, idx) => (
-                  <div key={idx} className="border rounded-lg p-4">
-                    <h3 className="font-bold text-lg">{workout.name}</h3>
-                    <p>{formatDate(workout.date || workout.start_time)}</p>
-                    <p>Duration: {calculateDuration(workout.start_time, workout.end_time)}</p>
-                    
-                    <h4 className="font-medium mt-4 mb-2">Exercises</h4>
-                    {workout.exercises?.map((exercise, eIdx) => (
-                      <div key={eIdx} className="mb-3">
-                        <p className="font-medium">{exercise.name}</p>
-                        <ul className="pl-4">
-                          {exercise.sets?.map((set, sIdx) => (
-                            <li key={sIdx}>
-                              {exercise.is_cardio 
-                                ? `${set.distance || 0}km in ${set.duration || 0}min` 
-                                : `${set.weight || 0}${workout.weight_unit || 'kg'} × ${set.reps || 0}`}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    ))}
-                  </div>
-                ))}
-              </div>
-              
-              <button
-                onClick={() => {
-                  setSelectedWorkouts([]);
-                  setCompareMode(false);
-                }}
-                className="mt-4 bg-blue-500 text-white px-4 py-2 rounded-lg"
-              >
-                Close
-              </button>
-            </div>
           </div>
         )}
       </div>
