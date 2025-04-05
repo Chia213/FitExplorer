@@ -59,6 +59,7 @@ function Nutrition() {
   });
   const [nutritionHistory, setNutritionHistory] = useState([]);
   const [dateRange, setDateRange] = useState("week");
+  const [apiStatus, setApiStatus] = useState(null);
   
   const navigate = useNavigate();
 
@@ -79,13 +80,24 @@ function Nutrition() {
       setLoading(true);
       const token = localStorage.getItem("token");
       console.log("Using token:", token ? "Token exists" : "No token found");
+      console.log("Fetching meals for date:", selectedDate);
       
       const response = await axios.get(
         `/nutrition/meals?date=${selectedDate}`
       );
       console.log("Meals API response:", response.data);
-      setMeals(response.data);
-      calculateNutritionStats(response.data);
+      
+      // Check if the response is an array
+      if (Array.isArray(response.data)) {
+        console.log(`Retrieved ${response.data.length} meals`);
+        setMeals(response.data);
+        calculateNutritionStats(response.data);
+      } else {
+        console.error("Unexpected response format from meals API:", response.data);
+        setMeals([]);
+        calculateNutritionStats([]);
+        setError("Received invalid data format from server.");
+      }
     } catch (err) {
       console.error("Error fetching meals:", err);
       console.error("Error details:", err.response ? {
@@ -93,6 +105,8 @@ function Nutrition() {
         statusText: err.response.statusText,
         data: err.response.data
       } : "No response");
+      setMeals([]);
+      calculateNutritionStats([]);
       setError("Failed to load meals. Please try again later.");
     } finally {
       setLoading(false);
@@ -142,21 +156,56 @@ function Nutrition() {
     setNutritionStats(stats);
   };
 
-  const handleSearchFood = async () => {
-    if (!searchQuery.trim()) return;
-
+  const handleSearchFood = async (searchTerm = "") => {
     try {
-      console.log(`Searching for: ${searchQuery}`);
+      console.log(`Searching for: ${searchTerm || 'all foods'}`);
       const response = await axios.get(
-        `/nutrition/search?query=${encodeURIComponent(searchQuery)}`
+        `/nutrition/search${searchTerm ? `?query=${encodeURIComponent(searchTerm)}` : ''}`
       );
       console.log("Search results:", response.data);
       setSearchResults(response.data);
-      setShowFoodSearchModal(true);
     } catch (err) {
       console.error("Error searching foods:", err);
       // Show error to user
       alert(`Error searching for foods: ${err.response?.data?.detail || err.message}`);
+    }
+  };
+
+  // Load all available foods when opening the Add Meal modal
+  const handleOpenAddMealModal = async () => {
+    setShowAddMealModal(true);
+    // Reset the new meal form
+    setNewMeal({
+      name: "",
+      time: new Date().toTimeString().slice(0, 5),
+      foods: []
+    });
+    
+    try {
+      // Load all available foods automatically
+      console.log("Loading all available foods");
+      const response = await axios.get(`/nutrition/search`);
+      console.log("All foods loaded:", response.data);
+      setSearchResults(response.data);
+    } catch (err) {
+      console.error("Error loading available foods:", err);
+    }
+  };
+
+  // Update the search when typing in the search box
+  const handleSearchInputChange = async (e) => {
+    const query = e.target.value;
+    setSearchQuery(query);
+    
+    try {
+      // Filter foods based on search query
+      const response = await axios.get(
+        `/nutrition/search${query ? `?query=${encodeURIComponent(query)}` : ''}`
+      );
+      console.log(`Search results for "${query}":`, response.data);
+      setSearchResults(response.data);
+    } catch (err) {
+      console.error("Error searching foods:", err);
     }
   };
 
@@ -190,13 +239,25 @@ function Nutrition() {
     }
 
     try {
-      await axios.post(
+      console.log("Attempting to save meal:", {
+        ...newMeal,
+        date: selectedDate
+      });
+      
+      const token = localStorage.getItem("token");
+      console.log("Using auth token:", token ? "Token exists" : "No token");
+      
+      const response = await axios.post(
         `/nutrition/meals`,
         {
           ...newMeal,
           date: selectedDate
         }
       );
+      
+      console.log("Save meal response:", response.data);
+      alert("Meal saved successfully!");
+      
       setShowAddMealModal(false);
       setNewMeal({
         name: "",
@@ -206,7 +267,13 @@ function Nutrition() {
       fetchMeals();
     } catch (err) {
       console.error("Error saving meal:", err);
-      alert("Failed to save meal. Please try again.");
+      console.error("Error details:", err.response ? {
+        status: err.response.status,
+        statusText: err.response.statusText,
+        data: err.response.data
+      } : "No response data");
+      
+      alert(`Failed to save meal: ${err.response?.data?.detail || err.message}`);
     }
   };
 
@@ -234,6 +301,21 @@ function Nutrition() {
     } catch (err) {
       console.error("Error saving nutrition goals:", err);
       alert("Failed to save nutrition goals. Please try again.");
+    }
+  };
+
+  const checkApiConnection = async () => {
+    try {
+      setApiStatus("checking");
+      // Try to get nutrition goals as a simple API test
+      const response = await axios.get(`/nutrition/goals`);
+      console.log("API test response:", response.data);
+      setApiStatus("connected");
+      setTimeout(() => setApiStatus(null), 3000);
+    } catch (err) {
+      console.error("API connection test failed:", err);
+      setApiStatus("failed");
+      setTimeout(() => setApiStatus(null), 3000);
     }
   };
 
@@ -339,7 +421,7 @@ function Nutrition() {
               <FaListAlt className="mr-2 text-green-500" /> Today's Meals
             </h3>
             <button
-              onClick={() => setShowAddMealModal(true)}
+              onClick={() => handleOpenAddMealModal()}
               className="px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors flex items-center"
             >
               <FaPlus className="mr-1" /> Add Meal
@@ -351,7 +433,7 @@ function Nutrition() {
               <FaAppleAlt className="mx-auto text-4xl mb-2 opacity-30" />
               <p>No meals logged for today</p>
               <button
-                onClick={() => setShowAddMealModal(true)}
+                onClick={() => handleOpenAddMealModal()}
                 className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
               >
                 Log your first meal
@@ -646,7 +728,7 @@ function Nutrition() {
           
           <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-b-lg">
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              Click on a food item to add it to your meal
+              Type to filter foods or click a food below to add it to your meal
             </p>
           </div>
         </div>
@@ -710,20 +792,20 @@ function Nutrition() {
                     <input
                       type="text"
                       value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onChange={handleSearchInputChange}
                       placeholder="Search for foods..."
                       className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-l-md bg-white dark:bg-gray-700"
-                      onKeyPress={(e) => e.key === 'Enter' && handleSearchFood()}
+                      onKeyPress={(e) => e.key === 'Enter' && handleSearchFood(searchQuery)}
                     />
                     <button
-                      onClick={handleSearchFood}
+                      onClick={() => handleSearchFood(searchQuery)}
                       className="px-4 py-2 bg-blue-500 text-white rounded-r-md hover:bg-blue-600 transition-colors flex items-center"
                     >
                       <FaSearch />
                     </button>
                   </div>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Search for foods in our database, your history, or external sources
+                    Type to filter foods or click a food below to add it to your meal
                   </p>
                 </div>
               </div>
@@ -742,7 +824,7 @@ function Nutrition() {
                   <div className="border border-dashed border-gray-300 dark:border-gray-600 rounded-md p-6 text-center">
                     <p className="text-gray-500 dark:text-gray-400 mb-2">No foods added yet</p>
                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                      Search for foods using the search box above
+                      Search for foods using the search box above or select from available foods below
                     </p>
                   </div>
                 ) : (
@@ -786,6 +868,43 @@ function Nutrition() {
                   </div>
                 )}
               </div>
+              
+              {/* Available Foods Section */}
+              <div className="mt-6">
+                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Available Foods
+                </h4>
+                
+                <div className="max-h-60 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-md">
+                  {searchResults.length === 0 ? (
+                    <div className="p-4 text-center text-gray-500 dark:text-gray-400">
+                      No foods available. Try searching for foods.
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                      {searchResults.map((food, index) => (
+                        <div 
+                          key={index} 
+                          className="p-2 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer flex items-center"
+                          onClick={() => handleAddFood(food)}
+                        >
+                          <div className="flex-1">
+                            <div className="font-medium text-sm">{food.name}</div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">
+                              {food.calories} kcal, {food.protein}g protein, {food.carbs}g carbs, {food.fat}g fat
+                            </div>
+                          </div>
+                          <button className="text-blue-500 hover:text-blue-700 p-1 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/20">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
+                            </svg>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
           
@@ -797,8 +916,14 @@ function Nutrition() {
               Cancel
             </button>
             <button
-              onClick={handleSaveMeal}
-              className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+              onClick={() => {
+                console.log("Save Meal button clicked");
+                console.log("Meal name:", newMeal.name);
+                console.log("Foods count:", newMeal.foods.length);
+                console.log("Button disabled:", !newMeal.name.trim() || newMeal.foods.length === 0);
+                handleSaveMeal();
+              }}
+              className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={!newMeal.name.trim() || newMeal.foods.length === 0}
             >
               Save Meal
@@ -851,7 +976,7 @@ function Nutrition() {
                 </button>
               </div>
               <button
-                onClick={() => setShowAddMealModal(true)}
+                onClick={() => handleOpenAddMealModal()}
                 className="px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors flex items-center"
               >
                 <FaPlus className="mr-1" /> Add Meal
@@ -865,7 +990,7 @@ function Nutrition() {
               <FaAppleAlt className="mx-auto text-4xl mb-2 opacity-30" />
               <p>No meals logged for {formatDateForDisplay(selectedDate)}</p>
               <button
-                onClick={() => setShowAddMealModal(true)}
+                onClick={() => handleOpenAddMealModal()}
                 className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
               >
                 Log a meal
@@ -926,9 +1051,35 @@ function Nutrition() {
     );
   };
 
+  const renderApiStatus = () => {
+    if (!apiStatus) return null;
+    
+    return (
+      <div className={`fixed bottom-4 right-4 p-3 rounded-md shadow-lg ${
+        apiStatus === "checking" ? "bg-yellow-100 text-yellow-800" :
+        apiStatus === "connected" ? "bg-green-100 text-green-800" :
+        "bg-red-100 text-red-800"
+      }`}>
+        {apiStatus === "checking" ? "Checking API connection..." :
+         apiStatus === "connected" ? "API connected successfully!" :
+         "API connection failed!"}
+      </div>
+    );
+  };
+
   return (
     <div className="container mx-auto px-4 py-6 max-w-7xl">
       <h1 className="text-2xl font-bold mb-6">Nutrition Tracker</h1>
+      
+      {/* Add API test button */}
+      <div className="text-right mb-2">
+        <button 
+          onClick={checkApiConnection} 
+          className="text-xs px-2 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+        >
+          Check API
+        </button>
+      </div>
       
       {/* Tab Navigation */}
       <div className="flex border-b border-gray-200 dark:border-gray-700 mb-6 overflow-x-auto">
@@ -995,6 +1146,9 @@ function Nutrition() {
           {/* Modals */}
           {renderFoodSearchModal()}
           {renderAddMealModal()}
+          
+          {/* API Status */}
+          {renderApiStatus()}
         </>
       )}
     </div>

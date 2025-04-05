@@ -53,58 +53,63 @@ class NutritionHistoryResponse(BaseModel):
 
 # Routes
 @router.get("/meals")
-async def get_meals(date: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def get_meals(
+    date: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Get user's meals for a specific date"""
     try:
-        # Log debug info
-        print(f"Fetching meals for user_id: {current_user.id}, date: {date}")
+        print(f"\n==== GET MEALS DEBUG ====")
+        print(f"Getting meals for date: {date}, user_id: {current_user.id} ({current_user.username})")
         
-        # Query meals for user and date
+        # Get meals for the specified date and user
         meals = db.query(NutritionMeal).filter(
             NutritionMeal.user_id == current_user.id,
-            NutritionMeal.date == date  # Use the date string directly
+            NutritionMeal.date == date
         ).all()
         
-        print(f"Found {len(meals)} meals")
+        print(f"Found {len(meals)} meals in database")
         
-        # Format response
         result = []
         for meal in meals:
-            try:
-                meal_foods = db.query(NutritionFood).filter(NutritionFood.meal_id == meal.id).all()
-                foods = []
-                
-                for food in meal_foods:
-                    food_item = {
-                        "id": food.id,
-                        "name": food.name,
-                        "serving_size": food.serving_size or "1 serving",
-                        "quantity": food.quantity or 1.0,
-                        "calories": food.calories or 0,
-                        "protein": food.protein or 0,
-                        "carbs": food.carbs or 0,
-                        "fat": food.fat or 0
-                    }
-                    foods.append(food_item)
-                
-                result.append({
-                    "id": meal.id,
-                    "name": meal.name,
-                    "time": meal.time if meal.time else None,
-                    "foods": foods
+            print(f"Processing meal ID {meal.id}: {meal.name}")
+            
+            # Get foods for this meal
+            foods = db.query(NutritionFood).filter(
+                NutritionFood.meal_id == meal.id
+            ).all()
+            
+            print(f"  - Found {len(foods)} foods for this meal")
+            
+            food_list = []
+            for food in foods:
+                food_list.append({
+                    "name": food.name,
+                    "calories": food.calories,
+                    "protein": food.protein,
+                    "carbs": food.carbs,
+                    "fat": food.fat,
+                    "serving_size": food.serving_size,
+                    "quantity": food.quantity
                 })
-            except Exception as food_err:
-                print(f"Error processing meal {meal.id}: {str(food_err)}")
-                # Continue to process other meals
+            
+            result.append({
+                "id": meal.id,
+                "name": meal.name,
+                "date": meal.date,
+                "time": meal.time,
+                "foods": food_list
+            })
         
-        print(f"Returning {len(result)} formatted meals")
+        print(f"Returning {len(result)} meals with foods")
         return result
+        
     except Exception as e:
-        # Log the exception with traceback
+        print(f"Error fetching meals: {str(e)}")
         import traceback
-        print(f"Error in get_meals: {str(e)}")
         print(traceback.format_exc())
-        # Re-raise the exception
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error fetching meals: {str(e)}")
 
 @router.post("/meals", status_code=201)
 def create_meal(
@@ -113,30 +118,58 @@ def create_meal(
     current_user: User = Depends(get_current_user)
 ):
     """Create a new meal with foods"""
-    db_meal = NutritionMeal(
-        name=meal.name,
-        date=meal.date,
-        time=meal.time,
-        user_id=current_user.id
-    )
-    db.add(db_meal)
-    db.flush()  # Get the meal ID without committing
-    
-    for food in meal.foods:
-        db_food = NutritionFood(
-            meal_id=db_meal.id,
-            name=food.name,
-            calories=food.calories,
-            protein=food.protein,
-            carbs=food.carbs,
-            fat=food.fat,
-            serving_size=food.serving_size,
-            quantity=food.quantity
+    try:
+        print(f"\n==== MEAL CREATION DEBUG ====")
+        print(f"Creating meal: {meal.name} for user_id: {current_user.id}, date: {meal.date}")
+        print(f"Meal data: {meal.dict()}")
+        
+        # Create the meal record
+        db_meal = NutritionMeal(
+            name=meal.name,
+            date=meal.date,
+            time=meal.time,
+            user_id=current_user.id
         )
-        db.add(db_food)
-    
-    db.commit()
-    return {"message": "Meal created successfully", "id": db_meal.id}
+        db.add(db_meal)
+        db.flush()  # Get the meal ID without committing
+        
+        print(f"Created meal record with ID: {db_meal.id}")
+        
+        # Add each food item
+        for i, food in enumerate(meal.foods):
+            print(f"Adding food {i+1}: {food.name}, calories: {food.calories}")
+            db_food = NutritionFood(
+                meal_id=db_meal.id,
+                name=food.name,
+                calories=food.calories,
+                protein=food.protein,
+                carbs=food.carbs,
+                fat=food.fat,
+                serving_size=food.serving_size,
+                quantity=food.quantity
+            )
+            db.add(db_food)
+        
+        # Commit all changes
+        db.commit()
+        print(f"Successfully saved meal ID {db_meal.id} with {len(meal.foods)} foods")
+        
+        # Verify the meal was saved
+        saved_meal = db.query(NutritionMeal).filter(NutritionMeal.id == db_meal.id).first()
+        if saved_meal:
+            saved_foods = db.query(NutritionFood).filter(NutritionFood.meal_id == db_meal.id).count()
+            print(f"Verified meal saved: {saved_meal.name} with {saved_foods} foods")
+        else:
+            print("WARNING: Could not verify meal was saved!")
+        
+        return {"id": db_meal.id, "message": "Meal created successfully"}
+    except Exception as e:
+        db.rollback()
+        print(f"Error creating meal: {str(e)}")
+        print(f"Error type: {type(e).__name__}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=f"Error creating meal: {str(e)}")
 
 @router.delete("/meals/{meal_id}")
 def delete_meal(
@@ -293,22 +326,51 @@ def get_nutrition_history(
 
 @router.get("/search")
 def search_foods(
-    query: str = Query(..., description="Food search query"),
+    query: str = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Search for foods in local database and external API"""
-    print(f"Search query: '{query}'")
-    results = []
-    
-    # First check if we have this food in our common foods database
+    """Search for foods in common foods database"""
     try:
-        print("Searching common_foods table...")
+        print(f"\n==== FOOD SEARCH DEBUG ====")
+        
+        # Check if query is empty or None - return all foods in that case
+        if not query or query.strip() == "":
+            print("Empty search query - returning all available foods")
+            
+            # Get all common foods, limit to a reasonable number
+            common_foods = db.query(CommonFood).limit(30).all()
+            print(f"Returning all {len(common_foods)} foods from database")
+            
+            results = []
+            for food in common_foods:
+                results.append({
+                    "name": food.name,
+                    "calories": food.calories,
+                    "protein": food.protein,
+                    "carbs": food.carbs,
+                    "fat": food.fat,
+                    "serving_size": food.serving_size,
+                    "source": "database"
+                })
+            
+            return results
+            
+        # If query is provided, search as normal
+        print(f"Searching for: '{query}' by user: {current_user.id} ({current_user.username})")
+        
+        # Check if we have common foods in the database
+        common_foods_count = db.query(CommonFood).count()
+        print(f"Common foods in database: {common_foods_count}")
+        
+        # Search in common foods
         common_foods = db.query(CommonFood).filter(
             CommonFood.name.ilike(f"%{query}%")
-        ).limit(15).all()
+        ).limit(10).all()
         
-        print(f"Found {len(common_foods)} common foods matching '{query}'")
+        print(f"Found {len(common_foods)} matching common foods")
+        
+        results = []
         
         # Add common foods to results
         for food in common_foods:
@@ -321,86 +383,46 @@ def search_foods(
                 "serving_size": food.serving_size,
                 "source": "database"
             })
-    except Exception as e:
-        print(f"Error searching common foods: {e}")
-    
-    # Next check user's previous entries
-    if len(results) < 20:
-        user_foods = db.query(NutritionFood).join(NutritionMeal).filter(
-            NutritionMeal.user_id == current_user.id,
-            NutritionFood.name.ilike(f"%{query}%")
-        ).distinct(NutritionFood.name).limit(10).all()
-        
-        # Add user's previous foods
-        for food in user_foods:
-            # Check if this food is already in results
-            if not any(r["name"].lower() == food.name.lower() for r in results):
-                results.append({
-                    "name": food.name,
-                    "calories": food.calories,
-                    "protein": food.protein,
-                    "carbs": food.carbs,
-                    "fat": food.fat,
-                    "serving_size": food.serving_size,
-                    "source": "user_history"
-                })
-    
-    # If we have less than desired number of results, search external API
-    if len(results) < 20:
-        try:
-            # Use Nutritionix API if available
-            api_key = os.getenv("NUTRITIONIX_API_KEY")
-            app_id = os.getenv("NUTRITIONIX_APP_ID")
             
-            if api_key and app_id:
-                headers = {
-                    "x-app-id": app_id,
-                    "x-app-key": api_key,
-                    "x-remote-user-id": "0"
+        # If no results found, add some default foods for testing
+        if len(results) == 0 and common_foods_count == 0:
+            print("No results found, adding test foods")
+            test_foods = [
+                {
+                    "name": "Apple",
+                    "calories": 95,
+                    "protein": 0.5,
+                    "carbs": 25,
+                    "fat": 0.3,
+                    "serving_size": "1 medium",
+                    "source": "test_data"
+                },
+                {
+                    "name": "Banana",
+                    "calories": 105,
+                    "protein": 1.3,
+                    "carbs": 27,
+                    "fat": 0.4,
+                    "serving_size": "1 medium",
+                    "source": "test_data"
+                },
+                {
+                    "name": "Chicken Breast",
+                    "calories": 165,
+                    "protein": 31,
+                    "carbs": 0,
+                    "fat": 3.6,
+                    "serving_size": "100g",
+                    "source": "test_data"
                 }
-                
-                response = requests.get(
-                    f"https://trackapi.nutritionix.com/v2/search/instant?query={query}",
-                    headers=headers
-                )
-                
-                if response.status_code == 200:
-                    api_results = response.json()
-                    
-                    # Process common foods
-                    for item in api_results.get("common", [])[:5]:
-                        # Get detailed nutrition info
-                        detail_response = requests.post(
-                            "https://trackapi.nutritionix.com/v2/natural/nutrients",
-                            headers=headers,
-                            json={"query": item["food_name"]}
-                        )
-                        
-                        if detail_response.status_code == 200:
-                            food_details = detail_response.json()
-                            if food_details.get("foods"):
-                                food = food_details["foods"][0]
-                                results.append({
-                                    "name": food["food_name"],
-                                    "calories": food["nf_calories"],
-                                    "protein": food["nf_protein"],
-                                    "carbs": food["nf_total_carbohydrate"],
-                                    "fat": food["nf_total_fat"],
-                                    "serving_size": f"{food['serving_qty']} {food['serving_unit']}",
-                                    "source": "nutritionix"
-                                })
-        except Exception as e:
-            print(f"Error searching external API: {e}")
-    
-    # Sort results by relevance - exact matches first, then starts with, then contains
-    def sort_key(food):
-        name_lower = food["name"].lower()
-        query_lower = query.lower()
-        if name_lower == query_lower:
-            return 0  # Exact match
-        elif name_lower.startswith(query_lower):
-            return 1  # Starts with query
-        else:
-            return 2  # Contains query
+            ]
+            results = test_foods
             
-    return sorted(results, key=sort_key)[:20]  # Return at most 20 results 
+        print(f"Returning {len(results)} results")
+        return results
+        
+    except Exception as e:
+        print(f"Error in food search: {str(e)}")
+        import traceback
+        print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"Error searching foods: {str(e)}") 

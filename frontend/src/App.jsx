@@ -34,6 +34,8 @@ import Settings from "./pages/Settings";
 import Achievements from "./pages/Achievements";
 import PersonalRecords from "./pages/PersonalRecords";
 import Nutrition from "./pages/Nutrition";
+import TestSearch from "./pages/TestSearch";
+import MealTest from "./pages/MealTest";
 
 // Admin pages
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -113,6 +115,8 @@ function App() {
                     <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                     <Route path="/personal-records" element={<PersonalRecords />} />
                     <Route path="/nutrition" element={<Nutrition />} />
+                    <Route path="/test-search" element={<TestSearch />} />
+                    <Route path="/meal-test" element={<MealTest />} />
                     
                     {/* Admin routes */}
                     <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
