@@ -101,22 +101,22 @@ def get_meals(
             food_list = []
             for food in foods:
                 food_list.append({
-                    "name": food.name,
-                    "calories": food.calories,
-                    "protein": food.protein,
-                    "carbs": food.carbs,
+                        "name": food.name,
+                        "calories": food.calories,
+                        "protein": food.protein,
+                        "carbs": food.carbs,
                     "fat": food.fat,
                     "serving_size": food.serving_size,
                     "quantity": food.quantity
                 })
-            
-            result.append({
-                "id": meal.id,
-                "name": meal.name,
+                
+                result.append({
+                    "id": meal.id,
+                    "name": meal.name,
                 "date": meal.date,
                 "time": meal.time,
                 "foods": food_list
-            })
+                })
         
         print(f"Returning {len(result)} meals with foods")
         return result
@@ -298,7 +298,7 @@ def get_nutrition_history(
         # If no meals, return empty list
         if not meals:
             return []
-            
+        
         # Group meals by date and calculate totals
         date_totals = {}
         for meal in meals:
@@ -385,9 +385,9 @@ def search_foods(
         ).limit(10).all()
         
         print(f"Found {len(common_foods)} matching common foods")
-        
+    
         results = []
-        
+    
         # Add common foods to results
         for food in common_foods:
             results.append({
@@ -811,7 +811,7 @@ def generate_meal_plan(
         
         print(f"Meal plan generated with {len(meal_plan['meals'])} meals and totals: {actual_totals}")
         return meal_plan
-        
+                
     except Exception as e:
         print(f"Error generating meal plan: {str(e)}")
         import traceback

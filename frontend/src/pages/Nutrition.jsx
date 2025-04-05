@@ -115,8 +115,8 @@ function Nutrition() {
       // Check if the response is an array
       if (Array.isArray(response.data)) {
         console.log(`Retrieved ${response.data.length} meals`);
-        setMeals(response.data);
-        calculateNutritionStats(response.data);
+      setMeals(response.data);
+      calculateNutritionStats(response.data);
       } else {
         console.error("Unexpected response format from meals API:", response.data);
         setMeals([]);
@@ -957,22 +957,22 @@ function Nutrition() {
                           </span>
                         )}
                       </div>
-                      <div className="grid grid-cols-4 text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        <div>
-                          <span className="font-medium text-gray-700 dark:text-gray-300">{food.calories}</span> kcal
-                        </div>
-                        <div>
-                          <span className="font-medium text-gray-700 dark:text-gray-300">{food.protein}g</span> protein
-                        </div>
-                        <div>
-                          <span className="font-medium text-gray-700 dark:text-gray-300">{food.carbs}g</span> carbs
-                        </div>
-                        <div>
-                          <span className="font-medium text-gray-700 dark:text-gray-300">{food.fat}g</span> fat
-                        </div>
+                    <div className="grid grid-cols-4 text-sm text-gray-500 dark:text-gray-400 mt-1">
+                      <div>
+                        <span className="font-medium text-gray-700 dark:text-gray-300">{food.calories}</span> kcal
                       </div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        {food.serving_size || "1 serving"}
+                      <div>
+                        <span className="font-medium text-gray-700 dark:text-gray-300">{food.protein}g</span> protein
+                      </div>
+                      <div>
+                        <span className="font-medium text-gray-700 dark:text-gray-300">{food.carbs}g</span> carbs
+                      </div>
+                      <div>
+                        <span className="font-medium text-gray-700 dark:text-gray-300">{food.fat}g</span> fat
+                      </div>
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      {food.serving_size || "1 serving"}
                       </div>
                     </div>
                   </div>
@@ -1043,21 +1043,21 @@ function Nutrition() {
                   Search Foods
                 </label>
                 <div className="flex flex-col">
-                  <div className="flex">
-                    <input
-                      type="text"
-                      value={searchQuery}
+                <div className="flex">
+                  <input
+                    type="text"
+                    value={searchQuery}
                       onChange={handleSearchInputChange}
-                      placeholder="Search for foods..."
-                      className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-l-md bg-white dark:bg-gray-700"
+                    placeholder="Search for foods..."
+                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-l-md bg-white dark:bg-gray-700"
                       onKeyPress={(e) => e.key === 'Enter' && handleSearchFood(searchQuery)}
-                    />
-                    <button
+                  />
+                  <button
                       onClick={() => handleSearchFood(searchQuery)}
-                      className="px-4 py-2 bg-blue-500 text-white rounded-r-md hover:bg-blue-600 transition-colors flex items-center"
-                    >
-                      <FaSearch />
-                    </button>
+                    className="px-4 py-2 bg-blue-500 text-white rounded-r-md hover:bg-blue-600 transition-colors flex items-center"
+                  >
+                    <FaSearch />
+                  </button>
                   </div>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                     Type to filter foods or click a food below to add it to your meal
@@ -1335,21 +1335,21 @@ function Nutrition() {
           </div>
           
           <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end space-x-3">
-            <button
+                <button 
               onClick={() => setShowAddCustomFoodModal(false)}
               className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-            >
+                >
               Cancel
-            </button>
-            <button
+                </button>
+              <button
               onClick={handleCreateCustomFood}
               className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
               disabled={!newCustomFood.name.trim() || newCustomFood.calories <= 0}
-            >
+              >
               Create Food
-            </button>
+              </button>
+            </div>
           </div>
-        </div>
       </div>
     );
   };
@@ -1546,7 +1546,7 @@ function Nutrition() {
                 <h4 className="font-medium text-green-800 dark:text-green-300 flex items-center">
                   <FaUtensils className="mr-2" /> Generated Meal Plan
                 </h4>
-                <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-2">
                   <div className="relative">
                     <input
                       id="meal-plan-date-picker"
@@ -1556,15 +1556,15 @@ function Nutrition() {
                       className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700"
                     />
                   </div>
-                  <button
+                      <button
                     onClick={() => handleSaveMealPlanToDay(selectedDate, generatedMealPlan)}
                     className="px-3 py-1 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors flex items-center"
-                  >
+                      >
                     <FaPlus className="mr-1" /> Save to Selected Date
-                  </button>
-                </div>
-              </div>
-              
+                      </button>
+                    </div>
+                  </div>
+                  
               {/* Workout Adjustment Info */}
               {mealPlanPreferences.adjust_for_workouts && (
                 <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
@@ -1635,9 +1635,9 @@ function Nutrition() {
                           </div>
                         </div>
                       ))}
-                    </div>
                   </div>
-                ))}
+                </div>
+              ))}
               </div>
             </div>
           )}
