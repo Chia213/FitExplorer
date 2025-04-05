@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   FaTrash,
@@ -17,6 +17,7 @@ import {
   FaArrowLeft,
   FaClock,
   FaWeight,
+  FaListUl,
 } from "react-icons/fa";
 import AddExercise from "./AddExercise";
 import { LuCalendarClock } from "react-icons/lu";
@@ -74,15 +75,21 @@ const WorkoutLog = () => {
   const [restTime, setRestTime] = useState(60); // Default 60 seconds
   const [isResting, setIsResting] = useState(false);
   const [timeLeft, setTimeLeft] = useState(60);
-  const [showDropSet, setShowDropSet] = useState(false);
-  const [dropSetExercise, setDropSetExercise] = useState(null);
+  const [showSetTypeModal, setShowSetTypeModal] = useState(false);
+  const [setTypeExercise, setSetTypeExercise] = useState(null);
+  const [selectedSetType, setSelectedSetType] = useState("drop"); // "drop", "warmup", "working", "superset", "amrap", "restpause", "pyramid", "giant"
+  const [originalWeight, setOriginalWeight] = useState(null);
+  const [timerInterval, setTimerInterval] = useState(null);
+  const [savingRoutine, setSavingRoutine] = useState(false);
   const [dropSetWeight, setDropSetWeight] = useState("");
   const [dropSetReps, setDropSetReps] = useState("");
   const [dropSetPercentage, setDropSetPercentage] = useState(20); // Default 20% reduction
   const [dropSetCount, setDropSetCount] = useState(1); // Number of drops to perform
-  const [originalWeight, setOriginalWeight] = useState(null);
-  const [timerInterval, setTimerInterval] = useState(null);
-  const [savingRoutine, setSavingRoutine] = useState(false);
+  const [supersetExerciseId, setSupersetExerciseId] = useState(null);
+  const [supersetReps, setSupersetReps] = useState("");
+  const [supersetWeight, setSupersetWeight] = useState("");
+  const [showSupersetExerciseSelector, setShowSupersetExerciseSelector] = useState(false);
+  const [fullPyramidChecked, setFullPyramidChecked] = useState(false);
 
   const toggleWeightUnit = () => {
     const newUnit = weightUnit === "kg" ? "lbs" : "kg";
@@ -137,12 +144,64 @@ const WorkoutLog = () => {
   };
 
   const prepareWorkoutForSaving = (workout) => {
+    // Make a deep copy of the workout to avoid modifying the original
+    const workoutCopy = JSON.parse(JSON.stringify(workout));
+
     // If the current unit is lbs, convert weights back to kg for storage
     if (weightUnit === "lbs") {
-      // Convert bodyweight and exercise weights to kg
-      // (code shown in the artifact)
+      // Convert bodyweight to kg if present
+      if (workoutCopy.bodyweight) {
+        const bw = parseFloat(workoutCopy.bodyweight);
+        if (!isNaN(bw)) {
+          workoutCopy.bodyweight = (bw / 2.20462).toFixed(1);
+        }
+      }
+
+      // Convert all exercise weights
+      if (workoutCopy.exercises && Array.isArray(workoutCopy.exercises)) {
+        workoutCopy.exercises.forEach(exercise => {
+          if (!exercise.is_cardio && exercise.sets && Array.isArray(exercise.sets)) {
+            exercise.sets.forEach(set => {
+              if (set.weight) {
+                const weight = parseFloat(set.weight);
+                if (!isNaN(weight)) {
+                  set.weight = (weight / 2.20462).toFixed(1);
+                }
+              }
+              if (set.original_weight) {
+                const originalWeight = parseFloat(set.original_weight);
+                if (!isNaN(originalWeight)) {
+                  set.original_weight = (originalWeight / 2.20462).toFixed(1);
+                }
+              }
+            });
+          }
+        });
+      }
     }
-    return workout;
+
+    // Store the weight unit with the workout
+    workoutCopy.weight_unit = weightUnit;
+
+    // Ensure all set type flags are properly preserved as booleans
+    if (workoutCopy.exercises && Array.isArray(workoutCopy.exercises)) {
+      workoutCopy.exercises.forEach(exercise => {
+        if (exercise.sets && Array.isArray(exercise.sets)) {
+          exercise.sets.forEach(set => {
+            // Ensure all set type flags exist and are booleans
+            set.is_warmup = !!set.is_warmup;
+            set.is_drop_set = !!set.is_drop_set;
+            set.is_superset = !!set.is_superset;
+            set.is_amrap = !!set.is_amrap;
+            set.is_restpause = !!set.is_restpause;
+            set.is_pyramid = !!set.is_pyramid;
+            set.is_giant = !!set.is_giant;
+          });
+        }
+      });
+    }
+
+    return workoutCopy;
   };
 
   const handleMoveExercise = (exerciseIndex, direction) => {
@@ -277,12 +336,44 @@ const WorkoutLog = () => {
                 duration: set.duration || "",
                 intensity: set.intensity || "",
                 notes: set.notes || "",
+                // Set type flags - ensure they're properly converted to boolean
+                is_warmup: !!set.is_warmup,
+                is_drop_set: !!set.is_drop_set,
+                is_superset: !!set.is_superset,
+                is_amrap: !!set.is_amrap,
+                is_restpause: !!set.is_restpause,
+                is_pyramid: !!set.is_pyramid,
+                is_giant: !!set.is_giant,
+                // Additional set properties
+                drop_number: set.drop_number || null,
+                original_weight: set.original_weight || null,
+                superset_with: set.superset_with !== undefined ? set.superset_with : null,
+                rest_pauses: set.rest_pauses || null,
+                pyramid_type: set.pyramid_type || null,
+                pyramid_step: set.pyramid_step || null,
+                giant_with: Array.isArray(set.giant_with) ? set.giant_with : null
               };
             } else {
               return {
                 weight: set.weight || "",
                 reps: set.reps || "",
                 notes: set.notes || "",
+                // Set type flags - ensure they're properly converted to boolean
+                is_warmup: !!set.is_warmup,
+                is_drop_set: !!set.is_drop_set,
+                is_superset: !!set.is_superset,
+                is_amrap: !!set.is_amrap,
+                is_restpause: !!set.is_restpause,
+                is_pyramid: !!set.is_pyramid,
+                is_giant: !!set.is_giant,
+                // Additional set properties
+                drop_number: set.drop_number || null,
+                original_weight: set.original_weight || null,
+                superset_with: set.superset_with !== undefined ? set.superset_with : null,
+                rest_pauses: set.rest_pauses || null,
+                pyramid_type: set.pyramid_type || null,
+                pyramid_step: set.pyramid_step || null,
+                giant_with: Array.isArray(set.giant_with) ? set.giant_with : null
               };
             }
           }),
@@ -298,6 +389,13 @@ const WorkoutLog = () => {
             duration: "",
             intensity: "",
             notes: "",
+            is_warmup: false,
+            is_drop_set: false,
+            is_superset: false,
+            is_amrap: false,
+            is_restpause: false,
+            is_pyramid: false,
+            is_giant: false
           }));
 
         return {
@@ -313,6 +411,13 @@ const WorkoutLog = () => {
             weight: "",
             reps: "",
             notes: "",
+            is_warmup: false,
+            is_drop_set: false,
+            is_superset: false,
+            is_amrap: false,
+            is_restpause: false,
+            is_pyramid: false,
+            is_giant: false
           }));
 
         return {
@@ -538,13 +643,21 @@ const WorkoutLog = () => {
               distance: set.distance || null,
               duration: set.duration || null,
               intensity: set.intensity || "",
-              notes: set.notes || ""
+              notes: set.notes || "",
+              is_warmup: !!set.is_warmup,
+              is_drop_set: !!set.is_drop_set,
+              is_superset: !!set.is_superset,
+              superset_with: set.is_superset ? set.superset_with : null
             };
           } else {
             return {
               weight: set.weight || null,
               reps: set.reps || null,
-              notes: set.notes || ""
+              notes: set.notes || "",
+              is_warmup: !!set.is_warmup,
+              is_drop_set: !!set.is_drop_set,
+              is_superset: !!set.is_superset,
+              superset_with: set.is_superset ? set.superset_with : null
             };
           }
         }) || []
@@ -562,16 +675,16 @@ const WorkoutLog = () => {
       const routinesResponse = await fetch(`${API_BASE_URL}/routines`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      
+
       if (!routinesResponse.ok) {
         throw new Error("Failed to check existing routines");
       }
-      
+
       const existingRoutines = await routinesResponse.json();
       const duplicateRoutine = existingRoutines.find(r => r.name === routineName);
-      
+
       let response;
-      
+
       if (duplicateRoutine) {
         // Ask user if they want to overwrite
         const shouldOverwrite = window.confirm(
@@ -637,6 +750,9 @@ const WorkoutLog = () => {
           duration: "",
           intensity: "",
           notes: "",
+          is_warmup: false,
+          is_drop_set: false,
+          is_superset: false
         }));
 
       setWorkoutExercises([
@@ -654,6 +770,9 @@ const WorkoutLog = () => {
           weight: "",
           reps: "",
           notes: "",
+          is_warmup: false,
+          is_drop_set: false,
+          is_superset: false
         }));
 
       setWorkoutExercises([
@@ -682,8 +801,31 @@ const WorkoutLog = () => {
       prev.map((exercise, index) => {
         if (index === exerciseIndex) {
           const newSet = exercise.is_cardio
-            ? { distance: "", duration: "", intensity: "", notes: "", is_warmup: false }
-            : { weight: "", reps: "", notes: "", is_warmup: false };
+            ? { 
+                distance: "", 
+                duration: "", 
+                intensity: "", 
+                notes: "", 
+                is_warmup: false, 
+                is_drop_set: false, 
+                is_superset: false,
+                is_amrap: false,
+                is_restpause: false,
+                is_pyramid: false,
+                is_giant: false
+              }
+            : { 
+                weight: "", 
+                reps: "", 
+                notes: "", 
+                is_warmup: false, 
+                is_drop_set: false, 
+                is_superset: false,
+                is_amrap: false,
+                is_restpause: false,
+                is_pyramid: false,
+                is_giant: false
+              };
 
           return {
             ...exercise,
@@ -860,15 +1002,16 @@ const WorkoutLog = () => {
     setTimeLeft(restTime);
   };
 
-  const handleAddDropSet = (exercise) => {
+  const handleShowSetTypeModal = (exercise) => {
     // Get the last set's weight as the starting point
     const lastSet = exercise.sets[exercise.sets.length - 1];
     if (lastSet && lastSet.weight) {
       setOriginalWeight(lastSet.weight);
       setDropSetWeight(lastSet.weight);
     }
-    setDropSetExercise(exercise);
-    setShowDropSet(true);
+    setSetTypeExercise(exercise);
+    setSelectedSetType("drop"); // Default to drop set
+    setShowSetTypeModal(true);
   };
 
   const calculateNextWeight = (currentWeight, percentage) => {
@@ -876,8 +1019,38 @@ const WorkoutLog = () => {
     return (currentWeight - reduction).toFixed(1);
   };
 
-  const handleSaveDropSet = () => {
-    if (!dropSetExercise || !originalWeight) return;
+  const getButtonText = () => {
+    switch (selectedSetType) {
+      case "drop":
+        return `Add ${dropSetCount} Drop Set${dropSetCount > 1 ? 's' : ''}`;
+      case "warmup":
+        return "Add Warm-up Set";
+      case "working":
+        return "Add Normal Set";
+      case "superset":
+        return "Add Superset";
+      case "amrap":
+        return "Add AMRAP Set";
+      case "restpause":
+        return "Add Rest-Pause Set";
+      case "pyramid":
+        return "Add Pyramid Set";
+      case "giant":
+        return "Add Giant Set";
+      default:
+        return "Add Set";
+    }
+  };
+
+  const handleAddSetByType = () => {
+    if (!setTypeExercise) return;
+
+    if (selectedSetType === "drop") {
+      // Drop set functionality
+      if (!originalWeight) {
+        alert("Please enter the original weight");
+        return;
+      }
 
     // Validate that reps are filled
     if (!dropSetReps || dropSetReps.trim() === "") {
@@ -896,6 +1069,12 @@ const WorkoutLog = () => {
         reps: dropSetReps,
         notes: `Drop Set ${i + 1} (${dropSetPercentage}% reduction)`,
         is_drop_set: true,
+        is_warmup: false,
+        is_superset: false,
+        is_amrap: false,
+        is_restpause: false,
+        is_pyramid: false,
+        is_giant: false,
         original_weight: originalWeight,
         drop_number: i + 1,
       });
@@ -903,7 +1082,7 @@ const WorkoutLog = () => {
 
     setWorkoutExercises((prev) =>
       prev.map((ex) => {
-        if (ex === dropSetExercise) {
+          if (ex === setTypeExercise) {
           return {
             ...ex,
             sets: [...ex.sets, ...newSets],
@@ -912,12 +1091,479 @@ const WorkoutLog = () => {
         return ex;
       })
     );
+    } else if (selectedSetType === "warmup") {
+      // Add a warm-up set
+      const newSet = setTypeExercise.is_cardio
+        ? { 
+            distance: "", 
+            duration: "", 
+            intensity: "", 
+            notes: "Warm-up Set", 
+            is_warmup: true,
+            is_drop_set: false,
+            is_superset: false,
+            is_amrap: false,
+            is_restpause: false,
+            is_pyramid: false,
+            is_giant: false
+          }
+        : { 
+            weight: originalWeight ? (parseFloat(originalWeight) * 0.7).toFixed(1) : "", 
+            reps: "", 
+            notes: "Warm-up Set", 
+            is_warmup: true,
+            is_drop_set: false,
+            is_superset: false,
+            is_amrap: false,
+            is_restpause: false,
+            is_pyramid: false,
+            is_giant: false
+          };
 
-    setShowDropSet(false);
-    setDropSetExercise(null);
+      setWorkoutExercises((prev) =>
+        prev.map((ex) => {
+          if (ex === setTypeExercise) {
+            return {
+              ...ex,
+              sets: [...ex.sets, newSet],
+            };
+          }
+          return ex;
+        })
+      );
+    } else if (selectedSetType === "working") {
+      // Add a working set
+      const newSet = setTypeExercise.is_cardio
+        ? { 
+            distance: "", 
+            duration: "", 
+            intensity: "", 
+            notes: "Normal Set", 
+            is_warmup: false,
+            is_drop_set: false,
+            is_superset: false,
+            is_amrap: false,
+            is_restpause: false,
+            is_pyramid: false,
+            is_giant: false
+          }
+        : { 
+            weight: originalWeight || "", 
+            reps: "", 
+            notes: "Normal Set", 
+            is_warmup: false,
+            is_drop_set: false,
+            is_superset: false,
+            is_amrap: false,
+            is_restpause: false,
+            is_pyramid: false,
+            is_giant: false
+          };
+
+      setWorkoutExercises((prev) =>
+        prev.map((ex) => {
+          if (ex === setTypeExercise) {
+            return {
+              ...ex,
+              sets: [...ex.sets, newSet],
+            };
+          }
+          return ex;
+        })
+      );
+    } else if (selectedSetType === "superset") {
+      // Validate inputs
+      if (supersetExerciseId === null) {
+        alert("Please select an exercise to pair with.");
+        return;
+      }
+      
+      const supersetExercise = workoutExercises[parseInt(supersetExerciseId)];
+      
+      if (!supersetExercise) {
+        alert("The selected superset exercise was not found.");
+        return;
+      }
+      
+      // For strength exercises
+      if ((!setTypeExercise.is_cardio && !originalWeight) || 
+          (!supersetExercise.is_cardio && !supersetWeight)) {
+        alert("Please enter weight for strength exercises.");
+        return;
+      }
+      
+      if (!dropSetReps || !supersetReps) {
+        alert("Please enter reps for both exercises.");
+        return;
+      }
+      
+      // Add superset to the primary exercise
+      const updatedExercises = [...workoutExercises];
+      const primaryExerciseIndex = updatedExercises.findIndex(e => e === setTypeExercise);
+      
+      if (primaryExerciseIndex === -1) {
+        alert("Primary exercise not found.");
+        return;
+      }
+      
+      // For the primary exercise
+      const primarySet = {
+        weight: !setTypeExercise.is_cardio ? originalWeight : "",
+        reps: dropSetReps,
+        notes: `Superset with ${supersetExercise.name}`,
+        is_superset: true,
+        is_warmup: false,
+        is_drop_set: false,
+        is_amrap: false,
+        is_restpause: false,
+        is_pyramid: false,
+        is_giant: false,
+        superset_with: parseInt(supersetExerciseId)
+      };
+      
+      updatedExercises[primaryExerciseIndex].sets.push(primarySet);
+      
+      // For the paired exercise
+      const pairedSet = {
+        weight: !supersetExercise.is_cardio ? supersetWeight : "",
+        reps: supersetReps,
+        notes: `Superset with ${setTypeExercise.name}`,
+        is_superset: true,
+        is_warmup: false,
+        is_drop_set: false,
+        is_amrap: false,
+        is_restpause: false,
+        is_pyramid: false,
+        is_giant: false,
+        superset_with: primaryExerciseIndex
+      };
+      
+      updatedExercises[parseInt(supersetExerciseId)].sets.push(pairedSet);
+      
+      setWorkoutExercises(updatedExercises);
+    } else if (selectedSetType === "amrap") {
+      // AMRAP set functionality
+      if (!originalWeight) {
+        alert("Please enter the weight");
+        return;
+      }
+
+      // Validate that reps are filled
+      if (!dropSetReps || dropSetReps.trim() === "") {
+        alert("Please enter the target reps for the AMRAP set.");
+        return;
+      }
+
+      const newSet = {
+        weight: originalWeight,
+        reps: dropSetReps,
+        notes: `AMRAP Set (As Many Reps As Possible)`,
+        is_drop_set: false,
+        is_warmup: false,
+        is_superset: false,
+        is_amrap: true,
+        is_restpause: false,
+        is_pyramid: false,
+        is_giant: false
+      };
+
+      setWorkoutExercises((prev) =>
+        prev.map((ex) => {
+          if (ex === setTypeExercise) {
+            return {
+              ...ex,
+              sets: [...ex.sets, newSet],
+            };
+          }
+          return ex;
+        })
+      );
+    } else if (selectedSetType === "restpause") {
+      // Rest-Pause set functionality
+      if (!originalWeight) {
+        alert("Please enter the weight");
+        return;
+      }
+
+      // Validate that reps are filled
+      if (!dropSetReps || dropSetReps.trim() === "") {
+        alert("Please enter the initial reps for the rest-pause set.");
+        return;
+      }
+
+      // Add a rest-pause set (just one set with a description)
+      const newSet = { 
+        weight: originalWeight, 
+        reps: dropSetReps, 
+        notes: `Rest-Pause Set (${dropSetCount} pauses)`, 
+        is_warmup: false,
+        is_drop_set: false,
+        is_superset: false,
+        is_amrap: false,
+        is_restpause: true,
+        is_pyramid: false,
+        is_giant: false,
+        rest_pauses: dropSetCount
+      };
+
+      setWorkoutExercises((prev) =>
+        prev.map((ex) => {
+          if (ex === setTypeExercise) {
+            return {
+              ...ex,
+              sets: [...ex.sets, newSet],
+            };
+          }
+          return ex;
+        })
+      );
+    } else if (selectedSetType === "pyramid") {
+      // Pyramid set functionality
+      if (!originalWeight) {
+        alert("Please enter the starting weight");
+        return;
+      }
+
+      // Validate that reps are filled
+      if (!dropSetReps || dropSetReps.trim() === "") {
+        alert("Please enter the starting reps for the pyramid set.");
+        return;
+      }
+
+      const newSets = [];
+      let currentWeight = parseFloat(originalWeight);
+      let currentReps = parseInt(dropSetReps);
+      
+      // Generate ascending pyramid (weight goes up, reps go down)
+      for (let i = 0; i < dropSetCount; i++) {
+        const weightIncrease = currentWeight * (dropSetPercentage / 100);
+        // First set is the starting weight/reps
+        if (i === 0) {
+          newSets.push({
+            weight: currentWeight.toFixed(1),
+            reps: currentReps.toString(),
+            notes: `Pyramid Set (Base)`,
+            is_drop_set: false,
+            is_warmup: false,
+            is_superset: false,
+            is_amrap: false,
+            is_restpause: false,
+            is_pyramid: true,
+            is_giant: false,
+            pyramid_type: "ascending",
+            pyramid_step: i + 1
+          });
+        } else {
+          // For following sets, increase weight and decrease reps
+          currentWeight += weightIncrease;
+          currentReps = Math.max(2, currentReps - 2); // Minimum 2 reps
+          
+          newSets.push({
+            weight: currentWeight.toFixed(1),
+            reps: currentReps.toString(),
+            notes: `Pyramid Set (Step ${i + 1})`,
+            is_drop_set: false,
+            is_warmup: false,
+            is_superset: false,
+            is_amrap: false,
+            is_restpause: false,
+            is_pyramid: true,
+            is_giant: false,
+            pyramid_type: "ascending",
+            pyramid_step: i + 1
+          });
+        }
+      }
+      
+      // If full pyramid is selected, add descending part
+      if (fullPyramidChecked) {
+        // For descending part, we reverse the logic
+        for (let i = dropSetCount - 2; i >= 0; i--) {
+          // Recalculate to match the ascending side's values
+          let calcWeight = parseFloat(originalWeight);
+          let calcReps = parseInt(dropSetReps);
+          
+          for (let j = 0; j < i; j++) {
+            const weightIncrease = calcWeight * (dropSetPercentage / 100);
+            calcWeight += weightIncrease;
+            calcReps = Math.max(2, calcReps - 2);
+          }
+          
+          newSets.push({
+            weight: calcWeight.toFixed(1),
+            reps: calcReps.toString(),
+            notes: `Pyramid Set (Step ${i + 1}, Descending)`,
+            is_drop_set: false,
+            is_warmup: false,
+            is_superset: false,
+            is_amrap: false,
+            is_restpause: false,
+            is_pyramid: true,
+            is_giant: false,
+            pyramid_type: "descending",
+            pyramid_step: i + 1
+          });
+        }
+      }
+
+      setWorkoutExercises((prev) =>
+        prev.map((ex) => {
+          if (ex === setTypeExercise) {
+            return {
+              ...ex,
+              sets: [...ex.sets, ...newSets],
+            };
+          }
+          return ex;
+        })
+      );
+    } else if (selectedSetType === "giant") {
+      // Giant set functionality (similar to superset but with additional exercises)
+      if (supersetExerciseId === null) {
+        alert("Please select at least one additional exercise for the giant set.");
+        return;
+      }
+      
+      const secondExercise = workoutExercises[parseInt(supersetExerciseId)];
+      
+      if (!secondExercise) {
+        alert("The selected exercise was not found.");
+        return;
+      }
+      
+      // For strength exercises
+      if ((!setTypeExercise.is_cardio && !originalWeight) || 
+          (!secondExercise.is_cardio && !supersetWeight)) {
+        alert("Please enter weight for strength exercises.");
+        return;
+      }
+      
+      if (!dropSetReps || !supersetReps) {
+        alert("Please enter reps for all exercises.");
+        return;
+      }
+      
+      // Add giant set to the primary exercise
+      const updatedExercises = [...workoutExercises];
+      const primaryExerciseIndex = updatedExercises.findIndex(e => e === setTypeExercise);
+      
+      if (primaryExerciseIndex === -1) {
+        alert("Primary exercise not found.");
+        return;
+      }
+      
+      // For the primary exercise
+      const primarySet = {
+        weight: !setTypeExercise.is_cardio ? originalWeight : "",
+        reps: dropSetReps,
+        notes: `Giant Set with ${secondExercise.name}`,
+        is_superset: false,
+        is_warmup: false,
+        is_drop_set: false,
+        is_amrap: false,
+        is_restpause: false,
+        is_pyramid: false,
+        is_giant: true,
+        giant_with: [parseInt(supersetExerciseId)]
+      };
+      
+      updatedExercises[primaryExerciseIndex].sets.push(primarySet);
+      
+      // For the second exercise
+      const secondSet = {
+        weight: !secondExercise.is_cardio ? supersetWeight : "",
+        reps: supersetReps,
+        notes: `Giant Set with ${setTypeExercise.name}`,
+        is_superset: false,
+        is_warmup: false,
+        is_drop_set: false,
+        is_amrap: false,
+        is_restpause: false,
+        is_pyramid: false,
+        is_giant: true,
+        giant_with: [primaryExerciseIndex]
+      };
+      
+      updatedExercises[parseInt(supersetExerciseId)].sets.push(secondSet);
+      
+      setWorkoutExercises(updatedExercises);
+    }
+    
+    // Reset state and close modal
+    closeSetTypeModal();
+  };
+
+  // Function to reset and close the Set Type modal
+  const closeSetTypeModal = () => {
+    setShowSetTypeModal(false);
+    setSetTypeExercise(null);
+    setSelectedSetType("drop");
     setDropSetWeight("");
     setDropSetReps("");
     setOriginalWeight(null);
+    setSupersetExerciseId(null);
+    setSupersetWeight("");
+    setSupersetReps("");
+    setShowSupersetExerciseSelector(false);
+    setFullPyramidChecked(false);
+    // Reset drop set count and percentage to defaults
+    setDropSetCount(1);
+    setDropSetPercentage(20);
+  };
+
+  const saveWorkout = async () => {
+    // ... existing validation code ...
+
+    const workoutToSave = prepareWorkoutForSaving({
+      name: workoutName || "Workout " + new Date().toLocaleDateString(),
+      start_time: startTime,
+      end_time: endTime || new Date().toISOString().slice(0, 16),
+      bodyweight: bodyweight,
+      notes: notes,
+      weight_unit: weightUnit,
+      exercises: workoutExercises.map((exercise) => ({
+        name: exercise.name,
+        category: exercise.category || "Uncategorized",
+        is_cardio: exercise.is_cardio,
+        sets: exercise.sets.map((set) => {
+          // Create a set object with all possible properties
+          const setObj = {
+            // Common properties
+            notes: set.notes || "",
+            // Set type flags - ensure they're properly converted to boolean
+            is_warmup: !!set.is_warmup,
+            is_drop_set: !!set.is_drop_set,
+            is_superset: !!set.is_superset,
+            is_amrap: !!set.is_amrap,
+            is_restpause: !!set.is_restpause,
+            is_pyramid: !!set.is_pyramid,
+            is_giant: !!set.is_giant,
+            // Additional set properties
+            drop_number: set.drop_number || null,
+            original_weight: set.original_weight || null,
+            superset_with: set.superset_with !== undefined ? set.superset_with : null,
+            rest_pauses: set.rest_pauses || null,
+            pyramid_type: set.pyramid_type || null,
+            pyramid_step: set.pyramid_step || null,
+            giant_with: Array.isArray(set.giant_with) ? set.giant_with : null
+          };
+
+          // Add type-specific properties
+          if (exercise.is_cardio) {
+            setObj.distance = set.distance || "";
+            setObj.duration = set.duration || "";
+            setObj.intensity = set.intensity || "";
+          } else {
+            setObj.weight = set.weight || "";
+            setObj.reps = set.reps || "";
+          }
+
+          return setObj;
+        }),
+      })),
+    });
+
+    // ... existing API call code ...
   };
 
   return (
@@ -1073,13 +1719,16 @@ const WorkoutLog = () => {
               </button>
 
               {!exercise.is_cardio && (
+                <div className="flex flex-col items-center">
                 <button
-                  onClick={() => handleAddDropSet(exercise)}
-                  className="text-blue-500 hover:text-blue-400"
-                  title="Add Drop Set"
-                >
-                  <FaWeight />
+                    onClick={() => handleShowSetTypeModal(exercise)}
+                    className="text-blue-500 hover:text-blue-400 mb-1"
+                    title="Add Set Type (Drop Set, Warm-up, Working)"
+                  >
+                    <FaListUl className="text-lg" />
                 </button>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">Set Type</span>
+                </div>
               )}
             </div>
           </div>
@@ -1091,7 +1740,12 @@ const WorkoutLog = () => {
                   key={setIndex}
                   className={`mt-4 border-t border-gray-200 dark:border-gray-600 pt-3 ${
                     set.is_drop_set ? "bg-blue-50 dark:bg-blue-900/20" : 
-                    set.is_warmup ? "bg-yellow-50 dark:bg-yellow-900/20" : ""
+                    set.is_warmup ? "bg-yellow-50 dark:bg-yellow-900/20" : 
+                    set.is_superset ? "bg-purple-50 dark:bg-purple-900/20" : 
+                    set.is_amrap ? "bg-green-50 dark:bg-green-900/20" : 
+                    set.is_restpause ? "bg-orange-50 dark:bg-orange-900/20" :
+                    set.is_pyramid ? "bg-pink-50 dark:bg-pink-900/20" : 
+                    set.is_giant ? "bg-indigo-50 dark:bg-indigo-900/20" : ""
                   }`}
                 >
                   <div className="flex justify-between items-center mb-2">
@@ -1112,14 +1766,34 @@ const WorkoutLog = () => {
                         <span className="text-xs bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 px-2 py-1 rounded-full">
                           Warm-up Set
                         </span>
+                      ) : set.is_superset ? (
+                        <span className="text-xs bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 px-2 py-1 rounded-full">
+                          Superset with {workoutExercises[set.superset_with]?.name || "Deleted Exercise"}
+                        </span>
+                      ) : set.is_amrap ? (
+                        <span className="text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-1 rounded-full">
+                          AMRAP Set
+                        </span>
+                      ) : set.is_restpause ? (
+                        <span className="text-xs bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 px-2 py-1 rounded-full">
+                          Rest-Pause Set ({set.rest_pauses} pauses)
+                        </span>
+                      ) : set.is_pyramid ? (
+                        <span className="text-xs bg-pink-100 dark:bg-pink-900 text-pink-800 dark:text-pink-200 px-2 py-1 rounded-full">
+                          Pyramid Set {set.pyramid_type === "descending" ? "(Descending)" : ""}
+                        </span>
+                      ) : set.is_giant ? (
+                        <span className="text-xs bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 px-2 py-1 rounded-full">
+                          Giant Set
+                        </span>
                       ) : (
                         <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-1 rounded-full">
-                          Working Set
+                          Normal Set
                         </span>
                       )}
                     </div>
                     <div className="flex items-center space-x-2">
-                      {!set.is_drop_set && (
+                      {!set.is_drop_set && !set.is_superset && !set.is_amrap && !set.is_restpause && !set.is_pyramid && !set.is_giant && (
                         <button
                           onClick={() => {
                             setWorkoutExercises((prev) =>
@@ -1145,7 +1819,7 @@ const WorkoutLog = () => {
                               : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
                           }`}
                         >
-                          {set.is_warmup ? "Mark as Working Set" : "Mark as Warm-up"}
+                          {set.is_warmup ? "Mark as Normal Set" : "Mark as Warm-up"}
                         </button>
                       )}
                       <button
@@ -1554,12 +2228,36 @@ const WorkoutLog = () => {
         </div>
       )}
 
-      {showDropSet && (
+      {/* Set Type Modal */}
+      {showSetTypeModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
             <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">
-              Add Drop Sets
+              Set Type
             </h2>
+            
+            <div className="mb-4">
+              <label className="block text-gray-700 dark:text-gray-300 mb-2">
+                Select Set Type
+              </label>
+              <select
+                value={selectedSetType}
+                onChange={(e) => setSelectedSetType(e.target.value)}
+                className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
+              >
+                <option value="drop">Drop Set</option>
+                <option value="warmup">Warm-up Set</option>
+                <option value="working">Normal Set</option>
+                <option value="superset">Superset</option>
+                <option value="amrap">AMRAP (As Many Reps As Possible)</option>
+                <option value="restpause">Rest-Pause</option>
+                <option value="pyramid">Pyramid Set</option>
+                <option value="giant">Giant Set</option>
+              </select>
+            </div>
+
+            {selectedSetType === "drop" && (
+              <>
             <div className="mb-4">
               <label className="block text-gray-700 dark:text-gray-300 mb-2">
                 Original Weight ({weightUnit})
@@ -1575,6 +2273,7 @@ const WorkoutLog = () => {
                 placeholder="Enter original weight"
               />
             </div>
+                
             <div className="mb-4">
               <label className="block text-gray-700 dark:text-gray-300 mb-2">
                 Weight Reduction (%)
@@ -1591,6 +2290,7 @@ const WorkoutLog = () => {
                 Each drop will reduce the weight by this percentage
               </p>
             </div>
+                
             <div className="mb-4">
               <label className="block text-gray-700 dark:text-gray-300 mb-2">
                 Number of Drops
@@ -1604,6 +2304,7 @@ const WorkoutLog = () => {
                 max="5"
               />
             </div>
+                
             <div className="mb-4">
               <label className="block text-gray-700 dark:text-gray-300 mb-2">
                 Reps per Drop
@@ -1616,6 +2317,7 @@ const WorkoutLog = () => {
                 placeholder="Enter reps"
               />
             </div>
+                
             {originalWeight && (
               <div className="mb-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
                 <h3 className="font-medium mb-2">Drop Set Preview:</h3>
@@ -1634,28 +2336,439 @@ const WorkoutLog = () => {
                 </div>
               </div>
             )}
+              </>
+            )}
+
+            {selectedSetType === "warmup" && (
+              <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg mb-4">
+                <h3 className="font-medium text-yellow-700 dark:text-yellow-400 mb-2">Warm-up Set</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Warm-up sets are typically performed with lighter weights to prepare your muscles and joints.
+                  {!setTypeExercise?.is_cardio && " We suggest using about 70% of your working weight."}
+                </p>
+                {originalWeight && !setTypeExercise?.is_cardio && (
+                  <div className="mt-3 font-medium">
+                    Suggested warm-up weight: {(parseFloat(originalWeight) * 0.7).toFixed(1)} {weightUnit}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {selectedSetType === "working" && (
+              <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg mb-4">
+                <h3 className="font-medium text-blue-700 dark:text-blue-400 mb-2">Normal Set</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Normal sets are your primary training sets performed at your target intensity.
+                </p>
+              </div>
+            )}
+
+            {selectedSetType === "superset" && (
+              <div className="mb-4">
+                <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg mb-4">
+                  <h3 className="font-medium text-purple-700 dark:text-purple-400 mb-2">Superset</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Supersets are two exercises performed back-to-back with minimal rest between them.
+                    Pair {setTypeExercise?.name} with another exercise from your list or catalog.
+                  </p>
+                </div>
+                
+                <div className="mb-4">
+                  <div className="flex flex-col space-y-2">
+                    <button
+                      onClick={() => setShowSupersetExerciseSelector(true)}
+                      className="bg-purple-500 hover:bg-purple-600 text-white py-2 px-4 rounded-lg flex items-center justify-center"
+                    >
+                      <FaPlus className="mr-2" /> Select Exercise from Catalog
+                    </button>
+                    
+                    {supersetExerciseId !== null && (
+                      <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                        <p className="font-medium">Selected: {workoutExercises[supersetExerciseId]?.name}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                {supersetExerciseId !== null && !setTypeExercise?.is_cardio && !workoutExercises[supersetExerciseId]?.is_cardio && (
+                  <>
+                    <div className="mb-4">
+                      <label className="block text-gray-700 dark:text-gray-300 mb-2">
+                        {setTypeExercise?.name} Weight ({weightUnit})
+                      </label>
+                      <input
+                        type="number"
+                        value={originalWeight || ""}
+                        onChange={(e) => setOriginalWeight(e.target.value)}
+                        className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
+                        placeholder="Enter weight"
+                      />
+                    </div>
+                    
+                    <div className="mb-4">
+                      <label className="block text-gray-700 dark:text-gray-300 mb-2">
+                        {setTypeExercise?.name} Reps
+                      </label>
+                      <input
+                        type="number"
+                        value={dropSetReps}
+                        onChange={(e) => setDropSetReps(e.target.value)}
+                        className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
+                        placeholder="Enter reps"
+                      />
+                    </div>
+                    
+                    <div className="mb-4">
+                      <label className="block text-gray-700 dark:text-gray-300 mb-2">
+                        {workoutExercises[supersetExerciseId]?.name} Weight ({weightUnit})
+                      </label>
+                      <input
+                        type="number"
+                        value={supersetWeight}
+                        onChange={(e) => setSupersetWeight(e.target.value)}
+                        className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
+                        placeholder="Enter weight"
+                      />
+                    </div>
+                    
+                    <div className="mb-4">
+                      <label className="block text-gray-700 dark:text-gray-300 mb-2">
+                        {workoutExercises[supersetExerciseId]?.name} Reps
+                      </label>
+                      <input
+                        type="number"
+                        value={supersetReps}
+                        onChange={(e) => setSupersetReps(e.target.value)}
+                        className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
+                        placeholder="Enter reps"
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
+            {selectedSetType === "amrap" && (
+              <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg mb-4">
+                <h3 className="font-medium text-green-700 dark:text-green-400 mb-2">AMRAP Set</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  AMRAP (As Many Reps As Possible) sets are performed to technical failure - complete as many reps as you can with good form.
+                </p>
+                
+                <div className="mt-4">
+                  <label className="block text-gray-700 dark:text-gray-300 mb-2">
+                    Weight ({weightUnit})
+                  </label>
+                  <input
+                    type="number"
+                    value={originalWeight || ""}
+                    onChange={(e) => setOriginalWeight(e.target.value)}
+                    className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
+                    placeholder="Enter weight"
+                  />
+                </div>
+                
+                <div className="mt-3">
+                  <label className="block text-gray-700 dark:text-gray-300 mb-2">
+                    Target Reps (minimum)
+                  </label>
+                  <input
+                    type="number"
+                    value={dropSetReps}
+                    onChange={(e) => setDropSetReps(e.target.value)}
+                    className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
+                    placeholder="Enter target reps"
+                  />
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Example: If you aim for at least 8 reps, enter "8"
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {selectedSetType === "restpause" && (
+              <div className="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg mb-4">
+                <h3 className="font-medium text-orange-700 dark:text-orange-400 mb-2">Rest-Pause Set</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Rest-Pause involves performing a set to failure, resting 15-20 seconds, then continuing with the same weight for additional reps.
+                </p>
+                
+                <div className="mt-4">
+                  <label className="block text-gray-700 dark:text-gray-300 mb-2">
+                    Weight ({weightUnit})
+                  </label>
+                  <input
+                    type="number"
+                    value={originalWeight || ""}
+                    onChange={(e) => setOriginalWeight(e.target.value)}
+                    className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
+                    placeholder="Enter weight"
+                  />
+                </div>
+                
+                <div className="mt-3">
+                  <label className="block text-gray-700 dark:text-gray-300 mb-2">
+                    Initial Reps
+                  </label>
+                  <input
+                    type="number"
+                    value={dropSetReps}
+                    onChange={(e) => setDropSetReps(e.target.value)}
+                    className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
+                    placeholder="Enter initial reps"
+                  />
+                </div>
+                
+                <div className="mt-3">
+                  <label className="block text-gray-700 dark:text-gray-300 mb-2">
+                    Number of Rest-Pauses
+                  </label>
+                  <input
+                    type="number"
+                    value={dropSetCount}
+                    onChange={(e) => setDropSetCount(parseInt(e.target.value))}
+                    className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
+                    min="1"
+                    max="3"
+                    placeholder="How many times to rest-pause"
+                  />
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Typically 1-3 rest-pauses are performed
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {selectedSetType === "pyramid" && (
+              <div className="p-4 bg-pink-50 dark:bg-pink-900/20 rounded-lg mb-4">
+                <h3 className="font-medium text-pink-700 dark:text-pink-400 mb-2">Pyramid Set</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Pyramid sets involve progressively increasing the weight while decreasing reps (ascending), then optionally decreasing weight while increasing reps (descending).
+                </p>
+                
+                <div className="mt-4">
+                  <label className="block text-gray-700 dark:text-gray-300 mb-2">
+                    Starting Weight ({weightUnit})
+                  </label>
+                  <input
+                    type="number"
+                    value={originalWeight || ""}
+                    onChange={(e) => setOriginalWeight(e.target.value)}
+                    className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
+                    placeholder="Enter starting weight"
+                  />
+                </div>
+                
+                <div className="mt-3">
+                  <label className="block text-gray-700 dark:text-gray-300 mb-2">
+                    Starting Reps
+                  </label>
+                  <input
+                    type="number"
+                    value={dropSetReps}
+                    onChange={(e) => setDropSetReps(e.target.value)}
+                    className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
+                    placeholder="Enter starting reps"
+                  />
+                </div>
+                
+                <div className="mt-3">
+                  <label className="block text-gray-700 dark:text-gray-300 mb-2">
+                    Weight Increment (%)
+                  </label>
+                  <input
+                    type="number"
+                    value={dropSetPercentage}
+                    onChange={(e) => setDropSetPercentage(parseInt(e.target.value))}
+                    className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
+                    min="5"
+                    max="30"
+                    placeholder="Weight increment percentage"
+                  />
+                </div>
+                
+                <div className="mt-3">
+                  <label className="block text-gray-700 dark:text-gray-300 mb-2">
+                    Number of Steps
+                  </label>
+                  <input
+                    type="number"
+                    value={dropSetCount}
+                    onChange={(e) => setDropSetCount(parseInt(e.target.value))}
+                    className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
+                    min="2"
+                    max="5"
+                    placeholder="How many steps in the pyramid"
+                  />
+                </div>
+                
+                <div className="mt-3 flex items-center">
+                  <input
+                    type="checkbox"
+                    id="fullPyramid"
+                    className="mr-2"
+                    checked={fullPyramidChecked}
+                    onChange={(e) => setFullPyramidChecked(e.target.checked)}
+                  />
+                  <label htmlFor="fullPyramid" className="text-gray-700 dark:text-gray-300">
+                    Full Pyramid (ascending + descending)
+                  </label>
+                </div>
+              </div>
+            )}
+
+            {selectedSetType === "giant" && (
+              <div className="p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg mb-4">
+                <h3 className="font-medium text-indigo-700 dark:text-indigo-400 mb-2">Giant Set</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Giant sets link 3 or more exercises performed back-to-back with minimal rest. Select multiple exercises to include in your giant set.
+                </p>
+                
+                <div className="mt-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="font-medium">1. {setTypeExercise?.name}</p>
+                    <span className="text-xs bg-indigo-100 dark:bg-indigo-800 text-indigo-800 dark:text-indigo-200 px-2 py-1 rounded-full">
+                      Primary Exercise
+                    </span>
+                  </div>
+                  
+                  {!setTypeExercise?.is_cardio && (
+                    <div className="grid grid-cols-2 gap-2 mb-4">
+                      <div>
+                        <label className="text-sm text-gray-600 dark:text-gray-400">
+                          Weight ({weightUnit})
+                        </label>
+                        <input
+                          type="number"
+                          value={originalWeight || ""}
+                          onChange={(e) => setOriginalWeight(e.target.value)}
+                          className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
+                          placeholder="Weight"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm text-gray-600 dark:text-gray-400">
+                          Reps
+                        </label>
+                        <input
+                          type="number"
+                          value={dropSetReps}
+                          onChange={(e) => setDropSetReps(e.target.value)}
+                          className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
+                          placeholder="Reps"
+                        />
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className="border-t border-gray-200 dark:border-gray-700 pt-3 mb-3">
+                    <button
+                      onClick={() => setShowSupersetExerciseSelector(true)}
+                      className="bg-indigo-500 hover:bg-indigo-600 text-white py-2 px-4 rounded-lg flex items-center justify-center"
+                    >
+                      <FaPlus className="mr-2" /> Add Exercise to Giant Set
+                    </button>
+                    
+                    {supersetExerciseId !== null && (
+                      <div className="mt-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="font-medium">2. {workoutExercises[supersetExerciseId]?.name}</p>
+                        </div>
+                        
+                        {!workoutExercises[supersetExerciseId]?.is_cardio && (
+                          <div className="grid grid-cols-2 gap-2 mb-4">
+                            <div>
+                              <label className="text-sm text-gray-600 dark:text-gray-400">
+                                Weight ({weightUnit})
+                              </label>
+                              <input
+                                type="number"
+                                value={supersetWeight}
+                                onChange={(e) => setSupersetWeight(e.target.value)}
+                                className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
+                                placeholder="Weight"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-sm text-gray-600 dark:text-gray-400">
+                                Reps
+                              </label>
+                              <input
+                                type="number"
+                                value={supersetReps}
+                                onChange={(e) => setSupersetReps(e.target.value)}
+                                className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
+                                placeholder="Enter reps"
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    
+                    {/* Future enhancement: Add support for more exercises in the giant set */}
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="flex space-x-3">
               <button
-                onClick={handleSaveDropSet}
-                className="flex-1 bg-teal-500 hover:bg-teal-600 text-white py-2 rounded-lg"
+                onClick={handleAddSetByType}
+                className="bg-teal-500 hover:bg-teal-600 text-white py-2 px-4 rounded-lg"
               >
-                Add Drop Sets
+                {getButtonText()}
               </button>
               <button
-                onClick={() => {
-                  setShowDropSet(false);
-                  setDropSetExercise(null);
-                  setDropSetWeight("");
-                  setDropSetReps("");
-                  setOriginalWeight(null);
-                }}
-                className="flex-1 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-white py-2 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500"
+                onClick={closeSetTypeModal}
+                className="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-2 rounded-lg"
               >
                 Cancel
               </button>
             </div>
           </div>
         </div>
+      )}
+
+      {showSupersetExerciseSelector && (
+        <AddExercise
+          onClose={() => setShowSupersetExerciseSelector(false)}
+          onSelectExercise={(exercise) => {
+            // Add the selected exercise to the workout if not already present
+            const existingIndex = workoutExercises.findIndex(ex => ex.name === exercise.name);
+            
+            if (existingIndex === -1) {
+              // If the exercise doesn't exist yet, add it to the workout
+              const emptySets = Array(exercise.initialSets || 1)
+                .fill()
+                .map(() => ({
+                  weight: "",
+                  reps: "",
+                  notes: "",
+                  is_warmup: false,
+                  is_drop_set: false,
+                  is_superset: false
+                }));
+              
+              // Add the new exercise
+              const newExercise = { 
+                ...exercise, 
+                sets: emptySets, 
+                is_cardio: exercise.is_cardio || false 
+              };
+              
+              setWorkoutExercises(prev => [...prev, newExercise]);
+              
+              // Use the last index as the superset exercise ID
+              setSupersetExerciseId(String(workoutExercises.length));
+            } else {
+              // If the exercise already exists, use its index
+              setSupersetExerciseId(String(existingIndex));
+            }
+            
+            setShowSupersetExerciseSelector(false);
+          }}
+        />
       )}
     </div>
   );

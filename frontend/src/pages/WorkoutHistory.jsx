@@ -207,18 +207,38 @@ function WorkoutHistory() {
         is_cardio: Boolean(exercise.is_cardio),
         initial_sets: exercise.sets?.length || 1,
         sets: exercise.sets?.map(set => {
+          const baseSet = {
+            notes: set.notes || "",
+            // Set type flags
+            is_warmup: !!set.is_warmup,
+            is_drop_set: !!set.is_drop_set,
+            is_superset: !!set.is_superset,
+            is_amrap: !!set.is_amrap,
+            is_restpause: !!set.is_restpause,
+            is_pyramid: !!set.is_pyramid,
+            is_giant: !!set.is_giant,
+            // Additional set properties
+            drop_number: set.drop_number || null,
+            original_weight: set.original_weight || null,
+            superset_with: set.superset_with !== undefined ? set.superset_with : null,
+            rest_pauses: set.rest_pauses || null,
+            pyramid_type: set.pyramid_type || null,
+            pyramid_step: set.pyramid_step || null,
+            giant_with: Array.isArray(set.giant_with) ? set.giant_with : null
+          };
+
           if (exercise.is_cardio) {
             return {
+              ...baseSet,
               distance: set.distance || null,
               duration: set.duration || null,
-              intensity: set.intensity || "",
-              notes: set.notes || ""
+              intensity: set.intensity || ""
             };
           } else {
             return {
+              ...baseSet,
               weight: set.weight || null,
-              reps: set.reps || null,
-              notes: set.notes || ""
+              reps: set.reps || null
             };
           }
         }) || []
@@ -1150,6 +1170,7 @@ function WorkoutHistory() {
                                         </th>
                                       </>
                                     )}
+                                    <th className="text-left py-2 pr-4">Set Type</th>
                                     <th className="text-left py-2">Notes</th>
                                   </tr>
                                 </thead>
@@ -1199,6 +1220,41 @@ function WorkoutHistory() {
                                             </td>
                                           </>
                                         )}
+                                        <td className="py-2 pr-4">
+                                          {set.is_warmup ? (
+                                            <span className="px-2 py-1 rounded-full text-xs bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200">
+                                              Warm-up
+                                            </span>
+                                          ) : set.is_drop_set ? (
+                                            <span className="px-2 py-1 rounded-full text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
+                                              Drop Set {set.drop_number || ""}
+                                            </span>
+                                          ) : set.is_superset ? (
+                                            <span className="px-2 py-1 rounded-full text-xs bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200">
+                                              Superset
+                                            </span>
+                                          ) : set.is_amrap ? (
+                                            <span className="px-2 py-1 rounded-full text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">
+                                              AMRAP
+                                            </span>
+                                          ) : set.is_restpause ? (
+                                            <span className="px-2 py-1 rounded-full text-xs bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200">
+                                              Rest-Pause
+                                            </span>
+                                          ) : set.is_pyramid ? (
+                                            <span className="px-2 py-1 rounded-full text-xs bg-pink-100 dark:bg-pink-900 text-pink-800 dark:text-pink-200">
+                                              Pyramid
+                                            </span>
+                                          ) : set.is_giant ? (
+                                            <span className="px-2 py-1 rounded-full text-xs bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200">
+                                              Giant Set
+                                            </span>
+                                          ) : (
+                                            <span className="px-2 py-1 rounded-full text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+                                              Normal Set
+                                            </span>
+                                          )}
+                                        </td>
                                         <td className="py-2 text-gray-600 dark:text-gray-400">
                                           {set.notes || "-"}
                                         </td>
@@ -1207,7 +1263,7 @@ function WorkoutHistory() {
                                   ) : (
                                     <tr>
                                       <td
-                                        colSpan="4"
+                                        colSpan="5"
                                         className="py-2 text-center text-gray-500"
                                       >
                                         No sets recorded for this exercise.

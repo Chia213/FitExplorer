@@ -189,12 +189,38 @@ function Routines() {
                         duration: set.duration || null,
                         intensity: set.intensity || "",
                         notes: set.notes || "",
+                        is_warmup: !!set.is_warmup,
+                        is_drop_set: !!set.is_drop_set,
+                        is_superset: !!set.is_superset,
+                        is_amrap: !!set.is_amrap,
+                        is_restpause: !!set.is_restpause,
+                        is_pyramid: !!set.is_pyramid,
+                        is_giant: !!set.is_giant,
+                        drop_number: set.drop_number || null,
+                        superset_with: set.superset_with || null,
+                        rest_pauses: set.rest_pauses || null,
+                        pyramid_type: set.pyramid_type || null,
+                        pyramid_step: set.pyramid_step || null,
+                        giant_with: set.giant_with || null
                       };
                     } else {
                       return {
                         weight: set.weight || null,
                         reps: set.reps || null,
                         notes: set.notes || "",
+                        is_warmup: !!set.is_warmup,
+                        is_drop_set: !!set.is_drop_set,
+                        is_superset: !!set.is_superset,
+                        is_amrap: !!set.is_amrap,
+                        is_restpause: !!set.is_restpause,
+                        is_pyramid: !!set.is_pyramid,
+                        is_giant: !!set.is_giant,
+                        drop_number: set.drop_number || null,
+                        superset_with: set.superset_with || null,
+                        rest_pauses: set.rest_pauses || null,
+                        pyramid_type: set.pyramid_type || null,
+                        pyramid_step: set.pyramid_step || null,
+                        giant_with: set.giant_with || null
                       };
                     }
                   })
@@ -240,18 +266,38 @@ function Routines() {
           category: exercise.category || "Uncategorized",
           is_cardio: isCardio,
           sets: exercise.sets.map((set) => {
+            const baseSet = {
+              notes: set.notes || "",
+              // Set type flags
+              is_warmup: !!set.is_warmup,
+              is_drop_set: !!set.is_drop_set,
+              is_superset: !!set.is_superset,
+              is_amrap: !!set.is_amrap,
+              is_restpause: !!set.is_restpause,
+              is_pyramid: !!set.is_pyramid,
+              is_giant: !!set.is_giant,
+              // Additional properties
+              drop_number: set.drop_number || null,
+              original_weight: set.original_weight || null,
+              superset_with: set.superset_with !== undefined ? set.superset_with : null,
+              rest_pauses: set.rest_pauses || null,
+              pyramid_type: set.pyramid_type || null,
+              pyramid_step: set.pyramid_step || null,
+              giant_with: Array.isArray(set.giant_with) ? set.giant_with : null
+            };
+
             if (isCardio) {
               return {
+                ...baseSet,
                 distance: set.distance || "",
                 duration: set.duration || "",
-                intensity: set.intensity || "",
-                notes: set.notes || "",
+                intensity: set.intensity || ""
               };
             } else {
               return {
+                ...baseSet,
                 weight: set.weight || "",
-                reps: set.reps || "",
-                notes: set.notes || "",
+                reps: set.reps || ""
               };
             }
           }),
@@ -267,6 +313,13 @@ function Routines() {
               duration: "",
               intensity: "",
               notes: "",
+              is_warmup: false,
+              is_drop_set: false,
+              is_superset: false,
+              is_amrap: false,
+              is_restpause: false,
+              is_pyramid: false,
+              is_giant: false
             }))
         : Array(initialSets)
             .fill()
@@ -274,6 +327,13 @@ function Routines() {
               weight: "",
               reps: "",
               notes: "",
+              is_warmup: false,
+              is_drop_set: false,
+              is_superset: false,
+              is_amrap: false,
+              is_restpause: false,
+              is_pyramid: false,
+              is_giant: false
             }));
 
       return {
@@ -480,12 +540,38 @@ function Routines() {
                   duration: set.duration || null,
                   intensity: set.intensity || "",
                   notes: set.notes || "",
+                  is_warmup: !!set.is_warmup,
+                  is_drop_set: !!set.is_drop_set,
+                  is_superset: !!set.is_superset,
+                  is_amrap: !!set.is_amrap,
+                  is_restpause: !!set.is_restpause,
+                  is_pyramid: !!set.is_pyramid,
+                  is_giant: !!set.is_giant,
+                  drop_number: set.drop_number || null,
+                  superset_with: set.superset_with || null,
+                  rest_pauses: set.rest_pauses || null,
+                  pyramid_type: set.pyramid_type || null,
+                  pyramid_step: set.pyramid_step || null,
+                  giant_with: set.giant_with || null
                 };
               } else {
                 return {
                   weight: set.weight || null,
                   reps: set.reps || null,
                   notes: set.notes || "",
+                  is_warmup: !!set.is_warmup,
+                  is_drop_set: !!set.is_drop_set,
+                  is_superset: !!set.is_superset,
+                  is_amrap: !!set.is_amrap,
+                  is_restpause: !!set.is_restpause,
+                  is_pyramid: !!set.is_pyramid,
+                  is_giant: !!set.is_giant,
+                  drop_number: set.drop_number || null,
+                  superset_with: set.superset_with || null,
+                  rest_pauses: set.rest_pauses || null,
+                  pyramid_type: set.pyramid_type || null,
+                  pyramid_step: set.pyramid_step || null,
+                  giant_with: set.giant_with || null
                 };
               }
             }) || [],
@@ -508,7 +594,7 @@ function Routines() {
 
       // Successfully created a new routine
       const newRoutine = await response.json();
-      setRoutines((prev) => [...prev, newRoutine]);
+      setRoutines((prev) => [newRoutine, ...prev]);
       setShowSaveRoutineModal(false);
       await notifyRoutineCreated(routineName);
     } catch (error) {
@@ -786,6 +872,18 @@ function Routines() {
     }
   };
 
+  // Add after other helper functions
+  const getSetType = (set) => {
+    if (set.is_warmup) return "warmup";
+    if (set.is_drop_set) return "drop";
+    if (set.is_superset) return "superset";
+    if (set.is_amrap) return "amrap";
+    if (set.is_restpause) return "restpause";
+    if (set.is_pyramid) return "pyramid";
+    if (set.is_giant) return "giant";
+    return "normal";
+  };
+
   if (loading) {
     return (
       <div
@@ -1056,6 +1154,9 @@ function Routines() {
                                     <th className="pb-2 w-1/5 text-center">
                                       Intensity
                                     </th>
+                                    <th className="pb-2 w-1/5 text-center">
+                                      Set Type
+                                    </th>
                                     <th className="pb-2 w-2/5 text-center">
                                       Notes
                                     </th>
@@ -1067,6 +1168,9 @@ function Routines() {
                                     </th>
                                     <th className="pb-2 w-1/5 text-center">
                                       Reps
+                                    </th>
+                                    <th className="pb-2 w-1/5 text-center">
+                                      Set Type
                                     </th>
                                     <th className="pb-2 w-1/5 text-center">
                                       Notes
@@ -1102,6 +1206,41 @@ function Routines() {
                                         <td className="py-2 text-center">
                                           {set.intensity || "-"}
                                         </td>
+                                        <td className="py-2 text-center">
+                                          {set.is_warmup ? (
+                                            <span className="px-2 py-1 rounded-full text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200">
+                                              Warm-up
+                                            </span>
+                                          ) : set.is_drop_set ? (
+                                            <span className="px-2 py-1 rounded-full text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200">
+                                              Drop Set {set.drop_number || ""}
+                                            </span>
+                                          ) : set.is_superset ? (
+                                            <span className="px-2 py-1 rounded-full text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200">
+                                              Superset
+                                            </span>
+                                          ) : set.is_amrap ? (
+                                            <span className="px-2 py-1 rounded-full text-xs bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
+                                              AMRAP
+                                            </span>
+                                          ) : set.is_restpause ? (
+                                            <span className="px-2 py-1 rounded-full text-xs bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200">
+                                              Rest-Pause
+                                            </span>
+                                          ) : set.is_pyramid ? (
+                                            <span className="px-2 py-1 rounded-full text-xs bg-pink-100 dark:bg-pink-900/30 text-pink-800 dark:text-pink-200">
+                                              Pyramid
+                                            </span>
+                                          ) : set.is_giant ? (
+                                            <span className="px-2 py-1 rounded-full text-xs bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-200">
+                                              Giant Set
+                                            </span>
+                                          ) : (
+                                            <span className="px-2 py-1 rounded-full text-xs bg-gray-100 dark:bg-gray-700/30 text-gray-600 dark:text-gray-300">
+                                              Normal Set
+                                            </span>
+                                          )}
+                                        </td>
                                         <td className="py-2 text-center break-words px-2">
                                           {set.notes || "-"}
                                         </td>
@@ -1119,6 +1258,41 @@ function Routines() {
                                         <td className="py-2 text-center">
                                           {set.reps || "-"}
                                         </td>
+                                        <td className="py-2 text-center">
+                                          {set.is_warmup ? (
+                                            <span className="px-2 py-1 rounded-full text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200">
+                                              Warm-up
+                                            </span>
+                                          ) : set.is_drop_set ? (
+                                            <span className="px-2 py-1 rounded-full text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200">
+                                              Drop Set {set.drop_number || ""}
+                                            </span>
+                                          ) : set.is_superset ? (
+                                            <span className="px-2 py-1 rounded-full text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200">
+                                              Superset
+                                            </span>
+                                          ) : set.is_amrap ? (
+                                            <span className="px-2 py-1 rounded-full text-xs bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
+                                              AMRAP
+                                            </span>
+                                          ) : set.is_restpause ? (
+                                            <span className="px-2 py-1 rounded-full text-xs bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200">
+                                              Rest-Pause
+                                            </span>
+                                          ) : set.is_pyramid ? (
+                                            <span className="px-2 py-1 rounded-full text-xs bg-pink-100 dark:bg-pink-900/30 text-pink-800 dark:text-pink-200">
+                                              Pyramid
+                                            </span>
+                                          ) : set.is_giant ? (
+                                            <span className="px-2 py-1 rounded-full text-xs bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-200">
+                                              Giant Set
+                                            </span>
+                                          ) : (
+                                            <span className="px-2 py-1 rounded-full text-xs bg-gray-100 dark:bg-gray-700/30 text-gray-600 dark:text-gray-300">
+                                              Normal Set
+                                            </span>
+                                          )}
+                                        </td>
                                         <td className="py-2 text-center break-words px-2">
                                           {set.notes || "-"}
                                         </td>
@@ -1129,7 +1303,7 @@ function Routines() {
                               ) : (
                                 <tr>
                                   <td
-                                    colSpan={exercise.is_cardio ? 5 : 4}
+                                    colSpan={exercise.is_cardio ? 6 : 5}
                                     className={`py-2 text-center ${
                                       theme === "dark"
                                         ? "text-gray-400"
@@ -1556,6 +1730,9 @@ function Routines() {
                                     <th className="pb-2 text-center w-1/5">
                                       Intensity
                                     </th>
+                                    <th className="pb-2 text-center w-1/5">
+                                      Set Type
+                                    </th>
                                     <th className="pb-2 text-center w-2/5">
                                       Notes
                                     </th>
@@ -1567,6 +1744,9 @@ function Routines() {
                                     </th>
                                     <th className="pb-2 text-center w-1/5">
                                       Reps
+                                    </th>
+                                    <th className="pb-2 text-center w-1/5">
+                                      Set Type
                                     </th>
                                     <th className="pb-2 text-center w-2/5">
                                       Notes
@@ -1659,6 +1839,86 @@ function Routines() {
                                         </select>
                                       </td>
                                       <td className="py-2 px-1">
+                                        <select
+                                          value={getSetType(set)}
+                                          onChange={(e) => {
+                                            const newExercises = [
+                                              ...editedExercises,
+                                            ];
+                                            const setType = e.target.value;
+                                            // Reset all set type flags
+                                            newExercises[exerciseIndex].sets[
+                                              setIndex
+                                            ].is_warmup = false;
+                                            newExercises[exerciseIndex].sets[
+                                              setIndex
+                                            ].is_drop_set = false;
+                                            newExercises[exerciseIndex].sets[
+                                              setIndex
+                                            ].is_superset = false;
+                                            newExercises[exerciseIndex].sets[
+                                              setIndex
+                                            ].is_amrap = false;
+                                            newExercises[exerciseIndex].sets[
+                                              setIndex
+                                            ].is_restpause = false;
+                                            newExercises[exerciseIndex].sets[
+                                              setIndex
+                                            ].is_pyramid = false;
+                                            newExercises[exerciseIndex].sets[
+                                              setIndex
+                                            ].is_giant = false;
+                                            
+                                            // Set the selected type
+                                            if (setType === "warmup") {
+                                              newExercises[exerciseIndex].sets[
+                                                setIndex
+                                              ].is_warmup = true;
+                                            } else if (setType === "drop") {
+                                              newExercises[exerciseIndex].sets[
+                                                setIndex
+                                              ].is_drop_set = true;
+                                            } else if (setType === "superset") {
+                                              newExercises[exerciseIndex].sets[
+                                                setIndex
+                                              ].is_superset = true;
+                                            } else if (setType === "amrap") {
+                                              newExercises[exerciseIndex].sets[
+                                                setIndex
+                                              ].is_amrap = true;
+                                            } else if (setType === "restpause") {
+                                              newExercises[exerciseIndex].sets[
+                                                setIndex
+                                              ].is_restpause = true;
+                                            } else if (setType === "pyramid") {
+                                              newExercises[exerciseIndex].sets[
+                                                setIndex
+                                              ].is_pyramid = true;
+                                            } else if (setType === "giant") {
+                                              newExercises[exerciseIndex].sets[
+                                                setIndex
+                                              ].is_giant = true;
+                                            }
+                                            
+                                            setEditedExercises(newExercises);
+                                          }}
+                                          className={`w-full text-center ${
+                                            theme === "dark"
+                                              ? "bg-gray-600 text-white"
+                                              : "bg-white text-gray-800"
+                                          } rounded p-1 text-sm`}
+                                        >
+                                          <option value="normal">Normal Set</option>
+                                          <option value="warmup">Warm-up</option>
+                                          <option value="drop">Drop Set</option>
+                                          <option value="superset">Superset</option>
+                                          <option value="amrap">AMRAP</option>
+                                          <option value="restpause">Rest-Pause</option>
+                                          <option value="pyramid">Pyramid</option>
+                                          <option value="giant">Giant Set</option>
+                                        </select>
+                                      </td>
+                                      <td className="py-2 text-center">
                                         <input
                                           type="text"
                                           value={set.notes || ""}
@@ -1725,6 +1985,86 @@ function Routines() {
                                         />
                                       </td>
                                       <td className="py-2 px-1">
+                                        <select
+                                          value={getSetType(set)}
+                                          onChange={(e) => {
+                                            const newExercises = [
+                                              ...editedExercises,
+                                            ];
+                                            const setType = e.target.value;
+                                            // Reset all set type flags
+                                            newExercises[exerciseIndex].sets[
+                                              setIndex
+                                            ].is_warmup = false;
+                                            newExercises[exerciseIndex].sets[
+                                              setIndex
+                                            ].is_drop_set = false;
+                                            newExercises[exerciseIndex].sets[
+                                              setIndex
+                                            ].is_superset = false;
+                                            newExercises[exerciseIndex].sets[
+                                              setIndex
+                                            ].is_amrap = false;
+                                            newExercises[exerciseIndex].sets[
+                                              setIndex
+                                            ].is_restpause = false;
+                                            newExercises[exerciseIndex].sets[
+                                              setIndex
+                                            ].is_pyramid = false;
+                                            newExercises[exerciseIndex].sets[
+                                              setIndex
+                                            ].is_giant = false;
+                                            
+                                            // Set the selected type
+                                            if (setType === "warmup") {
+                                              newExercises[exerciseIndex].sets[
+                                                setIndex
+                                              ].is_warmup = true;
+                                            } else if (setType === "drop") {
+                                              newExercises[exerciseIndex].sets[
+                                                setIndex
+                                              ].is_drop_set = true;
+                                            } else if (setType === "superset") {
+                                              newExercises[exerciseIndex].sets[
+                                                setIndex
+                                              ].is_superset = true;
+                                            } else if (setType === "amrap") {
+                                              newExercises[exerciseIndex].sets[
+                                                setIndex
+                                              ].is_amrap = true;
+                                            } else if (setType === "restpause") {
+                                              newExercises[exerciseIndex].sets[
+                                                setIndex
+                                              ].is_restpause = true;
+                                            } else if (setType === "pyramid") {
+                                              newExercises[exerciseIndex].sets[
+                                                setIndex
+                                              ].is_pyramid = true;
+                                            } else if (setType === "giant") {
+                                              newExercises[exerciseIndex].sets[
+                                                setIndex
+                                              ].is_giant = true;
+                                            }
+                                            
+                                            setEditedExercises(newExercises);
+                                          }}
+                                          className={`w-full text-center ${
+                                            theme === "dark"
+                                              ? "bg-gray-600 text-white"
+                                              : "bg-white text-gray-800"
+                                          } rounded p-1 text-sm`}
+                                        >
+                                          <option value="normal">Normal Set</option>
+                                          <option value="warmup">Warm-up</option>
+                                          <option value="drop">Drop Set</option>
+                                          <option value="superset">Superset</option>
+                                          <option value="amrap">AMRAP</option>
+                                          <option value="restpause">Rest-Pause</option>
+                                          <option value="pyramid">Pyramid</option>
+                                          <option value="giant">Giant Set</option>
+                                        </select>
+                                      </td>
+                                      <td className="py-2 text-center">
                                         <input
                                           type="text"
                                           value={set.notes || ""}
