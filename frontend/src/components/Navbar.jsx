@@ -20,6 +20,7 @@ import {
   FaTools,
   FaQuestionCircle,
   FaAppleAlt,
+  FaRobot,
 } from "react-icons/fa";
 import { LuBicepsFlexed, LuCalendarClock } from "react-icons/lu";
 import logo from "../assets/Ronjasdrawing.png";
@@ -36,6 +37,7 @@ const NAVIGATION_ITEMS = {
     { path: "/workout-log", icon: <FaListAlt className="mr-2 text-blue-500" />, label: "Workout Log" },
     { path: "/workout-history", icon: <FaHistory className="mr-2 text-purple-500" />, label: "Workout History" },
     { path: "/", icon: <LuBicepsFlexed className="mr-2 text-green-500" />, label: "Workout Generator" },
+    { path: "/ai-workout-generator", icon: <FaRobot className="mr-2 text-red-500" />, label: "AI Workout Generator" },
     { path: "/routines", icon: <LuCalendarClock className="mr-2 text-orange-500" />, label: "My Routines" },
   ],
   tools: [
@@ -52,6 +54,7 @@ const NAVIGATION_ITEMS = {
     { path: "/", label: "Workout Generator" },
     { path: "/workout-log", label: "Workout Log" },
     { path: "/workout-history", label: "Workout History" },
+    { path: "/ai-workout-generator", label: "AI Workout Generator" },
     { path: "/explore-muscle-guide", label: "Explore Muscle Guide" },
     { path: "/routines", label: "Routines" },
     { path: "/fitness-calculator", label: "Fitness Calculator" },

@@ -49,6 +49,25 @@ function SavedPrograms() {
         const programs = await getSavedPrograms(token);
         setSavedPrograms(programs);
         setFilteredPrograms(programs);
+        
+        // Check if there's a programId in the URL query params
+        const params = new URLSearchParams(window.location.search);
+        const programId = params.get('programId');
+        
+        if (programId) {
+          const selectedProgram = programs.find(p => p.id === programId);
+          if (selectedProgram) {
+            setSelectedWorkout(selectedProgram);
+            // Optionally scroll to the program card
+            setTimeout(() => {
+              const programElement = document.getElementById(`program-${programId}`);
+              if (programElement) {
+                programElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }
+            }, 100);
+          }
+        }
+        
         setIsLoading(false);
       } catch (error) {
         console.error("Error loading saved programs:", error);
@@ -363,6 +382,27 @@ function SavedPrograms() {
     ),
   ];
 
+  // Add a helper function at the top of the component to safely parse program data
+  function parseProgramData(program) {
+    if (!program) return {};
+    
+    let programData = program.program_data;
+    if (typeof programData === "string") {
+      try {
+        programData = JSON.parse(programData);
+      } catch (error) {
+        console.error("Failed to parse program_data:", error);
+        programData = {}; // fallback
+      }
+    }
+    
+    // If program has name/description at the top level, prioritize those
+    programData.name = program.name || programData.name || "Workout Program";
+    programData.description = program.description || programData.description;
+    
+    return programData;
+  }
+
   // Loading state
   if (isLoading) {
     return (
@@ -600,15 +640,7 @@ function SavedPrograms() {
                 ) : (
                   <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
                     {filteredPrograms.map((program) => {
-                      let programData = program.program_data;
-                      if (typeof programData === "string") {
-                        try {
-                          programData = JSON.parse(programData);
-                        } catch (error) {
-                          console.error("Failed to parse program_data:", error);
-                          programData = {}; // fallback
-                        }
-                      }
+                      const programData = parseProgramData(program);
 
                       // Get program status
                       const isNotStarted =
@@ -627,24 +659,25 @@ function SavedPrograms() {
                       return (
                         <div
                           key={program.id}
+                          id={`program-${program.id}`}
                           className={`border ${statusClass} rounded-lg p-3 cursor-pointer transition-all ${
-                            selectedWorkout?.id === programData.id
+                            selectedWorkout?.id === program.id
                               ? "border-blue-500 bg-blue-50 dark:bg-blue-900/30"
                               : "hover:border-blue-300 dark:hover:border-blue-700"
                           }`}
-                          onClick={() => setSelectedWorkout(programData)}
+                          onClick={() => setSelectedWorkout(program)}
                         >
                           <div className="flex justify-between items-start">
                             <div>
                               <h3 className="font-medium">
-                                {programData.title}
+                                {programData.name || "Workout Program"}
                               </h3>
                               <div className="text-sm text-gray-500 dark:text-gray-400 flex items-center mt-1">
                                 <FaClock className="mr-1" size={12} />{" "}
-                                {programData.duration} min
+                                {programData.duration || "45"} min
                                 <span className="mx-2">•</span>
                                 <FaDumbbell className="mr-1" size={12} />{" "}
-                                {programData.workoutsPerWeek}x/week
+                                {programData.workoutsPerWeek || "3"}x/week
                               </div>
                             </div>
                             <button
@@ -703,57 +736,73 @@ function SavedPrograms() {
                 <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
                   <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-6">
                     <div>
-                      <h2 className="text-xl md:text-2xl font-bold">
-                        {selectedWorkout.title}
-                      </h2>
-                      {selectedWorkout.description && (
-                        <p className="text-gray-600 dark:text-gray-400 mt-2">
-                          {selectedWorkout.description}
-                        </p>
-                      )}
+                      {(() => {
+                        const workoutData = parseProgramData(selectedWorkout);
+                        return (
+                          <>
+                            <h2 className="text-xl md:text-2xl font-bold">
+                              {workoutData.name}
+                            </h2>
+                            {workoutData.description && (
+                              <p className="text-gray-600 dark:text-gray-400 mt-2">
+                                {workoutData.description}
+                              </p>
+                            )}
+                          </>
+                        );
+                      })()}
                     </div>
                     <div className="flex items-center mt-3 md:mt-0">
                       <div className="text-sm bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full flex items-center">
                         <FaClock className="mr-1 text-gray-500" size={12} />~
-                        {selectedWorkout.duration} min
+                        {(() => {
+                          const workoutData = parseProgramData(selectedWorkout);
+                          return workoutData.duration || "45";
+                        })()} min
                       </div>
-                      {selectedWorkout.category && (
-                        <div
-                          className={`text-sm ml-2 px-3 py-1 rounded-full ${getCategoryBadge(
-                            selectedWorkout.category
-                          )}`}
-                        >
-                          {selectedWorkout.category}
-                        </div>
-                      )}
+                      {(() => {
+                        const workoutData = parseProgramData(selectedWorkout);
+                        return workoutData.category ? (
+                          <div className={`text-sm ml-2 px-3 py-1 rounded-full ${getCategoryBadge(workoutData.category)}`}>
+                            {workoutData.category}
+                          </div>
+                        ) : null;
+                      })()}
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
-                    <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg">
-                      <div className="text-sm text-gray-500 dark:text-gray-400">
-                        Focus
-                      </div>
-                      <div className="font-medium">
-                        {selectedWorkout.focusArea || "Full Body"}
-                      </div>
-                    </div>
-                    <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg">
-                      <div className="text-sm text-gray-500 dark:text-gray-400">
-                        Sessions/Week
-                      </div>
-                      <div className="font-medium">
-                        {selectedWorkout.workoutsPerWeek}x
-                      </div>
-                    </div>
-                    <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg">
-                      <div className="text-sm text-gray-500 dark:text-gray-400">
-                        Difficulty
-                      </div>
-                      <div className="font-medium">
-                        {selectedWorkout.difficulty || "Intermediate"}
-                      </div>
-                    </div>
+                    {(() => {
+                      const workoutData = parseProgramData(selectedWorkout);
+                      return (
+                        <>
+                          <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg">
+                            <div className="text-sm text-gray-500 dark:text-gray-400">
+                              Focus
+                            </div>
+                            <div className="font-medium">
+                              {workoutData.focusArea || "Full Body"}
+                            </div>
+                          </div>
+                          <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg">
+                            <div className="text-sm text-gray-500 dark:text-gray-400">
+                              Sessions/Week
+                            </div>
+                            <div className="font-medium">
+                              {workoutData.workoutsPerWeek || "3"}x
+                            </div>
+                          </div>
+                          <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg">
+                            <div className="text-sm text-gray-500 dark:text-gray-400">
+                              Difficulty
+                            </div>
+                            <div className="font-medium">
+                              {workoutData.difficulty || "Intermediate"}
+                            </div>
+                          </div>
+                        </>
+                      );
+                    })()}
                   </div>
 
                   {selectedWorkout.exercises &&

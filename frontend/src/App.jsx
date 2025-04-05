@@ -16,6 +16,7 @@ import ProgressTracker from "./pages/ProgressTracker";
 import WorkoutLog from "./pages/WorkoutLog";
 import WorkoutHistory from "./pages/WorkoutHistory";
 import WorkoutGenerator from "./pages/WorkoutGenerator";
+import AIWorkoutGenerator from "./pages/AIWorkoutGenerator";
 import Routines from "./pages/Routines";
 import AddExercise from "./pages/AddExercise";
 import Login from "./pages/Login";
@@ -93,6 +94,7 @@ function App() {
                     <Route path="/" element={<WorkoutGenerator />} />
                     <Route path="/workout-log" element={<WorkoutLog />} />
                     <Route path="/workout-history" element={<WorkoutHistory />} />
+                    <Route path="/ai-workout-generator" element={<AIWorkoutGenerator />} />
                     <Route path="/routines" element={<Routines />} />
                     <Route path="/explore-muscle-guide" element={<ExploreMuscleGuide />} />
                     <Route path="/progress-tracker" element={<ProgressTracker />} />

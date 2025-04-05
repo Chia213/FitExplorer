@@ -184,10 +184,16 @@ class SavedWorkoutProgram(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey(
         "users.id", ondelete="CASCADE"), nullable=False)
+    name = Column(String, default="Workout Program")
+    description = Column(String, default="")
+    category = Column(String, default="General")
     program_data = Column(JSON)  # Use JSON column type instead of String
     created_at = Column(DateTime, default=datetime.now(timezone.utc))
     current_week = Column(Integer, default=1)
     completed_weeks = Column(JSON)  # Use JSON column type for lists
+    exercise_weights = Column(JSON, nullable=True)  # Store as JSON
+    exercise_notes = Column(JSON, nullable=True)    # Store as JSON
+    weight_unit = Column(String, default="kg")
 
     user = relationship("User", back_populates="saved_programs")
 

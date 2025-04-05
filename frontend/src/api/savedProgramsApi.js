@@ -7,18 +7,16 @@ export const createSavedProgram = async (programData, token) => {
   }
 
   try {
-    // Send program_data as an object, not as a stringified JSON
+    console.log("Sending program data:", programData);
+    
+    // Send the program data directly without nesting
     const response = await fetch(`${API_URL}/saved-programs`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({
-        program_data: programData, // Send as an object
-        current_week: 1,
-        completed_weeks: [],
-      }),
+      body: JSON.stringify(programData),
     });
 
     if (!response.ok) {
@@ -68,17 +66,15 @@ export const updateSavedProgram = async (programId, programData, token) => {
   }
 
   try {
+    console.log("Updating program data:", programData);
+    
     const response = await fetch(`${API_URL}/saved-programs/${programId}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({
-        program_data: programData.program_data, // Send as an object
-        current_week: programData.current_week,
-        completed_weeks: programData.completed_weeks || [],
-      }),
+      body: JSON.stringify(programData),
     });
 
     if (!response.ok) {
@@ -116,6 +112,28 @@ export const deleteSavedProgram = async (programId, token) => {
     return await response.json();
   } catch (error) {
     console.error("Error deleting saved program:", error);
+    throw error;
+  }
+};
+
+// Get a specific saved program by ID
+export const getSavedProgramById = async (programId, token) => {
+  try {
+    const response = await fetch(`${API_URL}/saved-programs/${programId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch saved program');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error in getSavedProgramById:', error);
     throw error;
   }
 };

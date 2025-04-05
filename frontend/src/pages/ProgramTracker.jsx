@@ -109,125 +109,209 @@ function ProgramTracker() {
   useEffect(() => {
     const initializeTracker = async () => {
       try {
+        setIsLoading(true);
         // Log the entire location state for debugging
         console.log("Location state:", location.state);
-
-        // Attempt to parse workout data more flexibly
-        let workoutData = location.state?.workout;
-        let progressData = location.state?.progress;
-
-        // If workout is a string, try parsing it
-        if (typeof workoutData === "string") {
-          try {
-            workoutData = JSON.parse(workoutData);
-          } catch (parseError) {
-            console.error("Failed to parse workout data:", parseError);
-            throw new Error("Invalid workout data format");
+        
+        // Check if we're initializing with a program ID
+        const programId = location.state?.programId;
+        
+        // Fetch the saved program if a programId is provided
+        if (programId) {
+          const token = localStorage.getItem("token");
+          if (!token) {
+            navigate('/login', { state: { from: '/program-tracker' } });
+            return;
           }
-        }
-
-        // If progress is a string, try parsing it
-        if (typeof progressData === "string") {
-          try {
-            progressData = JSON.parse(progressData);
-          } catch (parseError) {
-            console.error("Failed to parse progress data:", parseError);
-            throw new Error("Invalid progress data format");
+          
+          const savedPrograms = await getSavedPrograms(token);
+          const program = savedPrograms.find(p => p.id === programId);
+          
+          if (!program) {
+            throw new Error("Program not found. It may have been deleted.");
           }
-        }
-
-        // Validate required data
-        if (!workoutData || !progressData) {
-          throw new Error("Incomplete workout or progress information");
-        }
-
-        // Ensure sixWeekProgram exists and is an array
-        if (
-          !workoutData.sixWeekProgram ||
-          !Array.isArray(workoutData.sixWeekProgram)
-        ) {
-          throw new Error("Invalid workout program structure");
-        }
-
-        // Set initial states
-        setWorkout(workoutData);
-        setProgramProgress(progressData);
-
-        // Find the current week's workout
-        const weekWorkout = workoutData.sixWeekProgram.find(
-          (weekPlan) => weekPlan.week === progressData.currentWeek
-        );
-
-        if (!weekWorkout) {
-          throw new Error(
-            `Could not find workout for week ${progressData.currentWeek}`
-          );
-        }
-
-        setCurrentWeekWorkout(weekWorkout);
-
-        // Find the corresponding saved program
-        const token = localStorage.getItem("token");
-        if (!token) {
-          throw new Error("No authentication token found");
-        }
-
-        const savedPrograms = await getSavedPrograms(token);
-
-        // Look for the matching program
-        const matchingProgram = savedPrograms.find((program) => {
-          // Handle potential parsing of program_data
+          
+          setSavedProgramId(program.id);
+          
+          // Parse program data
           let programData = program.program_data;
           if (typeof programData === "string") {
-            try {
-              programData = JSON.parse(programData);
-            } catch {
-              return false;
-            }
+            programData = JSON.parse(programData);
           }
-          return programData.id === workoutData.id;
-        });
-
-        if (matchingProgram) {
-          setSavedProgramId(matchingProgram.id);
-
+          
+          // Setup initial progress data
+          const initialProgress = {
+            currentWeek: 1,
+            completedWeeks: []
+          };
+          
+          // Set workout and progress data
+          setWorkout(programData);
+          setProgramProgress(initialProgress);
+          
+          // Find the first week's workout
+          const weekWorkout = programData.sixWeekProgram.find(
+            (weekPlan) => weekPlan.week === 1
+          );
+          
+          if (!weekWorkout) {
+            throw new Error("Could not find workout for week 1");
+          }
+          
+          setCurrentWeekWorkout(weekWorkout);
+          
           // Load saved weights and notes if they exist
-          if (matchingProgram.exercise_weights) {
+          if (program.exercise_weights) {
             try {
               const weights =
-                typeof matchingProgram.exercise_weights === "string"
-                  ? JSON.parse(matchingProgram.exercise_weights)
-                  : matchingProgram.exercise_weights;
+                typeof program.exercise_weights === "string"
+                  ? JSON.parse(program.exercise_weights)
+                  : program.exercise_weights;
               setExerciseWeights(weights);
             } catch (error) {
               console.error("Failed to parse saved weights:", error);
             }
           }
-
-          // Load saved weight unit preference if it exists
-          if (matchingProgram.weight_unit) {
-            setWeightUnit(matchingProgram.weight_unit);
-          }
-
-          if (matchingProgram.exercise_notes) {
+          
+          if (program.exercise_notes) {
             try {
               const notes =
-                typeof matchingProgram.exercise_notes === "string"
-                  ? JSON.parse(matchingProgram.exercise_notes)
-                  : matchingProgram.exercise_notes;
+                typeof program.exercise_notes === "string"
+                  ? JSON.parse(program.exercise_notes)
+                  : program.exercise_notes;
               setExerciseNotes(notes);
             } catch (error) {
               console.error("Failed to parse saved notes:", error);
             }
           }
+          
+          // Show the start program modal
+          setShowStartProgramModal(true);
         }
+        // Otherwise use the workout and progress from location state
+        else {
+          // Attempt to parse workout data more flexibly
+          let workoutData = location.state?.workout;
+          let progressData = location.state?.progress;
+
+          // If workout is a string, try parsing it
+          if (typeof workoutData === "string") {
+            try {
+              workoutData = JSON.parse(workoutData);
+            } catch (parseError) {
+              console.error("Failed to parse workout data:", parseError);
+              throw new Error("Invalid workout data format");
+            }
+          }
+
+          // If progress is a string, try parsing it
+          if (typeof progressData === "string") {
+            try {
+              progressData = JSON.parse(progressData);
+            } catch (parseError) {
+              console.error("Failed to parse progress data:", parseError);
+              throw new Error("Invalid progress data format");
+            }
+          }
+
+          // Validate required data
+          if (!workoutData || !progressData) {
+            throw new Error("Incomplete workout or progress information");
+          }
+
+          // Ensure sixWeekProgram exists and is an array
+          if (
+            !workoutData.sixWeekProgram ||
+            !Array.isArray(workoutData.sixWeekProgram)
+          ) {
+            throw new Error("Invalid workout program structure");
+          }
+
+          // Set initial states
+          setWorkout(workoutData);
+          setProgramProgress(progressData);
+
+          // Find the current week's workout
+          const weekWorkout = workoutData.sixWeekProgram.find(
+            (weekPlan) => weekPlan.week === progressData.currentWeek
+          );
+
+          if (!weekWorkout) {
+            throw new Error(
+              `Could not find workout for week ${progressData.currentWeek}`
+            );
+          }
+
+          setCurrentWeekWorkout(weekWorkout);
+
+          // Find the corresponding saved program
+          const token = localStorage.getItem("token");
+          if (!token) {
+            throw new Error("No authentication token found");
+          }
+
+          const savedPrograms = await getSavedPrograms(token);
+
+          // Look for the matching program
+          const matchingProgram = savedPrograms.find((program) => {
+            // Handle potential parsing of program_data
+            let programData = program.program_data;
+            if (typeof programData === "string") {
+              try {
+                programData = JSON.parse(programData);
+              } catch {
+                return false;
+              }
+            }
+            return programData.id === workoutData.id;
+          });
+
+          if (matchingProgram) {
+            setSavedProgramId(matchingProgram.id);
+
+            // Load saved weights and notes if they exist
+            if (matchingProgram.exercise_weights) {
+              try {
+                const weights =
+                  typeof matchingProgram.exercise_weights === "string"
+                    ? JSON.parse(matchingProgram.exercise_weights)
+                    : matchingProgram.exercise_weights;
+                setExerciseWeights(weights);
+              } catch (error) {
+                console.error("Failed to parse saved weights:", error);
+              }
+            }
+
+            if (matchingProgram.exercise_notes) {
+              try {
+                const notes =
+                  typeof matchingProgram.exercise_notes === "string"
+                    ? JSON.parse(matchingProgram.exercise_notes)
+                    : matchingProgram.exercise_notes;
+                setExerciseNotes(notes);
+              } catch (error) {
+                console.error("Failed to parse saved notes:", error);
+              }
+            }
+          }
+        }
+
+        // Initialize exercise progress state
+        const initialProgress = {};
+        if (currentWeekWorkout && currentWeekWorkout.workouts) {
+          currentWeekWorkout.workouts.forEach((dayWorkout) => {
+            dayWorkout.exercises.forEach((exercise) => {
+              initialProgress[exercise.name] = false;
+            });
+          });
+        }
+        setExerciseProgress(initialProgress);
 
         setIsLoading(false);
       } catch (error) {
-        console.error("Initialization error:", error);
-        setError(error.message);
+        console.error("Error initializing workout tracker:", error);
+        setError(error.message || "Failed to load workout tracker");
         setIsLoading(false);
-        navigate("/saved-programs");
       }
     };
 
@@ -403,38 +487,61 @@ function ProgramTracker() {
 
   const updateProgramProgress = async (newProgress) => {
     try {
-      const token = localStorage.getItem("token");
+      if (!savedProgramId) {
+        console.warn("No saved program ID available");
+        setProgramProgress(newProgress);
+        return;
+      }
 
-      if (savedProgramId) {
-        await updateSavedProgram(
-          savedProgramId,
-          {
-            program_data: workout,
-            current_week: newProgress.currentWeek,
-            completed_weeks: newProgress.completedWeeks,
+      const token = localStorage.getItem("token");
+      if (!token) {
+        throw new Error("No authentication token found");
+      }
+
+      // Save the current exercise weights and notes
+      const updatedData = {
+        current_week: newProgress.currentWeek,
+        completed_weeks: newProgress.completedWeeks,
+        exercise_weights: JSON.stringify(exerciseWeights),
+        exercise_notes: JSON.stringify(exerciseNotes),
+        weight_unit: weightUnit
+      };
+
+      // Update the program on the server
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/saved-programs/${savedProgramId}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
-          token
-        );
+          body: JSON.stringify(updatedData),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to update program progress");
       }
 
       // Update local state
       setProgramProgress(newProgress);
 
-      // If we're moving to a new week, update current week workout
-      if (newProgress.currentWeek !== programProgress.currentWeek) {
-        const nextWeekWorkout = workout.sixWeekProgram.find(
-          (weekPlan) => weekPlan.week === newProgress.currentWeek
-        );
-        if (nextWeekWorkout) {
-          setCurrentWeekWorkout(nextWeekWorkout);
-
-          // Reset exercise progress for the new week
-          setExerciseProgress({});
-        }
+      // Update UI based on progress
+      if (
+        !newProgress.completedWeeks.includes(newProgress.currentWeek) &&
+        Object.values(exerciseProgress).every((completed) => completed === true)
+      ) {
+        // All exercises are completed
+        setShowWeekCompleteModal(true);
       }
+
+      return true;
     } catch (error) {
       console.error("Error updating program progress:", error);
-      alert("Failed to update program progress. Please try again.");
+      // Still update local state even if server update fails
+      setProgramProgress(newProgress);
+      return false;
     }
   };
 
@@ -475,9 +582,13 @@ function ProgramTracker() {
     setExerciseProgress(newProgress);
   };
 
-  const isWeekComplete = currentWeekWorkout?.exercises.every(
-    (exercise) => exerciseProgress[exercise.name]
-  );
+  const isWeekComplete = currentWeekWorkout?.workouts
+    ? currentWeekWorkout.workouts.every(day => 
+        day.exercises.every(exercise => exerciseProgress[exercise.name])
+      )
+    : currentWeekWorkout?.exercises
+      ? currentWeekWorkout.exercises.every(exercise => exerciseProgress[exercise.name])
+      : false;
 
   const getProgramPhase = (week) => {
     if (week <= 2) return "Form & Adaptation";
