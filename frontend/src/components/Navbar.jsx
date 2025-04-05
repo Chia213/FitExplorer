@@ -36,7 +36,7 @@ const NAVIGATION_ITEMS = {
   workout: [
     { path: "/workout-log", icon: <FaListAlt className="mr-2 text-blue-500" />, label: "Workout Log" },
     { path: "/workout-history", icon: <FaHistory className="mr-2 text-purple-500" />, label: "Workout History" },
-    { path: "/", icon: <LuBicepsFlexed className="mr-2 text-green-500" />, label: "Workout Generator" },
+    { path: "/workout-generator", icon: <LuBicepsFlexed className="mr-2 text-green-500" />, label: "Workout Generator" },
     { path: "/ai-workout-generator", icon: <FaRobot className="mr-2 text-red-500" />, label: "AI Workout Generator" },
     { path: "/routines", icon: <LuCalendarClock className="mr-2 text-orange-500" />, label: "My Routines" },
   ],
@@ -51,7 +51,8 @@ const NAVIGATION_ITEMS = {
     { path: "/about", icon: <FaInfoCircle className="mr-2 text-gray-500" />, label: "About" },
   ],
   search: [
-    { path: "/", label: "Workout Generator" },
+    { path: "/", label: "Home" },
+    { path: "/workout-generator", label: "Workout Generator" },
     { path: "/workout-log", label: "Workout Log" },
     { path: "/workout-history", label: "Workout History" },
     { path: "/ai-workout-generator", label: "AI Workout Generator" },

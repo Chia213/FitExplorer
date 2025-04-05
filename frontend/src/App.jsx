@@ -37,6 +37,7 @@ import PersonalRecords from "./pages/PersonalRecords";
 import Nutrition from "./pages/Nutrition";
 import TestSearch from "./pages/TestSearch";
 import MealTest from "./pages/MealTest";
+import LandingPage from "./pages/LandingPage";
 
 // Admin pages
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -91,7 +92,8 @@ function App() {
                 <ScrollToTop />
                 <PageTransition>
                   <Routes>
-                    <Route path="/" element={<WorkoutGenerator />} />
+                    <Route path="/" element={<LandingPage />} />
+                    <Route path="/workout-generator" element={<WorkoutGenerator />} />
                     <Route path="/workout-log" element={<WorkoutLog />} />
                     <Route path="/workout-history" element={<WorkoutHistory />} />
                     <Route path="/ai-workout-generator" element={<AIWorkoutGenerator />} />
