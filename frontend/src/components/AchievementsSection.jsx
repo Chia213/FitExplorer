@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   FaTrophy,
   FaDumbbell,
@@ -9,8 +9,10 @@ import {
   FaBolt,
   FaStopwatch,
   FaCalendarCheck,
-  FaChartLine
+  FaChartLine,
 } from 'react-icons/fa';
+import { notifyAchievementEarned } from '../utils/notificationsHelpers';
+import { useNotifications } from '../contexts/NotificationContext';
 
 const iconMap = {
   FaTrophy,
@@ -30,10 +32,49 @@ const AchievementsSection = ({ backendURL }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const previousAchievementsRef = useRef([]);
+  const initialLoadRef = useRef(true);
+  const { achievementAlertsEnabled, allNotificationsEnabled } = useNotifications();
 
   useEffect(() => {
     fetchAchievements();
+    // Only fetch new achievements when component mounts, not on first render
+    if (!initialLoadRef.current) {
+      fetchNewAchievements();
+    } else {
+      initialLoadRef.current = false;
+    }
   }, []);
+
+  // Check for newly achieved achievements and send notifications
+  useEffect(() => {
+    if (!allNotificationsEnabled || !achievementAlertsEnabled) return;
+    
+    if (achievements.length > 0 && previousAchievementsRef.current.length > 0) {
+      const prevAchieved = new Set(
+        previousAchievementsRef.current
+          .filter(a => a.is_achieved)
+          .map(a => a.id)
+      );
+      
+      // Find newly achieved achievements (only count those that have actually been achieved)
+      const newlyAchieved = achievements.filter(
+        a => a.is_achieved && !prevAchieved.has(a.id) && a.progress >= a.requirement
+      );
+      
+      // Send notifications for newly achieved achievements
+      newlyAchieved.forEach(achievement => {
+        notifyAchievementEarned(
+          achievement.name,
+          achievement.description,
+          achievement.icon
+        );
+      });
+    }
+    
+    // Update the ref with current achievements
+    previousAchievementsRef.current = achievements;
+  }, [achievements, achievementAlertsEnabled, allNotificationsEnabled]);
 
   const fetchAchievements = async () => {
     try {
@@ -57,6 +98,46 @@ const AchievementsSection = ({ backendURL }) => {
     }
   };
 
+  const fetchNewAchievements = async () => {
+    if (!allNotificationsEnabled || !achievementAlertsEnabled) return;
+    
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${backendURL}/achievements/new`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        return; // Silently fail, this is just for notifications
+      }
+
+      const newAchievements = await response.json();
+      
+      // Only notify for achievements that have actually been achieved (progress >= requirement)
+      const validAchievements = newAchievements.filter(
+        achievement => achievement.is_achieved && achievement.progress >= achievement.requirement
+      );
+      
+      // Notify the user about each new valid achievement
+      validAchievements.forEach(achievement => {
+        notifyAchievementEarned(
+          achievement.name,
+          achievement.description,
+          achievement.icon
+        );
+      });
+      
+      // After we've fetched new achievements, update the main achievement list
+      if (validAchievements.length > 0) {
+        fetchAchievements();
+      }
+    } catch (err) {
+      console.error("Error fetching new achievements:", err);
+    }
+  };
+
   const checkAchievements = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -68,7 +149,18 @@ const AchievementsSection = ({ backendURL }) => {
       });
 
       if (response.ok) {
-        fetchAchievements(); // Refresh achievements after checking
+        // Store current achievements before updating
+        previousAchievementsRef.current = [...achievements];
+        
+        // Fetch updated achievements
+        fetchAchievements();
+        
+        // Check for new achievements after updating progress
+        setTimeout(() => {
+          if (allNotificationsEnabled && achievementAlertsEnabled) {
+            fetchNewAchievements();
+          }
+        }, 1000); // Small delay to ensure backend has processed achievement updates
       }
     } catch (err) {
       console.error("Error checking achievements:", err);
@@ -77,9 +169,38 @@ const AchievementsSection = ({ backendURL }) => {
 
   const categories = ['all', ...new Set(achievements.map(a => a.category))];
 
-  const filteredAchievements = selectedCategory === 'all'
-    ? achievements
-    : achievements.filter(a => a.category === selectedCategory);
+  // Sort and filter achievements
+  const getSortedAchievements = (achievements, category) => {
+    // First filter by category if needed
+    const filtered = category === 'all' 
+      ? achievements 
+      : achievements.filter(a => a.category === category);
+    
+    // Then sort them: achieved ones first, ordered by most recent
+    return [...filtered].sort((a, b) => {
+      // First check if one is achieved and the other isn't
+      const aAchieved = a.is_achieved && a.progress >= a.requirement;
+      const bAchieved = b.is_achieved && b.progress >= b.requirement;
+      
+      if (aAchieved && !bAchieved) return -1;
+      if (!aAchieved && bAchieved) return 1;
+      
+      // If both are achieved, sort by achieved_at date (most recent first)
+      if (aAchieved && bAchieved) {
+        // Parse dates (handle null values)
+        const aDate = a.achieved_at ? new Date(a.achieved_at).getTime() : 0;
+        const bDate = b.achieved_at ? new Date(b.achieved_at).getTime() : 0;
+        return bDate - aDate; // Descending order (newest first)
+      }
+      
+      // If neither are achieved, sort by progress percentage (highest first)
+      const aPercentage = (a.progress / a.requirement) * 100;
+      const bPercentage = (b.progress / b.requirement) * 100;
+      return bPercentage - aPercentage;
+    });
+  };
+  
+  const filteredAchievements = getSortedAchievements(achievements, selectedCategory);
 
   const renderProgress = (achievement) => {
     const percentage = Math.min((achievement.progress / achievement.requirement) * 100, 100);
@@ -148,14 +269,14 @@ const AchievementsSection = ({ backendURL }) => {
             <div
               key={achievement.id}
               className={`p-4 rounded-lg border ${
-                achievement.is_achieved
+                achievement.is_achieved && achievement.progress >= achievement.requirement
                   ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
                   : 'border-gray-200 dark:border-gray-700'
               }`}
             >
               <div className="flex items-start gap-3">
                 <div className={`p-2 rounded-full ${
-                  achievement.is_achieved
+                  achievement.is_achieved && achievement.progress >= achievement.requirement
                     ? 'bg-green-500 text-white'
                     : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
                 }`}>
@@ -167,7 +288,7 @@ const AchievementsSection = ({ backendURL }) => {
                     {achievement.description}
                   </p>
                   {renderProgress(achievement)}
-                  {achievement.achieved_at && (
+                  {achievement.achieved_at && achievement.progress >= achievement.requirement && (
                     <p className="text-xs text-green-600 dark:text-green-400 mt-2">
                       Achieved on {new Date(achievement.achieved_at).toLocaleDateString('en-GB')}
                     </p>

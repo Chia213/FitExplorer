@@ -1,3 +1,59 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  :root {
+    /* Default theme colors */
+    --color-primary: #3b82f6; /* blue-500 */
+    --color-secondary: #10b981; /* emerald-500 */
+    --color-accent: #8b5cf6; /* violet-500 */
+  }
+
+  /* Apply theme colors to Tailwind elements */
+  .btn-primary {
+    @apply bg-[var(--color-primary)] text-white hover:opacity-90;
+  }
+  
+  .btn-secondary {
+    @apply bg-[var(--color-secondary)] text-white hover:opacity-90;
+  }
+  
+  .text-accent {
+    @apply text-[var(--color-accent)];
+  }
+  
+  .border-accent {
+    @apply border-[var(--color-accent)];
+  }
+  
+  .bg-accent {
+    @apply bg-[var(--color-accent)];
+  }
+  
+  /* Enhanced card styles for premium themes */
+  .card {
+    @apply rounded-lg shadow-md;
+    
+    &.premium {
+      background: linear-gradient(
+        135deg,
+        rgba(var(--color-primary-rgb), 0.1) 0%,
+        rgba(var(--color-secondary-rgb), 0.1) 100%
+      );
+      border: 1px solid rgba(var(--color-accent-rgb), 0.2);
+    }
+  }
+  
+  /* Dark mode adjustments */
+  .dark {
+    .card.premium {
+      background: linear-gradient(
+        135deg,
+        rgba(var(--color-primary-rgb), 0.2) 0%,
+        rgba(var(--color-secondary-rgb), 0.2) 100%
+      );
+      border: 1px solid rgba(var(--color-accent-rgb), 0.3);
+    }
+  }
+}

@@ -13,3 +13,10 @@ def get_db():
         yield db
     finally:
         db.close()
+
+def get_db_url():
+    """
+    Get the database URL from the environment, or use a default
+    """
+    # Use the same connection string as in the rest of the application
+    return settings.DB_URL

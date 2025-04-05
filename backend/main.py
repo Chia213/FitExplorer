@@ -28,13 +28,16 @@ from schemas import (
     Achievement as AchievementSchema,
     UserAchievementResponse
 )
-from models import Workout, User, Exercise, Set, Routine, CustomExercise, SavedWorkoutProgram, RoutineFolder, WorkoutPreferences, UserProfile, Achievement, UserAchievement, NutritionMeal
+from models import (
+    Workout, User, Exercise, Set, Routine, CustomExercise, SavedWorkoutProgram, RoutineFolder, WorkoutPreferences, 
+    Notification, Achievement, UserAchievement, AdminSettings, NutritionMeal, NutritionGoal, UserProfile
+)
 from typing import List, Dict, Any, Optional
 from admin import router as admin_router
 from dependencies import get_current_user, get_admin_user
 from auth import router as auth_router
 from datetime import datetime, timezone, timedelta
-from database import engine, Base, get_db
+from database import engine, Base, get_db, SessionLocal
 from sqlalchemy import func, desc, extract
 from sqlalchemy.orm import Session, joinedload
 from fastapi.staticfiles import StaticFiles
@@ -1638,6 +1641,28 @@ def get_last_saved_routine(
         raise HTTPException(status_code=500, detail=f"Error fetching last routine: {str(e)}")
 
 
+# Helper function to generate a token without circular imports
+def create_profile_token(username, minutes):
+    from datetime import datetime, timezone, timedelta
+    import jwt
+    from config import settings
+    
+    to_encode = {"sub": username}
+    expire = datetime.now(timezone.utc) + timedelta(minutes=minutes)
+    to_encode.update({"exp": expire})
+    
+    # Add admin status to token
+    db = SessionLocal()
+    try:
+        user = db.query(User).filter(User.username == username).first()
+        if user:
+            to_encode["is_admin"] = user.is_admin
+    finally:
+        db.close()
+        
+    return jwt.encode(to_encode, settings.SECRET_KEY, algorithm="HS256")
+
+
 @app.put("/update-profile")
 def update_user_profile(
     profile_data: UserProfileUpdateRequest,
@@ -1645,6 +1670,22 @@ def update_user_profile(
     db: Session = Depends(get_db)
 ):
     try:
+        # Check if username is being updated
+        username_changed = profile_data.username and profile_data.username != user.username
+        
+        # If username is changing, check if it already exists
+        if username_changed:
+            existing_user = db.query(User).filter(
+                User.username == profile_data.username,
+                User.id != user.id  # Exclude current user
+            ).first()
+            
+            if existing_user:
+                raise HTTPException(
+                    status_code=409,
+                    detail="Username already taken. Please choose a different username."
+                )
+        
         # Update user fields from request data
         for field, value in profile_data.dict(exclude_unset=True).items():
             setattr(user, field, value)
@@ -1652,17 +1693,37 @@ def update_user_profile(
         db.commit()
         db.refresh(user)
 
+        # If username changed, generate a new access token
+        access_token = None
+        if username_changed:
+            # Query for admin settings to get session timeout
+            admin_settings = db.query(AdminSettings).first()
+            session_timeout = admin_settings.session_timeout if admin_settings else 60
+            
+            access_token = create_profile_token(user.username, session_timeout)
+
         return {
             "message": "Profile updated successfully",
+            "username": user.username,
             "height": user.height,
             "weight": user.weight,
             "age": user.age,
             "gender": user.gender,
             "fitness_goals": user.fitness_goals,
-            "bio": user.bio
+            "bio": user.bio,
+            "access_token": access_token  # Return new token if username changed
         }
+    except HTTPException:
+        # Re-raise HTTP exceptions we created
+        raise
     except Exception as e:
         db.rollback()
+        # Check for unique violation and provide a friendly message
+        if "UniqueViolation" in str(e) and "users_username_key" in str(e):
+            raise HTTPException(
+                status_code=409,
+                detail="Username already taken. Please choose a different username."
+            )
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -1840,5 +1901,265 @@ def check_achievements(
     except Exception as e:
         db.rollback()
         print(f"Error checking achievements: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/admin/unlock-all-achievements")
+def admin_unlock_all_achievements(
+    admin: User = Depends(get_admin_user),
+    db: Session = Depends(get_db)
+):
+    """Unlock all achievements for an admin user"""
+    try:
+        # Get all achievements
+        achievements = db.query(Achievement).all()
+        unlocked_count = 0
+        
+        # Set maximum progress for all achievements
+        for achievement in achievements:
+            # Get or create user achievement
+            user_achievement = db.query(UserAchievement).filter(
+                UserAchievement.user_id == admin.id,
+                UserAchievement.achievement_id == achievement.id
+            ).first()
+            
+            if not user_achievement:
+                user_achievement = UserAchievement(
+                    user_id=admin.id,
+                    achievement_id=achievement.id,
+                    progress=0
+                )
+                db.add(user_achievement)
+            
+            # Set progress to max requirement
+            if user_achievement.progress < achievement.requirement:
+                user_achievement.progress = achievement.requirement
+                user_achievement.achieved_at = datetime.now(timezone.utc)
+                unlocked_count += 1
+        
+        db.commit()
+        
+        return {
+            "message": f"All achievements unlocked for admin user {admin.username}",
+            "unlocked_count": unlocked_count,
+            "total_achievements": len(achievements)
+        }
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/admin/claim-all-rewards")
+def admin_claim_all_rewards(
+    admin: User = Depends(get_admin_user),
+    db: Session = Depends(get_db)
+):
+    """Claim all achievement rewards for an admin user"""
+    try:
+        # Get all achievements that have been unlocked
+        user_achievements = db.query(UserAchievement).join(Achievement).filter(
+            UserAchievement.user_id == admin.id,
+            UserAchievement.progress >= Achievement.requirement
+        ).all()
+        
+        claimed_rewards = []
+        
+        # Get user profile for storing rewards
+        user_profile = db.query(UserProfile).filter(UserProfile.user_id == admin.id).first()
+        if not user_profile:
+            user_profile = UserProfile(user_id=admin.id)
+            db.add(user_profile)
+        
+        # Special admin handling - unlock all types of rewards regardless of achievements
+        
+        # 1. Unlock workout templates
+        user_profile.workout_templates_unlocked = True
+        claimed_rewards.append("Expert Workout Templates")
+        
+        # 2. Set theme access (handled via frontend/useTheme.jsx which checks for isAdmin)
+        # No explicit action needed in backend for themes
+        claimed_rewards.append("Premium Themes")
+        
+        # 3. Enable stats features
+        user_profile.stats_features_unlocked = True
+        claimed_rewards.append("Stats Analysis")
+        
+        # Mark all eligible achievements as having their rewards claimed
+        for user_achievement in user_achievements:
+            if not user_achievement.reward_claimed:
+                user_achievement.reward_claimed = True
+        
+        db.commit()
+        
+        return {
+            "message": f"All achievement rewards claimed for admin user {admin.username}",
+            "claimed_rewards": claimed_rewards,
+            "total_claimed": len(claimed_rewards)
+        }
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/admin/unlock-workout-templates")
+def admin_unlock_workout_templates(
+    admin: User = Depends(get_admin_user),
+    db: Session = Depends(get_db)
+):
+    """Unlock all workout templates for an admin user"""
+    try:
+        # Placeholder for workout templates - will need to be updated when implementing actual templates
+        # Save the admin's access to workout templates in UserProfile or another appropriate table
+        user_profile = db.query(UserProfile).filter(UserProfile.user_id == admin.id).first()
+        
+        if not user_profile:
+            user_profile = UserProfile(user_id=admin.id)
+            db.add(user_profile)
+        
+        # Set a flag or field to indicate all templates are unlocked
+        # This is a placeholder - actual implementation will depend on your data model
+        user_profile.workout_templates_unlocked = True
+        
+        db.commit()
+        
+        return {
+            "message": f"All workout templates unlocked for admin user {admin.username}",
+            "status": "success"
+        }
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/workout-templates")
+def get_workout_templates(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get all workout templates, with a flag indicating whether they are 
+    unlocked for the current user
+    """
+    try:
+        # Check if user is admin
+        is_admin = user.is_admin
+        
+        # Check if user has unlocked all templates (from achievement rewards)
+        user_profile = db.query(UserProfile).filter(UserProfile.user_id == user.id).first()
+        all_templates_unlocked = (user_profile and user_profile.workout_templates_unlocked) or is_admin
+        
+        # Placeholder for workout templates - this would be replaced with actual template data
+        # In a real implementation, these would be fetched from the database
+        templates = [
+            {
+                "id": "template-1",
+                "name": "Beginner Full Body",
+                "description": "A complete full body workout for beginners",
+                "difficulty": "beginner",
+                "category": "strength",
+                "premium": False,
+                "exercises": [
+                    {"name": "Squats", "sets": 3, "reps": 10},
+                    {"name": "Push-ups", "sets": 3, "reps": 10},
+                    {"name": "Lunges", "sets": 3, "reps": 10, "per_side": True},
+                    {"name": "Plank", "sets": 3, "duration": 30}
+                ]
+            },
+            {
+                "id": "template-2",
+                "name": "Advanced HIIT",
+                "description": "High-intensity interval training for experienced users",
+                "difficulty": "advanced",
+                "category": "cardio",
+                "premium": True,
+                "exercises": [
+                    {"name": "Burpees", "sets": 4, "reps": 15},
+                    {"name": "Mountain Climbers", "sets": 4, "duration": 45},
+                    {"name": "Jump Squats", "sets": 4, "reps": 20},
+                    {"name": "High Knees", "sets": 4, "duration": 45}
+                ]
+            },
+            {
+                "id": "template-3",
+                "name": "Strength Upper Body",
+                "description": "Build strength in your upper body",
+                "difficulty": "intermediate",
+                "category": "strength",
+                "premium": True,
+                "exercises": [
+                    {"name": "Bench Press", "sets": 4, "reps": "8-10"},
+                    {"name": "Overhead Press", "sets": 4, "reps": "8-10"},
+                    {"name": "Bent Over Rows", "sets": 4, "reps": "8-10"},
+                    {"name": "Pull-ups", "sets": 3, "reps": "max"}
+                ]
+            }
+        ]
+        
+        # Mark templates as unlocked for admin or if user has unlocked all templates
+        for template in templates:
+            template["unlocked"] = not template["premium"] or all_templates_unlocked
+        
+        return {
+            "is_admin": is_admin,
+            "all_templates_unlocked": all_templates_unlocked,
+            "templates": templates
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/achievements/new", response_model=List[UserAchievementResponse])
+def get_new_achievements(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get newly earned achievements that the user hasn't seen yet"""
+    try:
+        # Find achievements where is_achieved is true but the notification hasn't been sent
+        user_achievements = db.query(UserAchievement).filter(
+            UserAchievement.user_id == user.id,
+            UserAchievement.achieved_at.isnot(None),
+            UserAchievement.reward_claimed == False  # Using reward_claimed to track if notification was sent
+        ).all()
+        
+        # Get the achievement details
+        achievement_ids = [ua.achievement_id for ua in user_achievements]
+        achievements = db.query(Achievement).filter(
+            Achievement.id.in_(achievement_ids)
+        ).all()
+        
+        # Create achievement map for quick lookup
+        achievement_map = {a.id: a for a in achievements}
+        
+        # Prepare response
+        response = []
+        for user_achievement in user_achievements:
+            achievement = achievement_map.get(user_achievement.achievement_id)
+            if achievement:
+                response.append({
+                    "id": achievement.id,
+                    "name": achievement.name,
+                    "description": achievement.description,
+                    "icon": achievement.icon,
+                    "category": achievement.category,
+                    "requirement": achievement.requirement,
+                    "progress": user_achievement.progress,
+                    "achieved_at": user_achievement.achieved_at,
+                    "is_achieved": True
+                })
+                
+                # Mark as notified to prevent sending the same notification again
+                user_achievement.reward_claimed = True
+                
+        # Commit changes to mark achievements as notified
+        db.commit()
+        
+        return response
+    except Exception as e:
+        db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
 

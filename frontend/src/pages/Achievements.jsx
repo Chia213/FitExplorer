@@ -19,7 +19,8 @@ import {
   FaCalendarCheck,
   FaCalendar,
   FaChartLine,
-  FaGift
+  FaGift,
+  FaExternalLinkAlt
 } from "react-icons/fa";
 
 const backendURL = "http://localhost:8000";
@@ -213,28 +214,37 @@ const getAchievementTimeline = (achievements) => {
   return Object.values(groupedByMonth);
 };
 
-// Define achievement rewards
+// Enhance achievement rewards with more details about what they unlock
 const achievementRewards = [
   {
     id: "reward-1",
-    title: "Custom Theme",
-    description: "Unlock a special custom theme for the app",
+    title: "Premium Themes",
+    description: "Unlock beautiful custom themes with matching profile card colors",
     requiredAchievements: 5,
-    icon: "FaPalette"
+    icon: "FaPalette",
+    feature: "themes",
+    features: ["themes"],
+    claimed: false
   },
   {
     id: "reward-2",
     title: "Expert Workout Templates",
     description: "Access to premium workout templates",
     requiredAchievements: 10,
-    icon: "FaDumbbell"
+    icon: "FaDumbbell",
+    feature: "workouts",
+    features: ["workouts"],
+    claimed: false
   },
   {
     id: "reward-3",
     title: "Stats Analysis",
     description: "Unlock advanced statistics and progress analysis",
     requiredAchievements: 15,
-    icon: "FaChartLine"
+    icon: "FaChartLine",
+    feature: "stats",
+    features: ["stats"],
+    claimed: false
   }
 ];
 
@@ -250,8 +260,39 @@ function Achievements() {
   const [showBadgeSelector, setShowBadgeSelector] = useState(false);
   const maxBadges = 3; // Maximum number of badges that can be displayed on profile
   const navigate = useNavigate();
-  const { theme } = useTheme();
+  const { theme, unlockTheme, unlockAllThemes, isAdmin } = useTheme();
   const [showInsights, setShowInsights] = useState(false);
+  const [claimedRewards, setClaimedRewards] = useState([]);
+  const [rewardStatus, setRewardStatus] = useState({});
+  const [showRewardModal, setShowRewardModal] = useState(false);
+  const [currentReward, setCurrentReward] = useState(null);
+  const [rewardModalInfo, setRewardModalInfo] = useState({
+    show: false,
+    title: "",
+    message: "",
+    reward: null
+  });
+  const [notification, setNotification] = useState({
+    show: false,
+    message: "",
+    type: "info"
+  });
+  const [showAdminControls, setShowAdminControls] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [confirmAction, setConfirmAction] = useState(null);
+  const [confirmTitle, setConfirmTitle] = useState("");
+  const [confirmMessage, setConfirmMessage] = useState("");
+
+  // Auto-dismiss notification after 5 seconds
+  useEffect(() => {
+    let timer;
+    if (notification.show) {
+      timer = setTimeout(() => {
+        setNotification(prev => ({ ...prev, show: false }));
+      }, 5000);
+    }
+    return () => clearTimeout(timer);
+  }, [notification.show]);
 
   useEffect(() => {
     fetchAchievements();
@@ -264,6 +305,20 @@ function Achievements() {
       checkAchievements();
     }
   }, [achievements.length]);
+
+  // Load claimed rewards from localStorage on component mount
+  useEffect(() => {
+    const savedRewards = localStorage.getItem('claimedRewards');
+    if (savedRewards) {
+      setClaimedRewards(JSON.parse(savedRewards));
+    }
+    
+    // Load reward status from localStorage
+    const savedStatus = localStorage.getItem('rewardStatus');
+    if (savedStatus) {
+      setRewardStatus(JSON.parse(savedStatus));
+    }
+  }, []);
 
   const fetchAchievements = async () => {
     try {
@@ -668,6 +723,378 @@ function Achievements() {
     };
   };
 
+  // Modify the claimReward function to use the useTheme hook
+  const claimReward = (reward) => {
+    // Check if user has enough achievements
+    const achievedCount = achievements.filter(a => a.is_achieved).length;
+    if (achievedCount < reward.requiredAchievements) {
+      setNotification({
+        show: true,
+        message: `You need ${reward.requiredAchievements - achievedCount} more achievements to claim this reward.`,
+        type: "error"
+      });
+      return;
+    }
+    
+    // Special handling for theme rewards if user is admin
+    if (reward.feature === 'themes' && isAdmin) {
+      setNotification({
+        show: true,
+        message: "As an admin, you already have access to all premium themes. No need to claim this reward.",
+        type: "info"
+      });
+      return;
+    }
+
+    // For non-admin users or non-theme rewards, proceed with claiming
+    setLoading(true);
+    
+    setTimeout(() => {
+      let description = '';
+      
+      // Handle based on feature type
+      switch(reward.feature) {
+        case 'themes':
+          // Only for non-admin users
+          if (!isAdmin) {
+            const themeToUnlock = reward.data.theme;
+            unlockTheme(themeToUnlock);
+            description = `You've unlocked a premium theme: ${reward.title}. Go to Settings to apply it!`;
+          }
+          break;
+          
+        case 'boostStreak':
+          // Logic for boosting streak
+          setStreak(prev => ({
+            ...prev,
+            value: prev.value + 5
+          }));
+          description = `You've boosted your streak by 5 days!`;
+          break;
+          
+        default:
+          description = `You've claimed the ${reward.title} reward.`;
+      }
+      
+      // Update claimed rewards
+      const updatedClaimedRewards = [...claimedRewards, reward.id];
+      setClaimedRewards(updatedClaimedRewards);
+      localStorage.setItem('claimedRewards', JSON.stringify(updatedClaimedRewards));
+      
+      // Show success notification
+      setNotification({
+        show: true,
+        message: description,
+        type: "success"
+      });
+      
+      setLoading(false);
+      
+      // Also update the modal information
+      setRewardModalInfo({
+        show: true,
+        title: "Reward Claimed!",
+        message: description,
+        reward: reward
+      });
+    }, 1000);
+  };
+
+  // Add function to use a reward
+  const useReward = (reward) => {
+    let description = '';
+    
+    // Handle based on feature type
+    switch(reward.feature) {
+      case 'themes':
+        if (isAdmin) {
+          setNotification({
+            show: true,
+            message: "As an admin, you already have access to all premium themes. Visit Settings to change your theme.",
+            type: "info"
+          });
+          
+          // Navigate to settings page
+          navigate('/settings?tab=appearance');
+        } else {
+          // Regular user flow for themes
+          description = `You've unlocked a premium theme: ${reward.title}. Go to Settings to apply it!`;
+          
+          setNotification({
+            show: true,
+            message: description,
+            type: "success"
+          });
+          
+          // Navigate to settings page
+          navigate('/settings?tab=appearance');
+        }
+        break;
+        
+      // Other feature types...
+      case 'boostStreak':
+        setStreak(prev => ({
+          ...prev,
+          value: prev.value + 5
+        }));
+        
+        description = `You've boosted your streak by 5 days!`;
+        
+        setNotification({
+          show: true,
+          message: description,
+          type: "success"
+        });
+        break;
+        
+      default:
+        description = `You've used the reward: ${reward.title}`;
+        
+        setNotification({
+          show: true,
+          message: description,
+          type: "success"
+        });
+    }
+  };
+
+  // Add a function to check if reward is claimed
+  const isRewardClaimed = (rewardId) => {
+    return claimedRewards.includes(rewardId);
+  };
+
+  // Modify the RewardModal function to show admin-specific information
+  const RewardModal = () => {
+    if (!currentReward) return null;
+    
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full text-center p-6">
+          <div className="bg-yellow-100 dark:bg-yellow-900/30 rounded-full w-24 h-24 mx-auto mb-6 flex items-center justify-center">
+            <div className="text-5xl text-yellow-500">
+              {getRewardIcon(currentReward.icon)}
+            </div>
+          </div>
+          
+          <h2 className="text-2xl font-bold mb-2">{currentReward.title} Unlocked!</h2>
+          
+          <p className="text-gray-600 dark:text-gray-300 mb-6">
+            {currentReward.description}
+          </p>
+          
+          <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg mb-6">
+            <h3 className="font-semibold mb-2">What you've unlocked:</h3>
+            {currentReward.feature === 'themes' && (
+              <>
+                <p>You can now access and apply premium themes to customize the app's appearance!</p>
+                <p className="mt-2 text-sm text-blue-600 dark:text-blue-400">Your profile card will automatically use your selected theme colors.</p>
+                {isAdmin && (
+                  <div className="mt-3 p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg text-sm text-purple-800 dark:text-purple-300">
+                    <span className="font-medium">Admin Note:</span> As an administrator, you already have access to all premium themes.
+                  </div>
+                )}
+              </>
+            )}
+            {currentReward.feature === 'workouts' && (
+              <p>You've unlocked expert-designed workout templates to take your fitness to the next level!</p>
+            )}
+            {currentReward.feature === 'stats' && (
+              <p>Advanced statistics and analytics are now available to track your progress in detail!</p>
+            )}
+          </div>
+          
+          <div className="flex space-x-3">
+            <button
+              onClick={() => setShowRewardModal(false)}
+              className="flex-1 py-2 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
+              Close
+            </button>
+            <button
+              onClick={() => {
+                setShowRewardModal(false);
+                useReward(currentReward);
+              }}
+              className="flex-1 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            >
+              Use Now
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Function for admins to claim all rewards at once
+  const claimAllRewardsAsAdmin = async () => {
+    if (!isAdmin) return;
+    
+    setLoading(true);
+    
+    try {
+      // Call our backend API to claim all rewards for admin user
+      const token = localStorage.getItem("token");
+      const response = await fetch(`${backendURL}/admin/claim-all-rewards`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status} ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      console.log("Admin claim all rewards response:", data);
+      
+      // Get all available rewards that haven't been claimed yet
+      const unclaimedRewards = achievementRewards.filter(reward => !claimedRewards.includes(reward.id));
+      
+      if (unclaimedRewards.length === 0) {
+        setNotification({
+          show: true,
+          message: "All rewards have already been claimed!",
+          type: "info"
+        });
+        setLoading(false);
+        return;
+      }
+      
+      // Update the frontend state to reflect claimed rewards
+      const newClaimedRewards = [...claimedRewards, ...unclaimedRewards.map(r => r.id)];
+      setClaimedRewards(newClaimedRewards);
+      localStorage.setItem('claimedRewards', JSON.stringify(newClaimedRewards));
+      
+      // Also unlock all themes on the frontend
+      unlockAllThemes();
+      
+      setNotification({
+        show: true,
+        message: `Successfully claimed ${data.claimed_rewards.length} rewards as admin!`,
+        type: "success"
+      });
+    } catch (error) {
+      console.error("Error claiming all rewards:", error);
+      setNotification({
+        show: true,
+        message: "Error claiming rewards: " + error.message,
+        type: "error"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Add function to unlock workout templates for admin
+  const unlockWorkoutTemplatesAsAdmin = async () => {
+    if (!isAdmin) return;
+    
+    setLoading(true);
+    
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`${backendURL}/admin/unlock-workout-templates`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status} ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      console.log("Admin unlock workout templates response:", data);
+      
+      // Find the workout templates reward
+      const workoutTemplateReward = achievementRewards.find(r => r.feature === 'workouts' && !claimedRewards.includes(r.id));
+      
+      if (workoutTemplateReward) {
+        // Add to claimed rewards
+        const updatedClaimedRewards = [...claimedRewards, workoutTemplateReward.id];
+        setClaimedRewards(updatedClaimedRewards);
+        localStorage.setItem('claimedRewards', JSON.stringify(updatedClaimedRewards));
+      }
+      
+      setNotification({
+        show: true,
+        message: "Successfully unlocked all workout templates!",
+        type: "success"
+      });
+    } catch (error) {
+      console.error("Error unlocking workout templates:", error);
+      setNotification({
+        show: true,
+        message: "Error unlocking workout templates: " + error.message,
+        type: "error"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Function to show confirmation dialog
+  const showConfirmationDialog = (title, message, action) => {
+    setConfirmTitle(title);
+    setConfirmMessage(message);
+    setConfirmAction(() => action);
+    setShowConfirmDialog(true);
+  };
+
+  // Modified claimAllRewardsAsAdmin to use confirmation
+  const initiateClaimAllRewards = () => {
+    showConfirmationDialog(
+      "Claim All Rewards",
+      "This will unlock all premium features and mark all rewards as claimed. Are you sure you want to proceed?",
+      claimAllRewardsAsAdmin
+    );
+  };
+
+  // Modified unlockWorkoutTemplatesAsAdmin to use confirmation
+  const initiateUnlockWorkoutTemplates = () => {
+    showConfirmationDialog(
+      "Unlock Workout Templates",
+      "This will unlock all expert workout templates. Continue?",
+      unlockWorkoutTemplatesAsAdmin
+    );
+  };
+
+  // Confirmation Dialog Component
+  const ConfirmationDialog = () => {
+    if (!showConfirmDialog) return null;
+    
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
+          <h3 className="text-xl font-bold mb-3">{confirmTitle}</h3>
+          <p className="text-gray-600 dark:text-gray-300 mb-6">{confirmMessage}</p>
+          
+          <div className="flex justify-end space-x-3">
+            <button
+              onClick={() => setShowConfirmDialog(false)}
+              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => {
+                setShowConfirmDialog(false);
+                if (confirmAction) confirmAction();
+              }}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            >
+              Confirm
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -744,6 +1171,33 @@ function Achievements() {
           <div className="mb-6 p-4 bg-red-100 dark:bg-red-900 border border-red-400 text-red-700 dark:text-red-200 rounded">
             <p className="font-medium">Error:</p>
             <p>{error}</p>
+          </div>
+        )}
+
+        {/* Admin Controls Toggle Button (only for admins) */}
+        {isAdmin && (
+          <div className="mb-4">
+            <button 
+              onClick={() => setShowAdminControls(!showAdminControls)}
+              className="flex items-center justify-between w-full md:w-auto px-4 py-2 bg-purple-100 dark:bg-purple-900/20 border border-purple-300 dark:border-purple-800 rounded-lg text-purple-800 dark:text-purple-300 hover:bg-purple-200 dark:hover:bg-purple-900/30 transition-colors"
+            >
+              <span className="flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                Admin Controls
+              </span>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className={`h-5 w-5 ml-2 transform transition-transform ${showAdminControls ? 'rotate-180' : ''}`}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
           </div>
         )}
 
@@ -962,6 +1416,18 @@ function Achievements() {
                 <FaGift className="mr-2 text-purple-500" />
                 Achievement Rewards
               </h2>
+              
+              {isAdmin && (
+                <button
+                  onClick={() => setShowAdminControls(!showAdminControls)}
+                  className="bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 px-3 py-1 rounded-md text-sm flex items-center"
+                >
+                  <span className="mr-1">Admin Controls</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 transition-transform ${showAdminControls ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+              )}
             </div>
             
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
@@ -969,46 +1435,74 @@ function Achievements() {
                 Unlock special rewards by earning achievements. The more achievements you complete, the more rewards you'll unlock!
               </p>
               
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
                 {achievementRewards.map(reward => {
-                  // Calculate if the reward is unlocked based on achievement count
-                  const achievedCount = achievements.filter(a => a.is_achieved).length;
-                  const isUnlocked = achievedCount >= reward.requiredAchievements;
+                  const isClaimed = isRewardClaimed(reward.id);
+                  const isThemeReward = reward.feature === 'themes';
+                  // Admin already has access to themes
+                  const adminHasAccess = isAdmin && isThemeReward;
                   
                   return (
                     <div 
                       key={reward.id}
-                      className={`p-4 rounded-lg border-2 ${
-                        isUnlocked 
-                          ? "border-green-500 bg-green-50 dark:bg-green-900/20" 
-                          : "border-gray-200 dark:border-gray-700 opacity-60"
-                      }`}
+                      className={`rounded-lg overflow-hidden border ${
+                        isClaimed || adminHasAccess
+                          ? "border-green-500 dark:border-green-600"
+                          : "border-gray-300 dark:border-gray-700"
+                      } bg-white dark:bg-gray-800 shadow-md`}
                     >
-                      <div className="flex items-center mb-3">
-                        <div className={`text-2xl mr-3 ${isUnlocked ? "text-purple-500" : "text-gray-400"}`}>
-                          {getRewardIcon(reward.icon)}
-                        </div>
-                        <div>
-                          <h4 className="font-semibold">{reward.title}</h4>
-                          {isUnlocked ? (
-                            <span className="text-xs px-2 py-1 bg-green-500 text-white rounded-full">Unlocked!</span>
-                          ) : (
-                            <span className="text-xs text-gray-500">
-                              {achievedCount}/{reward.requiredAchievements} achievements needed
-                            </span>
+                      <div className="p-4">
+                        <div className="flex justify-between items-start mb-3">
+                          <div className="flex items-center">
+                            <div className="text-2xl text-yellow-500 mr-3">
+                              {getRewardIcon(reward.icon)}
+                            </div>
+                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                              {reward.title}
+                            </h3>
+                          </div>
+                          {(isClaimed || adminHasAccess) && (
+                            <div className="flex-shrink-0 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 text-xs px-2 py-1 rounded-full flex items-center">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                              {adminHasAccess && !isClaimed ? "Admin Access" : "Claimed"}
+                            </div>
                           )}
                         </div>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">{reward.description}</p>
+                        <div className="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-4">
+                          <span className="font-semibold mr-1">Requires:</span>
+                          {reward.requiredAchievements} achievements
+                        </div>
+                        
+                        <div className="flex space-x-2">
+                          {isClaimed || adminHasAccess ? (
+                            <button
+                              onClick={() => useReward(reward)}
+                              className="flex-1 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                            >
+                              Use Now
+                            </button>
+                          ) : (
+                            <button 
+                              onClick={() => claimReward(reward)}
+                              className="flex-1 py-2 bg-purple-500 text-white rounded hover:bg-purple-600"
+                              disabled={achievements.filter(a => a.is_achieved).length < reward.requiredAchievements}
+                            >
+                              {achievements.filter(a => a.is_achieved).length < reward.requiredAchievements 
+                                ? `Need ${reward.requiredAchievements - achievements.filter(a => a.is_achieved).length} more` 
+                                : "Claim Reward"}
+                            </button>
+                          )}
+                        </div>
+                        
+                        {isAdmin && isThemeReward && !isClaimed && (
+                          <div className="mt-2 text-xs text-purple-600 dark:text-purple-400 italic">
+                            As an admin, you already have access to all themes.
+                          </div>
+                        )}
                       </div>
-                      
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        {reward.description}
-                      </p>
-                      
-                      {isUnlocked && (
-                        <button className="mt-3 w-full py-2 bg-purple-500 text-white rounded hover:bg-purple-600">
-                          Claim Reward
-                        </button>
-                      )}
                     </div>
                   );
                 })}
@@ -1016,6 +1510,9 @@ function Achievements() {
             </div>
           </div>
         )}
+
+        {/* Reward Claim Modal */}
+        {showRewardModal && <RewardModal />}
 
         {/* Category Filter */}
         <div className="flex space-x-4 mb-8">
@@ -1226,6 +1723,119 @@ function Achievements() {
             </div>
           </div>
         )}
+
+        {/* Notification Toast */}
+        {notification.show && (
+          <div className="fixed bottom-5 right-5 z-50 max-w-md">
+            <div 
+              className={`rounded-lg shadow-lg p-4 flex items-start space-x-3 transition-all duration-300 ${
+                notification.type === "success" ? "bg-green-100 text-green-800 border-l-4 border-green-500" :
+                notification.type === "error" ? "bg-red-100 text-red-800 border-l-4 border-red-500" :
+                "bg-blue-100 text-blue-800 border-l-4 border-blue-500"
+              }`}
+            >
+              <div className="flex-shrink-0 mt-0.5">
+                {notification.type === "success" && (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                )}
+                {notification.type === "error" && (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                )}
+                {notification.type === "info" && (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zm-1 7a1 1 0 100 2h.01a1 1 0 100-2H10z" clipRule="evenodd" />
+                  </svg>
+                )}
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-medium">{notification.message}</p>
+              </div>
+              <button 
+                onClick={() => setNotification({...notification, show: false})}
+                className="flex-shrink-0 text-gray-500 hover:text-gray-700 transition-colors"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Admin Controls Panel */}
+        {isAdmin && showAdminControls && (
+          <div className="bg-purple-50 dark:bg-purple-900/10 border border-purple-200 dark:border-purple-800 rounded-lg p-4 mb-6">
+            <h2 className="text-lg font-semibold text-purple-800 dark:text-purple-300 mb-3">Admin Controls</h2>
+            
+            <div className="flex flex-wrap gap-3">
+              <button
+                onClick={initiateClaimAllRewards}
+                disabled={loading}
+                className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md text-sm flex items-center disabled:opacity-50"
+              >
+                {loading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Claim All Rewards
+                  </>
+                )}
+              </button>
+              
+              <button
+                onClick={() => unlockAllThemes()}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm flex items-center"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+                </svg>
+                Unlock All Themes
+              </button>
+              
+              <button
+                onClick={initiateUnlockWorkoutTemplates}
+                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm flex items-center"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                Unlock Workout Templates
+              </button>
+              
+              <button
+                onClick={() => {
+                  // Reset claimed rewards for testing
+                  setClaimedRewards([]);
+                  localStorage.removeItem('claimedRewards');
+                  setNotification({
+                    show: true,
+                    message: "Reset all claimed rewards",
+                    type: "info"
+                  });
+                }}
+                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm flex items-center"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Reset Claimed Rewards
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Add the Confirmation Dialog Component */}
+        <ConfirmationDialog />
       </div>
     </div>
   );

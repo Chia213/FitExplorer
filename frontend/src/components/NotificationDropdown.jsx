@@ -1,13 +1,25 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { FaBell, FaCheck, FaTrash, FaDumbbell, FaUser, FaCalendarAlt, FaLock, FaEllipsisH, FaSync } from 'react-icons/fa';
+import { FaBell, FaCheck, FaTrash, FaDumbbell, FaUser, FaCalendarAlt, FaLock, FaEllipsisH, FaSync, FaBellSlash, FaTrophy } from 'react-icons/fa';
 import { useNotifications } from '../contexts/NotificationContext';
 import { useTheme } from '../hooks/useTheme';
 
 const NotificationDropdown = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const { notifications, loading, unreadCount, markAsRead, markAllAsRead, deleteNotification, refreshNotifications } = useNotifications();
+  const { 
+    notifications, 
+    loading, 
+    unreadCount, 
+    markAsRead, 
+    markAllAsRead, 
+    deleteNotification, 
+    refreshNotifications,
+    achievementAlertsEnabled,
+    toggleAchievementAlerts,
+    allNotificationsEnabled,
+    toggleAllNotifications
+  } = useNotifications();
   const dropdownRef = useRef(null);
   const { theme } = useTheme();
 
@@ -144,6 +156,56 @@ const NotificationDropdown = () => {
                   Mark all as read
                 </button>
               )}
+            </div>
+          </div>
+
+          {/* All Notifications toggle */}
+          <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+            <div className="text-sm">All Notifications</div>
+            <div 
+              onClick={toggleAllNotifications}
+              className="flex items-center gap-2 cursor-pointer"
+              title={allNotificationsEnabled ? "Disable all notifications" : "Enable all notifications"}
+            >
+              {allNotificationsEnabled ? (
+                <FaBell className="text-blue-500 text-sm" />
+              ) : (
+                <FaBellSlash className="text-gray-400 text-sm" />
+              )}
+              <div className={`relative inline-block w-10 h-6 transition duration-200 ease-in-out ${allNotificationsEnabled ? 'bg-blue-500' : 'bg-gray-300'} rounded-full`}>
+                <input 
+                  type="checkbox" 
+                  className="opacity-0 absolute w-full h-full cursor-pointer z-10" 
+                  checked={allNotificationsEnabled}
+                  onChange={toggleAllNotifications}
+                />
+                <span className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform duration-200 ease-in-out ${allNotificationsEnabled ? 'transform translate-x-4' : ''}`}></span>
+              </div>
+            </div>
+          </div>
+
+          {/* Achievement Alerts toggle */}
+          <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+            <div className="text-sm">Achievement Alerts</div>
+            <div 
+              onClick={toggleAchievementAlerts}
+              className="flex items-center gap-2 cursor-pointer"
+              title={achievementAlertsEnabled ? "Disable achievement alerts" : "Enable achievement alerts"}
+            >
+              {achievementAlertsEnabled ? (
+                <FaTrophy className="text-yellow-500 text-sm" />
+              ) : (
+                <FaTrophy className="text-gray-400 text-sm" />
+              )}
+              <div className={`relative inline-block w-10 h-6 transition duration-200 ease-in-out ${achievementAlertsEnabled ? 'bg-blue-500' : 'bg-gray-300'} rounded-full`}>
+                <input 
+                  type="checkbox" 
+                  className="opacity-0 absolute w-full h-full cursor-pointer z-10" 
+                  checked={achievementAlertsEnabled}
+                  onChange={toggleAchievementAlerts}
+                />
+                <span className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform duration-200 ease-in-out ${achievementAlertsEnabled ? 'transform translate-x-4' : ''}`}></span>
+              </div>
             </div>
           </div>
 

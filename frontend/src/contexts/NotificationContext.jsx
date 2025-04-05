@@ -9,6 +9,9 @@ export const NotificationProvider = ({ children }) => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [achievementAlertsEnabled, setAchievementAlertsEnabled] = useState(true);
+  const [allNotificationsEnabled, setAllNotificationsEnabled] = useState(true);
+  const [settingsLoading, setSettingsLoading] = useState(true);
 
   // Load notifications when component mounts
   const fetchNotifications = async () => {
@@ -43,8 +46,147 @@ export const NotificationProvider = ({ children }) => {
     }
   };
 
+  // Load achievement alerts setting
+  const fetchAchievementAlertsSetting = async () => {
+    setSettingsLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setSettingsLoading(false);
+        return;
+      }
+
+      const response = await fetch(`${apiUrl}/notifications/settings/achievement-alerts`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch achievement alerts setting');
+      }
+
+      const data = await response.json();
+      setAchievementAlertsEnabled(data.enabled);
+      
+      // Also update localStorage to keep it in sync with backend
+      // This helps any components that are still checking localStorage
+      localStorage.setItem('achievementAlerts', data.enabled.toString());
+    } catch (error) {
+      console.error('Error fetching achievement alerts setting:', error);
+      // Fallback to localStorage value if API fails
+      const localValue = localStorage.getItem('achievementAlerts');
+      if (localValue !== null) {
+        setAchievementAlertsEnabled(localValue !== 'false');
+      }
+    } finally {
+      setSettingsLoading(false);
+    }
+  };
+  
+  // Load all notifications setting
+  const fetchAllNotificationsSetting = async () => {
+    setSettingsLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setSettingsLoading(false);
+        return;
+      }
+
+      const response = await fetch(`${apiUrl}/notifications/settings/all-notifications`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch all notifications setting');
+      }
+
+      const data = await response.json();
+      setAllNotificationsEnabled(data.enabled);
+      
+      // Also update localStorage for backward compatibility
+      localStorage.setItem('allNotifications', data.enabled.toString());
+    } catch (error) {
+      console.error('Error fetching all notifications setting:', error);
+      // Fallback to localStorage value if API fails
+      const localValue = localStorage.getItem('allNotifications');
+      if (localValue !== null) {
+        setAllNotificationsEnabled(localValue !== 'false');
+      }
+    } finally {
+      setSettingsLoading(false);
+    }
+  };
+
+  // Update achievement alerts setting
+  const updateAchievementAlertsSetting = async (enabled) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return false;
+
+      const response = await fetch(`${apiUrl}/notifications/settings/achievement-alerts`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ enabled })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update achievement alerts setting');
+      }
+
+      const data = await response.json();
+      setAchievementAlertsEnabled(data.enabled);
+      
+      // Update localStorage to keep it in sync
+      localStorage.setItem('achievementAlerts', data.enabled.toString());
+      return true;
+    } catch (error) {
+      console.error('Error updating achievement alerts setting:', error);
+      return false;
+    }
+  };
+  
+  // Update all notifications setting
+  const updateAllNotificationsSetting = async (enabled) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return false;
+
+      const response = await fetch(`${apiUrl}/notifications/settings/all-notifications`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ enabled })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update all notifications setting');
+      }
+
+      const data = await response.json();
+      setAllNotificationsEnabled(data.enabled);
+      
+      // Update localStorage to keep it in sync
+      localStorage.setItem('allNotifications', data.enabled.toString());
+      return true;
+    } catch (error) {
+      console.error('Error updating all notifications setting:', error);
+      return false;
+    }
+  };
+
   useEffect(() => {
     fetchNotifications();
+    fetchAchievementAlertsSetting();
+    fetchAllNotificationsSetting();
     
     // Set up periodic refresh every 2 minutes
     const intervalId = setInterval(fetchNotifications, 2 * 60 * 1000);
@@ -197,6 +339,30 @@ export const NotificationProvider = ({ children }) => {
   // Get unread count
   const unreadCount = notifications.filter(notification => !notification.read).length;
 
+  // Toggle achievement alerts
+  const toggleAchievementAlerts = async () => {
+    const newValue = !achievementAlertsEnabled;
+    const success = await updateAchievementAlertsSetting(newValue);
+    if (!success) {
+      // Fallback to just updating localStorage if API fails
+      setAchievementAlertsEnabled(newValue);
+      localStorage.setItem('achievementAlerts', newValue.toString());
+    }
+    return newValue;
+  };
+  
+  // Toggle all notifications
+  const toggleAllNotifications = async () => {
+    const newValue = !allNotificationsEnabled;
+    const success = await updateAllNotificationsSetting(newValue);
+    if (!success) {
+      // Fallback to just updating localStorage if API fails
+      setAllNotificationsEnabled(newValue);
+      localStorage.setItem('allNotifications', newValue.toString());
+    }
+    return newValue;
+  };
+
   const value = {
     notifications,
     loading,
@@ -207,7 +373,12 @@ export const NotificationProvider = ({ children }) => {
     deleteNotification,
     clearAll,
     addNotification,
-    refreshNotifications: fetchNotifications
+    refreshNotifications: fetchNotifications,
+    achievementAlertsEnabled,
+    toggleAchievementAlerts,
+    allNotificationsEnabled,
+    toggleAllNotifications,
+    settingsLoading
   };
 
   return (

@@ -1,7 +1,21 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "../hooks/useTheme";
-import { notifyProfileUpdated, notifyUsernameChanged } from '../utils/notificationsHelpers';
+import { 
+  notifyProfileUpdated, 
+  notifyUsernameChanged, 
+  notifyPersonalInfoUpdated,
+  notifyProfilePictureUpdated,
+  notifyCardColorUpdated,
+  notifyWeightGoalUpdated,
+  notifyHeightUpdated,
+  notifyWeightUpdated,
+  notifyAgeUpdated,
+  notifyGenderUpdated,
+  notifyFitnessGoalsUpdated,
+  notifyBioUpdated
+} from '../utils/notificationsHelpers';
+import { useNotifications } from "../contexts/NotificationContext";
 import AchievementsSection from '../components/AchievementsSection';
 import {
   FaEdit,
@@ -43,9 +57,7 @@ function Profile() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [cardColor, setCardColor] = useState(() => {
-    return localStorage.getItem("cardColor") || "#f0f4ff";
-  });
+  const [cardColor, setCardColor] = useState("#f0f4ff"); // Default color until we get backend data
   const [isEditing, setIsEditing] = useState(false);
   const [editedUsername, setEditedUsername] = useState("");
   const [workoutStats, setWorkoutStats] = useState(null);
@@ -65,20 +77,18 @@ function Profile() {
     cardColor: "#dbeafe",
     workoutFrequencyGoal: null,
     goalWeight: null,
+    useCustomCardColor: false
   });
   const [preferencesChanged, setPreferencesChanged] = useState(false);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  const [showColorPicker, setShowColorPicker] = useState(false);
   const fileInputRef = useRef(null);
 
   const navigate = useNavigate();
-  const { theme } = useTheme();
-
-  // Save card color to localStorage when it changes
-  useEffect(() => {
-    localStorage.setItem("cardColor", cardColor);
-  }, [cardColor]);
+  const { theme, premiumTheme, premiumThemes, isAdmin } = useTheme();
+  const { allNotificationsEnabled } = useNotifications();
 
   // Function to fetch user data - extracted for reuse
   const fetchUserData = useCallback(async () => {
@@ -126,13 +136,7 @@ function Profile() {
       const userData = await profileRes.json();
       console.log("User data received:", userData);
       
-      // Check if we have a stored username that should override the server value
-      const storedUsername = localStorage.getItem("username");
-      if (storedUsername && (!userData.username || userData.username !== storedUsername)) {
-        console.log("Using stored username instead of server value:", storedUsername);
-        userData.username = storedUsername;
-      }
-      
+      // Set user and username state directly from server data
       setUser(userData);
       setEditedUsername(userData.username);
 
@@ -146,31 +150,33 @@ function Profile() {
         bio: userData.bio || ""
       });
 
-      // Handle card color setting
-      if (userData.preferences?.card_color) {
-        setCardColor(userData.preferences.card_color);
-        setPreferences((prev) => ({
-          ...prev,
-          cardColor: userData.preferences.card_color,
-        }));
-      } else {
-        const savedColor = localStorage.getItem("cardColor");
-        if (savedColor) {
-          setCardColor(savedColor);
-          setPreferences((prev) => ({
-            ...prev,
-            cardColor: savedColor,
-          }));
-        }
-      }
-
       // Set user preferences
       if (userData.preferences) {
+        console.log("Setting preferences from backend data:", userData.preferences);
         setPreferences((prev) => ({
           ...prev,
+          cardColor: userData.preferences.card_color || prev.cardColor,
           workoutFrequencyGoal: userData.preferences.workout_frequency_goal,
           goalWeight: userData.preferences.goal_weight,
+          useCustomCardColor: userData.preferences.use_custom_card_color || false
         }));
+        
+        // Set card color from backend preferences
+        if (userData.preferences.use_custom_card_color) {
+          // If using custom color, set the color directly from backend
+          console.log("Using custom color from backend:", userData.preferences.card_color);
+          setCardColor(userData.preferences.card_color || "#f0f4ff");
+        } else if (premiumTheme && premiumThemes[premiumTheme]) {
+          // If using theme, set from premium theme
+          console.log("Using premium theme color:", premiumThemes[premiumTheme].primary);
+          setCardColor(premiumThemes[premiumTheme].primary);
+        } else {
+          // Otherwise use backend card color
+          console.log("Using card color from backend:", userData.preferences.card_color);
+          setCardColor(userData.preferences.card_color || "#f0f4ff");
+        }
+      } else {
+        console.log("No preferences found in backend data, using defaults");
       }
 
       // Set profile picture with cache busting
@@ -229,13 +235,75 @@ function Profile() {
     };
   }, [fetchUserData]);
 
-  const handleColorChange = (newColor) => {
+  // Effect to handle initial load
+  useEffect(() => {
+    // This effect should only run once on component mount
+    const initialRun = async () => {
+      console.log("Initial setup effect running");
+      
+      // Wait for user preferences to be loaded
+      if (!user || !user.preferences) {
+        return;
+      }
+      
+      // Check if we should use custom card color based on saved preference
+      if (user.preferences.use_custom_card_color) {
+        console.log("Initial setup: User has custom color preference enabled");
+        const savedColor = user.preferences.card_color || "#f0f4ff";
+        console.log("Initial setup: Using saved custom color:", savedColor);
+        // Use the custom color
+        setCardColor(savedColor);
+        // Make sure preferences are in sync
+        setPreferences(prev => ({
+          ...prev,
+          useCustomCardColor: true,
+          cardColor: savedColor
+        }));
+      } else if (premiumTheme && premiumThemes[premiumTheme]) {
+        // Custom color not enabled, but premium theme is active
+        console.log("Initial setup: Using premium theme color:", premiumThemes[premiumTheme].primary);
+        setCardColor(premiumThemes[premiumTheme].primary);
+      } else {
+        // No premium theme, use default color
+        const savedColor = "#f0f4ff";
+        console.log("Initial setup: Using default saved color:", savedColor);
+        setCardColor(savedColor);
+      }
+    };
+    
+    initialRun();
+  }, [user, premiumTheme, premiumThemes]);
+  
+  // Effect to sync card color with premium theme only when useCustomCardColor is false
+  useEffect(() => {
+    if (!preferences.useCustomCardColor && premiumTheme && premiumThemes[premiumTheme]) {
+      console.log("Theme effect: Using premium theme color because custom color is disabled");
+      const themeColor = premiumThemes[premiumTheme].primary;
+      updateCardColor(themeColor);
+    } else if (preferences.useCustomCardColor) {
+      console.log("Theme effect: Skipping theme update because custom color is enabled");
+    }
+  }, [premiumTheme, premiumThemes, preferences.useCustomCardColor]);
+
+  // Function to update card color in both state and preferences
+  const updateCardColor = (newColor) => {
+    console.log("Updating card color to:", newColor);
+    // Update the state directly
     setCardColor(newColor);
-    setPreferences((prev) => ({
-      ...prev,
-      cardColor: newColor,
-    }));
+    // Update in preferences object
+    setPreferences(prev => {
+      const updated = {
+        ...prev,
+        cardColor: newColor
+      };
+      console.log("Updated preferences:", updated);
+      return updated;
+    });
     setPreferencesChanged(true);
+  };
+
+  const handleColorChange = (newColor) => {
+    updateCardColor(newColor);
   };
 
   const formatJoinDate = (dateString) => {
@@ -283,8 +351,18 @@ function Profile() {
   };
 
   const handleUpdateProfile = async () => {
+    // Clear any previous inline errors
+    const errorElement = document.getElementById('username-error');
+    if (errorElement) {
+      errorElement.textContent = '';
+      errorElement.classList.add('hidden');
+    }
+
     if (!editedUsername.trim() || editedUsername.length < 3) {
-      setError("Username must be at least 3 characters");
+      if (errorElement) {
+        errorElement.textContent = "Username must be at least 3 characters";
+        errorElement.classList.remove('hidden');
+      }
       return;
     }
 
@@ -305,11 +383,11 @@ function Profile() {
         const updatedUser = await response.json();
         console.log("Server response after update:", updatedUser);
         
-        // Use the edited username directly since server doesn't return it
+        // Update user state with the data returned from the server
         setUser((prevUser) => {
           const newUserState = {
             ...prevUser,
-            username: editedUsername // Use the edited username directly
+            username: updatedUser.username || editedUsername // Use server value if available
           };
           console.log("Updated user state:", newUserState);
           return newUserState;
@@ -325,47 +403,44 @@ function Profile() {
 
         setIsEditing(false);
         setError(null);
-        await notifyUsernameChanged(editedUsername); // Use edited username here too
         
-        // Store username in localStorage as a backup
-        localStorage.setItem("username", editedUsername);
+        // Only send notification if notifications are enabled
+        if (allNotificationsEnabled) {
+          await notifyUsernameChanged(editedUsername);
+        }
         
         // Fetch updated user data to ensure it's properly synced
         console.log("Re-fetching user data after username update");
         await fetchUserData();
-        
-        // Verify immediately with a direct fetch to check if change was persisted on server
-        console.log("Verifying username update with direct fetch...");
-        const verifyToken = localStorage.getItem("token");
-        const verifyResponse = await fetch(`${backendURL}/user-profile`, {
-          headers: { 
-            "Authorization": `Bearer ${verifyToken}`,
-            "Content-Type": "application/json"
-          },
-        });
-        
-        if (verifyResponse.ok) {
-          const verifiedUserData = await verifyResponse.json();
-          console.log("Verification fetch result:", verifiedUserData);
-          console.log("Verified username on server:", verifiedUserData.username);
-          console.log("Does it match what we set?", verifiedUserData.username === editedUsername);
-          
-          // If username on server doesn't match what we set, force an update
-          if (verifiedUserData.username !== editedUsername) {
-            console.log("Username mismatch detected, forcing update in state");
-            setUser(prev => ({...prev, username: editedUsername}));
-          }
-        } else {
-          console.error("Failed to verify username update");
-        }
       } else {
         const errorData = await response.json();
         console.error("Error response from server:", errorData);
-        setError(errorData.detail || "Failed to update profile");
+        
+        // Handle 409 conflict differently to avoid global error state
+        if (response.status === 409) {
+          if (errorElement) {
+            errorElement.textContent = errorData.detail || "Username already taken. Please choose a different username.";
+            errorElement.classList.remove('hidden');
+          }
+        } else {
+          // For other errors, use the global error handler
+          setError(errorData.detail || "Failed to update profile");
+        }
+        
+        // Reset edited username to current username
+        setEditedUsername(user.username);
       }
     } catch (err) {
       console.error("Exception during username update:", err);
-      setError("Something went wrong. Please try again.");
+      
+      // Set inline error instead of global error
+      if (errorElement) {
+        errorElement.textContent = "Something went wrong. Please try again.";
+        errorElement.classList.remove('hidden');
+      }
+      
+      // Reset to current username
+      setEditedUsername(user.username);
     } finally {
       setIsSaving(false);
     }
@@ -407,7 +482,11 @@ function Profile() {
           `${backendURL}/${result.file_path}?t=${new Date().getTime()}`
         );
         setError(null);
-        await notifyProfileUpdated();
+        
+        // Only send notification if notifications are enabled
+        if (allNotificationsEnabled) {
+          await notifyProfilePictureUpdated();
+        }
       } else {
         setError(result.detail || "Failed to upload profile picture");
       }
@@ -432,7 +511,11 @@ function Profile() {
       if (response.ok) {
         setProfilePicture(null);
         setError(null);
-        await notifyProfileUpdated();
+        
+        // Only send notification if notifications are enabled
+        if (allNotificationsEnabled) {
+          await notifyProfilePictureUpdated();
+        }
       } else {
         const errorData = await response.json();
         setError(errorData.detail || "Failed to remove profile picture");
@@ -450,41 +533,124 @@ function Profile() {
   };
 
   const handlePreferenceUpdate = async () => {
+    // Prevent duplicate calls
+    if (isSaving) return;
+    
     try {
       setIsSaving(true);
       const token = localStorage.getItem("token");
-      const response = await fetch(`${backendURL}/user-profile`, {
-        method: "PUT",
+      
+      // Store old value for comparison
+      const oldGoalWeight = user?.preferences?.goal_weight;
+      
+      // Create a variable to track if weight goal notification has been sent
+      let weightGoalNotificationSent = false;
+      
+      const response = await fetch(`${backendURL}/user/settings/notifications`, {
+        method: "PATCH",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
+          email_notifications: true, // Keep existing notification settings
+          workout_reminders: true,
+          progress_reports: true,
+          language: "en", // Default language
           card_color: preferences.cardColor,
           workout_frequency_goal: preferences.workoutFrequencyGoal,
           goal_weight: preferences.goalWeight,
+          use_custom_card_color: preferences.useCustomCardColor,
+          summary_frequency: "weekly", // Default values
+          summary_day: "monday"
         }),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        setError(errorData.detail || "Failed to update preferences");
-      } else {
+      if (response.ok) {
         const updatedPreferences = await response.json();
-        setPreferences({
-          cardColor: updatedPreferences.preferences.card_color,
-          workoutFrequencyGoal: updatedPreferences.preferences.workout_frequency_goal,
-          goalWeight: updatedPreferences.preferences.goal_weight,
+        console.log("Server response:", updatedPreferences);
+        
+        // Update the state with server response format
+        setPreferences((prev) => {
+          const newPrefs = {
+            ...prev,
+            cardColor: updatedPreferences.card_color || prev.cardColor,
+            workoutFrequencyGoal: updatedPreferences.workout_frequency_goal,
+            goalWeight: updatedPreferences.goal_weight,
+            useCustomCardColor: updatedPreferences.use_custom_card_color !== undefined 
+              ? updatedPreferences.use_custom_card_color  // Use server value if provided
+              : prev.useCustomCardColor  // Otherwise keep our current setting
+          };
+          console.log("New preferences state from backend:", newPrefs);
+          return newPrefs;
         });
-        setCardColor(updatedPreferences.preferences.card_color);
+        
+        // Set the card color based on preferences
+        if (preferences.useCustomCardColor) {
+          // If using custom color, maintain it
+          console.log("After save: Using custom color:", preferences.cardColor);
+          setCardColor(preferences.cardColor);
+        } else if (premiumTheme && premiumThemes[premiumTheme]) {
+          // Otherwise use the theme color if applicable
+          console.log("After save: Using theme color:", premiumThemes[premiumTheme].primary);
+          setCardColor(premiumThemes[premiumTheme].primary);
+        } else {
+          // Fall back to the saved color
+          console.log("After save: Using saved color:", updatedPreferences.card_color || preferences.cardColor);
+          setCardColor(updatedPreferences.card_color || preferences.cardColor);
+        }
+        
         setPreferencesChanged(false);
-        setError(null);
-        await notifyProfileUpdated("Preferences updated successfully!");
+        setSuccessMessage("Preferences updated successfully");
+        setTimeout(() => setSuccessMessage(""), 3000);
+        
+        // Send a notification if notifications are enabled
+        if (allNotificationsEnabled) {
+          // Check if weight goal was updated
+          if (preferences.goalWeight !== oldGoalWeight && preferences.goalWeight !== null && !weightGoalNotificationSent) {
+            // Send weight goal notification
+            await notifyWeightGoalUpdated(preferences.goalWeight);
+            weightGoalNotificationSent = true;
+          } 
+          // Check if card color was likely the main change
+          else if (preferences.useCustomCardColor || (updatedPreferences.card_color !== user?.preferences?.card_color)) {
+            // Send card color notification 
+            await notifyCardColorUpdated();
+          }
+          
+          // Check achievements after updating preferences
+          await checkAchievementsProgress();
+        }
+      } else {
+        console.error("Error response:", response.status);
+        const errorData = await response.json();
+        console.error("Error data:", errorData);
+        setError("Failed to update preferences");
       }
     } catch (err) {
-      setError("Something went wrong. Please try again.");
+      console.error("Error updating preferences:", err);
+      setError("An error occurred while updating preferences");
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  // Function to check achievements after profile updates
+  const checkAchievementsProgress = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`${backendURL}/achievements/check`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      
+      if (!response.ok) {
+        console.error("Failed to check achievements:", response.status);
+      }
+    } catch (error) {
+      console.error("Error checking achievements:", error);
     }
   };
 
@@ -527,6 +693,14 @@ function Profile() {
     try {
       setIsSaving(true);
       const token = localStorage.getItem("token");
+
+      // Save original values for comparison
+      const originalHeight = user?.height;
+      const originalWeight = user?.weight;
+      const originalAge = user?.age;
+      const originalGender = user?.gender;
+      const originalFitnessGoals = user?.fitness_goals;
+      const originalBio = user?.bio;
 
       // Update user profile using the correct endpoint
       const response = await fetch(`${backendURL}/update-profile`, {
@@ -572,6 +746,51 @@ function Profile() {
         setIsEditingPersonalInfo(false);
         setPersonalInfoError("");
         setSuccessMessage("Personal information updated successfully");
+        
+        // Only send notifications if notifications are enabled
+        if (allNotificationsEnabled) {
+          // Track if any notifications were sent
+          let notificationSent = false;
+
+          // Check which fields were updated and send specific notifications
+          if (updatedData.height !== originalHeight && updatedData.height !== null) {
+            await notifyHeightUpdated(updatedData.height);
+            notificationSent = true;
+          }
+          
+          if (updatedData.weight !== originalWeight && updatedData.weight !== null) {
+            await notifyWeightUpdated(updatedData.weight);
+            notificationSent = true;
+          }
+          
+          if (updatedData.age !== originalAge && updatedData.age !== null) {
+            await notifyAgeUpdated(updatedData.age);
+            notificationSent = true;
+          }
+          
+          if (updatedData.gender !== originalGender && updatedData.gender) {
+            await notifyGenderUpdated();
+            notificationSent = true;
+          }
+          
+          if (updatedData.fitness_goals !== originalFitnessGoals && updatedData.fitness_goals) {
+            await notifyFitnessGoalsUpdated();
+            notificationSent = true;
+          }
+          
+          if (updatedData.bio !== originalBio && updatedData.bio) {
+            await notifyBioUpdated();
+            notificationSent = true;
+          }
+          
+          // If no specific field notifications were sent but something changed, send generic update
+          if (!notificationSent) {
+            await notifyPersonalInfoUpdated();
+          }
+        }
+        
+        // Check achievements after updating personal info
+        await checkAchievementsProgress();
       } else if (response.status === 401) {
         setPersonalInfoError("Session expired. Please log in again.");
         localStorage.removeItem("token");
@@ -596,6 +815,33 @@ function Profile() {
     { icon: <FaCog className="w-6 h-6" />, label: "Settings", path: "/settings" },
   ];
 
+  // Function to toggle custom color mode
+  const toggleCustomColorMode = (checked) => {
+    console.log("Toggling useCustomCardColor to:", checked);
+    
+    if (checked) {
+      // Enabling custom color
+      console.log("Setting to custom color:", preferences.cardColor);
+      setCardColor(preferences.cardColor);
+    } else {
+      // Disabling custom color, switch to theme color if available
+      if (premiumTheme && premiumThemes[premiumTheme]) {
+        const themeColor = premiumThemes[premiumTheme].primary;
+        console.log("Setting to theme color:", themeColor);
+        setCardColor(themeColor);
+      }
+    }
+    
+    // Update the preferences state
+    setPreferences(prev => ({
+      ...prev,
+      useCustomCardColor: checked
+    }));
+    
+    // Make sure to trigger a save
+    setPreferencesChanged(true);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -606,14 +852,20 @@ function Profile() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-red-500 text-center">
-          <p className="text-xl mb-4">{error}</p>
+      <div className="min-h-screen">
+        <div className="max-w-7xl mx-auto pt-8">
+          <div className="bg-red-100 dark:bg-red-900/30 border border-red-400 text-red-700 dark:text-red-300 px-4 py-3 rounded relative mb-4">
+            <strong className="font-bold">Error: </strong>
+            <span className="block sm:inline">{error}</span>
+          </div>
           <button
-            onClick={() => navigate("/login")}
+            onClick={() => {
+              setError(null);  // Clear the error
+              setEditedUsername(user?.username || "");  // Reset username field
+            }}
             className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
           >
-            Return to Login
+            Continue
           </button>
         </div>
       </div>
@@ -624,7 +876,25 @@ function Profile() {
     <div className={`min-h-screen ${theme === "dark" ? "bg-gray-900" : "bg-gray-100"} ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
       <div className="max-w-7xl mx-auto">
         {/* Profile Header */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8" style={{ backgroundColor: preferences.cardColor }}>
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8" style={{ 
+          // If useCustomCardColor is true, always use the custom color regardless of premium theme
+          backgroundColor: preferences.useCustomCardColor 
+            ? preferences.cardColor 
+            : (premiumTheme && premiumTheme !== "default" && premiumThemes[premiumTheme])
+              ? premiumThemes[premiumTheme].primary
+              : preferences.cardColor,
+          // Same logic for background gradient
+          background: preferences.useCustomCardColor 
+            ? preferences.cardColor 
+            : (premiumTheme && premiumTheme !== "default" && premiumThemes[premiumTheme])
+              ? `linear-gradient(135deg, ${premiumThemes[premiumTheme].primary}dd, ${premiumThemes[premiumTheme].secondary}aa)`
+              : preferences.cardColor,
+          color: theme === "dark" ? "white" : "#334155" // text color that works on gradient
+        }}>
+          {console.log("Rendering card with:", 
+            preferences.useCustomCardColor ? "custom color" : "theme color", 
+            preferences.useCustomCardColor ? preferences.cardColor : (premiumTheme && premiumThemes[premiumTheme] ? premiumThemes[premiumTheme].primary : "default")
+          )}
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-6">
               <div className="relative">
@@ -681,16 +951,21 @@ function Profile() {
                           onClick={() => {
                             setIsEditing(false);
                             setEditedUsername(user.username);
+                            // Clear any errors
                             setError(null);
+                            // Clear inline errors
+                            const errorElement = document.getElementById('username-error');
+                            if (errorElement) {
+                              errorElement.textContent = '';
+                              errorElement.classList.add('hidden');
+                            }
                           }}
                           className="text-red-500 hover:text-red-600"
                         >
                           <FaTimes className="w-5 h-5" />
                         </button>
                       </div>
-                      {error && (
-                        <div className="text-red-500 text-sm mt-1">{error}</div>
-                      )}
+                      <div id="username-error" className="text-red-500 text-sm mt-1 hidden"></div>
                     </div>
                   ) : (
                     <>
@@ -713,22 +988,102 @@ function Profile() {
               </div>
             </div>
             <div className="flex flex-col items-end space-y-2">
-              <div className="flex items-center space-x-2">
-                <span className="text-sm text-gray-600 dark:text-gray-300">Card Color</span>
-                <input
-                  type="color"
-                  value={preferences.cardColor}
-                  onChange={(e) => handleColorChange(e.target.value)}
-                  className="w-8 h-8 rounded cursor-pointer"
-                />
-              </div>
-              {preferencesChanged && (
-                <button
-                  onClick={handlePreferenceUpdate}
-                  className="text-sm bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition-colors"
-                >
-                  Save
-                </button>
+              {/* Theme info and color picker */}
+              {premiumTheme && premiumTheme !== "default" ? (
+                <div className="flex flex-col items-end space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm font-medium">Using {premiumThemes[premiumTheme].name} Theme</span>
+                    <div className="w-6 h-6 rounded-full" style={{ backgroundColor: premiumThemes[premiumTheme].primary }}></div>
+                    {isAdmin && premiumThemes[premiumTheme].isPremium && (
+                      <span className="text-xs px-2 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 rounded-full">
+                        Admin
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <button 
+                      onClick={() => setShowColorPicker(!showColorPicker)}
+                      className="text-sm bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600"
+                    >
+                      {showColorPicker ? "Hide Card Options" : "Customize Card"}
+                    </button>
+                  </div>
+                  
+                  {showColorPicker && (
+                    <div className="mt-2 p-3 bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
+                      <label className="flex items-center text-sm mb-2">
+                        <input
+                          type="checkbox"
+                          checked={preferences.useCustomCardColor}
+                          onChange={(e) => toggleCustomColorMode(e.target.checked)}
+                          className="mr-2 h-4 w-4"
+                        />
+                        Use custom color instead
+                      </label>
+                      
+                      {preferences.useCustomCardColor && (
+                        <div className="flex items-center mt-2">
+                          <span className="text-sm mr-2">Select color:</span>
+                          <input
+                            type="color"
+                            value={preferences.cardColor}
+                            onChange={(e) => handleColorChange(e.target.value)}
+                            className="w-8 h-8 rounded cursor-pointer"
+                          />
+                        </div>
+                      )}
+                      
+                      {preferencesChanged && (
+                        <div className="mt-2 flex justify-end">
+                          <button
+                            onClick={handlePreferenceUpdate}
+                            disabled={isSaving}
+                            className="text-xs bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600 transition-colors"
+                          >
+                            {isSaving ? "Saving..." : "Save Changes"}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="flex items-center space-x-2">
+                  <button 
+                    onClick={() => setShowColorPicker(!showColorPicker)}
+                    className="text-sm bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600"
+                  >
+                    {showColorPicker ? "Hide Card Color" : "Change Card Color"}
+                  </button>
+                  
+                  {showColorPicker && (
+                    <input
+                      type="color"
+                      value={preferences.cardColor}
+                      onChange={(e) => handleColorChange(e.target.value)}
+                      className="w-8 h-8 rounded cursor-pointer"
+                    />
+                  )}
+                </div>
+              )}
+              
+              {/* Save button appears outside the hidden section when preferences changed */}
+              {preferencesChanged && !showColorPicker && (
+                <div className="mt-2 flex justify-end">
+                  <button
+                    onClick={handlePreferenceUpdate}
+                    disabled={isSaving}
+                    className="text-xs bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600 transition-colors"
+                  >
+                    {isSaving ? "Saving..." : "Save Changes"}
+                  </button>
+                </div>
+              )}
+              
+              {successMessage && (
+                <div className="text-sm text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30 px-2 py-1 rounded">
+                  {successMessage}
+                </div>
               )}
             </div>
           </div>
@@ -948,6 +1303,9 @@ function Profile() {
                           </span>
                           <button
                             onClick={() => {
+                              // Prevent rapid clicking
+                              if (isSaving) return;
+                              
                               const newWeight = prompt("Enter your weight goal in kg:");
                               if (newWeight && !isNaN(newWeight)) {
                                 setPreferences(prev => ({

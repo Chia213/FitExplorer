@@ -2,6 +2,24 @@
 import { apiUrl } from './config';
 
 /**
+ * Check if notifications are enabled globally
+ * @returns {boolean} Whether all notifications are enabled
+ */
+const areNotificationsEnabled = () => {
+  const notificationsValue = localStorage.getItem('allNotifications');
+  return notificationsValue === null || notificationsValue === 'true';
+};
+
+/**
+ * Check if achievement alerts are enabled
+ * @returns {boolean} Whether achievement alerts are enabled
+ */
+const areAchievementAlertsEnabled = () => {
+  const achievementAlertsValue = localStorage.getItem('achievementAlerts');
+  return achievementAlertsValue === null || achievementAlertsValue === 'true';
+};
+
+/**
  * Helper function to create a notification
  * @param {string} message - The notification message
  * @param {string} type - The notification type
@@ -10,6 +28,18 @@ import { apiUrl } from './config';
  * @returns {Promise} - The fetch promise
  */
 export const createNotification = async (message, type, icon = 'bell', iconColor = 'text-blue-500') => {
+  // Check if all notifications are disabled
+  if (!areNotificationsEnabled()) {
+    console.log('Notifications are disabled. Skipping notification:', message);
+    return null;
+  }
+  
+  // For achievement notifications, check the achievement-specific setting
+  if (type === 'achievement_earned' && !areAchievementAlertsEnabled()) {
+    console.log('Achievement alerts are disabled. Skipping achievement notification:', message);
+    return null;
+  }
+
   const token = localStorage.getItem('token');
   if (!token) return null;
 
@@ -55,6 +85,96 @@ export const notifyProfileUpdated = () => {
     'profile_updated',
     'user',
     'text-blue-500'
+  );
+};
+
+export const notifyPersonalInfoUpdated = () => {
+  return createNotification(
+    'Your personal information was updated successfully.',
+    'personal_info_updated',
+    'user',
+    'text-blue-500'
+  );
+};
+
+export const notifyHeightUpdated = (height) => {
+  return createNotification(
+    `Your height was updated to ${height} cm.`,
+    'height_updated',
+    'ruler-vertical',
+    'text-blue-500'
+  );
+};
+
+export const notifyWeightUpdated = (weight) => {
+  return createNotification(
+    `Your weight was updated to ${weight} kg.`,
+    'weight_updated',
+    'weight',
+    'text-green-500'
+  );
+};
+
+export const notifyAgeUpdated = (age) => {
+  return createNotification(
+    `Your age was updated to ${age} years.`,
+    'age_updated',
+    'calendar',
+    'text-orange-500'
+  );
+};
+
+export const notifyGenderUpdated = () => {
+  return createNotification(
+    'Your gender information was updated.',
+    'gender_updated',
+    'user',
+    'text-purple-500'
+  );
+};
+
+export const notifyFitnessGoalsUpdated = () => {
+  return createNotification(
+    'Your fitness goals were updated.',
+    'fitness_goals_updated',
+    'bullseye',
+    'text-red-500'
+  );
+};
+
+export const notifyBioUpdated = () => {
+  return createNotification(
+    'Your bio was updated.',
+    'bio_updated',
+    'edit',
+    'text-indigo-500'
+  );
+};
+
+export const notifyProfilePictureUpdated = () => {
+  return createNotification(
+    'Your profile picture was updated successfully.',
+    'profile_picture_updated',
+    'camera',
+    'text-blue-500'
+  );
+};
+
+export const notifyCardColorUpdated = () => {
+  return createNotification(
+    'Your card color was updated successfully.',
+    'card_color_updated',
+    'paint-brush',
+    'text-indigo-500'
+  );
+};
+
+export const notifyWeightGoalUpdated = (goalWeight) => {
+  return createNotification(
+    `Your weight goal was updated to ${goalWeight} kg.`,
+    'weight_goal_updated',
+    'weight-hanging',
+    'text-purple-500'
   );
 };
 
@@ -145,5 +265,14 @@ export const notifyProgressMilestone = (metric, value) => {
     'progress_milestone',
     'star',
     'text-purple-500'
+  );
+};
+
+export const notifyAchievementEarned = (achievementName, description, icon) => {
+  return createNotification(
+    `🏆 Achievement Unlocked: "${achievementName}" - ${description}`,
+    'achievement_earned',
+    icon || 'trophy',
+    'text-yellow-500'
   );
 };

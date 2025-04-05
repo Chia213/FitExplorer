@@ -366,6 +366,7 @@ class UserProfileResponse(BaseModel):
 
 
 class UserProfileUpdateRequest(BaseModel):
+    username: Optional[str] = None
     height: Optional[float] = None
     weight: Optional[float] = None
     age: Optional[int] = None

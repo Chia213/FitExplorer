@@ -4,7 +4,7 @@ from sqlalchemy import desc
 from typing import List, Dict, Any
 from database import get_db
 from dependencies import get_current_user
-from models import User, Notification
+from models import User, Notification, UserProfile
 from datetime import datetime, timezone
 from pydantic import BaseModel
 import uuid
@@ -21,6 +21,14 @@ class NotificationCreate(BaseModel):
 
 class NotificationUpdate(BaseModel):
     read: bool = True
+
+
+class AchievementAlertsUpdate(BaseModel):
+    enabled: bool
+
+
+class AllNotificationsUpdate(BaseModel):
+    enabled: bool
 
 
 @router.get("")
@@ -158,3 +166,89 @@ def delete_notification(
     db.commit()
     
     return {"message": "Notification deleted successfully"}
+
+
+@router.get("/settings/achievement-alerts")
+def get_achievement_alerts_setting(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get current achievement alerts setting for the user"""
+    # Get or create profile
+    profile = db.query(UserProfile).filter(UserProfile.user_id == user.id).first()
+    
+    if not profile:
+        # Create default profile with achievement alerts enabled
+        profile = UserProfile(user_id=user.id, achievement_alerts=True)
+        db.add(profile)
+        db.commit()
+        db.refresh(profile)
+    
+    return {"enabled": profile.achievement_alerts}
+
+
+@router.patch("/settings/achievement-alerts")
+def update_achievement_alerts_setting(
+    update_data: AchievementAlertsUpdate,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Update achievement alerts setting for the user"""
+    # Get or create profile
+    profile = db.query(UserProfile).filter(UserProfile.user_id == user.id).first()
+    
+    if not profile:
+        # Create profile with specified achievement alerts setting
+        profile = UserProfile(user_id=user.id, achievement_alerts=update_data.enabled)
+        db.add(profile)
+    else:
+        # Update existing profile
+        profile.achievement_alerts = update_data.enabled
+    
+    db.commit()
+    db.refresh(profile)
+    
+    return {"enabled": profile.achievement_alerts}
+
+
+@router.get("/settings/all-notifications")
+def get_all_notifications_setting(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get current setting for all notifications for the user"""
+    # Get or create profile
+    profile = db.query(UserProfile).filter(UserProfile.user_id == user.id).first()
+    
+    if not profile:
+        # Create default profile with all notifications enabled
+        profile = UserProfile(user_id=user.id, all_notifications_enabled=True)
+        db.add(profile)
+        db.commit()
+        db.refresh(profile)
+    
+    return {"enabled": profile.all_notifications_enabled}
+
+
+@router.patch("/settings/all-notifications")
+def update_all_notifications_setting(
+    update_data: AllNotificationsUpdate,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Update all notifications setting for the user"""
+    # Get or create profile
+    profile = db.query(UserProfile).filter(UserProfile.user_id == user.id).first()
+    
+    if not profile:
+        # Create profile with specified all notifications setting
+        profile = UserProfile(user_id=user.id, all_notifications_enabled=update_data.enabled)
+        db.add(profile)
+    else:
+        # Update existing profile
+        profile.all_notifications_enabled = update_data.enabled
+    
+    db.commit()
+    db.refresh(profile)
+    
+    return {"enabled": profile.all_notifications_enabled}

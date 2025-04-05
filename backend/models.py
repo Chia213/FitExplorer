@@ -72,6 +72,10 @@ class UserProfile(Base):
     summary_frequency = Column(String, nullable=True)
     summary_day = Column(String, nullable=True)
     card_color = Column(String, default="#dbeafe")
+    workout_templates_unlocked = Column(Boolean, default=False)
+    stats_features_unlocked = Column(Boolean, default=False)
+    achievement_alerts = Column(Boolean, default=True)
+    all_notifications_enabled = Column(Boolean, default=True)
 
     user = relationship("User", back_populates="profile")
 
@@ -257,6 +261,7 @@ class UserAchievement(Base):
     achievement_id = Column(Integer, ForeignKey("achievements.id"))
     achieved_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))
     progress = Column(Integer, default=0)  # Track progress towards achievement
+    reward_claimed = Column(Boolean, default=False)  # Track if reward has been claimed
 
     user = relationship("User", back_populates="achievements")
     achievement = relationship("Achievement", back_populates="users")

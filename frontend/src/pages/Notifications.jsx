@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { FaBell, FaTrash, FaCheck, FaDumbbell, FaUser, FaCalendarAlt, FaLock, FaSync } from "react-icons/fa";
+import { FaBell, FaTrash, FaCheck, FaDumbbell, FaUser, FaCalendarAlt, FaLock, FaSync, FaBellSlash, FaTrophy } from "react-icons/fa";
 import { useTheme } from "../hooks/useTheme";
 import { useNotifications } from "../contexts/NotificationContext";
 
@@ -14,7 +14,12 @@ const Notifications = () => {
     markAllAsRead, 
     deleteNotification, 
     clearAll,
-    refreshNotifications
+    refreshNotifications,
+    achievementAlertsEnabled,
+    toggleAchievementAlerts,
+    allNotificationsEnabled,
+    toggleAllNotifications,
+    settingsLoading
   } = useNotifications();
   
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -115,6 +120,77 @@ const Notifications = () => {
                   Clear all
                 </button>
               </>
+            )}
+          </div>
+        </div>
+        
+        {/* Notification Settings */}
+        <div className={`p-4 mb-4 ${theme === "dark" ? "bg-gray-800" : "bg-white"} rounded-lg shadow`}>
+          <h2 className="font-semibold mb-4">Notification Settings</h2>
+          
+          {/* All Notifications Toggle */}
+          <div className="flex justify-between items-center mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">
+            <div>
+              <h3 className="font-medium">All Notifications</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Toggle all notifications across the app</p>
+            </div>
+            {settingsLoading ? (
+              <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+            ) : (
+              <div 
+                onClick={toggleAllNotifications}
+                className="flex items-center gap-2 cursor-pointer"
+                title={allNotificationsEnabled ? "Disable all notifications" : "Enable all notifications"}
+              >
+                {allNotificationsEnabled ? (
+                  <FaBell className="text-blue-500 text-lg" />
+                ) : (
+                  <FaBellSlash className="text-gray-400 text-lg" />
+                )}
+                <div className={`relative inline-block w-10 h-6 transition duration-200 ease-in-out ${allNotificationsEnabled ? 'bg-blue-500' : 'bg-gray-300'} rounded-full`}>
+                  <input 
+                    type="checkbox" 
+                    className="opacity-0 absolute w-full h-full cursor-pointer z-10" 
+                    checked={allNotificationsEnabled}
+                    onChange={toggleAllNotifications}
+                  />
+                  <span className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform duration-200 ease-in-out ${allNotificationsEnabled ? 'transform translate-x-4' : ''}`}></span>
+                </div>
+                <span className="text-sm ml-1">{allNotificationsEnabled ? "On" : "Off"}</span>
+              </div>
+            )}
+          </div>
+          
+          {/* Achievement Alerts Toggle */}
+          <div className="flex justify-between items-center">
+            <div>
+              <h3 className="font-medium">Achievement Alerts</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Get notified when you earn new achievements</p>
+            </div>
+            {settingsLoading ? (
+              <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+            ) : (
+              <div 
+                onClick={toggleAchievementAlerts}
+                className="flex items-center gap-2 cursor-pointer"
+                title={achievementAlertsEnabled ? "Disable achievement alerts" : "Enable achievement alerts"}
+              >
+                {achievementAlertsEnabled ? (
+                  <FaTrophy className="text-yellow-500 text-lg" />
+                ) : (
+                  <FaTrophy className="text-gray-400 text-lg" />
+                )}
+                <div className={`relative inline-block w-10 h-6 transition duration-200 ease-in-out ${achievementAlertsEnabled ? 'bg-blue-500' : 'bg-gray-300'} rounded-full`}>
+                  <input 
+                    type="checkbox" 
+                    className="opacity-0 absolute w-full h-full cursor-pointer z-10" 
+                    checked={achievementAlertsEnabled}
+                    onChange={toggleAchievementAlerts}
+                  />
+                  <span className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform duration-200 ease-in-out ${achievementAlertsEnabled ? 'transform translate-x-4' : ''}`}></span>
+                </div>
+                <span className="text-sm ml-1">{achievementAlertsEnabled ? "On" : "Off"}</span>
+              </div>
             )}
           </div>
         </div>
