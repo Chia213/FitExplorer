@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   FaTrash,
@@ -18,6 +18,11 @@ import {
   FaClock,
   FaWeight,
   FaListUl,
+  FaChartBar,
+  FaTrophy,
+  FaInfoCircle,
+  FaCheck,
+  FaEdit,
 } from "react-icons/fa";
 import AddExercise from "./AddExercise";
 import { LuCalendarClock } from "react-icons/lu";
@@ -90,6 +95,10 @@ const WorkoutLog = () => {
   const [supersetWeight, setSupersetWeight] = useState("");
   const [showSupersetExerciseSelector, setShowSupersetExerciseSelector] = useState(false);
   const [fullPyramidChecked, setFullPyramidChecked] = useState(false);
+  const [showExerciseHistoryModal, setShowExerciseHistoryModal] = useState(false);
+  const [showExerciseChartsModal, setShowExerciseChartsModal] = useState(false);
+  const [showPersonalRecordsModal, setShowPersonalRecordsModal] = useState(false);
+  const [selectedExerciseForHistory, setSelectedExerciseForHistory] = useState(null);
 
   const toggleWeightUnit = () => {
     const newUnit = weightUnit === "kg" ? "lbs" : "kg";
@@ -1013,6 +1022,21 @@ const WorkoutLog = () => {
     setSelectedSetType("drop"); // Default to drop set
     setShowSetTypeModal(true);
   };
+  
+  const handleShowExerciseHistory = (exercise) => {
+    setSelectedExerciseForHistory(exercise);
+    setShowExerciseHistoryModal(true);
+  };
+  
+  const handleShowExerciseCharts = (exercise) => {
+    setSelectedExerciseForHistory(exercise);
+    setShowExerciseChartsModal(true);
+  };
+  
+  const handleShowPersonalRecords = (exercise) => {
+    setSelectedExerciseForHistory(exercise);
+    setShowPersonalRecordsModal(true);
+  };
 
   const calculateNextWeight = (currentWeight, percentage) => {
     const reduction = (currentWeight * percentage) / 100;
@@ -1718,6 +1742,41 @@ const WorkoutLog = () => {
                 <FaClock />
               </button>
 
+              <div className="flex space-x-2">
+                <div className="flex flex-col items-center">
+                  <button
+                    onClick={() => handleShowExerciseHistory(exercise)}
+                    className="text-indigo-500 hover:text-indigo-400 mb-1"
+                    title="Exercise History"
+                  >
+                    <FaHistory className="text-lg" />
+                  </button>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">History</span>
+                </div>
+                
+                <div className="flex flex-col items-center">
+                  <button
+                    onClick={() => handleShowExerciseCharts(exercise)}
+                    className="text-green-500 hover:text-green-400 mb-1"
+                    title="Progress Charts"
+                  >
+                    <FaChartBar className="text-lg" />
+                  </button>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">Charts</span>
+                </div>
+                
+                <div className="flex flex-col items-center">
+                  <button
+                    onClick={() => handleShowPersonalRecords(exercise)}
+                    className="text-yellow-500 hover:text-yellow-400 mb-1"
+                    title="Personal Records"
+                  >
+                    <FaTrophy className="text-lg" />
+                  </button>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">Records</span>
+                </div>
+              </div>
+
               {!exercise.is_cardio && (
                 <div className="flex flex-col items-center">
                 <button
@@ -2231,11 +2290,19 @@ const WorkoutLog = () => {
       {/* Set Type Modal */}
       {showSetTypeModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
-            <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">
-              Set Type
-            </h2>
-            
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                Set Type
+              </h2>
+              <button
+                onClick={closeSetTypeModal}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
+              >
+                <FaTimes />
+              </button>
+            </div>
+
             <div className="mb-4">
               <label className="block text-gray-700 dark:text-gray-300 mb-2">
                 Select Set Type
@@ -2255,520 +2322,930 @@ const WorkoutLog = () => {
                 <option value="giant">Giant Set</option>
               </select>
             </div>
+          
+            {/* Conditional content based on selected set type */}
+            {/* ... existing code ... */}
 
-            {selectedSetType === "drop" && (
-              <>
-            <div className="mb-4">
-              <label className="block text-gray-700 dark:text-gray-300 mb-2">
-                Original Weight ({weightUnit})
-              </label>
-              <input
-                type="number"
-                value={originalWeight || ""}
-                onChange={(e) => {
-                  setOriginalWeight(e.target.value);
-                  setDropSetWeight(e.target.value);
-                }}
-                className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
-                placeholder="Enter original weight"
-              />
-            </div>
-                
-            <div className="mb-4">
-              <label className="block text-gray-700 dark:text-gray-300 mb-2">
-                Weight Reduction (%)
-              </label>
-              <input
-                type="number"
-                value={dropSetPercentage}
-                onChange={(e) => setDropSetPercentage(parseInt(e.target.value))}
-                className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
-                min="5"
-                max="50"
-              />
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                Each drop will reduce the weight by this percentage
-              </p>
-            </div>
-                
-            <div className="mb-4">
-              <label className="block text-gray-700 dark:text-gray-300 mb-2">
-                Number of Drops
-              </label>
-              <input
-                type="number"
-                value={dropSetCount}
-                onChange={(e) => setDropSetCount(parseInt(e.target.value))}
-                className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
-                min="1"
-                max="5"
-              />
-            </div>
-                
-            <div className="mb-4">
-              <label className="block text-gray-700 dark:text-gray-300 mb-2">
-                Reps per Drop
-              </label>
-              <input
-                type="number"
-                value={dropSetReps}
-                onChange={(e) => setDropSetReps(e.target.value)}
-                className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
-                placeholder="Enter reps"
-              />
-            </div>
-                
-            {originalWeight && (
-              <div className="mb-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
-                <h3 className="font-medium mb-2">Drop Set Preview:</h3>
-                <div className="space-y-1">
-                  {Array.from({ length: dropSetCount }).map((_, i) => {
-                    const weight = calculateNextWeight(
-                      parseFloat(originalWeight),
-                      dropSetPercentage * (i + 1)
-                    );
-                    return (
-                      <div key={i} className="text-sm">
-                        Drop {i + 1}: {weight} {weightUnit} ({dropSetPercentage}% reduction)
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-              </>
-            )}
-
-            {selectedSetType === "warmup" && (
-              <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg mb-4">
-                <h3 className="font-medium text-yellow-700 dark:text-yellow-400 mb-2">Warm-up Set</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Warm-up sets are typically performed with lighter weights to prepare your muscles and joints.
-                  {!setTypeExercise?.is_cardio && " We suggest using about 70% of your working weight."}
-                </p>
-                {originalWeight && !setTypeExercise?.is_cardio && (
-                  <div className="mt-3 font-medium">
-                    Suggested warm-up weight: {(parseFloat(originalWeight) * 0.7).toFixed(1)} {weightUnit}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {selectedSetType === "working" && (
-              <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg mb-4">
-                <h3 className="font-medium text-blue-700 dark:text-blue-400 mb-2">Normal Set</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Normal sets are your primary training sets performed at your target intensity.
-                </p>
-              </div>
-            )}
-
-            {selectedSetType === "superset" && (
-              <div className="mb-4">
-                <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg mb-4">
-                  <h3 className="font-medium text-purple-700 dark:text-purple-400 mb-2">Superset</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Supersets are two exercises performed back-to-back with minimal rest between them.
-                    Pair {setTypeExercise?.name} with another exercise from your list or catalog.
-                  </p>
-                </div>
-                
-                <div className="mb-4">
-                  <div className="flex flex-col space-y-2">
-                    <button
-                      onClick={() => setShowSupersetExerciseSelector(true)}
-                      className="bg-purple-500 hover:bg-purple-600 text-white py-2 px-4 rounded-lg flex items-center justify-center"
-                    >
-                      <FaPlus className="mr-2" /> Select Exercise from Catalog
-                    </button>
-                    
-                    {supersetExerciseId !== null && (
-                      <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                        <p className="font-medium">Selected: {workoutExercises[supersetExerciseId]?.name}</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                
-                {supersetExerciseId !== null && !setTypeExercise?.is_cardio && !workoutExercises[supersetExerciseId]?.is_cardio && (
-                  <>
-                    <div className="mb-4">
-                      <label className="block text-gray-700 dark:text-gray-300 mb-2">
-                        {setTypeExercise?.name} Weight ({weightUnit})
-                      </label>
-                      <input
-                        type="number"
-                        value={originalWeight || ""}
-                        onChange={(e) => setOriginalWeight(e.target.value)}
-                        className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
-                        placeholder="Enter weight"
-                      />
-                    </div>
-                    
-                    <div className="mb-4">
-                      <label className="block text-gray-700 dark:text-gray-300 mb-2">
-                        {setTypeExercise?.name} Reps
-                      </label>
-                      <input
-                        type="number"
-                        value={dropSetReps}
-                        onChange={(e) => setDropSetReps(e.target.value)}
-                        className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
-                        placeholder="Enter reps"
-                      />
-                    </div>
-                    
-                    <div className="mb-4">
-                      <label className="block text-gray-700 dark:text-gray-300 mb-2">
-                        {workoutExercises[supersetExerciseId]?.name} Weight ({weightUnit})
-                      </label>
-                      <input
-                        type="number"
-                        value={supersetWeight}
-                        onChange={(e) => setSupersetWeight(e.target.value)}
-                        className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
-                        placeholder="Enter weight"
-                      />
-                    </div>
-                    
-                    <div className="mb-4">
-                      <label className="block text-gray-700 dark:text-gray-300 mb-2">
-                        {workoutExercises[supersetExerciseId]?.name} Reps
-                      </label>
-                      <input
-                        type="number"
-                        value={supersetReps}
-                        onChange={(e) => setSupersetReps(e.target.value)}
-                        className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
-                        placeholder="Enter reps"
-                      />
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
-
-            {selectedSetType === "amrap" && (
-              <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg mb-4">
-                <h3 className="font-medium text-green-700 dark:text-green-400 mb-2">AMRAP Set</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  AMRAP (As Many Reps As Possible) sets are performed to technical failure - complete as many reps as you can with good form.
-                </p>
-                
-                <div className="mt-4">
-                  <label className="block text-gray-700 dark:text-gray-300 mb-2">
-                    Weight ({weightUnit})
-                  </label>
-                  <input
-                    type="number"
-                    value={originalWeight || ""}
-                    onChange={(e) => setOriginalWeight(e.target.value)}
-                    className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
-                    placeholder="Enter weight"
-                  />
-                </div>
-                
-                <div className="mt-3">
-                  <label className="block text-gray-700 dark:text-gray-300 mb-2">
-                    Target Reps (minimum)
-                  </label>
-                  <input
-                    type="number"
-                    value={dropSetReps}
-                    onChange={(e) => setDropSetReps(e.target.value)}
-                    className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
-                    placeholder="Enter target reps"
-                  />
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Example: If you aim for at least 8 reps, enter "8"
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {selectedSetType === "restpause" && (
-              <div className="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg mb-4">
-                <h3 className="font-medium text-orange-700 dark:text-orange-400 mb-2">Rest-Pause Set</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Rest-Pause involves performing a set to failure, resting 15-20 seconds, then continuing with the same weight for additional reps.
-                </p>
-                
-                <div className="mt-4">
-                  <label className="block text-gray-700 dark:text-gray-300 mb-2">
-                    Weight ({weightUnit})
-                  </label>
-                  <input
-                    type="number"
-                    value={originalWeight || ""}
-                    onChange={(e) => setOriginalWeight(e.target.value)}
-                    className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
-                    placeholder="Enter weight"
-                  />
-                </div>
-                
-                <div className="mt-3">
-                  <label className="block text-gray-700 dark:text-gray-300 mb-2">
-                    Initial Reps
-                  </label>
-                  <input
-                    type="number"
-                    value={dropSetReps}
-                    onChange={(e) => setDropSetReps(e.target.value)}
-                    className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
-                    placeholder="Enter initial reps"
-                  />
-                </div>
-                
-                <div className="mt-3">
-                  <label className="block text-gray-700 dark:text-gray-300 mb-2">
-                    Number of Rest-Pauses
-                  </label>
-                  <input
-                    type="number"
-                    value={dropSetCount}
-                    onChange={(e) => setDropSetCount(parseInt(e.target.value))}
-                    className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
-                    min="1"
-                    max="3"
-                    placeholder="How many times to rest-pause"
-                  />
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Typically 1-3 rest-pauses are performed
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {selectedSetType === "pyramid" && (
-              <div className="p-4 bg-pink-50 dark:bg-pink-900/20 rounded-lg mb-4">
-                <h3 className="font-medium text-pink-700 dark:text-pink-400 mb-2">Pyramid Set</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Pyramid sets involve progressively increasing the weight while decreasing reps (ascending), then optionally decreasing weight while increasing reps (descending).
-                </p>
-                
-                <div className="mt-4">
-                  <label className="block text-gray-700 dark:text-gray-300 mb-2">
-                    Starting Weight ({weightUnit})
-                  </label>
-                  <input
-                    type="number"
-                    value={originalWeight || ""}
-                    onChange={(e) => setOriginalWeight(e.target.value)}
-                    className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
-                    placeholder="Enter starting weight"
-                  />
-                </div>
-                
-                <div className="mt-3">
-                  <label className="block text-gray-700 dark:text-gray-300 mb-2">
-                    Starting Reps
-                  </label>
-                  <input
-                    type="number"
-                    value={dropSetReps}
-                    onChange={(e) => setDropSetReps(e.target.value)}
-                    className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
-                    placeholder="Enter starting reps"
-                  />
-                </div>
-                
-                <div className="mt-3">
-                  <label className="block text-gray-700 dark:text-gray-300 mb-2">
-                    Weight Increment (%)
-                  </label>
-                  <input
-                    type="number"
-                    value={dropSetPercentage}
-                    onChange={(e) => setDropSetPercentage(parseInt(e.target.value))}
-                    className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
-                    min="5"
-                    max="30"
-                    placeholder="Weight increment percentage"
-                  />
-                </div>
-                
-                <div className="mt-3">
-                  <label className="block text-gray-700 dark:text-gray-300 mb-2">
-                    Number of Steps
-                  </label>
-                  <input
-                    type="number"
-                    value={dropSetCount}
-                    onChange={(e) => setDropSetCount(parseInt(e.target.value))}
-                    className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
-                    min="2"
-                    max="5"
-                    placeholder="How many steps in the pyramid"
-                  />
-                </div>
-                
-                <div className="mt-3 flex items-center">
-                  <input
-                    type="checkbox"
-                    id="fullPyramid"
-                    className="mr-2"
-                    checked={fullPyramidChecked}
-                    onChange={(e) => setFullPyramidChecked(e.target.checked)}
-                  />
-                  <label htmlFor="fullPyramid" className="text-gray-700 dark:text-gray-300">
-                    Full Pyramid (ascending + descending)
-                  </label>
-                </div>
-              </div>
-            )}
-
-            {selectedSetType === "giant" && (
-              <div className="p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg mb-4">
-                <h3 className="font-medium text-indigo-700 dark:text-indigo-400 mb-2">Giant Set</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Giant sets link 3 or more exercises performed back-to-back with minimal rest. Select multiple exercises to include in your giant set.
-                </p>
-                
-                <div className="mt-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <p className="font-medium">1. {setTypeExercise?.name}</p>
-                    <span className="text-xs bg-indigo-100 dark:bg-indigo-800 text-indigo-800 dark:text-indigo-200 px-2 py-1 rounded-full">
-                      Primary Exercise
-                    </span>
-                  </div>
-                  
-                  {!setTypeExercise?.is_cardio && (
-                    <div className="grid grid-cols-2 gap-2 mb-4">
-                      <div>
-                        <label className="text-sm text-gray-600 dark:text-gray-400">
-                          Weight ({weightUnit})
-                        </label>
-                        <input
-                          type="number"
-                          value={originalWeight || ""}
-                          onChange={(e) => setOriginalWeight(e.target.value)}
-                          className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
-                          placeholder="Weight"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-sm text-gray-600 dark:text-gray-400">
-                          Reps
-                        </label>
-                        <input
-                          type="number"
-                          value={dropSetReps}
-                          onChange={(e) => setDropSetReps(e.target.value)}
-                          className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
-                          placeholder="Reps"
-                        />
-                      </div>
-                    </div>
-                  )}
-                  
-                  <div className="border-t border-gray-200 dark:border-gray-700 pt-3 mb-3">
-                    <button
-                      onClick={() => setShowSupersetExerciseSelector(true)}
-                      className="bg-indigo-500 hover:bg-indigo-600 text-white py-2 px-4 rounded-lg flex items-center justify-center"
-                    >
-                      <FaPlus className="mr-2" /> Add Exercise to Giant Set
-                    </button>
-                    
-                    {supersetExerciseId !== null && (
-                      <div className="mt-3">
-                        <div className="flex items-center justify-between mb-2">
-                          <p className="font-medium">2. {workoutExercises[supersetExerciseId]?.name}</p>
-                        </div>
-                        
-                        {!workoutExercises[supersetExerciseId]?.is_cardio && (
-                          <div className="grid grid-cols-2 gap-2 mb-4">
-                            <div>
-                              <label className="text-sm text-gray-600 dark:text-gray-400">
-                                Weight ({weightUnit})
-                              </label>
-                              <input
-                                type="number"
-                                value={supersetWeight}
-                                onChange={(e) => setSupersetWeight(e.target.value)}
-                                className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
-                                placeholder="Weight"
-                              />
-                            </div>
-                            <div>
-                              <label className="text-sm text-gray-600 dark:text-gray-400">
-                                Reps
-                              </label>
-                              <input
-                                type="number"
-                                value={supersetReps}
-                                onChange={(e) => setSupersetReps(e.target.value)}
-                                className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
-                                placeholder="Enter reps"
-                              />
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    
-                    {/* Future enhancement: Add support for more exercises in the giant set */}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div className="flex space-x-3">
+            <div className="flex justify-between space-x-3 mt-6">
               <button
-                onClick={handleAddSetByType}
-                className="bg-teal-500 hover:bg-teal-600 text-white py-2 px-4 rounded-lg"
-              >
-                {getButtonText()}
-              </button>
-              <button
+                className="flex-1 bg-gray-300 hover:bg-gray-400 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-800 dark:text-white py-2 rounded-lg"
                 onClick={closeSetTypeModal}
-                className="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-2 rounded-lg"
               >
                 Cancel
+              </button>
+              <button
+                className="flex-1 bg-teal-500 hover:bg-teal-600 text-white py-2 rounded-lg"
+                onClick={handleAddSetByType}
+              >
+                {getButtonText()}
               </button>
             </div>
           </div>
         </div>
       )}
-
-      {showSupersetExerciseSelector && (
-        <AddExercise
-          onClose={() => setShowSupersetExerciseSelector(false)}
-          onSelectExercise={(exercise) => {
-            // Add the selected exercise to the workout if not already present
-            const existingIndex = workoutExercises.findIndex(ex => ex.name === exercise.name);
+      
+      {/* Exercise History Modal */}
+      {showExerciseHistoryModal && selectedExerciseForHistory && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-4xl w-full p-6 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                Exercise History: {selectedExerciseForHistory.name}
+              </h2>
+              <button
+                onClick={() => setShowExerciseHistoryModal(false)}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
+              >
+                <FaTimes />
+              </button>
+            </div>
             
-            if (existingIndex === -1) {
-              // If the exercise doesn't exist yet, add it to the workout
-              const emptySets = Array(exercise.initialSets || 1)
-                .fill()
-                .map(() => ({
-                  weight: "",
-                  reps: "",
-                  notes: "",
-                  is_warmup: false,
-                  is_drop_set: false,
-                  is_superset: false
-                }));
-              
-              // Add the new exercise
-              const newExercise = { 
-                ...exercise, 
-                sets: emptySets, 
-                is_cardio: exercise.is_cardio || false 
-              };
-              
-              setWorkoutExercises(prev => [...prev, newExercise]);
-              
-              // Use the last index as the superset exercise ID
-              setSupersetExerciseId(String(workoutExercises.length));
-            } else {
-              // If the exercise already exists, use its index
-              setSupersetExerciseId(String(existingIndex));
-            }
+            {/* Summary and trend for strength exercises */}
+            {!selectedExerciseForHistory.is_cardio && (
+              <div className="mb-4 bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-lg">
+                {(() => {
+                  const relevantWorkouts = workoutHistory
+                    .filter(workout => 
+                      workout.exercises?.some(ex => 
+                        ex.name === selectedExerciseForHistory.name
+                      )
+                    )
+                    .sort((a, b) => new Date(b.start_time) - new Date(a.start_time));
+                    
+                  if (relevantWorkouts.length >= 2) {
+                    const latestWorkout = relevantWorkouts[0];
+                    const previousWorkout = relevantWorkouts[1];
+                    
+                    const latestExercise = latestWorkout.exercises.find(ex => 
+                      ex.name === selectedExerciseForHistory.name
+                    );
+                    const previousExercise = previousWorkout.exercises.find(ex => 
+                      ex.name === selectedExerciseForHistory.name
+                    );
+                    
+                    // Find best sets from each workout
+                    const getMaxWeightSet = (exercise) => {
+                      return exercise.sets.reduce((best, current) => {
+                        return (parseFloat(current.weight || 0) > parseFloat(best.weight || 0)) ? current : best;
+                      }, exercise.sets[0] || {});
+                    };
+                    
+                    const latestBestSet = getMaxWeightSet(latestExercise);
+                    const previousBestSet = getMaxWeightSet(previousExercise);
+                    
+                    const weightDiff = parseFloat(latestBestSet.weight || 0) - parseFloat(previousBestSet.weight || 0);
+                    const percentChange = (previousBestSet.weight && previousBestSet.weight > 0) 
+                      ? ((weightDiff / parseFloat(previousBestSet.weight)) * 100).toFixed(1)
+                      : 0;
+                    
+                    return (
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <h3 className="font-semibold text-gray-800 dark:text-gray-200">Trend Analysis</h3>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">
+                            Performance compared to your previous workout
+                          </p>
+                        </div>
+                        <div className={`flex items-center ${weightDiff > 0 ? 'text-green-600 dark:text-green-400' : weightDiff < 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400'}`}>
+                          <span className="text-xl font-bold mr-2">
+                            {weightDiff > 0 ? '+' : ''}{weightDiff} {weightUnit}
+                          </span>
+                          <span className="text-sm">
+                            ({weightDiff > 0 ? '+' : ''}{percentChange}%)
+                            {weightDiff > 0 ? <FaArrowUp className="inline ml-1" /> : weightDiff < 0 ? <FaArrowDown className="inline ml-1" /> : null}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  }
+                  
+                  return (
+                    <p className="text-gray-600 dark:text-gray-400">
+                      Not enough history to show performance trend. Continue logging your workouts!
+                    </p>
+                  );
+                })()}
+              </div>
+            )}
             
-            setShowSupersetExerciseSelector(false);
-          }}
-        />
+            {/* Summary and trend for cardio exercises */}
+            {selectedExerciseForHistory.is_cardio && (
+              <div className="mb-4 bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
+                {(() => {
+                  const relevantWorkouts = workoutHistory
+                    .filter(workout => 
+                      workout.exercises?.some(ex => 
+                        ex.name === selectedExerciseForHistory.name
+                      )
+                    )
+                    .sort((a, b) => new Date(b.start_time) - new Date(a.start_time));
+                    
+                  if (relevantWorkouts.length >= 2) {
+                    const latestWorkout = relevantWorkouts[0];
+                    const previousWorkout = relevantWorkouts[1];
+                    
+                    const latestExercise = latestWorkout.exercises.find(ex => 
+                      ex.name === selectedExerciseForHistory.name
+                    );
+                    const previousExercise = previousWorkout.exercises.find(ex => 
+                      ex.name === selectedExerciseForHistory.name
+                    );
+                    
+                    // Calculate total distance for comparison
+                    const getDistanceTotal = (exercise) => {
+                      return exercise.sets.reduce((total, current) => {
+                        return total + parseFloat(current.distance || 0);
+                      }, 0);
+                    };
+                    
+                    const latestDistance = getDistanceTotal(latestExercise);
+                    const previousDistance = getDistanceTotal(previousExercise);
+                    
+                    const distanceDiff = latestDistance - previousDistance;
+                    const percentChange = (previousDistance > 0) 
+                      ? ((distanceDiff / previousDistance) * 100).toFixed(1)
+                      : 0;
+                    
+                    return (
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <h3 className="font-semibold text-gray-800 dark:text-gray-200">Distance Trend</h3>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">
+                            Performance compared to your previous session
+                          </p>
+                        </div>
+                        <div className={`flex items-center ${distanceDiff > 0 ? 'text-green-600 dark:text-green-400' : distanceDiff < 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400'}`}>
+                          <span className="text-xl font-bold mr-2">
+                            {distanceDiff > 0 ? '+' : ''}{distanceDiff.toFixed(2)} km
+                          </span>
+                          <span className="text-sm">
+                            ({distanceDiff > 0 ? '+' : ''}{percentChange}%)
+                            {distanceDiff > 0 ? <FaArrowUp className="inline ml-1" /> : distanceDiff < 0 ? <FaArrowDown className="inline ml-1" /> : null}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  }
+                  
+                  return (
+                    <p className="text-gray-600 dark:text-gray-400">
+                      Not enough history to show performance trend. Continue logging your cardio sessions!
+                    </p>
+                  );
+                })()}
+              </div>
+            )}
+            
+            <div className="mb-4 bg-gray-100 dark:bg-gray-700 p-4 rounded-lg">
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="font-semibold text-gray-800 dark:text-gray-200">Recent Performance</h3>
+                <div className="text-sm">
+                  <select 
+                    className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-sm"
+                    onChange={(e) => {
+                      const sortedHistory = [...workoutHistory].sort((a, b) => {
+                        if (e.target.value === "date-desc") {
+                          return new Date(b.start_time) - new Date(a.start_time);
+                        } else if (e.target.value === "date-asc") {
+                          return new Date(a.start_time) - new Date(b.start_time);
+                        } else if (e.target.value === "performance-desc") {
+                          const exA = a.exercises.find(ex => ex.name === selectedExerciseForHistory.name);
+                          const exB = b.exercises.find(ex => ex.name === selectedExerciseForHistory.name);
+                          
+                          if (selectedExerciseForHistory.is_cardio) {
+                            // Compare by distance
+                            const distA = exA.sets.reduce((total, set) => total + parseFloat(set.distance || 0), 0);
+                            const distB = exB.sets.reduce((total, set) => total + parseFloat(set.distance || 0), 0);
+                            return distB - distA;
+                          } else {
+                            // Compare by max weight
+                            const maxWeightA = Math.max(...exA.sets.map(set => parseFloat(set.weight || 0)));
+                            const maxWeightB = Math.max(...exB.sets.map(set => parseFloat(set.weight || 0)));
+                            return maxWeightB - maxWeightA;
+                          }
+                        }
+                        return 0;
+                      });
+                      setWorkoutHistory(sortedHistory);
+                    }}
+                  >
+                    <option value="date-desc">Most Recent</option>
+                    <option value="date-asc">Oldest First</option>
+                    <option value="performance-desc">Best Performance</option>
+                  </select>
+                </div>
+              </div>
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-200 dark:border-gray-600">
+                    <th className="text-left py-2">Date</th>
+                    <th className="text-left py-2">Workout</th>
+                    <th className="text-center py-2">Sets</th>
+                    <th className="text-center py-2">Best Set</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {workoutHistory
+                    .filter(workout => 
+                      workout.exercises?.some(ex => 
+                        ex.name === selectedExerciseForHistory.name
+                      )
+                    )
+                    .slice(0, 5)
+                    .map((workout, idx) => {
+                      const exercise = workout.exercises.find(ex => 
+                        ex.name === selectedExerciseForHistory.name
+                      );
+                      const bestSet = exercise.sets.reduce((best, current) => {
+                        // For strength exercises
+                        if (!exercise.is_cardio) {
+                          // Calculate "effective weight" (weight × reps) and compare
+                          const currentEffective = parseFloat(current.weight || 0) * parseFloat(current.reps || 0);
+                          const bestEffective = parseFloat(best.weight || 0) * parseFloat(best.reps || 0);
+                          return currentEffective > bestEffective ? current : best;
+                        }
+                        // For cardio, compare by distance (if available) or duration
+                        else if (current.distance && best.distance) {
+                          return parseFloat(current.distance) > parseFloat(best.distance) ? current : best;
+                        } else {
+                          return parseFloat(current.duration || 0) > parseFloat(best.duration || 0) ? current : best;
+                        }
+                      }, exercise.sets[0] || {});
+                      
+                      return (
+                        <tr key={idx} className="border-b border-gray-200 dark:border-gray-600">
+                          <td className="py-2">{new Date(workout.start_time).toLocaleDateString()}</td>
+                          <td className="py-2">{workout.name}</td>
+                          <td className="py-2 text-center">{exercise.sets.length}</td>
+                          <td className="py-2 text-center">
+                            {!exercise.is_cardio ? (
+                              `${bestSet.weight || 0} ${weightUnit} × ${bestSet.reps || 0}`
+                            ) : (
+                              bestSet.distance ? 
+                                `${bestSet.distance} km (${bestSet.duration || 0} min)` : 
+                                `${bestSet.duration || 0} min`
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  {workoutHistory.filter(workout => 
+                    workout.exercises?.some(ex => 
+                      ex.name === selectedExerciseForHistory.name
+                    )).length === 0 && (
+                    <tr>
+                      <td colSpan="4" className="py-4 text-center text-gray-500 dark:text-gray-400">
+                        No history found for this exercise.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+            
+            <div className="text-center">
+              <button
+                onClick={() => {
+                  setShowExerciseHistoryModal(false);
+                  navigate("/workout-history", { 
+                    state: { 
+                      filterExercise: selectedExerciseForHistory.name 
+                    } 
+                  });
+                }}
+                className="bg-indigo-500 hover:bg-indigo-600 text-white py-2 px-4 rounded-lg inline-flex items-center"
+              >
+                <FaHistory className="mr-2" />
+                View Complete History
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Exercise Charts Modal */}
+      {showExerciseChartsModal && selectedExerciseForHistory && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-4xl w-full p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                Progress Charts: {selectedExerciseForHistory.name}
+              </h2>
+              <button
+                onClick={() => setShowExerciseChartsModal(false)}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
+              >
+                <FaTimes />
+              </button>
+            </div>
+            
+            <div className="mb-4 p-4 bg-gray-100 dark:bg-gray-700 rounded-lg">
+              {(() => {
+                // Filter workouts for this exercise
+                const relevantWorkouts = workoutHistory
+                  .filter(workout => 
+                    workout.exercises?.some(ex => 
+                      ex.name === selectedExerciseForHistory.name
+                    )
+                  )
+                  .sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
+                
+                if (relevantWorkouts.length < 2) {
+                  return (
+                    <div className="text-center py-8">
+                      <FaChartBar className="text-5xl text-gray-400 dark:text-gray-600 mx-auto mb-4" />
+                      <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto">
+                        Not enough workout data to generate meaningful charts. Keep logging your workouts!
+                      </p>
+                    </div>
+                  );
+                }
+                
+                if (!selectedExerciseForHistory.is_cardio) {
+                  // For strength exercises - basic visualization
+                  const maxWeights = relevantWorkouts.map(workout => {
+                    const exercise = workout.exercises.find(ex => 
+                      ex.name === selectedExerciseForHistory.name
+                    );
+                    const maxWeight = Math.max(...exercise.sets.map(set => 
+                      parseFloat(set.weight || 0)
+                    ));
+                    return maxWeight;
+                  });
+                  
+                  const firstWeight = maxWeights[0];
+                  const lastWeight = maxWeights[maxWeights.length - 1];
+                  const improvement = lastWeight - firstWeight;
+                  const percentChange = ((improvement / firstWeight) * 100).toFixed(1);
+                  
+                  return (
+                    <>
+                      <div className="mb-6">
+                        <h3 className="font-semibold mb-3 text-gray-800 dark:text-gray-200">Weight Progression</h3>
+                        <div className="h-64 bg-white dark:bg-gray-900 rounded border border-gray-300 dark:border-gray-600 flex flex-col p-4">
+                          <div className="flex-1 relative">
+                            {/* Simple bar chart */}
+                            <div className="absolute inset-0 flex items-end">
+                              {maxWeights.map((weight, i) => {
+                                const maxVal = Math.max(...maxWeights);
+                                const height = (weight / maxVal) * 100;
+                                const width = 100 / maxWeights.length;
+                                
+                                return (
+                                  <div 
+                                    key={i}
+                                    className="mx-0.5 flex-1 bg-indigo-500 hover:bg-indigo-400 transition-all relative group"
+                                    style={{ height: `${height}%` }}
+                                    title={`${new Date(relevantWorkouts[i].start_time).toLocaleDateString()}: ${weight} ${weightUnit}`}
+                                  >
+                                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
+                                      {weight} {weightUnit}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                          <div className="h-6 mt-2 flex justify-between text-xs text-gray-500 dark:text-gray-400">
+                            <span>{new Date(relevantWorkouts[0].start_time).toLocaleDateString()}</span>
+                            <span>{new Date(relevantWorkouts[relevantWorkouts.length - 1].start_time).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="bg-white dark:bg-gray-900 p-4 rounded">
+                        <div className="grid grid-cols-3 gap-4">
+                          <div className="text-center">
+                            <p className="text-sm text-gray-500 dark:text-gray-400">Starting Weight</p>
+                            <p className="text-xl font-bold text-gray-800 dark:text-gray-200">{firstWeight} {weightUnit}</p>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-sm text-gray-500 dark:text-gray-400">Current Weight</p>
+                            <p className="text-xl font-bold text-gray-800 dark:text-gray-200">{lastWeight} {weightUnit}</p>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-sm text-gray-500 dark:text-gray-400">Improvement</p>
+                            <p className={`text-xl font-bold ${improvement > 0 ? 'text-green-600 dark:text-green-400' : improvement < 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-800 dark:text-gray-200'}`}>
+                              {improvement > 0 ? '+' : ''}{improvement} {weightUnit}
+                              <span className="text-sm ml-1">({percentChange}%)</span>
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  );
+                } else {
+                  // For cardio exercises - basic visualization
+                  const distances = relevantWorkouts.map(workout => {
+                    const exercise = workout.exercises.find(ex => 
+                      ex.name === selectedExerciseForHistory.name
+                    );
+                    const totalDistance = exercise.sets.reduce((sum, set) => 
+                      sum + parseFloat(set.distance || 0), 0
+                    );
+                    return totalDistance;
+                  });
+                  
+                  const firstDistance = distances[0];
+                  const lastDistance = distances[distances.length - 1];
+                  const improvement = lastDistance - firstDistance;
+                  const percentChange = ((improvement / firstDistance) * 100).toFixed(1);
+                  
+                  return (
+                    <>
+                      <div className="mb-6">
+                        <h3 className="font-semibold mb-3 text-gray-800 dark:text-gray-200">Distance Progression</h3>
+                        <div className="h-64 bg-white dark:bg-gray-900 rounded border border-gray-300 dark:border-gray-600 flex flex-col p-4">
+                          <div className="flex-1 relative">
+                            {/* Simple bar chart */}
+                            <div className="absolute inset-0 flex items-end">
+                              {distances.map((distance, i) => {
+                                const maxVal = Math.max(...distances);
+                                const height = (distance / maxVal) * 100;
+                                const width = 100 / distances.length;
+                                
+                                return (
+                                  <div 
+                                    key={i}
+                                    className="mx-0.5 flex-1 bg-green-500 hover:bg-green-400 transition-all relative group"
+                                    style={{ height: `${height}%` }}
+                                    title={`${new Date(relevantWorkouts[i].start_time).toLocaleDateString()}: ${distance.toFixed(1)} km`}
+                                  >
+                                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
+                                      {distance.toFixed(1)} km
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                          <div className="h-6 mt-2 flex justify-between text-xs text-gray-500 dark:text-gray-400">
+                            <span>{new Date(relevantWorkouts[0].start_time).toLocaleDateString()}</span>
+                            <span>{new Date(relevantWorkouts[relevantWorkouts.length - 1].start_time).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="bg-white dark:bg-gray-900 p-4 rounded">
+                        <div className="grid grid-cols-3 gap-4">
+                          <div className="text-center">
+                            <p className="text-sm text-gray-500 dark:text-gray-400">Starting Distance</p>
+                            <p className="text-xl font-bold text-gray-800 dark:text-gray-200">{firstDistance.toFixed(1)} km</p>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-sm text-gray-500 dark:text-gray-400">Current Distance</p>
+                            <p className="text-xl font-bold text-gray-800 dark:text-gray-200">{lastDistance.toFixed(1)} km</p>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-sm text-gray-500 dark:text-gray-400">Improvement</p>
+                            <p className={`text-xl font-bold ${improvement > 0 ? 'text-green-600 dark:text-green-400' : improvement < 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-800 dark:text-gray-200'}`}>
+                              {improvement > 0 ? '+' : ''}{improvement.toFixed(1)} km
+                              <span className="text-sm ml-1">({percentChange}%)</span>
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  );
+                }
+              })()}
+            </div>
+            
+            <div className="text-center">
+              <button
+                onClick={() => {
+                  setShowExerciseChartsModal(false);
+                  navigate("/progress-tracker", { 
+                    state: { 
+                      activeExercise: selectedExerciseForHistory.name 
+                    } 
+                  });
+                }}
+                className="bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg inline-flex items-center"
+              >
+                <FaChartBar className="mr-2" />
+                View Full Progress Charts
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Personal Records Modal */}
+      {showPersonalRecordsModal && selectedExerciseForHistory && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                Personal Records: {selectedExerciseForHistory.name}
+              </h2>
+              <button
+                onClick={() => setShowPersonalRecordsModal(false)}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
+              >
+                <FaTimes />
+              </button>
+            </div>
+            
+            <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg mb-4">
+              {!selectedExerciseForHistory.is_cardio ? (
+                <>
+                  {/* For strength exercises */}
+                  {(() => {
+                    // Find best weight set
+                    let bestWeightSet = { weight: 0, reps: 0, date: null };
+                    let bestRepsSet = { weight: 0, reps: 0, date: null };
+                    
+                    // Progress history for timeline
+                    const progressHistory = [];
+                    
+                    // Go through workout history to find PR sets
+                    workoutHistory
+                      .filter(workout => 
+                        workout.exercises?.some(ex => 
+                          ex.name === selectedExerciseForHistory.name
+                        )
+                      )
+                      .sort((a, b) => new Date(a.start_time) - new Date(b.start_time))
+                      .forEach(workout => {
+                        const exercise = workout.exercises.find(ex => 
+                          ex.name === selectedExerciseForHistory.name
+                        );
+                        
+                        let workoutBestWeight = { weight: 0, reps: 0 };
+                        
+                        exercise.sets.forEach(set => {
+                          // Find best weight in this workout
+                          if (parseFloat(set.weight || 0) > parseFloat(workoutBestWeight.weight || 0)) {
+                            workoutBestWeight = {
+                              ...set,
+                              date: workout.start_time
+                            };
+                          }
+                          
+                          // Find all-time best weight
+                          if (parseFloat(set.weight || 0) > parseFloat(bestWeightSet.weight || 0)) {
+                            bestWeightSet = {
+                              ...set,
+                              date: workout.start_time
+                            };
+                          }
+                          
+                          // Find all-time best reps
+                          if (parseFloat(set.reps || 0) > parseFloat(bestRepsSet.reps || 0)) {
+                            bestRepsSet = {
+                              ...set,
+                              date: workout.start_time
+                            };
+                          }
+                        });
+                        
+                        // Add to progress history for timeline
+                        if (workoutBestWeight.weight > 0) {
+                          progressHistory.push({
+                            date: workout.start_time,
+                            weight: workoutBestWeight.weight,
+                            reps: workoutBestWeight.reps
+                          });
+                        }
+                      });
+                    
+                    // Calculate lifetime improvement
+                    let lifetimeImprovement = 0;
+                    let improvementPercent = 0;
+                    
+                    if (progressHistory.length >= 2) {
+                      const firstRecord = progressHistory[0];
+                      const lastRecord = progressHistory[progressHistory.length - 1];
+                      
+                      lifetimeImprovement = parseFloat(lastRecord.weight) - parseFloat(firstRecord.weight);
+                      improvementPercent = ((lifetimeImprovement / parseFloat(firstRecord.weight)) * 100).toFixed(1);
+                    }
+                    
+                    return (
+                      <>
+                        <div className="mb-4">
+                          <h3 className="font-bold text-gray-800 dark:text-gray-200 flex items-center">
+                            <FaTrophy className="text-yellow-500 mr-2" /> Max Weight
+                          </h3>
+                          <div className="mt-2 bg-white dark:bg-gray-700 p-3 rounded border border-yellow-200 dark:border-yellow-800">
+                            {bestWeightSet.weight ? (
+                              <>
+                                <p className="text-2xl font-bold text-gray-800 dark:text-white">
+                                  {bestWeightSet.weight} {weightUnit}
+                                </p>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">
+                                  Achieved on {bestWeightSet.date ? new Date(bestWeightSet.date).toLocaleDateString() : 'N/A'} • {bestWeightSet.reps} reps
+                                </p>
+                              </>
+                            ) : (
+                              <p className="text-gray-600 dark:text-gray-400">No records found</p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="mb-4">
+                          <h3 className="font-bold text-gray-800 dark:text-gray-200 flex items-center">
+                            <FaTrophy className="text-yellow-500 mr-2" /> Max Reps
+                          </h3>
+                          <div className="mt-2 bg-white dark:bg-gray-700 p-3 rounded border border-yellow-200 dark:border-yellow-800">
+                            {bestRepsSet.reps ? (
+                              <>
+                                <p className="text-2xl font-bold text-gray-800 dark:text-white">
+                                  {bestRepsSet.reps} reps
+                                </p>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">
+                                  Achieved on {bestRepsSet.date ? new Date(bestRepsSet.date).toLocaleDateString() : 'N/A'} • {bestRepsSet.weight} {weightUnit}
+                                </p>
+                              </>
+                            ) : (
+                              <p className="text-gray-600 dark:text-gray-400">No records found</p>
+                            )}
+                          </div>
+                        </div>
+                        
+                        {progressHistory.length >= 2 && (
+                          <div className="mt-4 pt-4 border-t border-yellow-200 dark:border-yellow-800">
+                            <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-2">Progress Timeline</h3>
+                            <div className="h-24 relative mt-4">
+                              {/* Timeline line */}
+                              <div className="absolute left-0 right-0 top-1/2 h-1 bg-yellow-200 dark:bg-yellow-800 transform -translate-y-1/2"></div>
+                              
+                              {/* Markers */}
+                              {progressHistory.map((record, idx) => {
+                                // Calculate position percentage based on time
+                                const firstDate = new Date(progressHistory[0].date).getTime();
+                                const lastDate = new Date(progressHistory[progressHistory.length - 1].date).getTime();
+                                const currentDate = new Date(record.date).getTime();
+                                
+                                const position = ((currentDate - firstDate) / (lastDate - firstDate)) * 100;
+                                
+                                // Calculate size based on weight (relative to max)
+                                const maxWeight = Math.max(...progressHistory.map(r => parseFloat(r.weight)));
+                                const minWeight = Math.min(...progressHistory.map(r => parseFloat(r.weight)));
+                                const weightRange = maxWeight - minWeight;
+                                
+                                const sizePercentage = weightRange === 0 ? 
+                                  50 : // If all weights are the same
+                                  ((parseFloat(record.weight) - minWeight) / weightRange) * 70 + 30; // 30-100% size range
+                                
+                                return (
+                                  <div
+                                    key={idx}
+                                    className="absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer hover:z-10"
+                                    style={{ 
+                                      left: `${position}%`, 
+                                      top: '50%',
+                                      transition: 'all 0.2s ease'
+                                    }}
+                                    title={`${new Date(record.date).toLocaleDateString()}: ${record.weight} ${weightUnit} × ${record.reps} reps`}
+                                  >
+                                    <div 
+                                      className={`rounded-full flex items-center justify-center text-xs text-white 
+                                        ${idx === 0 ? 'bg-blue-500' : 
+                                          idx === progressHistory.length - 1 ? 'bg-green-500' : 
+                                          'bg-yellow-500'}`}
+                                      style={{ 
+                                        width: `${sizePercentage}px`, 
+                                        height: `${sizePercentage}px`
+                                      }}
+                                    >
+                                      {record.weight}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                            
+                            <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
+                              <span>{new Date(progressHistory[0].date).toLocaleDateString()}</span>
+                              <span>{new Date(progressHistory[progressHistory.length - 1].date).toLocaleDateString()}</span>
+                            </div>
+                            
+                            <div className="mt-3 bg-white dark:bg-gray-700 p-2 rounded">
+                              <p className="text-sm">
+                                <span className="font-medium">Lifetime improvement:</span> 
+                                <span className={lifetimeImprovement > 0 ? 'text-green-600 dark:text-green-400 ml-1' : 'text-gray-600 dark:text-gray-400 ml-1'}>
+                                  {lifetimeImprovement > 0 ? '+' : ''}{lifetimeImprovement} {weightUnit} ({improvementPercent}%)
+                                </span>
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
+                </>
+              ) : (
+                <>
+                  {/* For cardio exercises */}
+                  {(() => {
+                    // Find best distance and pace
+                    let bestDistance = { distance: 0, duration: 0, date: null };
+                    let bestPace = { distance: 0, duration: 0, date: null, pace: Infinity };
+                    
+                    // Progress history for timeline
+                    const progressHistory = [];
+                    
+                    // Go through workout history to find PR sets
+                    workoutHistory
+                      .filter(workout => 
+                        workout.exercises?.some(ex => 
+                          ex.name === selectedExerciseForHistory.name
+                        )
+                      )
+                      .sort((a, b) => new Date(a.start_time) - new Date(b.start_time))
+                      .forEach(workout => {
+                        const exercise = workout.exercises.find(ex => 
+                          ex.name === selectedExerciseForHistory.name
+                        );
+                        
+                        let workoutBestDistance = { distance: 0, duration: 0 };
+                        
+                        exercise.sets.forEach(set => {
+                          // Find best distance in this workout
+                          if (parseFloat(set.distance || 0) > parseFloat(workoutBestDistance.distance || 0)) {
+                            workoutBestDistance = {
+                              ...set,
+                              date: workout.start_time
+                            };
+                          }
+                          
+                          // Find all-time best distance
+                          if (parseFloat(set.distance || 0) > parseFloat(bestDistance.distance || 0)) {
+                            bestDistance = {
+                              ...set,
+                              date: workout.start_time
+                            };
+                          }
+                          
+                          // Find best pace (if both distance and duration are available)
+                          if (set.distance && set.duration) {
+                            const pace = parseFloat(set.duration) / parseFloat(set.distance);
+                            if (pace < bestPace.pace) {
+                              bestPace = {
+                                ...set,
+                                date: workout.start_time,
+                                pace: pace
+                              };
+                            }
+                          }
+                        });
+                        
+                        // Add to progress history for timeline
+                        if (workoutBestDistance.distance > 0) {
+                          progressHistory.push({
+                            date: workout.start_time,
+                            distance: workoutBestDistance.distance,
+                            duration: workoutBestDistance.duration
+                          });
+                        }
+                      });
+                    
+                    // Calculate lifetime improvement
+                    let distanceImprovement = 0;
+                    let improvementPercent = 0;
+                    
+                    if (progressHistory.length >= 2) {
+                      const firstRecord = progressHistory[0];
+                      const lastRecord = progressHistory[progressHistory.length - 1];
+                      
+                      distanceImprovement = parseFloat(lastRecord.distance) - parseFloat(firstRecord.distance);
+                      improvementPercent = ((distanceImprovement / parseFloat(firstRecord.distance)) * 100).toFixed(1);
+                    }
+                    
+                    return (
+                      <>
+                        <div className="mb-4">
+                          <h3 className="font-bold text-gray-800 dark:text-gray-200 flex items-center">
+                            <FaTrophy className="text-yellow-500 mr-2" /> Max Distance
+                          </h3>
+                          <div className="mt-2 bg-white dark:bg-gray-700 p-3 rounded border border-yellow-200 dark:border-yellow-800">
+                            {bestDistance.distance ? (
+                              <>
+                                <p className="text-2xl font-bold text-gray-800 dark:text-white">
+                                  {bestDistance.distance} km
+                                </p>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">
+                                  Achieved on {bestDistance.date ? new Date(bestDistance.date).toLocaleDateString() : 'N/A'} • {bestDistance.duration} minutes
+                                </p>
+                              </>
+                            ) : (
+                              <p className="text-gray-600 dark:text-gray-400">No records found</p>
+                            )}
+                          </div>
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-gray-800 dark:text-gray-200 flex items-center">
+                            <FaTrophy className="text-yellow-500 mr-2" /> Best Pace
+                          </h3>
+                          <div className="mt-2 bg-white dark:bg-gray-700 p-3 rounded border border-yellow-200 dark:border-yellow-800">
+                            {bestPace.pace && bestPace.pace !== Infinity ? (
+                              <>
+                                <p className="text-2xl font-bold text-gray-800 dark:text-white">
+                                  {bestPace.pace.toFixed(2)} min/km
+                                </p>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">
+                                  Achieved on {bestPace.date ? new Date(bestPace.date).toLocaleDateString() : 'N/A'} • {bestPace.distance} km
+                                </p>
+                              </>
+                            ) : (
+                              <p className="text-gray-600 dark:text-gray-400">No records found</p>
+                            )}
+                          </div>
+                        </div>
+                        
+                        {progressHistory.length >= 2 && (
+                          <div className="mt-4 pt-4 border-t border-yellow-200 dark:border-yellow-800">
+                            <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-2">Distance Progress</h3>
+                            <div className="h-24 relative mt-4">
+                              {/* Timeline line */}
+                              <div className="absolute left-0 right-0 top-1/2 h-1 bg-yellow-200 dark:bg-yellow-800 transform -translate-y-1/2"></div>
+                              
+                              {/* Markers */}
+                              {progressHistory.map((record, idx) => {
+                                // Calculate position percentage based on time
+                                const firstDate = new Date(progressHistory[0].date).getTime();
+                                const lastDate = new Date(progressHistory[progressHistory.length - 1].date).getTime();
+                                const currentDate = new Date(record.date).getTime();
+                                
+                                const position = ((currentDate - firstDate) / (lastDate - firstDate)) * 100;
+                                
+                                // Calculate size based on distance (relative to max)
+                                const maxDistance = Math.max(...progressHistory.map(r => parseFloat(r.distance)));
+                                const minDistance = Math.min(...progressHistory.map(r => parseFloat(r.distance)));
+                                const distanceRange = maxDistance - minDistance;
+                                
+                                const sizePercentage = distanceRange === 0 ? 
+                                  50 : // If all distances are the same
+                                  ((parseFloat(record.distance) - minDistance) / distanceRange) * 70 + 30; // 30-100% size range
+                                
+                                return (
+                                  <div
+                                    key={idx}
+                                    className="absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer hover:z-10"
+                                    style={{ 
+                                      left: `${position}%`, 
+                                      top: '50%',
+                                      transition: 'all 0.2s ease'
+                                    }}
+                                    title={`${new Date(record.date).toLocaleDateString()}: ${record.distance} km in ${record.duration} min`}
+                                  >
+                                    <div 
+                                      className={`rounded-full flex items-center justify-center text-xs text-white 
+                                        ${idx === 0 ? 'bg-blue-500' : 
+                                          idx === progressHistory.length - 1 ? 'bg-green-500' : 
+                                          'bg-yellow-500'}`}
+                                      style={{ 
+                                        width: `${sizePercentage}px`, 
+                                        height: `${sizePercentage}px`
+                                      }}
+                                    >
+                                      {parseFloat(record.distance).toFixed(1)}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                            
+                            <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
+                              <span>{new Date(progressHistory[0].date).toLocaleDateString()}</span>
+                              <span>{new Date(progressHistory[progressHistory.length - 1].date).toLocaleDateString()}</span>
+                            </div>
+                            
+                            <div className="mt-3 bg-white dark:bg-gray-700 p-2 rounded">
+                              <p className="text-sm">
+                                <span className="font-medium">Lifetime improvement:</span> 
+                                <span className={distanceImprovement > 0 ? 'text-green-600 dark:text-green-400 ml-1' : 'text-gray-600 dark:text-gray-400 ml-1'}>
+                                  {distanceImprovement > 0 ? '+' : ''}{distanceImprovement.toFixed(2)} km ({improvementPercent}%)
+                                </span>
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
+                </>
+              )}
+            </div>
+            
+            <div className="text-center">
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                These are your personal records for {selectedExerciseForHistory.name}. Keep pushing to beat them!
+              </p>
+              <button
+                onClick={() => {
+                  setShowPersonalRecordsModal(false);
+                  navigate("/personal-records");
+                }}
+                className="bg-yellow-500 hover:bg-yellow-600 text-white py-2 px-4 rounded-lg inline-flex items-center"
+              >
+                <FaTrophy className="mr-2" />
+                View All Personal Records
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

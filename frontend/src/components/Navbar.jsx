@@ -288,7 +288,7 @@ function Navbar() {
               <img
                 src={logo}
                 alt="FitExplorer Logo"
-                className="w-20 md:w-56 hover:scale-105 transition-all dark:invert"
+                className="w-20 md:w-32 hover:scale-105 transition-all dark:invert"
               />
             </Link>
 
