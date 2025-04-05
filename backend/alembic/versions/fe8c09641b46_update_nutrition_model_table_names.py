@@ -17,14 +17,33 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # This is a documentation-only migration to update model table names
-    # We changed the model classes to match the existing table names in the database
-    # NutritionMeal now uses table 'meals' instead of 'nutrition_meals'
-    # NutritionFood now uses table 'meal_foods' instead of 'nutrition_foods'
-    # No actual schema changes are needed
-    pass
+    # Create the meals and meal_foods tables as they don't exist yet
+    op.create_table('meals',
+        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('user_id', sa.Integer(), nullable=False),
+        sa.Column('name', sa.String(), nullable=False),
+        sa.Column('date', sa.String(), nullable=False),
+        sa.Column('time', sa.String(), nullable=False),
+        sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
+        sa.PrimaryKeyConstraint('id')
+    )
+
+    op.create_table('meal_foods',
+        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('meal_id', sa.Integer(), nullable=False),
+        sa.Column('food_name', sa.String(), nullable=False),
+        sa.Column('serving_size', sa.String(), nullable=True),
+        sa.Column('quantity', sa.Float(), nullable=False, default=1.0),
+        sa.Column('calories', sa.Float(), nullable=True),
+        sa.Column('protein', sa.Float(), nullable=True),
+        sa.Column('carbs', sa.Float(), nullable=True),
+        sa.Column('fat', sa.Float(), nullable=True),
+        sa.ForeignKeyConstraint(['meal_id'], ['meals.id'], ondelete='CASCADE'),
+        sa.PrimaryKeyConstraint('id')
+    )
 
 
 def downgrade() -> None:
-    # This is a documentation-only migration
-    pass
+    # Drop the tables if needed to roll back
+    op.drop_table('meal_foods')
+    op.drop_table('meals')
