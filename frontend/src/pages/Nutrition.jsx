@@ -12,7 +12,11 @@ import {
   FaInfoCircle,
   FaArrowUp,
   FaArrowDown,
-  FaEquals
+  FaEquals,
+  FaRobot,
+  FaUtensils,
+  FaDumbbell,
+  FaRunning
 } from "react-icons/fa";
 import { 
   LineChart, 
@@ -46,10 +50,19 @@ function Nutrition() {
   });
   const [showAddMealModal, setShowAddMealModal] = useState(false);
   const [showFoodSearchModal, setShowFoodSearchModal] = useState(false);
+  const [showAddCustomFoodModal, setShowAddCustomFoodModal] = useState(false);
   const [newMeal, setNewMeal] = useState({
     name: "",
     time: new Date().toTimeString().slice(0, 5),
     foods: []
+  });
+  const [newCustomFood, setNewCustomFood] = useState({
+    name: "",
+    calories: 0,
+    protein: 0,
+    carbs: 0,
+    fat: 0,
+    serving_size: "1 serving"
   });
   const [nutritionStats, setNutritionStats] = useState({
     calories: 0,
@@ -60,6 +73,18 @@ function Nutrition() {
   const [nutritionHistory, setNutritionHistory] = useState([]);
   const [dateRange, setDateRange] = useState("week");
   const [apiStatus, setApiStatus] = useState(null);
+  const [generatedMealPlan, setGeneratedMealPlan] = useState(null);
+  const [generatingMealPlan, setGeneratingMealPlan] = useState(false);
+  const [mealPlanPreferences, setMealPlanPreferences] = useState({
+    calories: 2000,
+    protein: 150,
+    carbs: 200,
+    fat: 65,
+    meals: 3,
+    restrictions: "",
+    preferences: "",
+    adjust_for_workouts: false
+  });
   
   const navigate = useNavigate();
 
@@ -317,6 +342,234 @@ function Nutrition() {
       setApiStatus("failed");
       setTimeout(() => setApiStatus(null), 3000);
     }
+  };
+
+  // Handle creating a custom food
+  const handleCreateCustomFood = async () => {
+    // Validate inputs
+    if (!newCustomFood.name.trim()) {
+      alert("Please enter a name for the food");
+      return;
+    }
+    
+    if (newCustomFood.calories <= 0) {
+      alert("Calories must be greater than 0");
+      return;
+    }
+    
+    try {
+      console.log("Creating custom food:", newCustomFood);
+      const response = await axios.post('/nutrition/foods', newCustomFood);
+      console.log("Custom food created:", response.data);
+      
+      // Add the new food to search results and select it
+      const createdFood = {
+        ...response.data,
+        source: "custom"
+      };
+      
+      // Add new food to search results at the top
+      setSearchResults(prev => [createdFood, ...prev]);
+      
+      // Optionally add it directly to the meal
+      handleAddFood(createdFood);
+      
+      // Reset form and close modal
+      setNewCustomFood({
+        name: "",
+        calories: 0,
+        protein: 0,
+        carbs: 0,
+        fat: 0,
+        serving_size: "1 serving"
+      });
+      setShowAddCustomFoodModal(false);
+      
+      // Show success message
+      alert("Custom food created successfully!");
+    } catch (err) {
+      console.error("Error creating custom food:", err);
+      alert(`Failed to create custom food: ${err.response?.data?.detail || err.message}`);
+    }
+  };
+
+  // Generate meal plan function
+  const handleGenerateMealPlan = async () => {
+    try {
+      setGeneratingMealPlan(true);
+      setGeneratedMealPlan(null);
+      
+      console.log("Generating meal plan with preferences:", mealPlanPreferences);
+      
+      // Call the backend API to generate a meal plan
+      const response = await axios.post('/nutrition/generate-meal-plan', mealPlanPreferences);
+      
+      // Set the generated meal plan
+      setGeneratedMealPlan(response.data);
+      console.log("Generated meal plan:", response.data);
+      
+    } catch (err) {
+      console.error("Error generating meal plan:", err);
+      alert("Failed to generate meal plan: " + (err.response?.data?.detail || err.message));
+    } finally {
+      setGeneratingMealPlan(false);
+    }
+  };
+
+  // Save meal plan to user's meals
+  const handleSaveMealPlanToDay = async (date, mealPlan) => {
+    try {
+      if (!mealPlan || !mealPlan.meals || mealPlan.meals.length === 0) {
+        alert("No meal plan to save!");
+        return;
+      }
+      
+      // Set the selected date to the one we're saving to
+      setSelectedDate(date);
+      
+      // For each meal in the plan, save it to the user's meals
+      for (const meal of mealPlan.meals) {
+        const mealData = {
+          name: meal.name,
+          time: meal.time,
+          date: date,
+          foods: meal.foods
+        };
+        
+        console.log(`Saving ${meal.name} to date ${date}:`, mealData);
+        
+        await axios.post(`/nutrition/meals`, mealData);
+      }
+      
+      alert("Meal plan saved successfully!");
+      
+      // Refresh meals after saving
+      fetchMeals();
+      
+      // Switch to meal log tab to see the saved meals
+      setActiveTab("meal-log");
+    } catch (err) {
+      console.error("Error saving meal plan:", err);
+      alert(`Failed to save meal plan: ${err.response?.data?.detail || err.message}`);
+    }
+  };
+
+  // Add the formatting function
+  const formatDateForDisplay = (dateString) => {
+    if (!dateString) return "";
+    return new Date(dateString).toLocaleDateString('en-GB', {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  };
+
+  // Meal Log tab
+  const renderMealLog = () => {
+    return (
+      <div className="space-y-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold flex items-center">
+              <FaCalendarAlt className="mr-2 text-blue-500" /> Meal Log
+            </h3>
+            <div className="flex items-center">
+              <div className="relative mr-2">
+                <input
+                  type="text"
+                  value={selectedDate ? formatDateForDisplay(selectedDate) : ""}
+                  readOnly
+                  className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 cursor-pointer pr-10"
+                  onClick={() => document.getElementById('meal-date-picker').showPicker()}
+                />
+                <input
+                  id="meal-date-picker"
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  className="absolute opacity-0 w-0 h-0"
+                />
+                <button 
+                  onClick={() => document.getElementById('meal-date-picker').showPicker()}
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500"
+                >
+                  <FaCalendarAlt />
+                </button>
+              </div>
+              <button
+                onClick={() => handleOpenAddMealModal()}
+                className="px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors flex items-center"
+              >
+                <FaPlus className="mr-1" /> Add Meal
+              </button>
+            </div>
+          </div>
+          
+          {/* Render meals similar to dashboard but with date selection */}
+          {meals.length === 0 ? (
+            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+              <FaAppleAlt className="mx-auto text-4xl mb-2 opacity-30" />
+              <p>No meals logged for {formatDateForDisplay(selectedDate)}</p>
+              <button
+                onClick={() => handleOpenAddMealModal()}
+                className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+              >
+                Log a meal
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {meals.map((meal) => (
+                <div key={meal.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                  {/* Same meal rendering as in dashboard */}
+                  <div className="flex justify-between items-center mb-2">
+                    <h4 className="font-medium">{meal.name}</h4>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm text-gray-500 dark:text-gray-400">{meal.time}</span>
+                      <button
+                        onClick={() => handleDeleteMeal(meal.id)}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                      <thead>
+                        <tr>
+                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Food</th>
+                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Serving</th>
+                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Calories</th>
+                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Protein</th>
+                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Carbs</th>
+                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Fat</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                        {meal.foods.map((food, index) => (
+                          <tr key={index}>
+                            <td className="px-3 py-2 whitespace-nowrap text-sm">{food.name}</td>
+                            <td className="px-3 py-2 whitespace-nowrap text-sm">{food.quantity || 1} {food.serving_size}</td>
+                            <td className="px-3 py-2 whitespace-nowrap text-sm">{food.calories * (food.quantity || 1)} kcal</td>
+                            <td className="px-3 py-2 whitespace-nowrap text-sm">{food.protein * (food.quantity || 1)}g</td>
+                            <td className="px-3 py-2 whitespace-nowrap text-sm">{food.carbs * (food.quantity || 1)}g</td>
+                            <td className="px-3 py-2 whitespace-nowrap text-sm">{food.fat * (food.quantity || 1)}g</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
   };
 
   const renderDashboard = () => {
@@ -686,39 +939,41 @@ function Nutrition() {
                     onClick={() => handleAddFood(food)}
                   >
                     <div className="flex justify-between items-start">
-                      <div className="font-medium">{food.name}</div>
-                      {food.source && (
-                        <span className={`text-xs px-2 py-1 rounded-full ${
-                          food.source === "database" 
-                            ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300" 
-                            : food.source === "user_history"
-                            ? "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300"
-                            : "bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-300"
-                        }`}>
-                          {food.source === "database" 
-                            ? "Common Food" 
-                            : food.source === "user_history" 
-                            ? "Your History" 
-                            : "External API"}
-                        </span>
-                      )}
-                    </div>
-                    <div className="grid grid-cols-4 text-sm text-gray-500 dark:text-gray-400 mt-1">
-                      <div>
-                        <span className="font-medium text-gray-700 dark:text-gray-300">{food.calories}</span> kcal
+                      <div className="font-medium flex items-center">
+                        {food.name}
+                        {food.source === "custom" && (
+                          <span className="ml-2 text-xs bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300 px-2 py-0.5 rounded-full">
+                            Custom
+                          </span>
+                        )}
+                        {food.source === "database" && food.food_group === "User Custom" && (
+                          <span className="ml-2 text-xs bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300 px-2 py-0.5 rounded-full">
+                            Custom
+                          </span>
+                        )}
+                        {food.source === "database" && food.food_group !== "User Custom" && (
+                          <span className="ml-2 text-xs bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300 px-2 py-0.5 rounded-full">
+                            Database
+                          </span>
+                        )}
                       </div>
-                      <div>
-                        <span className="font-medium text-gray-700 dark:text-gray-300">{food.protein}g</span> protein
+                      <div className="grid grid-cols-4 text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        <div>
+                          <span className="font-medium text-gray-700 dark:text-gray-300">{food.calories}</span> kcal
+                        </div>
+                        <div>
+                          <span className="font-medium text-gray-700 dark:text-gray-300">{food.protein}g</span> protein
+                        </div>
+                        <div>
+                          <span className="font-medium text-gray-700 dark:text-gray-300">{food.carbs}g</span> carbs
+                        </div>
+                        <div>
+                          <span className="font-medium text-gray-700 dark:text-gray-300">{food.fat}g</span> fat
+                        </div>
                       </div>
-                      <div>
-                        <span className="font-medium text-gray-700 dark:text-gray-300">{food.carbs}g</span> carbs
+                      <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        {food.serving_size || "1 serving"}
                       </div>
-                      <div>
-                        <span className="font-medium text-gray-700 dark:text-gray-300">{food.fat}g</span> fat
-                      </div>
-                    </div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      {food.serving_size || "1 serving"}
                     </div>
                   </div>
                 ))}
@@ -871,9 +1126,17 @@ function Nutrition() {
               
               {/* Available Foods Section */}
               <div className="mt-6">
-                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Available Foods
-                </h4>
+                <div className="flex justify-between items-center mb-2">
+                  <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Available Foods
+                  </h4>
+                  <button
+                    onClick={() => setShowAddCustomFoodModal(true)}
+                    className="text-xs px-2 py-1 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors flex items-center"
+                  >
+                    <FaPlus className="mr-1" /> Add Custom Food
+                  </button>
+                </div>
                 
                 <div className="max-h-60 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-md">
                   {searchResults.length === 0 ? (
@@ -889,7 +1152,24 @@ function Nutrition() {
                           onClick={() => handleAddFood(food)}
                         >
                           <div className="flex-1">
-                            <div className="font-medium text-sm">{food.name}</div>
+                            <div className="font-medium text-sm flex items-center">
+                              {food.name}
+                              {food.source === "custom" && (
+                                <span className="ml-2 text-xs bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300 px-2 py-0.5 rounded-full">
+                                  Custom
+                                </span>
+                              )}
+                              {food.source === "database" && food.food_group === "User Custom" && (
+                                <span className="ml-2 text-xs bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300 px-2 py-0.5 rounded-full">
+                                  Custom
+                                </span>
+                              )}
+                              {food.source === "database" && food.food_group !== "User Custom" && (
+                                <span className="ml-2 text-xs bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300 px-2 py-0.5 rounded-full">
+                                  Database
+                                </span>
+                              )}
+                            </div>
                             <div className="text-xs text-gray-500 dark:text-gray-400">
                               {food.calories} kcal, {food.protein}g protein, {food.carbs}g carbs, {food.fat}g fat
                             </div>
@@ -934,116 +1214,431 @@ function Nutrition() {
     );
   };
 
-  // Add the formatting function
-  const formatDateForDisplay = (dateString) => {
-    if (!dateString) return "";
-    return new Date(dateString).toLocaleDateString('en-GB', {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    });
-  };
-
-  const renderMealLog = () => {
+  // Add Custom Food Modal
+  const renderAddCustomFoodModal = () => {
+    if (!showAddCustomFoodModal) return null;
+    
     return (
-      <div className="space-y-6">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold flex items-center">
-              <FaCalendarAlt className="mr-2 text-blue-500" /> Meal Log
-            </h3>
-            <div className="flex items-center">
-              <div className="relative mr-2">
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg w-full max-w-md mx-auto">
+          <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+            <h3 className="text-lg font-medium">Add Custom Food</h3>
+            <button 
+              onClick={() => setShowAddCustomFoodModal(false)}
+              className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+            >
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            </button>
+          </div>
+          
+          <div className="p-4">
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Food Name
+                </label>
                 <input
                   type="text"
-                  value={selectedDate ? formatDateForDisplay(selectedDate) : ""}
-                  readOnly
-                  className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 cursor-pointer pr-10"
-                  onClick={() => document.getElementById('meal-date-picker').showPicker()}
+                  value={newCustomFood.name}
+                  onChange={(e) => setNewCustomFood({...newCustomFood, name: e.target.value})}
+                  placeholder="e.g., Homemade Granola"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700"
                 />
-                <input
-                  id="meal-date-picker"
-                  type="date"
-                  value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                  className="absolute opacity-0 w-0 h-0"
-                />
-                <button 
-                  onClick={() => document.getElementById('meal-date-picker').showPicker()}
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500"
-                >
-                  <FaCalendarAlt />
-                </button>
               </div>
-              <button
-                onClick={() => handleOpenAddMealModal()}
-                className="px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors flex items-center"
-              >
-                <FaPlus className="mr-1" /> Add Meal
-              </button>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Serving Size
+                </label>
+                <input
+                  type="text"
+                  value={newCustomFood.serving_size}
+                  onChange={(e) => setNewCustomFood({...newCustomFood, serving_size: e.target.value})}
+                  placeholder="e.g., 1 cup, 100g"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700"
+                />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Calories
+                  </label>
+                  <input
+                    type="number"
+                    value={newCustomFood.calories}
+                    onChange={(e) => setNewCustomFood({...newCustomFood, calories: parseFloat(e.target.value) || 0})}
+                    min="0"
+                    step="1"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Protein (g)
+                  </label>
+                  <input
+                    type="number"
+                    value={newCustomFood.protein}
+                    onChange={(e) => setNewCustomFood({...newCustomFood, protein: parseFloat(e.target.value) || 0})}
+                    min="0"
+                    step="0.1"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700"
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Carbs (g)
+                  </label>
+                  <input
+                    type="number"
+                    value={newCustomFood.carbs}
+                    onChange={(e) => setNewCustomFood({...newCustomFood, carbs: parseFloat(e.target.value) || 0})}
+                    min="0"
+                    step="0.1"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Fat (g)
+                  </label>
+                  <input
+                    type="number"
+                    value={newCustomFood.fat}
+                    onChange={(e) => setNewCustomFood({...newCustomFood, fat: parseFloat(e.target.value) || 0})}
+                    min="0"
+                    step="0.1"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700"
+                  />
+                </div>
+              </div>
+              
+              <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-md">
+                <div className="text-sm text-blue-800 dark:text-blue-300">
+                  <p className="font-medium mb-1">Nutrition Summary</p>
+                  <p>Total calories: {newCustomFood.calories} kcal</p>
+                  <div className="grid grid-cols-3 gap-2 mt-2">
+                    <div>Protein: {newCustomFood.protein}g</div>
+                    <div>Carbs: {newCustomFood.carbs}g</div>
+                    <div>Fat: {newCustomFood.fat}g</div>
+                  </div>
+                </div>
+              </div>
+              
             </div>
           </div>
           
-          {/* Render meals similar to dashboard but with date selection */}
-          {meals.length === 0 ? (
-            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-              <FaAppleAlt className="mx-auto text-4xl mb-2 opacity-30" />
-              <p>No meals logged for {formatDateForDisplay(selectedDate)}</p>
-              <button
-                onClick={() => handleOpenAddMealModal()}
-                className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
-              >
-                Log a meal
-              </button>
-            </div>
-          ) : (
+          <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end space-x-3">
+            <button
+              onClick={() => setShowAddCustomFoodModal(false)}
+              className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleCreateCustomFood}
+              className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+              disabled={!newCustomFood.name.trim() || newCustomFood.calories <= 0}
+            >
+              Create Food
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Render Meal Plan Generator tab
+  const renderMealPlanGenerator = () => {
+    return (
+      <div className="space-y-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <h3 className="text-lg font-semibold mb-4 flex items-center">
+            <FaRobot className="mr-2 text-purple-500" /> AI Meal Plan Generator
+          </h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             <div className="space-y-4">
-              {meals.map((meal) => (
-                <div key={meal.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-                  {/* Same meal rendering as in dashboard */}
-                  <div className="flex justify-between items-center mb-2">
-                    <h4 className="font-medium">{meal.name}</h4>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm text-gray-500 dark:text-gray-400">{meal.time}</span>
-                      <button
-                        onClick={() => handleDeleteMeal(meal.id)}
-                        className="text-red-500 hover:text-red-700"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
-                        </svg>
-                      </button>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Target Calories
+                </label>
+                <input
+                  type="number"
+                  value={mealPlanPreferences.calories}
+                  onChange={(e) => setMealPlanPreferences({...mealPlanPreferences, calories: parseInt(e.target.value) || 0})}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700"
+                />
+              </div>
+              
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Protein (g)
+                  </label>
+                  <input
+                    type="number"
+                    value={mealPlanPreferences.protein}
+                    onChange={(e) => setMealPlanPreferences({...mealPlanPreferences, protein: parseInt(e.target.value) || 0})}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Carbs (g)
+                  </label>
+                  <input
+                    type="number"
+                    value={mealPlanPreferences.carbs}
+                    onChange={(e) => setMealPlanPreferences({...mealPlanPreferences, carbs: parseInt(e.target.value) || 0})}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Fat (g)
+                  </label>
+                  <input
+                    type="number"
+                    value={mealPlanPreferences.fat}
+                    onChange={(e) => setMealPlanPreferences({...mealPlanPreferences, fat: parseInt(e.target.value) || 0})}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700"
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Number of Meals
+                </label>
+                <select
+                  value={mealPlanPreferences.meals}
+                  onChange={(e) => setMealPlanPreferences({...mealPlanPreferences, meals: parseInt(e.target.value)})}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700"
+                >
+                  <option value={3}>3 (Breakfast, Lunch, Dinner)</option>
+                  <option value={4}>4 (Breakfast, Lunch, Snack, Dinner)</option>
+                  <option value={5}>5 (Breakfast, Morning Snack, Lunch, Afternoon Snack, Dinner)</option>
+                  <option value={6}>6 (Including Evening Snack)</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Dietary Restrictions
+                </label>
+                <select
+                  value={mealPlanPreferences.restrictions}
+                  onChange={(e) => setMealPlanPreferences({...mealPlanPreferences, restrictions: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700"
+                >
+                  <option value="">None</option>
+                  <option value="vegetarian">Vegetarian</option>
+                  <option value="vegan">Vegan</option>
+                  <option value="gluten-free">Gluten-Free</option>
+                  <option value="dairy-free">Dairy-Free</option>
+                  <option value="vegetarian,gluten-free">Vegetarian & Gluten-Free</option>
+                  <option value="vegetarian,dairy-free">Vegetarian & Dairy-Free</option>
+                  <option value="vegan,gluten-free">Vegan & Gluten-Free</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Food Preferences
+                </label>
+                <textarea
+                  value={mealPlanPreferences.preferences}
+                  onChange={(e) => setMealPlanPreferences({...mealPlanPreferences, preferences: e.target.value})}
+                  placeholder="e.g., high protein, low carb, Mediterranean"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 h-20"
+                ></textarea>
+              </div>
+              
+              <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-md border border-blue-200 dark:border-blue-800">
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="adjust-for-workouts"
+                    checked={mealPlanPreferences.adjust_for_workouts}
+                    onChange={(e) => setMealPlanPreferences({...mealPlanPreferences, adjust_for_workouts: e.target.checked})}
+                    className="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                  />
+                  <label htmlFor="adjust-for-workouts" className="ml-2 block text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center">
+                    <FaDumbbell className="mr-1 text-blue-500" /> Adjust for recent workouts
+                  </label>
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  When enabled, meal plans will be adjusted based on your recent workout history to better support your recovery and fitness goals.
+                </p>
+              </div>
+              
+              <button
+                onClick={handleGenerateMealPlan}
+                disabled={generatingMealPlan}
+                className="w-full px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center mt-4"
+              >
+                {generatingMealPlan ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Generating Plan...
+                  </>
+                ) : (
+                  <>
+                    <FaRobot className="mr-2" /> Generate Meal Plan
+                  </>
+                )}
+              </button>
+              
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                The AI will generate a meal plan based on your preferences and nutrition goals.
+              </p>
+            </div>
+            
+            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+              <h4 className="font-medium mb-2 flex items-center">
+                <FaInfoCircle className="mr-2 text-blue-500" /> How It Works
+              </h4>
+              <div className="space-y-3 text-sm">
+                <p>
+                  Our AI Meal Plan Generator creates personalized meal plans based on your:
+                </p>
+                <ul className="list-disc pl-5 space-y-1">
+                  <li>Nutrition goals (calories, protein, etc.)</li>
+                  <li>Dietary restrictions</li>
+                  <li>Food preferences</li>
+                  <li>Number of meals per day</li>
+                  {mealPlanPreferences.adjust_for_workouts && (
+                    <li className="text-blue-600 dark:text-blue-400 font-medium">Recent workout history</li>
+                  )}
+                </ul>
+                <p>
+                  You can customize your meal plan preferences and generate multiple options
+                  until you find one you like.
+                </p>
+                {mealPlanPreferences.adjust_for_workouts && (
+                  <div className="mt-2 p-2 bg-blue-100 dark:bg-blue-900/40 rounded">
+                    <p className="flex items-center">
+                      <FaRunning className="mr-1 text-blue-600" /> 
+                      <span className="font-medium">Workout Adjustments:</span>
+                    </p>
+                    <ul className="list-disc pl-5 text-xs mt-1">
+                      <li>Increased calories and protein after strength training</li>
+                      <li>Adjusted macros to support recovery</li>
+                      <li>More carbs after cardio sessions</li>
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+          
+          {/* Generated Meal Plan */}
+          {generatedMealPlan && (
+            <div className="mt-8 border border-green-200 dark:border-green-900 rounded-lg bg-green-50 dark:bg-green-900/20 p-4">
+              <div className="flex justify-between items-center mb-4">
+                <h4 className="font-medium text-green-800 dark:text-green-300 flex items-center">
+                  <FaUtensils className="mr-2" /> Generated Meal Plan
+                </h4>
+                <div className="flex items-center space-x-2">
+                  <div className="relative">
+                    <input
+                      id="meal-plan-date-picker"
+                      type="date"
+                      value={selectedDate}
+                      onChange={(e) => setSelectedDate(e.target.value)}
+                      className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700"
+                    />
+                  </div>
+                  <button
+                    onClick={() => handleSaveMealPlanToDay(selectedDate, generatedMealPlan)}
+                    className="px-3 py-1 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors flex items-center"
+                  >
+                    <FaPlus className="mr-1" /> Save to Selected Date
+                  </button>
+                </div>
+              </div>
+              
+              {/* Workout Adjustment Info */}
+              {mealPlanPreferences.adjust_for_workouts && (
+                <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <h5 className="text-sm font-medium text-blue-800 dark:text-blue-300 flex items-center mb-2">
+                    <FaDumbbell className="mr-2" /> Workout-Adjusted Nutrition
+                  </h5>
+                  <p className="text-sm text-blue-700 dark:text-blue-400">
+                    This meal plan has been optimized based on your recent workout history to support your recovery and performance.
+                  </p>
+                  
+                  {/* Show original vs. adjusted values */}
+                  <div className="grid grid-cols-2 gap-2 mt-2 text-sm">
+                    <div>
+                      <span className="text-gray-500 dark:text-gray-400">Base calories:</span> {mealPlanPreferences.calories}
+                    </div>
+                    <div>
+                      <span className="text-gray-500 dark:text-gray-400">Base protein:</span> {mealPlanPreferences.protein}g
+                    </div>
+                    <div>
+                      <span className="font-medium text-blue-800 dark:text-blue-300">Adjusted calories:</span> {generatedMealPlan.totalNutrition.calories}
+                    </div>
+                    <div>
+                      <span className="font-medium text-blue-800 dark:text-blue-300">Adjusted protein:</span> {generatedMealPlan.totalNutrition.protein}g
                     </div>
                   </div>
-                  
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                      <thead>
-                        <tr>
-                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Food</th>
-                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Serving</th>
-                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Calories</th>
-                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Protein</th>
-                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Carbs</th>
-                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Fat</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                        {meal.foods.map((food, index) => (
-                          <tr key={index}>
-                            <td className="px-3 py-2 whitespace-nowrap text-sm">{food.name}</td>
-                            <td className="px-3 py-2 whitespace-nowrap text-sm">{food.quantity || 1} {food.serving_size}</td>
-                            <td className="px-3 py-2 whitespace-nowrap text-sm">{food.calories * (food.quantity || 1)} kcal</td>
-                            <td className="px-3 py-2 whitespace-nowrap text-sm">{food.protein * (food.quantity || 1)}g</td>
-                            <td className="px-3 py-2 whitespace-nowrap text-sm">{food.carbs * (food.quantity || 1)}g</td>
-                            <td className="px-3 py-2 whitespace-nowrap text-sm">{food.fat * (food.quantity || 1)}g</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                </div>
+              )}
+              
+              {/* Rest of the meal plan display */}
+              <div className="space-y-4">
+                {/* Nutrition Summary */}
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm">
+                  <h5 className="font-medium mb-2">Nutrition Summary</h5>
+                  <div className="grid grid-cols-4 gap-3 text-sm">
+                    <div>
+                      <div className="text-gray-500 dark:text-gray-400">Calories</div>
+                      <div className="font-medium">{generatedMealPlan.totalNutrition.calories} kcal</div>
+                    </div>
+                    <div>
+                      <div className="text-gray-500 dark:text-gray-400">Protein</div>
+                      <div className="font-medium">{generatedMealPlan.totalNutrition.protein}g</div>
+                    </div>
+                    <div>
+                      <div className="text-gray-500 dark:text-gray-400">Carbs</div>
+                      <div className="font-medium">{generatedMealPlan.totalNutrition.carbs}g</div>
+                    </div>
+                    <div>
+                      <div className="text-gray-500 dark:text-gray-400">Fat</div>
+                      <div className="font-medium">{generatedMealPlan.totalNutrition.fat}g</div>
+                    </div>
                   </div>
                 </div>
-              ))}
+                
+                {/* Individual Meals */}
+                {generatedMealPlan.meals.map((meal, index) => (
+                  <div key={index} className="bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm">
+                    <div className="flex justify-between items-center mb-2">
+                      <h5 className="font-medium">{meal.name}</h5>
+                      <span className="text-sm text-gray-500 dark:text-gray-400">{meal.time}</span>
+                    </div>
+                    
+                    <div className="space-y-2 mt-2">
+                      {meal.foods.map((food, foodIndex) => (
+                        <div key={foodIndex} className="flex justify-between items-center text-sm py-1 border-b last:border-b-0 border-gray-100 dark:border-gray-700">
+                          <div className="font-medium">{food.name}</div>
+                          <div className="text-gray-500 dark:text-gray-400">
+                            {food.calories} kcal | {food.protein}g P | {food.carbs}g C | {food.fat}g F
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>
@@ -1105,6 +1700,16 @@ function Nutrition() {
         </button>
         <button
           className={`px-4 py-2 font-medium whitespace-nowrap ${
+            activeTab === "meal-plan"
+              ? "text-blue-500 border-b-2 border-blue-500"
+              : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+          }`}
+          onClick={() => setActiveTab("meal-plan")}
+        >
+          <FaRobot className="inline mr-2" /> Meal Generator
+        </button>
+        <button
+          className={`px-4 py-2 font-medium whitespace-nowrap ${
             activeTab === "analysis"
               ? "text-blue-500 border-b-2 border-blue-500"
               : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
@@ -1140,12 +1745,14 @@ function Nutrition() {
           {/* Tab Content */}
           {activeTab === "dashboard" && renderDashboard()}
           {activeTab === "meal-log" && renderMealLog()}
+          {activeTab === "meal-plan" && renderMealPlanGenerator()}
           {activeTab === "analysis" && renderAnalysis()}
           {activeTab === "settings" && renderSettings()}
           
           {/* Modals */}
           {renderFoodSearchModal()}
           {renderAddMealModal()}
+          {renderAddCustomFoodModal()}
           
           {/* API Status */}
           {renderApiStatus()}
