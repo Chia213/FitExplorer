@@ -28,7 +28,7 @@ from schemas import (
     Achievement as AchievementSchema,
     UserAchievementResponse
 )
-from models import Workout, User, Exercise, Set, Routine, CustomExercise, SavedWorkoutProgram, RoutineFolder, WorkoutPreferences, UserProfile, Achievement, UserAchievement
+from models import Workout, User, Exercise, Set, Routine, CustomExercise, SavedWorkoutProgram, RoutineFolder, WorkoutPreferences, UserProfile, Achievement, UserAchievement, NutritionMeal
 from typing import List, Dict, Any, Optional
 from admin import router as admin_router
 from dependencies import get_current_user, get_admin_user
@@ -1709,45 +1709,128 @@ def check_achievements(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    updated_achievements = []
+
     try:
         # Get all achievements
         achievements = db.query(Achievement).all()
-        updated_achievements = []
-
-        # Check each achievement
+        
+        # Check each achievement independently with its own transaction
         for achievement in achievements:
-            # Get or create user achievement
-            user_achievement = db.query(UserAchievement).filter(
-                UserAchievement.user_id == user.id,
-                UserAchievement.achievement_id == achievement.id
-            ).first()
+            try:
+                # Create a new session for each achievement check
+                with db.begin_nested():  # Use a savepoint
+                    # Get or create user achievement
+                    user_achievement = db.query(UserAchievement).filter(
+                        UserAchievement.user_id == user.id,
+                        UserAchievement.achievement_id == achievement.id
+                    ).first()
+                    
+                    if not user_achievement:
+                        user_achievement = UserAchievement(
+                            user_id=user.id,
+                            achievement_id=achievement.id,
+                            progress=0
+                        )
+                        db.add(user_achievement)
+                        
+                    # Initialize progress variable
+                    progress = 0
+                    
+                    # Update progress based on achievement category
+                    if achievement.category == "workout":
+                        # Count total workouts
+                        progress = db.query(Workout).filter(
+                            Workout.user_id == user.id
+                        ).count()
+                    elif achievement.category == "streak":
+                        # Calculate current streak
+                        progress = calculate_workout_streak(user.id, db)
+                    elif achievement.category == "profile":
+                        if achievement.name == "Profile Picture":
+                            # Check if user has a profile picture
+                            progress = 1 if user.profile_picture else 0
+                        elif achievement.name == "Personal Info":
+                            # Count completed personal info fields
+                            completed_fields = 0
+                            if user.height is not None:
+                                completed_fields += 1
+                            if user.weight is not None:
+                                completed_fields += 1
+                            if user.age is not None:
+                                completed_fields += 1
+                            if user.gender is not None and user.gender.strip():
+                                completed_fields += 1
+                            if user.fitness_goals is not None and user.fitness_goals.strip():
+                                completed_fields += 1
+                            if user.bio is not None and user.bio.strip():
+                                completed_fields += 1
+                            progress = completed_fields
+                        elif achievement.name == "Username Change":
+                            username_is_custom = False
+                            if user.username and user.email:
+                                email_prefix = user.email.split('@')[0]
+                                if user.username != email_prefix:
+                                    username_is_custom = True
+                            progress = 1 if username_is_custom else 0
+                    elif achievement.category == "customization":
+                        if achievement.name == "Color Customizer":
+                            # Check if user has customized their card color
+                            user_profile = db.query(UserProfile).filter(UserProfile.user_id == user.id).first()
+                            default_color = "#dbeafe"
+                            progress = 1 if user_profile and user_profile.card_color != default_color else 0
+                        elif achievement.name == "Theme Switcher":
+                            user_profile = db.query(UserProfile).filter(UserProfile.user_id == user.id).first()
+                            progress = 1 if user_profile else 0
+                    elif achievement.category == "nutrition":
+                        if achievement.name in ["Nutrition Tracker", "Nutrition Expert"]:
+                            try:
+                                # Count the number of meals logged by the user
+                                meal_count = db.query(NutritionMeal).filter(
+                                    NutritionMeal.user_id == user.id
+                                ).count()
+                                progress = meal_count
+                            except Exception as nutrition_error:
+                                print(f"Error checking nutrition achievements: {nutrition_error}")
+                                progress = 0
+                    elif achievement.category == "social":
+                        if achievement.name == "Social Butterfly":
+                            progress = 1 if user.profile_picture else 0
+                    elif achievement.category == "app":
+                        if achievement.name == "Fitness Explorer":
+                            sections_visited = 0
+                            if db.query(Workout).filter(Workout.user_id == user.id).count() > 0:
+                                sections_visited += 1
+                            try:
+                                if db.query(NutritionMeal).filter(NutritionMeal.user_id == user.id).count() > 0:
+                                    sections_visited += 1
+                            except Exception:
+                                pass
+                            if user.profile_picture:
+                                sections_visited += 1
+                            if user.bio and user.fitness_goals:
+                                sections_visited += 1
+                            sections_visited += 1
+                            progress = sections_visited
+                        elif achievement.name == "Dedicated User":
+                            if user.created_at:
+                                days_since_creation = (datetime.now(timezone.utc) - user.created_at).days
+                                progress = min(days_since_creation, 30)
+                            else:
+                                progress = 0
 
-            if not user_achievement:
-                user_achievement = UserAchievement(
-                    user_id=user.id,
-                    achievement_id=achievement.id,
-                    progress=0
-                )
-                db.add(user_achievement)
-
-            # Update progress based on achievement category
-            if achievement.category == "workout":
-                # Count total workouts
-                progress = db.query(Workout).filter(
-                    Workout.user_id == user.id
-                ).count()
-            elif achievement.category == "streak":
-                # Calculate current streak
-                progress = calculate_workout_streak(user.id, db)
-            # Add more categories as needed
-
-            # Update progress if changed
-            if progress != user_achievement.progress:
-                user_achievement.progress = progress
-                if progress >= achievement.requirement and not user_achievement.achieved_at:
-                    user_achievement.achieved_at = datetime.now(timezone.utc)
-                updated_achievements.append(achievement.name)
-
+                    # Update progress if changed
+                    if progress != user_achievement.progress:
+                        user_achievement.progress = progress
+                        if progress >= achievement.requirement and not user_achievement.achieved_at:
+                            user_achievement.achieved_at = datetime.now(timezone.utc)
+                        updated_achievements.append(achievement.name)
+                        
+            except Exception as achievement_error:
+                print(f"Error processing achievement {achievement.name}: {achievement_error}")
+                # Continue with next achievement instead of aborting everything
+                
+        # Final commit for all successful updates
         db.commit()
         
         if updated_achievements:
@@ -1756,27 +1839,6 @@ def check_achievements(
 
     except Exception as e:
         db.rollback()
+        print(f"Error checking achievements: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-def calculate_workout_streak(user_id: int, db: Session) -> int:
-    # Get user's workouts ordered by date
-    workouts = db.query(Workout).filter(
-        Workout.user_id == user_id
-    ).order_by(Workout.created_at.desc()).all()
-
-    if not workouts:
-        return 0
-
-    streak = 1
-    current_date = workouts[0].created_at.date()
-    previous_date = current_date - timedelta(days=1)
-
-    for workout in workouts[1:]:
-        workout_date = workout.created_at.date()
-        if workout_date == previous_date:
-            previous_date -= timedelta(days=1)
-            streak += 1
-        else:
-            break
-
-    return streak

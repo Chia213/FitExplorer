@@ -26,7 +26,7 @@ import {
   FaExternalLinkAlt,
 } from "react-icons/fa";
 
-const backendURL = "http://localhost:8000";
+const backendURL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 const ALLOWED_EMAIL_DOMAINS = new Set([
   "gmail.com",
@@ -89,6 +89,7 @@ function Profile() {
     }
 
     try {
+      console.log("Fetching user data...");
       setLoading(true);
       const [profileRes, statsRes, routineRes] = await Promise.all([
         fetch(`${backendURL}/user-profile`, {
@@ -123,6 +124,15 @@ function Profile() {
       }
 
       const userData = await profileRes.json();
+      console.log("User data received:", userData);
+      
+      // Check if we have a stored username that should override the server value
+      const storedUsername = localStorage.getItem("username");
+      if (storedUsername && (!userData.username || userData.username !== storedUsername)) {
+        console.log("Using stored username instead of server value:", storedUsername);
+        userData.username = storedUsername;
+      }
+      
       setUser(userData);
       setEditedUsername(userData.username);
 
@@ -203,7 +213,20 @@ function Profile() {
 
   // Initial data loading
   useEffect(() => {
+    console.log("Profile component mounted");
     fetchUserData();
+    
+    // Add listener for before page unload/refresh
+    const handleBeforeUnload = () => {
+      console.log("Page about to refresh/unload. Current username state:", user?.username);
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    return () => {
+      console.log("Profile component unmounting");
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
   }, [fetchUserData]);
 
   const handleColorChange = (newColor) => {
@@ -218,7 +241,7 @@ function Profile() {
   const formatJoinDate = (dateString) => {
     if (!dateString) return "Unknown";
     const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
+    return date.toLocaleDateString("en-GB", {
       year: "numeric",
       month: "long",
       day: "numeric",
@@ -266,6 +289,7 @@ function Profile() {
     }
 
     try {
+      console.log("Updating username to:", editedUsername);
       setIsSaving(true);
       const token = localStorage.getItem("token");
       const response = await fetch(`${backendURL}/update-profile`, {
@@ -279,24 +303,68 @@ function Profile() {
 
       if (response.ok) {
         const updatedUser = await response.json();
-        setUser((prevUser) => ({
-          ...prevUser,
-          username: updatedUser.username,
-        }));
+        console.log("Server response after update:", updatedUser);
+        
+        // Use the edited username directly since server doesn't return it
+        setUser((prevUser) => {
+          const newUserState = {
+            ...prevUser,
+            username: editedUsername // Use the edited username directly
+          };
+          console.log("Updated user state:", newUserState);
+          return newUserState;
+        });
 
         // Update the token in local storage
         if (updatedUser.access_token) {
+          console.log("New access token received, updating localStorage");
           localStorage.setItem("token", updatedUser.access_token);
+        } else {
+          console.log("No new access token received from server");
         }
 
         setIsEditing(false);
         setError(null);
-        await notifyUsernameChanged(updatedUser.username);
+        await notifyUsernameChanged(editedUsername); // Use edited username here too
+        
+        // Store username in localStorage as a backup
+        localStorage.setItem("username", editedUsername);
+        
+        // Fetch updated user data to ensure it's properly synced
+        console.log("Re-fetching user data after username update");
+        await fetchUserData();
+        
+        // Verify immediately with a direct fetch to check if change was persisted on server
+        console.log("Verifying username update with direct fetch...");
+        const verifyToken = localStorage.getItem("token");
+        const verifyResponse = await fetch(`${backendURL}/user-profile`, {
+          headers: { 
+            "Authorization": `Bearer ${verifyToken}`,
+            "Content-Type": "application/json"
+          },
+        });
+        
+        if (verifyResponse.ok) {
+          const verifiedUserData = await verifyResponse.json();
+          console.log("Verification fetch result:", verifiedUserData);
+          console.log("Verified username on server:", verifiedUserData.username);
+          console.log("Does it match what we set?", verifiedUserData.username === editedUsername);
+          
+          // If username on server doesn't match what we set, force an update
+          if (verifiedUserData.username !== editedUsername) {
+            console.log("Username mismatch detected, forcing update in state");
+            setUser(prev => ({...prev, username: editedUsername}));
+          }
+        } else {
+          console.error("Failed to verify username update");
+        }
       } else {
         const errorData = await response.json();
+        console.error("Error response from server:", errorData);
         setError(errorData.detail || "Failed to update profile");
       }
     } catch (err) {
+      console.error("Exception during username update:", err);
       setError("Something went wrong. Please try again.");
     } finally {
       setIsSaving(false);
@@ -590,29 +658,39 @@ function Profile() {
               <div className="flex-1">
                 <div className="flex items-center space-x-4">
                   {isEditing ? (
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="text"
-                        value={editedUsername}
-                        onChange={(e) => setEditedUsername(e.target.value)}
-                        className="text-2xl font-bold bg-transparent border-b-2 border-blue-500 focus:outline-none"
-                      />
-                      <button
-                        onClick={handleUpdateProfile}
-                        disabled={isSaving}
-                        className="text-green-500 hover:text-green-600"
-                      >
-                        <FaSave className="w-5 h-5" />
-                      </button>
-                      <button
-                        onClick={() => {
-                          setIsEditing(false);
-                          setEditedUsername(user.username);
-                        }}
-                        className="text-red-500 hover:text-red-600"
-                      >
-                        <FaTimes className="w-5 h-5" />
-                      </button>
+                    <div className="flex flex-col">
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="text"
+                          value={editedUsername}
+                          onChange={(e) => setEditedUsername(e.target.value)}
+                          className="text-2xl font-bold bg-transparent border-b-2 border-blue-500 focus:outline-none"
+                        />
+                        <button
+                          onClick={handleUpdateProfile}
+                          disabled={isSaving}
+                          className="text-green-500 hover:text-green-600"
+                        >
+                          {isSaving ? (
+                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-green-700"></div>
+                          ) : (
+                            <FaSave className="w-5 h-5" />
+                          )}
+                        </button>
+                        <button
+                          onClick={() => {
+                            setIsEditing(false);
+                            setEditedUsername(user.username);
+                            setError(null);
+                          }}
+                          className="text-red-500 hover:text-red-600"
+                        >
+                          <FaTimes className="w-5 h-5" />
+                        </button>
+                      </div>
+                      {error && (
+                        <div className="text-red-500 text-sm mt-1">{error}</div>
+                      )}
                     </div>
                   ) : (
                     <>

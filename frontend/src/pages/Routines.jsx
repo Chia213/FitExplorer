@@ -254,6 +254,10 @@ function Routines() {
       return;
     }
 
+    console.log("Starting workout with routine:", routine.name);
+    console.log("Number of exercises:", exercises.length);
+    console.log("Exercise structure:", JSON.stringify(exercises));
+
     // Create the workout exercises data structure from the routine
     const workoutExercises = exercises.map((exercise) => {
       const isCardio = Boolean(exercise.is_cardio);
@@ -344,12 +348,22 @@ function Routines() {
       };
     });
 
+    console.log("Prepared workout exercises:", JSON.stringify(workoutExercises));
+    
+    // Make sure to clear any existing workout data before setting new data
+    localStorage.removeItem("preloadedWorkoutExercises");
+    localStorage.removeItem("preloadedWorkoutName");
+    
     // Store the exercise data and workout name in localStorage for WorkoutLog to use
     localStorage.setItem(
       "preloadedWorkoutExercises",
       JSON.stringify(workoutExercises)
     );
     localStorage.setItem("preloadedWorkoutName", routine.name);
+    
+    // Extra validation to ensure the data was properly stored
+    const storedData = localStorage.getItem("preloadedWorkoutExercises");
+    console.log("Stored exercises count:", storedData ? JSON.parse(storedData).length : 0);
 
     // Navigate to the workout log
     navigate("/workout-log", { state: { routineId: routine.id } });
@@ -1036,12 +1050,12 @@ function Routines() {
                       )}
                       {routine.created_at && (
                         <span className={`text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>
-                          • Created {new Date(routine.created_at).toLocaleDateString()} at {new Date(routine.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          • Created {new Date(routine.created_at).toLocaleDateString('en-GB')} at {new Date(routine.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </span>
                       )}
                       {routine.updated_at && routine.updated_at !== routine.created_at && (
                         <span className={`text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>
-                          • Last modified {new Date(routine.updated_at).toLocaleDateString()} at {new Date(routine.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          • Last modified {new Date(routine.updated_at).toLocaleDateString('en-GB')} at {new Date(routine.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </span>
                       )}
                     </div>
@@ -1422,12 +1436,12 @@ function Routines() {
                           </span>
                           {routine.created_at && (
                             <span className={`${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>
-                              • Created {new Date(routine.created_at).toLocaleDateString()} at {new Date(routine.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              • Created {new Date(routine.created_at).toLocaleDateString('en-GB')} at {new Date(routine.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </span>
                           )}
                           {routine.updated_at && routine.updated_at !== routine.created_at && (
                             <span className={`${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>
-                              • Last modified {new Date(routine.updated_at).toLocaleDateString()} at {new Date(routine.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              • Last modified {new Date(routine.updated_at).toLocaleDateString('en-GB')} at {new Date(routine.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </span>
                           )}
                         </div>
@@ -1536,12 +1550,12 @@ function Routines() {
                             </span>
                             {routine.created_at && (
                               <span className={`${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>
-                                • Created {new Date(routine.created_at).toLocaleDateString()} at {new Date(routine.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                • Created {new Date(routine.created_at).toLocaleDateString('en-GB')} at {new Date(routine.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                               </span>
                             )}
                             {routine.updated_at && routine.updated_at !== routine.created_at && (
                               <span className={`${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>
-                                • Last modified {new Date(routine.updated_at).toLocaleDateString()} at {new Date(routine.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                • Last modified {new Date(routine.updated_at).toLocaleDateString('en-GB')} at {new Date(routine.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                               </span>
                             )}
                           </div>

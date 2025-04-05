@@ -25,6 +25,16 @@ import { useTheme } from "../../hooks/useTheme"; // Assuming you have a theme ho
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
+// Helper function to format dates in European format
+const formatDateForDisplay = (dateString) => {
+  if (!dateString) return "";
+  return new Date(dateString).toLocaleDateString('en-GB', {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+};
+
 function AdminDashboard() {
   // State management
   const [loading, setLoading] = useState(true);
@@ -266,7 +276,7 @@ function AdminDashboard() {
       {/* Last updated timestamp */}
       {lastUpdated && (
         <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-          Last updated: {lastUpdated.toLocaleString()}
+          Last updated: {formatDateForDisplay(lastUpdated)}
         </p>
       )}
 
@@ -507,7 +517,7 @@ function AdminDashboard() {
                           <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
                             <FaCalendarAlt className="mr-1" />
                             <span>
-                              {new Date(user.signup_date).toLocaleDateString()}
+                              {formatDateForDisplay(user.signup_date)}
                             </span>
                           </div>
                         </div>
@@ -898,7 +908,7 @@ function AdminDashboard() {
               <span>Connected</span>
             </div>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-              Last backup: {new Date().toLocaleDateString()}
+              Last backup: {formatDateForDisplay(new Date())}
             </p>
           </div>
 
@@ -980,8 +990,8 @@ function AdminDashboard() {
                         </span>
                       )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {new Date(user.created_at).toLocaleDateString()}
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                      {formatDateForDisplay(user.created_at)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <button className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 mr-3">

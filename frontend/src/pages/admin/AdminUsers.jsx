@@ -591,7 +591,7 @@ function AdminUsers() {
   // Format date for display
   const formatDate = (dateString) => {
     if (!dateString) return "Unknown";
-    return new Date(dateString).toLocaleDateString();
+    return new Date(dateString).toLocaleDateString('en-GB');
   };
 
   // Filter users based on search query and filters

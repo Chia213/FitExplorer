@@ -804,6 +804,16 @@ function Nutrition() {
     );
   };
 
+  // Add the formatting function
+  const formatDateForDisplay = (dateString) => {
+    if (!dateString) return "";
+    return new Date(dateString).toLocaleDateString('en-GB', {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  };
+
   const renderMealLog = () => {
     return (
       <div className="space-y-6">
@@ -813,12 +823,28 @@ function Nutrition() {
               <FaCalendarAlt className="mr-2 text-blue-500" /> Meal Log
             </h3>
             <div className="flex items-center">
-              <input
-                type="date"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 mr-2"
-              />
+              <div className="relative mr-2">
+                <input
+                  type="text"
+                  value={selectedDate ? formatDateForDisplay(selectedDate) : ""}
+                  readOnly
+                  className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 cursor-pointer pr-10"
+                  onClick={() => document.getElementById('meal-date-picker').showPicker()}
+                />
+                <input
+                  id="meal-date-picker"
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  className="absolute opacity-0 w-0 h-0"
+                />
+                <button 
+                  onClick={() => document.getElementById('meal-date-picker').showPicker()}
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500"
+                >
+                  <FaCalendarAlt />
+                </button>
+              </div>
               <button
                 onClick={() => setShowAddMealModal(true)}
                 className="px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors flex items-center"
@@ -832,7 +858,7 @@ function Nutrition() {
           {meals.length === 0 ? (
             <div className="text-center py-8 text-gray-500 dark:text-gray-400">
               <FaAppleAlt className="mx-auto text-4xl mb-2 opacity-30" />
-              <p>No meals logged for {new Date(selectedDate).toLocaleDateString()}</p>
+              <p>No meals logged for {formatDateForDisplay(selectedDate)}</p>
               <button
                 onClick={() => setShowAddMealModal(true)}
                 className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"

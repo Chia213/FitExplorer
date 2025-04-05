@@ -169,7 +169,7 @@ const AchievementsSection = ({ backendURL }) => {
                   {renderProgress(achievement)}
                   {achievement.achieved_at && (
                     <p className="text-xs text-green-600 dark:text-green-400 mt-2">
-                      Achieved on {new Date(achievement.achieved_at).toLocaleDateString()}
+                      Achieved on {new Date(achievement.achieved_at).toLocaleDateString('en-GB')}
                     </p>
                   )}
                 </div>

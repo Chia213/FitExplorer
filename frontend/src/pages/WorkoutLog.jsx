@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   FaTrash,
   FaPlus,
@@ -23,6 +23,8 @@ import {
   FaInfoCircle,
   FaCheck,
   FaEdit,
+  FaCalendarAlt,
+  FaDumbbell
 } from "react-icons/fa";
 import AddExercise from "./AddExercise";
 import { LuCalendarClock } from "react-icons/lu";
@@ -75,6 +77,7 @@ const WorkoutLog = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
+  const location = useLocation();
   const [showRestTimer, setShowRestTimer] = useState(false);
   const [currentExercise, setCurrentExercise] = useState(null);
   const [restTime, setRestTime] = useState(60); // Default 60 seconds
@@ -248,19 +251,38 @@ const WorkoutLog = () => {
     );
     const preloadedWorkoutName = localStorage.getItem("preloadedWorkoutName");
 
+    console.log("Loading WorkoutLog component");
+    console.log("Preloaded exercises found:", !!preloadedExercises);
+    
     if (preloadedExercises) {
       try {
         const parsedExercises = JSON.parse(preloadedExercises);
+        console.log("Number of preloaded exercises:", parsedExercises.length);
+        console.log("Preloaded exercise names:", parsedExercises.map(e => e.name).join(", "));
+        
+        // Make sure we set the workout exercises first
         setWorkoutExercises(parsedExercises);
-
+        
+        // Then set other properties
         if (preloadedWorkoutName) {
+          console.log("Setting workout name:", preloadedWorkoutName);
           setWorkoutName(preloadedWorkoutName);
         }
 
-        // Clear the preloaded data
+        // Clear the preloaded data after we've used it
         localStorage.removeItem("preloadedWorkoutExercises");
         localStorage.removeItem("preloadedWorkoutName");
-      } catch (error) {}
+        
+        // Create a separate effect to check the state
+        const timer = setTimeout(() => {
+          console.log("Verifying exercises after setTimeout");
+          console.log("Current workout exercises:", workoutExercises);
+        }, 1000);
+        
+        return () => clearTimeout(timer);
+      } catch (error) {
+        console.error("Error parsing preloaded exercises:", error);
+      }
     }
   }, [navigate]);
 
@@ -516,28 +538,116 @@ const WorkoutLog = () => {
 
   const validateExerciseSets = (exercise) => {
     if (exercise.is_cardio) {
-      // For cardio exercises, check if either distance or duration is filled
+      // For cardio exercises, check if distance, duration and intensity are filled
       return exercise.sets.every(set => 
-        (set.distance && set.distance.trim() !== "") || 
-        (set.duration && set.duration.trim() !== "")
+        (set.distance && String(set.distance).trim() !== "") && 
+        (set.duration && String(set.duration).trim() !== "") &&
+        (set.intensity && String(set.intensity).trim() !== "")
       );
     } else {
       // For strength exercises, check if both weight and reps are filled
       return exercise.sets.every(set => 
-        set.weight && set.weight.trim() !== "" && 
-        set.reps && set.reps.trim() !== ""
+        set.weight && String(set.weight).trim() !== "" && 
+        set.reps && String(set.reps).trim() !== ""
       );
     }
   };
-
-  const handleFinishWorkout = async () => {
+  
+  // Validate the entire workout before finishing or saving
+  const validateWorkout = (isFromRoutine = false) => {
+    let isValid = true;
+    let missingFields = [];
+    
+    // Validate workout name
     if (!workoutName.trim()) {
-      alert("Please enter a workout name");
-      return;
+      if (!isFromRoutine) {
+        alert("Please enter a workout name");
+        return false;
+      } else {
+        missingFields.push("workout name");
+        isValid = false;
+      }
     }
-
+    
+    // Validate start time
+    if (!startTime) {
+      if (!isFromRoutine) {
+        alert("Please set a start time for your workout");
+        return false;
+      } else {
+        missingFields.push("start time");
+        isValid = false;
+      }
+    }
+    
+    // Validate end time
+    if (!endTime) {
+      if (!isFromRoutine) {
+        alert("Please set an end time for your workout");
+        return false;
+      } else {
+        missingFields.push("end time");
+        isValid = false;
+      }
+    }
+    
+    // Validate bodyweight
+    if (!bodyweight || bodyweight.trim() === "") {
+      if (!isFromRoutine) {
+        alert("Please enter your bodyweight");
+        return false;
+      } else {
+        missingFields.push("bodyweight");
+        isValid = false;
+      }
+    }
+    
+    // Validate exercises
     if (workoutExercises.length === 0) {
-      alert("Please add at least one exercise");
+      if (!isFromRoutine) {
+        alert("Please add at least one exercise");
+        return false;
+      } else {
+        missingFields.push("at least one exercise");
+        isValid = false;
+      }
+    }
+    
+    // Validate all sets in all exercises
+    for (let i = 0; i < workoutExercises.length; i++) {
+      const exercise = workoutExercises[i];
+      
+      if (!validateExerciseSets(exercise)) {
+        if (!isFromRoutine) {
+          if (exercise.is_cardio) {
+            alert(`Please fill in all distance, duration, and intensity fields for ${exercise.name}`);
+          } else {
+            alert(`Please fill in all weight and reps fields for ${exercise.name}`);
+          }
+          return false;
+        } else {
+          missingFields.push(exercise.is_cardio ? 
+            `distance, duration, and intensity for ${exercise.name}` : 
+            `weight and reps for ${exercise.name}`);
+          isValid = false;
+        }
+      }
+    }
+    
+    // If coming from a routine and there are missing fields, show a consolidated warning
+    if (isFromRoutine && missingFields.length > 0) {
+      alert(`Please complete the following before finishing the workout:\n• ${missingFields.join('\n• ')}`);
+    }
+    
+    return isValid;
+  };
+
+  // Check if we're working from a routine when finalizing workout
+  const handleFinishWorkout = async () => {
+    // Check if we're coming from a routine
+    const isFromRoutine = !!location.state?.routineId;
+    
+    if (!validateWorkout(isFromRoutine)) {
       return;
     }
 
@@ -548,16 +658,11 @@ const WorkoutLog = () => {
         return;
       }
 
-      // Set end time if not already set
-      if (!endTime) {
-        setEndTime(new Date().toISOString().slice(0, 16));
-      }
-
       // Prepare the workout data
       const workoutData = {
         name: workoutName,
         start_time: new Date(startTime).toISOString(),
-        end_time: new Date(endTime || new Date()).toISOString(),
+        end_time: new Date(endTime).toISOString(),
         bodyweight: bodyweight ? parseFloat(bodyweight) : null,
         notes: notes,
         exercises: workoutExercises.map(exercise => ({
@@ -590,7 +695,7 @@ const WorkoutLog = () => {
 
       // Show success message and reset form
       alert("Workout saved successfully!");
-      notifyWorkoutCompleted();
+      notifyWorkoutCompleted(workoutName);
       
       // Reset the form
       setWorkoutName("");
@@ -611,13 +716,8 @@ const WorkoutLog = () => {
   };
 
   const handleSaveAsRoutine = () => {
-    if (!workoutName.trim()) {
-      alert("Please enter a workout name before saving as a routine.");
-      return;
-    }
-
-    if (!workoutExercises.length) {
-      alert("Please add at least one exercise before saving as a routine.");
+    // Always use strict validation for saving as routine
+    if (!validateWorkout(false)) {
       return;
     }
 
@@ -873,72 +973,6 @@ const WorkoutLog = () => {
       )
     );
   };
-
-  // Load workout preferences from backend
-  useEffect(() => {
-    const loadWorkoutPreferences = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        if (!token) return;
-
-        const response = await fetch(`${API_BASE_URL}/workout-preferences`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (!response.ok) return;
-
-        const preferences = await response.json();
-        if (preferences.last_bodyweight) setBodyweight(preferences.last_bodyweight.toString());
-        if (preferences.last_weight_unit) setWeightUnit(preferences.last_weight_unit);
-        if (preferences.last_exercises) setWorkoutExercises(preferences.last_exercises);
-      } catch (error) {
-        console.error("Error loading workout preferences:", error);
-      }
-    };
-
-    loadWorkoutPreferences();
-  }, []);
-
-  // Save workout preferences to backend
-  const saveWorkoutPreferences = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) return;
-
-      const preferences = {
-        last_bodyweight: bodyweight ? parseFloat(bodyweight) : null,
-        last_weight_unit: weightUnit,
-        last_exercises: workoutExercises,
-      };
-
-      await fetch(`${API_BASE_URL}/workout-preferences`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(preferences),
-      });
-    } catch (error) {
-      console.error("Error saving workout preferences:", error);
-    }
-  };
-
-  // Save preferences whenever relevant data changes
-  useEffect(() => {
-    saveWorkoutPreferences();
-  }, [bodyweight, weightUnit, workoutExercises]);
-
-  // Clean up timer on unmount
-  useEffect(() => {
-    return () => {
-      if (timerInterval) {
-        clearInterval(timerInterval);
-      }
-    };
-  }, [timerInterval]);
 
   const handleStartRestTimer = (exercise) => {
     setCurrentExercise(exercise);
@@ -1536,12 +1570,17 @@ const WorkoutLog = () => {
   };
 
   const saveWorkout = async () => {
-    // ... existing validation code ...
+    // Check if we're coming from a routine
+    const isFromRoutine = !!location.state?.routineId;
+    
+    if (!validateWorkout(isFromRoutine)) {
+      return;
+    }
 
     const workoutToSave = prepareWorkoutForSaving({
-      name: workoutName || "Workout " + new Date().toLocaleDateString(),
+      name: workoutName,
       start_time: startTime,
-      end_time: endTime || new Date().toISOString().slice(0, 16),
+      end_time: endTime,
       bodyweight: bodyweight,
       notes: notes,
       weight_unit: weightUnit,
@@ -1587,8 +1626,227 @@ const WorkoutLog = () => {
       })),
     });
 
-    // ... existing API call code ...
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        navigate("/login");
+        return;
+      }
+
+      const response = await fetch(`${API_BASE_URL}/workouts`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(workoutToSave)
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to save workout");
+      }
+
+      // Show success message and reset form
+      alert("Workout saved successfully!");
+      
+      // Reset the form
+      setWorkoutName("");
+      setStartTime(new Date().toISOString().slice(0, 16));
+      setEndTime("");
+      setNotes("");
+      setWorkoutExercises([]);
+      
+      // Navigate to workout history
+      navigate("/workout-history");
+    } catch (error) {
+      console.error("Error saving workout:", error);
+      alert("Failed to save workout. Please try again.");
+    }
   };
+
+  const formatDateForDisplay = (dateString) => {
+    if (!dateString) return "";
+    return new Date(dateString).toLocaleDateString('en-GB', {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  };
+
+  const formatDateTimeForDisplay = (dateString) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    const datePart = date.toLocaleDateString('en-GB', {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+    const timePart = date.toLocaleTimeString('en-GB', {
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+    return `${datePart} ${timePart}`;
+  };
+
+  // Add a new useEffect to handle navigation with routineId
+  useEffect(() => {
+    // Check if we navigated from the Routines page with a routineId
+    if (location.state?.routineId) {
+      const routineId = location.state.routineId;
+      console.log("Detected navigation with routineId:", routineId);
+      
+      // Load the routine data from localStorage if it exists
+      const preloadedExercises = localStorage.getItem("preloadedWorkoutExercises");
+      const preloadedWorkoutName = localStorage.getItem("preloadedWorkoutName");
+      
+      if (preloadedExercises && preloadedWorkoutName) {
+        console.log("Loading preloaded data for routine:", routineId);
+        try {
+          const parsedExercises = JSON.parse(preloadedExercises);
+          console.log("Loaded exercises:", parsedExercises.length);
+          
+          // Set the workout exercises and name
+          setWorkoutExercises(parsedExercises);
+          setWorkoutName(preloadedWorkoutName);
+          
+          // Clear the navigation state to prevent reloading on refresh
+          window.history.replaceState({}, document.title);
+          
+          // Clear localStorage after loading
+          localStorage.removeItem("preloadedWorkoutExercises");
+          localStorage.removeItem("preloadedWorkoutName");
+        } catch (error) {
+          console.error("Error loading preloaded exercises:", error);
+        }
+      } else {
+        console.log("No preloaded data found for routine:", routineId);
+        
+        // If no preloaded data is found, try to fetch all routines and find the one we need
+        const token = localStorage.getItem("token");
+        if (token) {
+          console.log("Attempting to fetch routines with routineId:", routineId);
+          fetch(`${API_BASE_URL}/routines`, {
+            headers: { Authorization: `Bearer ${token}` },
+          })
+            .then(response => {
+              if (!response.ok) throw new Error("Failed to fetch routines");
+              return response.json();
+            })
+            .then(routines => {
+              // Find the specific routine by ID - ensure type-safe comparison
+              const routineIdNum = parseInt(routineId, 10);
+              const routine = routines.find(r => r.id === routineIdNum);
+              if (routine) {
+                console.log("Found routine in fetch response:", routine.name);
+                handleSelectRoutine(routine);
+              } else {
+                console.error("Routine not found in fetch response. Available routines:", routines.map(r => `ID: ${r.id}, Name: ${r.name}`));
+              }
+            })
+            .catch(error => {
+              console.error("Error fetching routines:", error);
+            });
+        }
+      }
+    }
+  }, [location.state]);
+
+  // Load the last used bodyweight from localStorage when the component mounts
+  useEffect(() => {
+    // First try to load from localStorage as a quick solution
+    const storedBodyweight = localStorage.getItem("lastBodyweight");
+    if (storedBodyweight && !bodyweight) {
+      setBodyweight(storedBodyweight);
+    }
+    
+    // Then try to load from the server preferences
+    const loadWorkoutPreferences = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+
+        const response = await fetch(`${API_BASE_URL}/workout-preferences`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) return;
+
+        const preferences = await response.json();
+        
+        // Only update bodyweight if we have a value from the server and it's not already set
+        if (preferences.last_bodyweight && (!bodyweight || bodyweight === "")) {
+          const weightValue = preferences.last_bodyweight.toString();
+          setBodyweight(weightValue);
+          // Also update localStorage for future quick access
+          localStorage.setItem("lastBodyweight", weightValue);
+        }
+        
+        if (preferences.last_weight_unit) {
+          setWeightUnit(preferences.last_weight_unit);
+        }
+        
+        // Optionally load saved exercises if needed
+        // if (preferences.last_exercises && !workoutExercises.length) {
+        //   setWorkoutExercises(preferences.last_exercises);
+        // }
+      } catch (error) {
+        console.error("Error loading workout preferences:", error);
+      }
+    };
+
+    loadWorkoutPreferences();
+  }, []);
+
+  // Update localStorage and API whenever bodyweight changes
+  useEffect(() => {
+    if (bodyweight) {
+      // Store in localStorage for quick access next time
+      localStorage.setItem("lastBodyweight", bodyweight);
+      
+      // Also update on the server if we have a token
+      const saveBodyweight = async () => {
+        try {
+          const token = localStorage.getItem("token");
+          if (!token) return;
+          
+          // Only save if we have an actual value
+          if (!bodyweight || bodyweight === "") return;
+
+          await fetch(`${API_BASE_URL}/workout-preferences`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              last_bodyweight: parseFloat(bodyweight),
+              last_weight_unit: weightUnit
+            }),
+          });
+        } catch (error) {
+          console.error("Error saving bodyweight preference:", error);
+        }
+      };
+      
+      // Debounce the API call to avoid too many requests
+      const timeoutId = setTimeout(() => {
+        saveBodyweight();
+      }, 500);
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [bodyweight, weightUnit]);
+
+  // Clean up timer on unmount
+  useEffect(() => {
+    return () => {
+      if (timerInterval) {
+        clearInterval(timerInterval);
+      }
+    };
+  }, [timerInterval]);
 
   return (
     <div className="min-h-screen flex flex-col items-center p-6 bg-gray-100 dark:bg-gray-900">
@@ -1609,6 +1867,13 @@ const WorkoutLog = () => {
             <LuCalendarClock className="text-xl" />
           </button>
           <button
+            onClick={() => setShowExerciseSelection(true)}
+            className="bg-teal-500 text-white p-2 rounded-lg hover:bg-teal-400"
+            title="Add Exercise"
+          >
+            <FaDumbbell className="text-xl" />
+          </button>
+          <button
             onClick={() => navigate("/workout-history")}
             className="bg-teal-500 text-white p-2 rounded-lg hover:bg-teal-400"
             title="View Workout History"
@@ -1621,22 +1886,54 @@ const WorkoutLog = () => {
       <div className="w-full max-w-lg bg-white dark:bg-gray-800 p-4 rounded-lg mt-4 space-y-4">
         <div className="flex justify-between items-center">
           <p className="text-gray-700 dark:text-gray-300">Start Time</p>
-          <input
-            type="datetime-local"
-            value={startTime}
-            onChange={(e) => setStartTime(e.target.value)}
-            className="bg-gray-200 dark:bg-gray-600 p-2 rounded-lg"
-          />
+          <div className="relative">
+            <input
+              type="text"
+              value={startTime ? formatDateTimeForDisplay(startTime) : ""}
+              readOnly
+              className="bg-gray-200 dark:bg-gray-600 p-2 rounded-lg cursor-pointer pr-10"
+              onClick={() => document.getElementById('start-time-picker').showPicker()}
+            />
+            <input
+              id="start-time-picker"
+              type="datetime-local"
+              value={startTime}
+              onChange={(e) => setStartTime(e.target.value)}
+              className="absolute opacity-0 w-0 h-0"
+            />
+            <button 
+              onClick={() => document.getElementById('start-time-picker').showPicker()}
+              className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500"
+            >
+              <FaCalendarAlt />
+            </button>
+          </div>
         </div>
 
         <div className="flex justify-between items-center">
           <p className="text-gray-700 dark:text-gray-300">End Time</p>
-          <input
-            type="datetime-local"
-            value={endTime}
-            onChange={(e) => setEndTime(e.target.value)}
-            className="bg-gray-200 dark:bg-gray-600 p-2 rounded-lg"
-          />
+          <div className="relative">
+            <input
+              type="text"
+              value={endTime ? formatDateTimeForDisplay(endTime) : ""}
+              readOnly
+              className="bg-gray-200 dark:bg-gray-600 p-2 rounded-lg cursor-pointer pr-10"
+              onClick={() => document.getElementById('end-time-picker').showPicker()}
+            />
+            <input
+              id="end-time-picker"
+              type="datetime-local"
+              value={endTime}
+              onChange={(e) => setEndTime(e.target.value)}
+              className="absolute opacity-0 w-0 h-0"
+            />
+            <button 
+              onClick={() => document.getElementById('end-time-picker').showPicker()}
+              className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500"
+            >
+              <FaCalendarAlt />
+            </button>
+          </div>
         </div>
 
         <div className="flex justify-between items-center">
@@ -1669,13 +1966,6 @@ const WorkoutLog = () => {
           placeholder="Add any notes..."
         ></textarea>
       </div>
-
-      <button
-        onClick={() => setShowExerciseSelection(true)}
-        className="w-full max-w-lg text-white font-semibold text-lg p-4 mt-6 bg-teal-500 hover:bg-teal-400 rounded-lg"
-      >
-        Add Exercise
-      </button>
 
       {workoutExercises.map((exercise, exerciseIndex) => (
         <div
@@ -1775,20 +2065,20 @@ const WorkoutLog = () => {
                   </button>
                   <span className="text-xs text-gray-500 dark:text-gray-400">Records</span>
                 </div>
+                
+                {!exercise.is_cardio && (
+                  <div className="flex flex-col items-center">
+                    <button
+                      onClick={() => handleShowSetTypeModal(exercise)}
+                      className="text-blue-500 hover:text-blue-400 mb-1"
+                      title="Add Set Type (Drop Set, Warm-up, Working)"
+                    >
+                      <FaListUl className="text-lg" />
+                    </button>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">Set Type</span>
+                  </div>
+                )}
               </div>
-
-              {!exercise.is_cardio && (
-                <div className="flex flex-col items-center">
-                <button
-                    onClick={() => handleShowSetTypeModal(exercise)}
-                    className="text-blue-500 hover:text-blue-400 mb-1"
-                    title="Add Set Type (Drop Set, Warm-up, Working)"
-                  >
-                    <FaListUl className="text-lg" />
-                </button>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">Set Type</span>
-                </div>
-              )}
             </div>
           </div>
 
@@ -2294,7 +2584,7 @@ const WorkoutLog = () => {
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">
                 Set Type
-              </h2>
+            </h2>
               <button
                 onClick={closeSetTypeModal}
                 className="text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
@@ -2324,7 +2614,461 @@ const WorkoutLog = () => {
             </div>
           
             {/* Conditional content based on selected set type */}
-            {/* ... existing code ... */}
+            {selectedSetType === "drop" && (
+              <>
+            <div className="mb-4">
+              <label className="block text-gray-700 dark:text-gray-300 mb-2">
+                Original Weight ({weightUnit})
+              </label>
+              <input
+                type="number"
+                value={originalWeight || ""}
+                onChange={(e) => {
+                  setOriginalWeight(e.target.value);
+                  setDropSetWeight(e.target.value);
+                }}
+                className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
+                placeholder="Enter original weight"
+              />
+            </div>
+                
+            <div className="mb-4">
+              <label className="block text-gray-700 dark:text-gray-300 mb-2">
+                Weight Reduction (%)
+              </label>
+              <input
+                type="number"
+                value={dropSetPercentage}
+                onChange={(e) => setDropSetPercentage(parseInt(e.target.value))}
+                className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
+                min="5"
+                max="50"
+              />
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                Each drop will reduce the weight by this percentage
+              </p>
+            </div>
+                
+            <div className="mb-4">
+              <label className="block text-gray-700 dark:text-gray-300 mb-2">
+                Number of Drops
+              </label>
+              <input
+                type="number"
+                value={dropSetCount}
+                onChange={(e) => setDropSetCount(parseInt(e.target.value))}
+                className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
+                min="1"
+                max="5"
+              />
+            </div>
+                
+            <div className="mb-4">
+              <label className="block text-gray-700 dark:text-gray-300 mb-2">
+                Reps per Drop
+              </label>
+              <input
+                type="number"
+                value={dropSetReps}
+                onChange={(e) => setDropSetReps(e.target.value)}
+                className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
+                placeholder="Enter reps"
+              />
+            </div>
+                
+            {originalWeight && (
+              <div className="mb-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                <h3 className="font-medium mb-2">Drop Set Preview:</h3>
+                <div className="space-y-1">
+                  {Array.from({ length: dropSetCount }).map((_, i) => {
+                    const weight = calculateNextWeight(
+                      parseFloat(originalWeight),
+                      dropSetPercentage * (i + 1)
+                    );
+                    return (
+                      <div key={i} className="text-sm">
+                        Drop {i + 1}: {weight} {weightUnit} ({dropSetPercentage}% reduction)
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+              </>
+            )}
+
+            {selectedSetType === "warmup" && (
+              <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg mb-4">
+                <h3 className="font-medium text-yellow-700 dark:text-yellow-400 mb-2">Warm-up Set</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Warm-up sets are typically performed with lighter weights to prepare your muscles and joints.
+                  {!setTypeExercise?.is_cardio && " We suggest using about 70% of your working weight."}
+                </p>
+                {originalWeight && !setTypeExercise?.is_cardio && (
+                  <div className="mt-3 font-medium">
+                    Suggested warm-up weight: {(parseFloat(originalWeight) * 0.7).toFixed(1)} {weightUnit}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {selectedSetType === "working" && (
+              <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg mb-4">
+                <h3 className="font-medium text-blue-700 dark:text-blue-400 mb-2">Normal Set</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Normal sets are your primary training sets performed at your target intensity.
+                </p>
+              </div>
+            )}
+            
+            {selectedSetType === "superset" && (
+              <div className="mb-4">
+                <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg mb-4">
+                  <h3 className="font-medium text-purple-700 dark:text-purple-400 mb-2">Superset</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Supersets are two exercises performed back-to-back with minimal rest between them.
+                    Pair {setTypeExercise?.name} with another exercise from your list or catalog.
+                  </p>
+                </div>
+                
+                <div className="mb-4">
+                  <div className="flex flex-col space-y-2">
+              <button
+                      onClick={() => setShowSupersetExerciseSelector(true)}
+                      className="bg-purple-500 hover:bg-purple-600 text-white py-2 px-4 rounded-lg flex items-center justify-center"
+                    >
+                      <FaPlus className="mr-2" /> Select Exercise from Catalog
+                    </button>
+                    
+                    {supersetExerciseId !== null && (
+                      <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                        <p className="font-medium">Selected: {workoutExercises[supersetExerciseId]?.name}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                {supersetExerciseId !== null && !setTypeExercise?.is_cardio && !workoutExercises[supersetExerciseId]?.is_cardio && (
+                  <>
+                    <div className="mb-4">
+                      <label className="block text-gray-700 dark:text-gray-300 mb-2">
+                        {setTypeExercise?.name} Weight ({weightUnit})
+                      </label>
+                      <input
+                        type="number"
+                        value={originalWeight || ""}
+                        onChange={(e) => setOriginalWeight(e.target.value)}
+                        className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
+                        placeholder="Enter weight"
+                      />
+                    </div>
+                    
+                    <div className="mb-4">
+                      <label className="block text-gray-700 dark:text-gray-300 mb-2">
+                        {setTypeExercise?.name} Reps
+                      </label>
+                      <input
+                        type="number"
+                        value={dropSetReps}
+                        onChange={(e) => setDropSetReps(e.target.value)}
+                        className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
+                        placeholder="Enter reps"
+                      />
+                    </div>
+                    
+                    <div className="mb-4">
+                      <label className="block text-gray-700 dark:text-gray-300 mb-2">
+                        {workoutExercises[supersetExerciseId]?.name} Weight ({weightUnit})
+                      </label>
+                      <input
+                        type="number"
+                        value={supersetWeight}
+                        onChange={(e) => setSupersetWeight(e.target.value)}
+                        className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
+                        placeholder="Enter weight"
+                      />
+                    </div>
+                    
+                    <div className="mb-4">
+                      <label className="block text-gray-700 dark:text-gray-300 mb-2">
+                        {workoutExercises[supersetExerciseId]?.name} Reps
+                      </label>
+                      <input
+                        type="number"
+                        value={supersetReps}
+                        onChange={(e) => setSupersetReps(e.target.value)}
+                        className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
+                        placeholder="Enter reps"
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
+            {selectedSetType === "amrap" && (
+              <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg mb-4">
+                <h3 className="font-medium text-green-700 dark:text-green-400 mb-2">AMRAP Set</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  AMRAP (As Many Reps As Possible) sets are performed to technical failure - complete as many reps as you can with good form.
+                </p>
+                
+                <div className="mt-4">
+                  <label className="block text-gray-700 dark:text-gray-300 mb-2">
+                    Weight ({weightUnit})
+                  </label>
+                  <input
+                    type="number"
+                    value={originalWeight || ""}
+                    onChange={(e) => setOriginalWeight(e.target.value)}
+                    className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
+                    placeholder="Enter weight"
+                  />
+                </div>
+                
+                <div className="mt-3">
+                  <label className="block text-gray-700 dark:text-gray-300 mb-2">
+                    Target Reps (minimum)
+                  </label>
+                  <input
+                    type="number"
+                    value={dropSetReps}
+                    onChange={(e) => setDropSetReps(e.target.value)}
+                    className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
+                    placeholder="Enter target reps"
+                  />
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Example: If you aim for at least 8 reps, enter "8"
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {selectedSetType === "restpause" && (
+              <div className="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg mb-4">
+                <h3 className="font-medium text-orange-700 dark:text-orange-400 mb-2">Rest-Pause Set</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Rest-Pause involves performing a set to failure, resting 15-20 seconds, then continuing with the same weight for additional reps.
+                </p>
+                
+                <div className="mt-4">
+                  <label className="block text-gray-700 dark:text-gray-300 mb-2">
+                    Weight ({weightUnit})
+                  </label>
+                  <input
+                    type="number"
+                    value={originalWeight || ""}
+                    onChange={(e) => setOriginalWeight(e.target.value)}
+                    className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
+                    placeholder="Enter weight"
+                  />
+                </div>
+                
+                <div className="mt-3">
+                  <label className="block text-gray-700 dark:text-gray-300 mb-2">
+                    Initial Reps
+                  </label>
+                  <input
+                    type="number"
+                    value={dropSetReps}
+                    onChange={(e) => setDropSetReps(e.target.value)}
+                    className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
+                    placeholder="Enter initial reps"
+                  />
+                </div>
+                
+                <div className="mt-3">
+                  <label className="block text-gray-700 dark:text-gray-300 mb-2">
+                    Number of Rest-Pauses
+                  </label>
+                  <input
+                    type="number"
+                    value={dropSetCount}
+                    onChange={(e) => setDropSetCount(parseInt(e.target.value))}
+                    className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
+                    min="1"
+                    max="3"
+                    placeholder="How many times to rest-pause"
+                  />
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Typically 1-3 rest-pauses are performed
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {selectedSetType === "pyramid" && (
+              <div className="p-4 bg-pink-50 dark:bg-pink-900/20 rounded-lg mb-4">
+                <h3 className="font-medium text-pink-700 dark:text-pink-400 mb-2">Pyramid Set</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Pyramid sets involve progressively increasing the weight while decreasing reps (ascending), then optionally decreasing weight while increasing reps (descending).
+                </p>
+                
+                <div className="mt-4">
+                  <label className="block text-gray-700 dark:text-gray-300 mb-2">
+                    Starting Weight ({weightUnit})
+                  </label>
+                  <input
+                    type="number"
+                    value={originalWeight || ""}
+                    onChange={(e) => setOriginalWeight(e.target.value)}
+                    className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
+                    placeholder="Enter starting weight"
+                  />
+                </div>
+                
+                <div className="mt-3">
+                  <label className="block text-gray-700 dark:text-gray-300 mb-2">
+                    Starting Reps
+                  </label>
+                  <input
+                    type="number"
+                    value={dropSetReps}
+                    onChange={(e) => setDropSetReps(e.target.value)}
+                    className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
+                    placeholder="Enter starting reps"
+                  />
+                </div>
+                
+                <div className="mt-3">
+                  <label className="block text-gray-700 dark:text-gray-300 mb-2">
+                    Weight Increment (%)
+                  </label>
+                  <input
+                    type="number"
+                    value={dropSetPercentage}
+                    onChange={(e) => setDropSetPercentage(parseInt(e.target.value))}
+                    className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
+                    min="5"
+                    max="30"
+                    placeholder="Weight increment percentage"
+                  />
+                </div>
+                
+                <div className="mt-3">
+                  <label className="block text-gray-700 dark:text-gray-300 mb-2">
+                    Number of Steps
+                  </label>
+                  <input
+                    type="number"
+                    value={dropSetCount}
+                    onChange={(e) => setDropSetCount(parseInt(e.target.value))}
+                    className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
+                    min="2"
+                    max="5"
+                    placeholder="How many steps in the pyramid"
+                  />
+                </div>
+                
+                <div className="mt-3 flex items-center">
+                  <input
+                    type="checkbox"
+                    id="fullPyramid"
+                    className="mr-2"
+                    checked={fullPyramidChecked}
+                    onChange={(e) => setFullPyramidChecked(e.target.checked)}
+                  />
+                  <label htmlFor="fullPyramid" className="text-gray-700 dark:text-gray-300">
+                    Full Pyramid (ascending + descending)
+                  </label>
+                </div>
+              </div>
+            )}
+
+            {selectedSetType === "giant" && (
+              <div className="p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg mb-4">
+                <h3 className="font-medium text-indigo-700 dark:text-indigo-400 mb-2">Giant Set</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Giant sets link 3 or more exercises performed back-to-back with minimal rest. Select multiple exercises to include in your giant set.
+                </p>
+                
+                <div className="mt-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="font-medium">1. {setTypeExercise?.name}</p>
+                    <span className="text-xs bg-indigo-100 dark:bg-indigo-800 text-indigo-800 dark:text-indigo-200 px-2 py-1 rounded-full">
+                      Primary Exercise
+                    </span>
+                  </div>
+                  
+                  {!setTypeExercise?.is_cardio && (
+                    <div className="grid grid-cols-2 gap-2 mb-4">
+                      <div>
+                        <label className="text-sm text-gray-600 dark:text-gray-400">
+                          Weight ({weightUnit})
+                        </label>
+                        <input
+                          type="number"
+                          value={originalWeight || ""}
+                          onChange={(e) => setOriginalWeight(e.target.value)}
+                          className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
+                          placeholder="Weight"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm text-gray-600 dark:text-gray-400">
+                          Reps
+                        </label>
+                        <input
+                          type="number"
+                          value={dropSetReps}
+                          onChange={(e) => setDropSetReps(e.target.value)}
+                          className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
+                          placeholder="Reps"
+                        />
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className="border-t border-gray-200 dark:border-gray-700 pt-3 mb-3">
+                    <button
+                      onClick={() => setShowSupersetExerciseSelector(true)}
+                      className="bg-indigo-500 hover:bg-indigo-600 text-white py-2 px-4 rounded-lg flex items-center justify-center"
+                    >
+                      <FaPlus className="mr-2" /> Add Exercise to Giant Set
+                    </button>
+                    
+                    {supersetExerciseId !== null && (
+                      <div className="mt-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="font-medium">2. {workoutExercises[supersetExerciseId]?.name}</p>
+                        </div>
+                        
+                        {!workoutExercises[supersetExerciseId]?.is_cardio && (
+                          <div className="grid grid-cols-2 gap-2 mb-4">
+                            <div>
+                              <label className="text-sm text-gray-600 dark:text-gray-400">
+                                Weight ({weightUnit})
+                              </label>
+                              <input
+                                type="number"
+                                value={supersetWeight}
+                                onChange={(e) => setSupersetWeight(e.target.value)}
+                                className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
+                                placeholder="Weight"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-sm text-gray-600 dark:text-gray-400">
+                                Reps
+                              </label>
+                              <input
+                                type="number"
+                                value={supersetReps}
+                                onChange={(e) => setSupersetReps(e.target.value)}
+                                className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
+                                placeholder="Enter reps"
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    
+                    {/* Future enhancement: Add support for more exercises in the giant set */}
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="flex justify-between space-x-3 mt-6">
               <button
@@ -2574,7 +3318,7 @@ const WorkoutLog = () => {
                       
                       return (
                         <tr key={idx} className="border-b border-gray-200 dark:border-gray-600">
-                          <td className="py-2">{new Date(workout.start_time).toLocaleDateString()}</td>
+                          <td className="py-2">{formatDateTimeForDisplay(workout.start_time)}</td>
                           <td className="py-2">{workout.name}</td>
                           <td className="py-2 text-center">{exercise.sets.length}</td>
                           <td className="py-2 text-center">
@@ -2696,7 +3440,7 @@ const WorkoutLog = () => {
                                     key={i}
                                     className="mx-0.5 flex-1 bg-indigo-500 hover:bg-indigo-400 transition-all relative group"
                                     style={{ height: `${height}%` }}
-                                    title={`${new Date(relevantWorkouts[i].start_time).toLocaleDateString()}: ${weight} ${weightUnit}`}
+                                    title={`${formatDateForDisplay(relevantWorkouts[i].start_time)}: ${weight} ${weightUnit}`}
                                   >
                                     <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
                                       {weight} {weightUnit}
@@ -2707,8 +3451,8 @@ const WorkoutLog = () => {
                             </div>
                           </div>
                           <div className="h-6 mt-2 flex justify-between text-xs text-gray-500 dark:text-gray-400">
-                            <span>{new Date(relevantWorkouts[0].start_time).toLocaleDateString()}</span>
-                            <span>{new Date(relevantWorkouts[relevantWorkouts.length - 1].start_time).toLocaleDateString()}</span>
+                            <span>{formatDateForDisplay(relevantWorkouts[0].start_time)}</span>
+                            <span>{formatDateForDisplay(relevantWorkouts[relevantWorkouts.length - 1].start_time)}</span>
                           </div>
                         </div>
                       </div>
@@ -2769,7 +3513,7 @@ const WorkoutLog = () => {
                                     key={i}
                                     className="mx-0.5 flex-1 bg-green-500 hover:bg-green-400 transition-all relative group"
                                     style={{ height: `${height}%` }}
-                                    title={`${new Date(relevantWorkouts[i].start_time).toLocaleDateString()}: ${distance.toFixed(1)} km`}
+                                    title={`${formatDateForDisplay(relevantWorkouts[i].start_time)}: ${distance.toFixed(1)} km`}
                                   >
                                     <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
                                       {distance.toFixed(1)} km
@@ -2780,8 +3524,8 @@ const WorkoutLog = () => {
                             </div>
                           </div>
                           <div className="h-6 mt-2 flex justify-between text-xs text-gray-500 dark:text-gray-400">
-                            <span>{new Date(relevantWorkouts[0].start_time).toLocaleDateString()}</span>
-                            <span>{new Date(relevantWorkouts[relevantWorkouts.length - 1].start_time).toLocaleDateString()}</span>
+                            <span>{formatDateForDisplay(relevantWorkouts[0].start_time)}</span>
+                            <span>{formatDateForDisplay(relevantWorkouts[relevantWorkouts.length - 1].start_time)}</span>
                           </div>
                         </div>
                       </div>
@@ -2935,7 +3679,7 @@ const WorkoutLog = () => {
                                   {bestWeightSet.weight} {weightUnit}
                                 </p>
                                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                                  Achieved on {bestWeightSet.date ? new Date(bestWeightSet.date).toLocaleDateString() : 'N/A'} • {bestWeightSet.reps} reps
+                                  Achieved on {bestWeightSet.date ? formatDateForDisplay(bestWeightSet.date) : 'N/A'} • {bestWeightSet.reps} reps
                                 </p>
                               </>
                             ) : (
@@ -2954,7 +3698,7 @@ const WorkoutLog = () => {
                                   {bestRepsSet.reps} reps
                                 </p>
                                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                                  Achieved on {bestRepsSet.date ? new Date(bestRepsSet.date).toLocaleDateString() : 'N/A'} • {bestRepsSet.weight} {weightUnit}
+                                  Achieved on {bestRepsSet.date ? formatDateForDisplay(bestRepsSet.date) : 'N/A'} • {bestRepsSet.weight} {weightUnit}
                                 </p>
                               </>
                             ) : (
@@ -2997,7 +3741,7 @@ const WorkoutLog = () => {
                                       top: '50%',
                                       transition: 'all 0.2s ease'
                                     }}
-                                    title={`${new Date(record.date).toLocaleDateString()}: ${record.weight} ${weightUnit} × ${record.reps} reps`}
+                                    title={`${formatDateForDisplay(record.date)}: ${record.weight} ${weightUnit} × ${record.reps} reps`}
                                   >
                                     <div 
                                       className={`rounded-full flex items-center justify-center text-xs text-white 
@@ -3017,8 +3761,8 @@ const WorkoutLog = () => {
                             </div>
                             
                             <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
-                              <span>{new Date(progressHistory[0].date).toLocaleDateString()}</span>
-                              <span>{new Date(progressHistory[progressHistory.length - 1].date).toLocaleDateString()}</span>
+                              <span>{formatDateForDisplay(progressHistory[0].date)}</span>
+                              <span>{formatDateForDisplay(progressHistory[progressHistory.length - 1].date)}</span>
                             </div>
                             
                             <div className="mt-3 bg-white dark:bg-gray-700 p-2 rounded">
@@ -3126,7 +3870,7 @@ const WorkoutLog = () => {
                                   {bestDistance.distance} km
                                 </p>
                                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                                  Achieved on {bestDistance.date ? new Date(bestDistance.date).toLocaleDateString() : 'N/A'} • {bestDistance.duration} minutes
+                                  Achieved on {bestDistance.date ? formatDateForDisplay(bestDistance.date) : 'N/A'} • {bestDistance.duration} minutes
                                 </p>
                               </>
                             ) : (
@@ -3145,7 +3889,7 @@ const WorkoutLog = () => {
                                   {bestPace.pace.toFixed(2)} min/km
                                 </p>
                                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                                  Achieved on {bestPace.date ? new Date(bestPace.date).toLocaleDateString() : 'N/A'} • {bestPace.distance} km
+                                  Achieved on {bestPace.date ? formatDateForDisplay(bestPace.date) : 'N/A'} • {bestPace.distance} km
                                 </p>
                               </>
                             ) : (
@@ -3188,7 +3932,7 @@ const WorkoutLog = () => {
                                       top: '50%',
                                       transition: 'all 0.2s ease'
                                     }}
-                                    title={`${new Date(record.date).toLocaleDateString()}: ${record.distance} km in ${record.duration} min`}
+                                    title={`${formatDateForDisplay(record.date)}: ${record.distance} km in ${record.duration} min`}
                                   >
                                     <div 
                                       className={`rounded-full flex items-center justify-center text-xs text-white 
@@ -3208,8 +3952,8 @@ const WorkoutLog = () => {
                             </div>
                             
                             <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
-                              <span>{new Date(progressHistory[0].date).toLocaleDateString()}</span>
-                              <span>{new Date(progressHistory[progressHistory.length - 1].date).toLocaleDateString()}</span>
+                              <span>{formatDateForDisplay(progressHistory[0].date)}</span>
+                              <span>{formatDateForDisplay(progressHistory[progressHistory.length - 1].date)}</span>
                             </div>
                             
                             <div className="mt-3 bg-white dark:bg-gray-700 p-2 rounded">
@@ -3246,6 +3990,59 @@ const WorkoutLog = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Add the missing superset exercise selector modal */}
+      {showSupersetExerciseSelector && (
+        <AddExercise
+          onClose={() => setShowSupersetExerciseSelector(false)}
+          onSelectExercise={(exercise) => {
+            // Find the exercise in the current workout
+            const exerciseIndex = workoutExercises.findIndex(ex => ex.name === exercise.name);
+            
+            if (exerciseIndex !== -1) {
+              // If the exercise is already in the workout, use its index
+              setSupersetExerciseId(exerciseIndex);
+            } else {
+              // If not in workout yet, add it first then use its index
+              setWorkoutExercises(prevExercises => {
+                // Create default sets for the exercise
+                let newExercise = {
+                  name: exercise.name,
+                  category: exercise.category,
+                  is_cardio: exercise.is_cardio,
+                  sets: []
+                };
+                
+                // Add appropriate number of sets
+                const initialSets = exercise.initialSets || 1;
+                if (exercise.is_cardio) {
+                  for (let i = 0; i < initialSets; i++) {
+                    newExercise.sets.push({
+                      duration: "",
+                      distance: "",
+                      intensity: ""
+                    });
+                  }
+                } else {
+                  for (let i = 0; i < initialSets; i++) {
+                    newExercise.sets.push({
+                      weight: "",
+                      reps: "",
+                      is_warmup: false
+                    });
+                  }
+                }
+                
+                const newExercises = [...prevExercises, newExercise];
+                setSupersetExerciseId(newExercises.length - 1);
+                return newExercises;
+              });
+            }
+            
+            setShowSupersetExerciseSelector(false);
+          }}
+        />
       )}
     </div>
   );

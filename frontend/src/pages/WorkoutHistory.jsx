@@ -417,7 +417,7 @@ function WorkoutHistory() {
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
     const date = new Date(dateString);
-    return date.toLocaleDateString(undefined, {
+    return date.toLocaleDateString('en-GB', {
       weekday: "short",
       year: "numeric",
       month: "short",
@@ -570,7 +570,7 @@ function WorkoutHistory() {
       .sort((a, b) => a.date - b.date);
 
     return {
-      labels: data.map((d) => d.date.toLocaleDateString()),
+      labels: data.map((d) => d.date.toLocaleDateString('en-GB')),
       datasets: [
         {
           label: exerciseName,
@@ -764,6 +764,15 @@ function WorkoutHistory() {
     setShowSaveRoutineModal(true);
   };
 
+  const formatDateForDisplay = (dateString) => {
+    if (!dateString) return "";
+    return new Date(dateString).toLocaleDateString('en-GB', {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-6">
       <div className="max-w-4xl mx-auto">
@@ -858,12 +867,28 @@ function WorkoutHistory() {
               <label className="block text-gray-700 dark:text-gray-300 mb-2">
                 Filter by Date
               </label>
-              <input
-                type="date"
-                value={filterDate}
-                onChange={(e) => setFilterDate(e.target.value)}
-                className="w-full bg-gray-200 dark:bg-gray-700 rounded p-2"
-              />
+              <div className="relative">
+                <input
+                  type="text"
+                  value={filterDate ? formatDateForDisplay(filterDate) : ""}
+                  readOnly
+                  className="w-full bg-gray-200 dark:bg-gray-700 rounded p-2 cursor-pointer pr-10"
+                  onClick={() => document.getElementById('date-filter-picker').showPicker()}
+                />
+                <input
+                  id="date-filter-picker"
+                  type="date"
+                  value={filterDate}
+                  onChange={(e) => setFilterDate(e.target.value)}
+                  className="absolute opacity-0 w-0 h-0"
+                />
+                <button 
+                  onClick={() => document.getElementById('date-filter-picker').showPicker()}
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500"
+                >
+                  <FaCalendarAlt />
+                </button>
+              </div>
             </div>
             <div>
               <label className="block text-gray-700 dark:text-gray-300 mb-2">
@@ -942,7 +967,7 @@ function WorkoutHistory() {
               </button>
 
               <h3 className="text-lg font-medium">
-                {new Date(currentMonth).toLocaleDateString("en-US", {
+                {new Date(currentMonth).toLocaleDateString("en-GB", {
                   month: "long",
                   year: "numeric",
                 })}

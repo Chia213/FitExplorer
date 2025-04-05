@@ -76,7 +76,7 @@ const NotificationDropdown = () => {
     const diffInDays = Math.floor(diffInHours / 24);
     if (diffInDays < 7) return `${diffInDays}d ago`;
     
-    return date.toLocaleDateString();
+    return date.toLocaleDateString('en-GB');
   };
 
   // Get icon based on type

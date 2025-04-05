@@ -221,10 +221,22 @@ function ProgressTracker() {
   };
 
   const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
     const date = new Date(dateString);
-    return date.toLocaleDateString(undefined, {
+    return date.toLocaleDateString('en-GB', {
+      weekday: "short",
+      year: "numeric",
       month: "short",
       day: "numeric",
+    });
+  };
+
+  const formatDateForDisplay = (dateString) => {
+    if (!dateString) return "";
+    return new Date(dateString).toLocaleDateString('en-GB', {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
     });
   };
 
@@ -673,11 +685,11 @@ function ProgressTracker() {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis 
                     dataKey="date" 
-                    tickFormatter={(date) => new Date(date).toLocaleDateString(undefined, {month: 'short', day: 'numeric'})}
+                    tickFormatter={(date) => new Date(date).toLocaleDateString('en-GB', {month: 'short', day: 'numeric'})}
                   />
                   <YAxis allowDecimals={false} />
                   <Tooltip 
-                    labelFormatter={(date) => new Date(date).toLocaleDateString()}
+                    labelFormatter={(date) => new Date(date).toLocaleDateString('en-GB')}
                     formatter={(value) => [`${value} workout${value !== 1 ? 's' : ''}`, 'Count']}
                   />
                   <Legend />
@@ -751,7 +763,7 @@ function ProgressTracker() {
                     <div key={index} className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
                       <div>
                         <div className="font-medium">
-                          {new Date(workout.date).toLocaleDateString(undefined, {
+                          {new Date(workout.date).toLocaleDateString('en-GB', {
                             weekday: 'long',
                             month: 'short',
                             day: 'numeric'
@@ -867,13 +879,29 @@ function ProgressTracker() {
           
           <div className="mb-6">
             <label className="block text-sm font-medium mb-1">Target Date</label>
-            <input
-              type="date"
-              name={`${activeGoal}.deadline`}
-              value={goals[activeGoal].deadline}
-              onChange={handleGoalChange}
-              className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600"
-            />
+            <div className="relative">
+              <input
+                type="text"
+                value={goals[activeGoal].deadline ? formatDateForDisplay(goals[activeGoal].deadline) : ""}
+                readOnly
+                className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 cursor-pointer pr-10"
+                onClick={() => document.getElementById('goal-deadline-picker').showPicker()}
+              />
+              <input
+                id="goal-deadline-picker"
+                type="date"
+                name={`${activeGoal}.deadline`}
+                value={goals[activeGoal].deadline}
+                onChange={handleGoalChange}
+                className="absolute opacity-0 w-0 h-0"
+              />
+              <button 
+                onClick={() => document.getElementById('goal-deadline-picker').showPicker()}
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500"
+              >
+                <FaCalendarAlt />
+              </button>
+            </div>
           </div>
           
           <div className="flex justify-end space-x-3">
@@ -1013,7 +1041,7 @@ function ProgressTracker() {
       days.push({
         date: dateStr,
         count: workoutMap[dateStr] || 0,
-        dayName: date.toLocaleDateString('en-US', { weekday: 'short' })
+        dayName: date.toLocaleDateString('en-GB', { weekday: 'short' })
       });
     }
     
@@ -1114,7 +1142,7 @@ function ProgressTracker() {
 
   const renderWorkoutHistoryLink = (date) => {
     // Format date for display
-    const formattedDate = new Date(date).toLocaleDateString(undefined, {
+    const formattedDate = new Date(date).toLocaleDateString('en-GB', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
@@ -1426,7 +1454,7 @@ function ProgressTracker() {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="date" tickFormatter={formatDate} />
                 <YAxis domain={['dataMin - 1', 'dataMax + 1']} />
-                <Tooltip labelFormatter={(date) => new Date(date).toLocaleDateString()} />
+                <Tooltip labelFormatter={(date) => new Date(date).toLocaleDateString('en-GB')} />
                 <Line
                   type="monotone"
                   dataKey="bodyweight"
@@ -1449,9 +1477,9 @@ function ProgressTracker() {
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={filterDataByDateRange(progressData.workouts, dateRange)}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" tickFormatter={formatDate} />
+                <XAxis dataKey="date" tickFormatter={(date) => new Date(date).toLocaleDateString('en-GB', {month: 'short', day: 'numeric'})} />
                 <YAxis allowDecimals={false} />
-                <Tooltip labelFormatter={(date) => new Date(date).toLocaleDateString()} />
+                <Tooltip labelFormatter={(date) => new Date(date).toLocaleDateString('en-GB')} />
                 <Bar dataKey="count" name="Workouts" fill="#3B82F6" />
               </BarChart>
             </ResponsiveContainer>
@@ -1544,11 +1572,11 @@ function ProgressTracker() {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis 
                   dataKey="date" 
-                  tickFormatter={(date) => new Date(date).toLocaleDateString(undefined, {month: 'short', day: 'numeric'})}
+                  tickFormatter={(date) => new Date(date).toLocaleDateString('en-GB', {month: 'short', day: 'numeric'})}
                 />
                 <YAxis domain={['dataMin - 1', 'dataMax + 1']} />
                 <Tooltip 
-                  labelFormatter={(date) => new Date(date).toLocaleDateString()}
+                  labelFormatter={(date) => new Date(date).toLocaleDateString('en-GB')}
                   formatter={(value, name, props) => {
                     if (props.payload.isPrediction) {
                       return [`${value.toFixed(1)} kg (predicted)`, 'Weight'];
@@ -1625,11 +1653,11 @@ function ProgressTracker() {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis 
                   dataKey="date" 
-                  tickFormatter={(date) => new Date(date).toLocaleDateString(undefined, {month: 'short', day: 'numeric'})}
+                  tickFormatter={(date) => new Date(date).toLocaleDateString('en-GB', {month: 'short', day: 'numeric'})}
                 />
                 <YAxis />
                 <Tooltip 
-                  labelFormatter={(date) => new Date(date).toLocaleDateString()}
+                  labelFormatter={(date) => new Date(date).toLocaleDateString('en-GB')}
                   formatter={(value) => [`${value.toFixed(0)} kg`, 'Volume']}
                 />
                 <Legend />
