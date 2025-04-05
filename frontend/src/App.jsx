@@ -33,6 +33,7 @@ import FitnessCalculator from "./pages/FitnessCalculator";
 import Settings from "./pages/Settings";
 import Achievements from "./pages/Achievements";
 import PersonalRecords from "./pages/PersonalRecords";
+import Nutrition from "./pages/Nutrition";
 
 // Admin pages
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -81,7 +82,7 @@ function App() {
       <LanguageProvider>
         <WelcomeProvider>
           <NotificationProvider>
-            <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
+            <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
               <Navbar />
               <Layout>
                 <ScrollToTop />
@@ -111,6 +112,7 @@ function App() {
                     <Route path="/about" element={<About />} />
                     <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                     <Route path="/personal-records" element={<PersonalRecords />} />
+                    <Route path="/nutrition" element={<Nutrition />} />
                     
                     {/* Admin routes */}
                     <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />

@@ -50,6 +50,7 @@ from email_service import (send_summary_email, send_security_alert, send_verific
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 import jwt
 from passlib.context import CryptContext
+from nutrition import router as nutrition_router
 
 
 Base.metadata.create_all(bind=engine)
@@ -62,20 +63,12 @@ app = FastAPI()
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],  # Frontend URLs
+    allow_origins=["http://localhost:5173"],  # Your frontend URL
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
     expose_headers=["*"]
 )
-
-
-@app.middleware("http")
-async def add_security_headers(request, call_next):
-    response = await call_next(request)
-    response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
-    response.headers["Cross-Origin-Embedder-Policy"] = "require-corp"
-    return response
 
 
 @app.on_event("startup")
@@ -94,6 +87,7 @@ app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 app.include_router(auth_router)
 app.include_router(admin_router)
 app.include_router(notifications_router)
+app.include_router(nutrition_router)
 
 
 @app.get("/protected-route")
@@ -1431,22 +1425,32 @@ def get_strength_lift_progress(
             status_code=500, detail=f"Internal server error: {str(e)}")
 
 
-@app.post("/admin/users/{user_id}/reset-password")
-def reset_user_password(
+@app.post("/admin/users/{user_id}/reset-password", response_model=dict)
+def admin_reset_password(
     user_id: int,
-    request: ResetPasswordRequest,
+    password_data: dict = Body(...),
     db: Session = Depends(get_db),
     admin: User = Depends(get_admin_user)
 ):
+    """Reset a user's password (admin only)"""
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-
-    hashed_password = hash_password(request.new_password)
-    user.hashed_password = hashed_password
+    
+    # Hash the new password
+    new_password = password_data.get("password")
+    if not new_password or len(new_password) < 8:
+        raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
+    
+    user.hashed_password = hash_password(new_password)
     db.commit()
-
-    return {"message": "Password reset successful"}
+    
+    return {
+        "id": user.id,
+        "username": user.username,
+        "email": user.email,
+        "message": f"Password reset successfully for user {user.username}"
+    }
 
 
 @app.get("/personal-records")

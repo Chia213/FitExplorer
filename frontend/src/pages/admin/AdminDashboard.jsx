@@ -47,6 +47,64 @@ function AdminDashboard() {
   const navigate = useNavigate();
   const { theme } = useTheme || { theme: "light" }; // Fallback if hook isn't available
 
+  // Extract fetchAdminData function from useEffect
+  const fetchAdminData = async () => {
+    try {
+      setRefreshing(true);
+      const token = localStorage.getItem("token");
+      if (!token) {
+        navigate("/login");
+        return;
+      }
+
+      // Fetch all stats in parallel with the time range parameter
+      const [userStatsRes, exerciseStatsRes, workoutStatsRes] =
+        await Promise.all([
+          fetch(`${API_URL}/admin/stats/users?time_range=${timeRange}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          fetch(`${API_URL}/admin/stats/exercises?time_range=${timeRange}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          fetch(`${API_URL}/admin/stats/workouts?time_range=${timeRange}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+        ]);
+
+      // Check for unauthorized or forbidden access
+      if (!userStatsRes.ok || !exerciseStatsRes.ok || !workoutStatsRes.ok) {
+        if (
+          userStatsRes.status === 403 ||
+          exerciseStatsRes.status === 403 ||
+          workoutStatsRes.status === 403
+        ) {
+          setError("You don't have admin privileges to access this page.");
+          setTimeout(() => navigate("/"), 3000);
+          return;
+        }
+        throw new Error("Failed to fetch admin data");
+      }
+
+      const [userStatsData, exerciseStatsData, workoutStatsData] =
+        await Promise.all([
+          userStatsRes.json(),
+          exerciseStatsRes.json(),
+          workoutStatsRes.json(),
+        ]);
+
+      setUserStats(userStatsData);
+      setExerciseStats(exerciseStatsData);
+      setWorkoutStats(workoutStatsData);
+      setLastUpdated(new Date());
+      setError(null);
+    } catch (err) {
+      setError(err.message || "An error occurred while fetching data");
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
   // Fetch data based on the selected time range
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -54,58 +112,6 @@ function AdminDashboard() {
       navigate("/login");
       return;
     }
-
-    const fetchAdminData = async () => {
-      try {
-        setRefreshing(true);
-
-        // Fetch all stats in parallel with the time range parameter
-        const [userStatsRes, exerciseStatsRes, workoutStatsRes] =
-          await Promise.all([
-            fetch(`${API_URL}/admin/stats/users?time_range=${timeRange}`, {
-              headers: { Authorization: `Bearer ${token}` },
-            }),
-            fetch(`${API_URL}/admin/stats/exercises?time_range=${timeRange}`, {
-              headers: { Authorization: `Bearer ${token}` },
-            }),
-            fetch(`${API_URL}/admin/stats/workouts?time_range=${timeRange}`, {
-              headers: { Authorization: `Bearer ${token}` },
-            }),
-          ]);
-
-        // Check for unauthorized or forbidden access
-        if (!userStatsRes.ok || !exerciseStatsRes.ok || !workoutStatsRes.ok) {
-          if (
-            userStatsRes.status === 403 ||
-            exerciseStatsRes.status === 403 ||
-            workoutStatsRes.status === 403
-          ) {
-            setError("You don't have admin privileges to access this page.");
-            setTimeout(() => navigate("/"), 3000);
-            return;
-          }
-          throw new Error("Failed to fetch admin data");
-        }
-
-        const [userStatsData, exerciseStatsData, workoutStatsData] =
-          await Promise.all([
-            userStatsRes.json(),
-            exerciseStatsRes.json(),
-            workoutStatsRes.json(),
-          ]);
-
-        setUserStats(userStatsData);
-        setExerciseStats(exerciseStatsData);
-        setWorkoutStats(workoutStatsData);
-        setLastUpdated(new Date());
-        setError(null);
-      } catch (err) {
-        setError(err.message || "An error occurred while fetching data");
-      } finally {
-        setLoading(false);
-        setRefreshing(false);
-      }
-    };
 
     fetchAdminData();
   }, [navigate, timeRange]);
@@ -126,7 +132,6 @@ function AdminDashboard() {
       
       if (response.ok) {
         const data = await response.json();
-        console.log('API response for users:', data);
         
         // Normalize the is_verified field to a boolean
         const normalizedUsers = data.map(user => ({
@@ -141,7 +146,7 @@ function AdminDashboard() {
         setUsers(normalizedUsers);
       }
     } catch (error) {
-      console.error('Error fetching users:', error);
+      setError('Error fetching users: ' + error.message);
     }
   };
 
@@ -164,7 +169,7 @@ function AdminDashboard() {
         });
       }
     } catch (error) {
-      console.error('Error fetching stats:', error);
+      setError('Error fetching stats: ' + error.message);
     }
   };
 
@@ -204,17 +209,12 @@ function AdminDashboard() {
 
   // Refresh data manually
   const handleRefresh = () => {
-    setTimeRange((prev) => prev); // Trigger the useEffect without changing the time range
+    setRefreshing(true);
+    // Fetch all data again
+    fetchAdminData();
+    fetchUsers();
+    fetchStats();
   };
-
-  // Add this near the top of your component to see what's coming from the API
-  useEffect(() => {
-    if (users.length > 0) {
-      console.log('First user data:', users[0]);
-      console.log('Verification status type:', typeof users[0].is_verified);
-      console.log('Verification status value:', users[0].is_verified);
-    }
-  }, [users]);
 
   if (loading) {
     return <LoadingSpinner />;

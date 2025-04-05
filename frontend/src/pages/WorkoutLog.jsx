@@ -417,103 +417,81 @@ const WorkoutLog = () => {
 
   const handleFinishWorkout = async () => {
     if (!workoutName.trim()) {
-      alert("Please enter a workout name.");
+      alert("Please enter a workout name");
       return;
     }
 
-    if (!workoutExercises.length) {
-      alert("Please add at least one exercise.");
-      return;
-    }
-
-    // Validate all exercises have complete sets
-    const incompleteExercises = workoutExercises.filter(exercise => !validateExerciseSets(exercise));
-    if (incompleteExercises.length > 0) {
-      const exerciseNames = incompleteExercises.map(ex => ex.name).join(", ");
-      alert(`Please complete all sets for the following exercises: ${exerciseNames}\nFor strength exercises, both weight and reps are required.`);
+    if (workoutExercises.length === 0) {
+      alert("Please add at least one exercise");
       return;
     }
 
     try {
       const token = localStorage.getItem("token");
       if (!token) {
-        alert("You need to be logged in to save workouts.");
         navigate("/login");
         return;
       }
 
-      const cleanedExercises = workoutExercises.map((exercise) => ({
-        ...exercise,
-        sets: exercise.sets.map((set) => ({
-          ...set,
-          weight: set.weight ? parseFloat(set.weight) : null,
-          reps: set.reps ? parseInt(set.reps) : null,
-          distance: set.distance ? parseFloat(set.distance) : null,
-          duration: set.duration ? parseInt(set.duration) : null,
-        })),
-      }));
+      // Set end time if not already set
+      if (!endTime) {
+        setEndTime(new Date().toISOString().slice(0, 16));
+      }
 
+      // Prepare the workout data
       const workoutData = {
         name: workoutName,
-        exercises: cleanedExercises,
+        start_time: new Date(startTime).toISOString(),
+        end_time: new Date(endTime || new Date()).toISOString(),
         bodyweight: bodyweight ? parseFloat(bodyweight) : null,
         notes: notes,
-        start_time: startTime,
-        end_time: endTime || new Date().toISOString(),
-        weight_unit: weightUnit,
+        exercises: workoutExercises.map(exercise => ({
+          name: exercise.name,
+          category: exercise.category || "Uncategorized",
+          is_cardio: exercise.is_cardio,
+          sets: exercise.sets.map(set => ({
+            ...set,
+            weight: set.weight ? parseFloat(set.weight) : null,
+            reps: set.reps ? parseInt(set.reps) : null,
+            distance: set.distance ? parseFloat(set.distance) : null,
+            duration: set.duration ? parseInt(set.duration) : null
+          }))
+        }))
       };
 
+      // Send the request to create a workout
       const response = await fetch(`${API_BASE_URL}/workouts`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify(workoutData),
+        body: JSON.stringify(workoutData)
       });
 
       if (!response.ok) {
-        const errorText = await response.text();
-        try {
-          const errorJson = JSON.parse(errorText);
-          throw new Error(errorJson.detail || "Failed to save workout");
-        } catch (e) {
-          throw new Error("Failed to save workout");
-        }
+        throw new Error("Failed to save workout");
       }
 
-      const savedWorkout = await response.json();
-
-      const workoutWithExercises = {
-        ...savedWorkout,
-        exercises: savedWorkout.exercises || cleanedExercises,
-      };
-
-      setWorkoutHistory((prev) => [workoutWithExercises, ...prev]);
-
-      try {
-        // Check for personal records and workout streak
-        await Promise.all([
-          checkForPersonalRecords(workoutWithExercises),
-          checkWorkoutStreak()
-        ]);
-      } catch (error) {
-        console.error("Error checking records or streak:", error);
-        // Continue even if these checks fail
-      }
-
-      await notifyWorkoutCompleted(workoutName);
-
-      // Clear only the workout name and notes, keep exercises and bodyweight
+      // Show success message and reset form
+      alert("Workout saved successfully!");
+      notifyWorkoutCompleted();
+      
+      // Reset the form
       setWorkoutName("");
-      setNotes("");
       setStartTime(new Date().toISOString().slice(0, 16));
       setEndTime("");
-
-      alert("Workout saved successfully!");
+      setNotes("");
+      setWorkoutExercises([]);
+      
+      // Refresh workout history
+      fetchWorkoutHistory(token);
+      
+      // Navigate to workout history
+      navigate("/workout-history");
     } catch (error) {
       console.error("Error saving workout:", error);
-      alert(error.message || "Error saving workout. Please try again.");
+      alert("Failed to save workout. Please try again.");
     }
   };
 
@@ -534,122 +512,97 @@ const WorkoutLog = () => {
 
   const handleSaveRoutine = async () => {
     if (!routineName.trim()) {
-      alert("Please enter a routine name.");
-      return;
-    }
-
-    // Validate all exercises have complete sets
-    const incompleteExercises = workoutExercises.filter(exercise => !validateExerciseSets(exercise));
-    if (incompleteExercises.length > 0) {
-      const exerciseNames = incompleteExercises.map(ex => ex.name).join(", ");
-      alert(`Please complete all sets for the following exercises: ${exerciseNames}\nFor strength exercises, both weight and reps are required.`);
+      alert("Please enter a routine name");
       return;
     }
 
     try {
       const token = localStorage.getItem("token");
       if (!token) {
-        alert("You need to be logged in to save routines.");
         navigate("/login");
         return;
       }
 
+      // First fetch all routines to check for duplicates
+      const allRoutines = await fetch(`${API_BASE_URL}/routines`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (!allRoutines.ok) {
+        throw new Error("Failed to check existing routines");
+      }
+
+      const routinesData = await allRoutines.json();
+      const existingRoutine = routinesData.find(r => r.name === routineName);
+
+      let shouldOverwrite = false;
+      let routineId = null;
+
+      if (existingRoutine) {
+        // Routine exists
+        routineId = existingRoutine.id;
+        
+        // Ask user if they want to overwrite
+        shouldOverwrite = window.confirm(
+          `A routine named "${routineName}" already exists. Do you want to overwrite it?`
+        );
+        
+        if (!shouldOverwrite) {
+          return; // User canceled the operation
+        }
+      }
+
+      // Prepare the routine data
       const routineData = {
         name: routineName,
-        weight_unit: weightUnit,
-        exercises: workoutExercises.map((exercise) => ({
-          name: exercise.name,
-          category: exercise.category || "Uncategorized",
-          is_cardio: Boolean(exercise.is_cardio),
-          initial_sets: exercise.sets?.length || 1,
-          sets:
-            exercise.sets?.map((set) => {
-              if (exercise.is_cardio) {
-                return {
-                  distance: set.distance || null,
-                  duration: set.duration || null,
-                  intensity: set.intensity || "",
-                  notes: set.notes || "",
-                };
-              } else {
-                return {
-                  weight: set.weight || null,
-                  reps: set.reps || null,
-                  notes: set.notes || "",
-                };
-              }
-            }) || [],
-        })),
+        workout: {
+          exercises: workoutExercises.map(exercise => ({
+            name: exercise.name,
+            category: exercise.category || "Uncategorized",
+            is_cardio: exercise.is_cardio,
+            sets: exercise.sets
+          }))
+        }
       };
 
-      try {
-        const response = await fetch(`${API_BASE_URL}/routines`, {
+      let response;
+      
+      if (shouldOverwrite && routineId) {
+        // Update existing routine
+        response = await fetch(`${API_BASE_URL}/routines/${routineId}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify(routineData)
+        });
+      } else {
+        // Create new routine
+        response = await fetch(`${API_BASE_URL}/routines`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${token}`
           },
-          body: JSON.stringify(routineData),
+          body: JSON.stringify(routineData)
         });
-
-        // Handle duplicate routine name (409 Conflict)
-        if (response.status === 409) {
-          const data = await response.json();
-
-          const confirmed = window.confirm(
-            `A routine named "${routineName}" already exists. Do you want to overwrite it?`
-          );
-
-          if (confirmed) {
-            // Get the routine ID from the response
-            const routineId = data.routine_id;
-
-            if (!routineId) {
-              throw new Error("Failed to identify existing routine");
-            }
-
-            // Update the existing routine
-            const updateResponse = await fetch(
-              `${API_BASE_URL}/routines/${routineId}`,
-              {
-                method: "PUT",
-                headers: {
-                  "Content-Type": "application/json",
-                  Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify(routineData),
-              }
-            );
-
-            if (!updateResponse.ok) {
-              const errorText = await updateResponse.text();
-              throw new Error(
-                `Failed to update routine: ${updateResponse.status}`
-              );
-            }
-
-            alert("Routine updated successfully!");
-          } else {
-            alert("Operation cancelled. Routine was not overwritten.");
-          }
-
-          setShowSaveRoutineModal(false);
-          return;
-        }
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`Server error: ${response.status}`);
-        }
-
-        // Successfully created a new routine
-        alert("Routine saved successfully!");
-        setShowSaveRoutineModal(false);
-      } catch (error) {
-        throw error;
       }
+
+      if (!response.ok) {
+        throw new Error("Failed to save routine");
+      }
+
+      // Close the modal and show success message
+      setShowSaveRoutineModal(false);
+      setRoutineName("");
+      alert(shouldOverwrite ? "Routine updated successfully!" : "Routine saved successfully!");
+      
+      // Refresh routines list
+      fetchRoutines(token);
     } catch (error) {
-      alert(`Error saving routine: ${error.message}. Please try again.`);
+      console.error("Error saving routine:", error);
+      alert("Failed to save routine. Please try again.");
     }
   };
 
@@ -1153,7 +1106,7 @@ const WorkoutLog = () => {
                       )}
                     </div>
                     <div className="flex items-center space-x-2">
-                      {!exercise.is_cardio && !set.is_drop_set && (
+                      {!set.is_drop_set && (
                         <button
                           onClick={() => {
                             setWorkoutExercises((prev) =>

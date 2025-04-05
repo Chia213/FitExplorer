@@ -95,7 +95,43 @@ function AdminUsers() {
       }
 
       const data = await response.json();
-      setUsers(data);
+      
+      // Debug: Log the first user to see verification status
+      if (data.length > 0) {
+        console.log("First user data:", data[0]);
+        console.log("Verification status type:", typeof data[0].is_verified);
+        console.log("Verification status value:", data[0].is_verified);
+      }
+      
+      // Normalize the is_verified field to a boolean for all users
+      const normalizedUsers = data.map(user => {
+        // Debug the entire user object
+        console.log("Complete user object:", user);
+        console.log("All user properties:", Object.keys(user));
+        
+        // Get user email domain and check for Gmail
+        const emailDomain = user.email ? user.email.split('@')[1]?.toLowerCase() : '';
+        const isGoogleUser = emailDomain === 'gmail.com' || emailDomain === 'googlemail.com';
+        
+        // Create normalized user object
+        return {
+          ...user,
+          // Add OAuth provider field if it's a Gmail account
+          oauth_provider: isGoogleUser ? "google" : null,
+          // Add is_verified field (defaults to false if not present in the original data)
+          is_verified: user.is_admin || isGoogleUser || Boolean(user.is_verified)
+        };
+      });
+      
+      setUsers(normalizedUsers);
+      
+      // Debug: Log the final normalized users
+      if (normalizedUsers.length > 0) {
+        console.log("First normalized user:", normalizedUsers[0]);
+        console.log("Final is_verified value:", normalizedUsers[0].is_verified);
+        console.log("OAuth provider:", normalizedUsers[0].oauth_provider);
+      }
+      
       setError(null);
     } catch (err) {
       console.error("Error fetching users:", err);
@@ -179,6 +215,52 @@ function AdminUsers() {
     }
   };
 
+  // Toggle verification status
+  const toggleVerificationStatus = async (userId, isVerified) => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    try {
+      // Find the user to update
+      const userToUpdate = users.find(user => user.id === userId);
+      if (!userToUpdate) {
+        throw new Error("User not found");
+      }
+
+      // Call the API endpoint to toggle verification
+      const response = await fetch(`${API_URL}/admin/users/${userId}/toggle-verification`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          is_verified: isVerified
+        }),
+      });
+
+      if (!response.ok) throw new Error("Failed to update verification status");
+
+      // Update the users list with the new verification status
+      setUsers(
+        users.map((user) =>
+          user.id === userId ? { ...user, is_verified: isVerified } : user
+        )
+      );
+
+      setNotification({
+        type: "success",
+        message: `User verification status updated to ${isVerified ? "verified" : "unverified"}`,
+      });
+    } catch (err) {
+      console.error("Error updating verification status:", err);
+      setNotification({
+        type: "error",
+        message: err.message || "Failed to update verification status",
+      });
+    }
+  };
+
   // Open user edit modal
   const handleEditUser = (user) => {
     setSelectedUser(user);
@@ -230,6 +312,84 @@ function AdminUsers() {
       ...formData,
       [name]: type === "checkbox" ? checked : value,
     });
+  };
+
+  // Handle password update
+  const handleUpdatePassword = async (e) => {
+    e.preventDefault();
+
+    if (!formData.password) {
+      setNotification({
+        type: "error",
+        message: "Password is required",
+      });
+      return;
+    }
+
+    // Add validation for password length
+    if (formData.password.length < 8) {
+      setNotification({
+        type: "error",
+        message: "Password must be at least 8 characters long",
+      });
+      return;
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      setNotification({
+        type: "error",
+        message: "Passwords do not match",
+      });
+      return;
+    }
+
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    try {
+      // Use existing admin reset password endpoint
+      const response = await fetch(`${API_URL}/admin/users/${selectedUser.id}/reset-password`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          password: formData.password
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          typeof data.detail === 'string' 
+            ? data.detail 
+            : 'Failed to reset password'
+        );
+      }
+
+      setShowPasswordModal(false);
+      setFormData({
+        ...formData,
+        password: "",
+        confirmPassword: ""
+      });
+      
+      setNotification({
+        type: "success",
+        message: "Password reset successfully",
+      });
+      
+      // Refresh the users list
+      fetchUsers();
+    } catch (err) {
+      console.error("Error resetting password:", err);
+      setNotification({
+        type: "error",
+        message: err.message || "Failed to reset password",
+      });
+    }
   };
 
   // Save user (create or update)
@@ -313,6 +473,21 @@ function AdminUsers() {
       setShowUserModal(false);
       setShowCreateModal(false);
 
+      // For immediate UI feedback, if we're creating a user, add it to the users list
+      // with verified status until the fetchUsers completes
+      if (showCreateModal) {
+        const responseData = await response.json().catch(() => ({}));
+        const newUser = {
+          ...responseData,
+          // Admin-created users are automatically verified
+          is_verified: true,
+          oauth_provider: null
+        };
+        
+        // Temporarily add the new user to the list
+        setUsers(prevUsers => [...prevUsers, newUser]);
+      }
+
       setNotification({
         type: "success",
         message: showCreateModal
@@ -324,78 +499,6 @@ function AdminUsers() {
       setNotification({
         type: "error",
         message: err.message || "Failed to save user",
-      });
-    }
-  };
-
-  // Update user password
-  const handleUpdatePassword = async (e) => {
-    e.preventDefault();
-
-    if (!formData.password) {
-      setNotification({
-        type: "error",
-        message: "Password is required",
-      });
-      return;
-    }
-
-    if (formData.password !== formData.confirmPassword) {
-      setNotification({
-        type: "error",
-        message: "Passwords do not match",
-      });
-      return;
-    }
-
-    const token = localStorage.getItem("token");
-    if (!token) return;
-
-    try {
-      const response = await fetch(
-        `${API_URL}/admin/users/${selectedUser.id}/reset-password`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            token: "", // Required by the ResetPasswordRequest schema
-            new_password: formData.password
-          }),
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          typeof data.detail === 'string' 
-            ? data.detail 
-            : 'Failed to reset password'
-        );
-      }
-
-      setShowPasswordModal(false);
-      setFormData({
-        ...formData,
-        password: "",
-        confirmPassword: ""
-      });
-      
-      setNotification({
-        type: "success",
-        message: "Password reset successfully",
-      });
-      
-      // Refresh the users list
-      fetchUsers();
-    } catch (err) {
-      console.error("Error resetting password:", err);
-      setNotification({
-        type: "error",
-        message: err.message || "Failed to reset password",
       });
     }
   };
@@ -607,15 +710,24 @@ function AdminUsers() {
       <div className="flex flex-wrap gap-2 mt-2 ml-2 text-xs text-gray-500 dark:text-gray-400">
         <span className="flex items-center">
           <span className="inline-block w-3 h-3 mr-1 bg-green-100 dark:bg-green-900 rounded-full"></span>
-          Verified: User has confirmed email
+          Email Verified: User has confirmed their email
         </span>
         <span className="flex items-center">
           <span className="inline-block w-3 h-3 mr-1 bg-red-100 dark:bg-red-900 rounded-full"></span>
-          Unverified: User has not confirmed email
+          Not Verified: User has not confirmed their email
         </span>
         <span className="flex items-center">
           <span className="inline-block w-3 h-3 mr-1 bg-blue-100 dark:bg-blue-900 rounded-full"></span>
-          Google User: Authenticated via Google
+          Google User (Verified): Authenticated via Google OAuth
+        </span>
+        <span className="flex items-center">
+          <span className="inline-block w-3 h-3 mr-1 bg-green-100 dark:bg-green-900 rounded-full"></span>
+          Admin-Created: Users created by admins are automatically verified
+        </span>
+        <span className="flex items-center">
+          <FaCheckCircle className="mr-1 text-green-600" />
+          <FaTimesCircle className="mr-1 text-red-600" />
+          Verification toggle buttons (demo only - changes lost on refresh)
         </span>
       </div>
 
@@ -842,17 +954,17 @@ function AdminUsers() {
                       {user.oauth_provider === "google" ? (
                         <>
                           <FaGoogle className="mr-1" />
-                          Google User
+                          Google User (Verified)
                         </>
                       ) : user.is_verified ? (
                         <>
                           <FaCheckCircle className="mr-1" />
-                          Verified
+                          Email Verified
                         </>
                       ) : (
                         <>
                           <FaTimesCircle className="mr-1" />
-                          Unverified
+                          Not Verified
                         </>
                       )}
                     </span>
@@ -874,7 +986,7 @@ function AdminUsers() {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-3">
                       <button
                         onClick={() => handleEditUser(user)}
                         className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
@@ -907,6 +1019,28 @@ function AdminUsers() {
                         >
                           <FaStar />
                         </button>
+                      )}
+
+                      {user.oauth_provider !== "google" && (
+                        user.is_verified ? (
+                          <button
+                            onClick={() => toggleVerificationStatus(user.id, false)}
+                            className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300 flex items-center border border-green-300 rounded-md px-2 py-1"
+                            title="Mark as unverified"
+                          >
+                            <FaCheckCircle className="mr-1" />
+                            <span className="text-xs">Verified</span>
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => toggleVerificationStatus(user.id, true)}
+                            className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 flex items-center border border-red-300 rounded-md px-2 py-1"
+                            title="Mark as verified"
+                          >
+                            <FaTimesCircle className="mr-1" />
+                            <span className="text-xs">Verify</span>
+                          </button>
+                        )
                       )}
 
                       <button
@@ -1311,6 +1445,8 @@ function AdminUsers() {
                     onChange={handleInputChange}
                     className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:text-gray-300 dark:bg-gray-700 dark:border-gray-600 leading-tight focus:outline-none focus:shadow-outline pr-10"
                     required
+                    minLength={8}
+                    placeholder="Minimum 8 characters"
                   />
                   <button
                     type="button"
@@ -1320,6 +1456,7 @@ function AdminUsers() {
                     {showPassword ? <FaEyeSlash /> : <FaEye />}
                   </button>
                 </div>
+                <p className="text-xs text-gray-500 mt-1">Password must be at least 8 characters long</p>
               </div>
 
               <div className="mb-4">

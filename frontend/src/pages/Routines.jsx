@@ -220,18 +220,16 @@ function Routines() {
   };
 
   const handleStartWorkout = (routine) => {
-    if (
-      !routine ||
-      !routine.workout ||
-      !routine.workout.exercises ||
-      routine.workout.exercises.length === 0
-    ) {
+    // Get exercises from either data structure
+    const exercises = routine.workout?.exercises || routine.exercises;
+    
+    if (!exercises || exercises.length === 0) {
       alert("This routine doesn't have any exercises to start a workout.");
       return;
     }
 
     // Create the workout exercises data structure from the routine
-    const workoutExercises = routine.workout.exercises.map((exercise) => {
+    const workoutExercises = exercises.map((exercise) => {
       const isCardio = Boolean(exercise.is_cardio);
       const initialSets = exercise.initial_sets || exercise.sets?.length || 1;
 
@@ -719,9 +717,19 @@ function Routines() {
 
   // Add this function after the other helper functions
   const getExerciseOverview = (routine) => {
-    if (!routine.workout?.exercises?.length) return null;
+    // Check for different possible data structures
+    let exercises = [];
     
-    const exercises = routine.workout.exercises;
+    if (routine.workout?.exercises?.length) {
+      // Standard structure from WorkoutGenerator
+      exercises = routine.workout.exercises;
+    } else if (routine.exercises?.length) {
+      // Alternative structure that might come from WorkoutLog/WorkoutHistory
+      exercises = routine.exercises;
+    } else {
+      return null;
+    }
+    
     const maxExercises = 3; // Show up to 3 exercises in overview
     const remainingCount = exercises.length - maxExercises;
     
@@ -915,13 +923,10 @@ function Routines() {
                     <h2 className="text-xl font-semibold">{routine.name}</h2>
                     <div className="flex items-center gap-2 mt-1">
                       <p
-                        className={`text-sm ${
-                          theme === "dark" ? "text-gray-400" : "text-gray-500"
-                        }`}
-                      >
-                        {routine.workout && routine.workout.exercises
-                          ? `${routine.workout.exercises.length} Exercise${
-                              routine.workout.exercises.length !== 1 ? "s" : ""
+                        className={`text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>
+                        {(routine.workout?.exercises?.length || routine.exercises?.length) 
+                          ? `${routine.workout?.exercises?.length || routine.exercises?.length} Exercise${
+                              (routine.workout?.exercises?.length || routine.exercises?.length) !== 1 ? "s" : ""
                             }`
                           : "0 Exercises"}
                       </p>
@@ -1235,9 +1240,9 @@ function Routines() {
                         </div>
                         <div className="flex items-center gap-2 text-sm">
                           <span className={`${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>
-                            {routine.workout && routine.workout.exercises
-                              ? `${routine.workout.exercises.length} Exercise${
-                                  routine.workout.exercises.length !== 1 ? "s" : ""
+                            {(routine.workout?.exercises?.length || routine.exercises?.length) 
+                              ? `${routine.workout?.exercises?.length || routine.exercises?.length} Exercise${
+                                  (routine.workout?.exercises?.length || routine.exercises?.length) !== 1 ? "s" : ""
                                 }`
                               : "0 Exercises"}
                           </span>
@@ -1349,9 +1354,9 @@ function Routines() {
                           </div>
                           <div className="flex items-center gap-2 text-sm">
                             <span className={`${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>
-                              {routine.workout && routine.workout.exercises
-                                ? `${routine.workout.exercises.length} Exercise${
-                                    routine.workout.exercises.length !== 1 ? "s" : ""
+                              {(routine.workout?.exercises?.length || routine.exercises?.length) 
+                                ? `${routine.workout?.exercises?.length || routine.exercises?.length} Exercise${
+                                    (routine.workout?.exercises?.length || routine.exercises?.length) !== 1 ? "s" : ""
                                   }`
                                 : "0 Exercises"}
                             </span>

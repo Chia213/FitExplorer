@@ -58,6 +58,8 @@ class User(Base):
         "AdminSettings", back_populates="updated_by_user", cascade="all, delete-orphan"
     )
     achievements = relationship("UserAchievement", back_populates="user")
+    nutrition_meals = relationship("NutritionMeal", back_populates="user", cascade="all, delete-orphan")
+    nutrition_goal = relationship("NutritionGoal", back_populates="user", uselist=False, cascade="all, delete-orphan")
 
 
 class UserProfile(Base):
@@ -258,3 +260,48 @@ class UserAchievement(Base):
 
     user = relationship("User", back_populates="achievements")
     achievement = relationship("Achievement", back_populates="users")
+
+
+class NutritionMeal(Base):
+    __tablename__ = "nutrition_meals"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    date = Column(String, nullable=False)  # YYYY-MM-DD format
+    time = Column(String, nullable=False)  # HH:MM format
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    
+    # Relationships
+    user = relationship("User", back_populates="nutrition_meals")
+    foods = relationship("NutritionFood", back_populates="meal", cascade="all, delete-orphan")
+
+
+class NutritionFood(Base):
+    __tablename__ = "nutrition_foods"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    meal_id = Column(Integer, ForeignKey("nutrition_meals.id", ondelete="CASCADE"), nullable=False)
+    name = Column(String, nullable=False)
+    calories = Column(Float, nullable=False)
+    protein = Column(Float, nullable=False)
+    carbs = Column(Float, nullable=False)
+    fat = Column(Float, nullable=False)
+    serving_size = Column(String, nullable=False)
+    quantity = Column(Float, nullable=False, default=1.0)
+    
+    # Relationships
+    meal = relationship("NutritionMeal", back_populates="foods")
+
+
+class NutritionGoal(Base):
+    __tablename__ = "nutrition_goals"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True)
+    calories = Column(Integer, nullable=False)
+    protein = Column(Integer, nullable=False)
+    carbs = Column(Integer, nullable=False)
+    fat = Column(Integer, nullable=False)
+    
+    # Relationships
+    user = relationship("User", back_populates="nutrition_goal")

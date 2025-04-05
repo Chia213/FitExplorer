@@ -19,6 +19,7 @@ import {
   FaCalculator,
   FaTools,
   FaQuestionCircle,
+  FaAppleAlt,
 } from "react-icons/fa";
 import { LuBicepsFlexed, LuCalendarClock } from "react-icons/lu";
 import logo from "../assets/Ronjasdrawing.png";
@@ -41,6 +42,7 @@ const NAVIGATION_ITEMS = {
     { path: "/fitness-calculator", icon: <FaCalculator className="mr-2 text-indigo-500" />, label: "Fitness Calculator" },
     { path: "/explore-muscle-guide", icon: <FaAtlas className="mr-2 text-emerald-500" />, label: "Muscle Guide" },
     { path: "/progress-tracker", icon: <FaChartLine className="mr-2 text-purple-500" />, label: "Progress Tracker" },
+    { path: "/nutrition", icon: <FaAppleAlt className="mr-2 text-red-500" />, label: "Nutrition Tracker" },
   ],
   help: [
     { path: "/faq", icon: <FaQuestionCircle className="mr-2 text-blue-500" />, label: "FAQ" },

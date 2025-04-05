@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Body
 from sqlalchemy import func, desc
 from sqlalchemy.orm import Session
 from typing import List, Dict, Any
@@ -359,6 +359,7 @@ def get_all_users(
         "email": user.email,
         "created_at": user.created_at,
         "is_admin": user.is_admin,
+        "is_verified": user.is_verified,
         "workout_count": len(user.workouts),
         "has_preferences": user.workout_preferences is not None
     } for user in users]
@@ -485,3 +486,28 @@ def update_admin_settings(
             status_code=500,
             detail=f"Failed to update admin settings: {str(e)}"
         )
+
+
+@router.post("/users/{user_id}/toggle-verification", response_model=dict)
+def toggle_user_verification(
+    user_id: int,
+    verification_data: dict = Body(...),
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_admin_user)
+):
+    """Toggle a user's verification status (admin only)"""
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Update verification status
+    user.is_verified = verification_data.get("is_verified", False)
+    db.commit()
+    
+    return {
+        "id": user.id,
+        "username": user.username,
+        "email": user.email,
+        "is_verified": user.is_verified,
+        "message": f"User verification status updated to {user.is_verified}"
+    }

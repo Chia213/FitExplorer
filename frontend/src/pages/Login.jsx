@@ -50,6 +50,7 @@ function Login() {
       if (response.access_token) {
         // Store token
         localStorage.setItem("token", response.access_token);
+        console.log("Token stored successfully, length:", response.access_token.length);
 
         // Set just logged in flag to trigger welcome modal
         localStorage.setItem("justLoggedIn", "true");
