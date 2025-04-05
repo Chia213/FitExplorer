@@ -310,3 +310,23 @@ class NutritionGoal(Base):
     
     # Relationships
     user = relationship("User", back_populates="nutrition_goal")
+
+
+class CommonFood(Base):
+    __tablename__ = "common_foods"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False, index=True)
+    calories = Column(Float, nullable=False)
+    protein = Column(Float, nullable=False)
+    carbs = Column(Float, nullable=False)
+    fat = Column(Float, nullable=False)
+    serving_size = Column(String, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))
+    
+    # Optional fields for additional nutritional information
+    fiber = Column(Float, nullable=True)
+    sugar = Column(Float, nullable=True)
+    sodium = Column(Float, nullable=True)
+    food_group = Column(String, nullable=True)  # e.g., "Fruits", "Vegetables", "Proteins", etc.
+    brand = Column(String, nullable=True)  # For branded products

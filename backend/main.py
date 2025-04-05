@@ -30,7 +30,7 @@ from schemas import (
 )
 from models import (
     Workout, User, Exercise, Set, Routine, CustomExercise, SavedWorkoutProgram, RoutineFolder, WorkoutPreferences, 
-    Notification, Achievement, UserAchievement, AdminSettings, NutritionMeal, NutritionGoal, UserProfile
+    Notification, Achievement, UserAchievement, AdminSettings, NutritionMeal, NutritionGoal, UserProfile, CommonFood
 )
 from typing import List, Dict, Any, Optional
 from admin import router as admin_router
@@ -44,7 +44,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import uuid
 import os
-from fastapi import FastAPI, Depends, HTTPException, File, UploadFile, BackgroundTasks, Body
+from fastapi import FastAPI, Depends, HTTPException, File, UploadFile, BackgroundTasks, Body, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from background_task import send_summary_emails
@@ -2418,4 +2418,39 @@ def get_all_achievements(
         return achievements
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fetching achievements: {str(e)}")
+
+
+@app.get("/test/search")
+def test_search(query: str = Query(..., description="Food search query"), db: Session = Depends(get_db)):
+    """Test endpoint for food search without authentication requirements"""
+    try:
+        # Search common_foods table
+        foods = db.query(CommonFood).filter(
+            CommonFood.name.ilike(f"%{query}%")
+        ).limit(10).all()
+        
+        results = [
+            {
+                "name": food.name,
+                "calories": food.calories,
+                "protein": food.protein,
+                "carbs": food.carbs,
+                "fat": food.fat,
+                "serving_size": food.serving_size,
+                "source": "test"
+            }
+            for food in foods
+        ]
+        
+        return {
+            "query": query,
+            "count": len(results),
+            "results": results
+        }
+    except Exception as e:
+        import traceback
+        return {
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }
 

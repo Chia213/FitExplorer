@@ -146,13 +146,17 @@ function Nutrition() {
     if (!searchQuery.trim()) return;
 
     try {
+      console.log(`Searching for: ${searchQuery}`);
       const response = await axios.get(
-        `/nutrition/search?query=${searchQuery}`
+        `/nutrition/search?query=${encodeURIComponent(searchQuery)}`
       );
+      console.log("Search results:", response.data);
       setSearchResults(response.data);
       setShowFoodSearchModal(true);
     } catch (err) {
       console.error("Error searching foods:", err);
+      // Show error to user
+      alert(`Error searching for foods: ${err.response?.data?.detail || err.message}`);
     }
   };
 
@@ -589,6 +593,7 @@ function Nutrition() {
             {searchResults.length === 0 ? (
               <div className="text-center py-8">
                 <p className="text-gray-500 dark:text-gray-400">No results found</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">Try a different search term or be more specific</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -598,7 +603,24 @@ function Nutrition() {
                     className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
                     onClick={() => handleAddFood(food)}
                   >
-                    <div className="font-medium">{food.name}</div>
+                    <div className="flex justify-between items-start">
+                      <div className="font-medium">{food.name}</div>
+                      {food.source && (
+                        <span className={`text-xs px-2 py-1 rounded-full ${
+                          food.source === "database" 
+                            ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300" 
+                            : food.source === "user_history"
+                            ? "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300"
+                            : "bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-300"
+                        }`}>
+                          {food.source === "database" 
+                            ? "Common Food" 
+                            : food.source === "user_history" 
+                            ? "Your History" 
+                            : "External API"}
+                        </span>
+                      )}
+                    </div>
                     <div className="grid grid-cols-4 text-sm text-gray-500 dark:text-gray-400 mt-1">
                       <div>
                         <span className="font-medium text-gray-700 dark:text-gray-300">{food.calories}</span> kcal
@@ -620,6 +642,12 @@ function Nutrition() {
                 ))}
               </div>
             )}
+          </div>
+          
+          <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-b-lg">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Click on a food item to add it to your meal
+            </p>
           </div>
         </div>
       </div>
@@ -677,21 +705,26 @@ function Nutrition() {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Search Foods
                 </label>
-                <div className="flex">
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search for foods..."
-                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-l-md bg-white dark:bg-gray-700"
-                    onKeyPress={(e) => e.key === 'Enter' && handleSearchFood()}
-                  />
-                  <button
-                    onClick={handleSearchFood}
-                    className="px-4 py-2 bg-blue-500 text-white rounded-r-md hover:bg-blue-600 transition-colors flex items-center"
-                  >
-                    <FaSearch />
-                  </button>
+                <div className="flex flex-col">
+                  <div className="flex">
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Search for foods..."
+                      className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-l-md bg-white dark:bg-gray-700"
+                      onKeyPress={(e) => e.key === 'Enter' && handleSearchFood()}
+                    />
+                    <button
+                      onClick={handleSearchFood}
+                      className="px-4 py-2 bg-blue-500 text-white rounded-r-md hover:bg-blue-600 transition-colors flex items-center"
+                    >
+                      <FaSearch />
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Search for foods in our database, your history, or external sources
+                  </p>
                 </div>
               </div>
               

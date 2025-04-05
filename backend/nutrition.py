@@ -4,11 +4,12 @@ from typing import List, Optional
 from datetime import datetime, timedelta
 from database import get_db
 from dependencies import get_current_user
-from models import User, NutritionMeal, NutritionFood, NutritionGoal
+from models import User, NutritionMeal, NutritionFood, NutritionGoal, CommonFood
 from pydantic import BaseModel
 import requests
 import os
 from dotenv import load_dotenv
+from sqlalchemy import or_
 
 load_dotenv()
 
@@ -296,30 +297,58 @@ def search_foods(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Search for foods in external API and database"""
-    # First check if we have this food in our database from user's previous entries
-    user_foods = db.query(NutritionFood).join(NutritionMeal).filter(
-        NutritionMeal.user_id == current_user.id,
-        NutritionFood.name.ilike(f"%{query}%")
-    ).distinct(NutritionFood.name).limit(5).all()
-    
+    """Search for foods in local database and external API"""
+    print(f"Search query: '{query}'")
     results = []
     
-    # Add user's previous foods
-    for food in user_foods:
-        results.append({
-            "name": food.name,
-            "calories": food.calories,
-            "protein": food.protein,
-            "carbs": food.carbs,
-            "fat": food.fat,
-            "serving_size": food.serving_size
-        })
+    # First check if we have this food in our common foods database
+    try:
+        print("Searching common_foods table...")
+        common_foods = db.query(CommonFood).filter(
+            CommonFood.name.ilike(f"%{query}%")
+        ).limit(15).all()
+        
+        print(f"Found {len(common_foods)} common foods matching '{query}'")
+        
+        # Add common foods to results
+        for food in common_foods:
+            results.append({
+                "name": food.name,
+                "calories": food.calories,
+                "protein": food.protein,
+                "carbs": food.carbs,
+                "fat": food.fat,
+                "serving_size": food.serving_size,
+                "source": "database"
+            })
+    except Exception as e:
+        print(f"Error searching common foods: {e}")
     
-    # If we have less than 10 results, search external API
-    if len(results) < 10:
+    # Next check user's previous entries
+    if len(results) < 20:
+        user_foods = db.query(NutritionFood).join(NutritionMeal).filter(
+            NutritionMeal.user_id == current_user.id,
+            NutritionFood.name.ilike(f"%{query}%")
+        ).distinct(NutritionFood.name).limit(10).all()
+        
+        # Add user's previous foods
+        for food in user_foods:
+            # Check if this food is already in results
+            if not any(r["name"].lower() == food.name.lower() for r in results):
+                results.append({
+                    "name": food.name,
+                    "calories": food.calories,
+                    "protein": food.protein,
+                    "carbs": food.carbs,
+                    "fat": food.fat,
+                    "serving_size": food.serving_size,
+                    "source": "user_history"
+                })
+    
+    # If we have less than desired number of results, search external API
+    if len(results) < 20:
         try:
-            # Use Nutritionix API or similar
+            # Use Nutritionix API if available
             api_key = os.getenv("NUTRITIONIX_API_KEY")
             app_id = os.getenv("NUTRITIONIX_APP_ID")
             
@@ -357,28 +386,21 @@ def search_foods(
                                     "protein": food["nf_protein"],
                                     "carbs": food["nf_total_carbohydrate"],
                                     "fat": food["nf_total_fat"],
-                                    "serving_size": f"{food['serving_qty']} {food['serving_unit']}"
+                                    "serving_size": f"{food['serving_qty']} {food['serving_unit']}",
+                                    "source": "nutritionix"
                                 })
-            else:
-                # Fallback to some basic foods if API keys not available
-                basic_foods = [
-                    {"name": "Apple", "calories": 95, "protein": 0.5, "carbs": 25, "fat": 0.3, "serving_size": "1 medium"},
-                    {"name": "Banana", "calories": 105, "protein": 1.3, "carbs": 27, "fat": 0.4, "serving_size": "1 medium"},
-                    {"name": "Chicken Breast", "calories": 165, "protein": 31, "carbs": 0, "fat": 3.6, "serving_size": "100g"},
-                    {"name": "Egg", "calories": 78, "protein": 6.3, "carbs": 0.6, "fat": 5.3, "serving_size": "1 large"},
-                    {"name": "Salmon", "calories": 206, "protein": 22, "carbs": 0, "fat": 13, "serving_size": "100g"},
-                    {"name": "Brown Rice", "calories": 216, "protein": 5, "carbs": 45, "fat": 1.8, "serving_size": "1 cup cooked"},
-                    {"name": "Broccoli", "calories": 55, "protein": 3.7, "carbs": 11.2, "fat": 0.6, "serving_size": "1 cup"},
-                    {"name": "Greek Yogurt", "calories": 100, "protein": 17, "carbs": 6, "fat": 0.7, "serving_size": "170g"},
-                    {"name": "Oatmeal", "calories": 150, "protein": 5, "carbs": 27, "fat": 2.5, "serving_size": "1 cup cooked"},
-                    {"name": "Avocado", "calories": 234, "protein": 2.9, "carbs": 12.5, "fat": 21, "serving_size": "1 medium"}
-                ]
-                
-                # Filter basic foods by query
-                filtered_foods = [food for food in basic_foods if query.lower() in food["name"].lower()]
-                results.extend(filtered_foods[:5])
-                
         except Exception as e:
             print(f"Error searching external API: {e}")
     
-    return results[:10]  # Return at most 10 results 
+    # Sort results by relevance - exact matches first, then starts with, then contains
+    def sort_key(food):
+        name_lower = food["name"].lower()
+        query_lower = query.lower()
+        if name_lower == query_lower:
+            return 0  # Exact match
+        elif name_lower.startswith(query_lower):
+            return 1  # Starts with query
+        else:
+            return 2  # Contains query
+            
+    return sorted(results, key=sort_key)[:20]  # Return at most 20 results 
