@@ -82,6 +82,7 @@ const WorkoutLog = () => {
   const [dropSetCount, setDropSetCount] = useState(1); // Number of drops to perform
   const [originalWeight, setOriginalWeight] = useState(null);
   const [timerInterval, setTimerInterval] = useState(null);
+  const [savingRoutine, setSavingRoutine] = useState(false);
 
   const toggleWeightUnit = () => {
     const newUnit = weightUnit === "kg" ? "lbs" : "kg";
@@ -516,6 +517,8 @@ const WorkoutLog = () => {
       return;
     }
 
+    setSavingRoutine(true);
+
     try {
       const token = localStorage.getItem("token");
       if (!token) {
@@ -523,53 +526,65 @@ const WorkoutLog = () => {
         return;
       }
 
-      // First fetch all routines to check for duplicates
-      const allRoutines = await fetch(`${API_BASE_URL}/routines`, {
+      // Properly format the exercises for saving as a routine
+      const formattedExercises = workoutExercises.map(exercise => ({
+        name: exercise.name,
+        category: exercise.category || "Uncategorized",
+        is_cardio: Boolean(exercise.is_cardio),
+        initial_sets: exercise.sets?.length || 1,
+        sets: exercise.sets?.map(set => {
+          if (exercise.is_cardio) {
+            return {
+              distance: set.distance || null,
+              duration: set.duration || null,
+              intensity: set.intensity || "",
+              notes: set.notes || ""
+            };
+          } else {
+            return {
+              weight: set.weight || null,
+              reps: set.reps || null,
+              notes: set.notes || ""
+            };
+          }
+        }) || []
+      }));
+
+      // Create the routine data
+      const routineData = {
+        name: routineName,
+        exercises: formattedExercises
+      };
+
+      console.log("Saving routine data:", routineData);
+
+      // Check for duplicate routine names
+      const routinesResponse = await fetch(`${API_BASE_URL}/routines`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-
-      if (!allRoutines.ok) {
+      
+      if (!routinesResponse.ok) {
         throw new Error("Failed to check existing routines");
       }
-
-      const routinesData = await allRoutines.json();
-      const existingRoutine = routinesData.find(r => r.name === routineName);
-
-      let shouldOverwrite = false;
-      let routineId = null;
-
-      if (existingRoutine) {
-        // Routine exists
-        routineId = existingRoutine.id;
-        
+      
+      const existingRoutines = await routinesResponse.json();
+      const duplicateRoutine = existingRoutines.find(r => r.name === routineName);
+      
+      let response;
+      
+      if (duplicateRoutine) {
         // Ask user if they want to overwrite
-        shouldOverwrite = window.confirm(
+        const shouldOverwrite = window.confirm(
           `A routine named "${routineName}" already exists. Do you want to overwrite it?`
         );
         
         if (!shouldOverwrite) {
-          return; // User canceled the operation
+          setSavingRoutine(false);
+          return;
         }
-      }
-
-      // Prepare the routine data
-      const routineData = {
-        name: routineName,
-        workout: {
-          exercises: workoutExercises.map(exercise => ({
-            name: exercise.name,
-            category: exercise.category || "Uncategorized",
-            is_cardio: exercise.is_cardio,
-            sets: exercise.sets
-          }))
-        }
-      };
-
-      let response;
-      
-      if (shouldOverwrite && routineId) {
-        // Update existing routine
-        response = await fetch(`${API_BASE_URL}/routines/${routineId}`, {
+        
+        // Update the existing routine
+        response = await fetch(`${API_BASE_URL}/routines/${duplicateRoutine.id}`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
@@ -578,7 +593,7 @@ const WorkoutLog = () => {
           body: JSON.stringify(routineData)
         });
       } else {
-        // Create new routine
+        // Create a new routine
         response = await fetch(`${API_BASE_URL}/routines`, {
           method: "POST",
           headers: {
@@ -593,16 +608,14 @@ const WorkoutLog = () => {
         throw new Error("Failed to save routine");
       }
 
-      // Close the modal and show success message
       setShowSaveRoutineModal(false);
       setRoutineName("");
-      alert(shouldOverwrite ? "Routine updated successfully!" : "Routine saved successfully!");
-      
-      // Refresh routines list
-      fetchRoutines(token);
+      alert("Workout saved as routine successfully!");
     } catch (error) {
       console.error("Error saving routine:", error);
       alert("Failed to save routine. Please try again.");
+    } finally {
+      setSavingRoutine(false);
     }
   };
 
