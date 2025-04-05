@@ -79,6 +79,76 @@ async def startup_event():
     print("Starting background task for email summaries")
     background_tasks = BackgroundTasks()
     background_tasks.add_task(send_summary_emails)
+    
+    # Initialize achievements
+    db = SessionLocal()
+    try:
+        initialize_achievements(db)
+    finally:
+        db.close()
+
+
+def initialize_achievements(db: Session):
+    """Initialize achievements in the database if they don't exist"""
+    # New achievements to add
+    new_achievements = [
+        {
+            "name": "Weight Goal Achiever",
+            "description": "Reach your target weight goal",
+            "icon": "weight-hanging",
+            "category": "profile",
+            "requirement": 1
+        },
+        {
+            "name": "Routine Creator",
+            "description": "Create 3 or more custom workout routines",
+            "icon": "dumbbell",
+            "category": "routines",
+            "requirement": 3
+        },
+        {
+            "name": "Workout Frequency Champion",
+            "description": "Maintain your workout frequency goal for 4 or more consecutive weeks",
+            "icon": "calendar-check",
+            "category": "streak",
+            "requirement": 4
+        },
+        {
+            "name": "Workout Variety Master",
+            "description": "Perform 20 different exercises across your workouts",
+            "icon": "dumbbell",
+            "category": "workout",
+            "requirement": 20
+        },
+        {
+            "name": "Consistency King",
+            "description": "Complete at least 3 workouts per week for 4 consecutive weeks",
+            "icon": "crown",
+            "category": "streak",
+            "requirement": 4
+        }
+    ]
+    
+    # Check for existing achievements and add new ones
+    for achievement_data in new_achievements:
+        # Check if achievement already exists
+        existing = db.query(Achievement).filter(
+            Achievement.name == achievement_data["name"]
+        ).first()
+        
+        if not existing:
+            print(f"Adding new achievement: {achievement_data['name']}")
+            new_achievement = Achievement(
+                name=achievement_data["name"],
+                description=achievement_data["description"],
+                icon=achievement_data["icon"],
+                category=achievement_data["category"],
+                requirement=achievement_data["requirement"]
+            )
+            db.add(new_achievement)
+    
+    # Commit changes
+    db.commit()
 
 
 @app.on_event("shutdown")
@@ -1760,6 +1830,9 @@ def get_user_achievements(
                 "is_achieved": bool(user_achievement and user_achievement.progress >= achievement.requirement)
             })
         
+        # Sort achievements by progress in descending order
+        response.sort(key=lambda x: (x["progress"] / x["requirement"] if x["requirement"] > 0 else 0), reverse=True)
+        
         return response
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -1775,7 +1848,7 @@ def check_achievements(
     try:
         # Get all achievements
         achievements = db.query(Achievement).all()
-        
+
         # Check each achievement independently with its own transaction
         for achievement in achievements:
             try:
@@ -1786,7 +1859,7 @@ def check_achievements(
                         UserAchievement.user_id == user.id,
                         UserAchievement.achievement_id == achievement.id
                     ).first()
-                    
+
                     if not user_achievement:
                         user_achievement = UserAchievement(
                             user_id=user.id,
@@ -1797,16 +1870,122 @@ def check_achievements(
                         
                     # Initialize progress variable
                     progress = 0
-                    
+
                     # Update progress based on achievement category
                     if achievement.category == "workout":
                         # Count total workouts
                         progress = db.query(Workout).filter(
                             Workout.user_id == user.id
                         ).count()
+                        
+                        # For "Workout Variety Master" achievement
+                        if achievement.name == "Workout Variety Master":
+                            # Count unique exercises performed by the user
+                            unique_exercises = db.query(func.count(func.distinct(Exercise.name)))\
+                                .join(Workout)\
+                                .filter(Workout.user_id == user.id)\
+                                .scalar() or 0
+                            progress = unique_exercises
                     elif achievement.category == "streak":
                         # Calculate current streak
                         progress = calculate_workout_streak(user.id, db)
+                        
+                        # For "Workout Frequency Champion" achievement
+                        if achievement.name == "Workout Frequency Champion":
+                            # Get the user's workout frequency goal
+                            preferences = db.query(WorkoutPreferences).filter(
+                                WorkoutPreferences.user_id == user.id
+                            ).first()
+                            
+                            if not preferences or not preferences.workout_frequency_goal:
+                                progress = 0
+                            else:
+                                # Get all workouts for the past 12 weeks
+                                today = datetime.now(timezone.utc).date()
+                                twelve_weeks_ago = today - timedelta(weeks=12)
+                                
+                                workouts = db.query(Workout).filter(
+                                    Workout.user_id == user.id,
+                                    Workout.date >= twelve_weeks_ago
+                                ).order_by(Workout.date.desc()).all()
+                                
+                                # Group workouts by week
+                                workout_weeks = {}
+                                for workout in workouts:
+                                    week_num = workout.date.date().isocalendar()[1]
+                                    year = workout.date.date().year
+                                    week_key = f"{year}-{week_num}"
+                                    
+                                    if week_key not in workout_weeks:
+                                        workout_weeks[week_key] = 0
+                                    workout_weeks[week_key] += 1
+                                
+                                # Count consecutive weeks meeting the goal
+                                frequency_goal = int(preferences.workout_frequency_goal)
+                                consecutive_weeks = 0
+                                max_consecutive_weeks = 0
+                                
+                                # Start from current week and go backwards
+                                for i in range(12):
+                                    check_date = today - timedelta(weeks=i)
+                                    week_num = check_date.isocalendar()[1]
+                                    year = check_date.year
+                                    week_key = f"{year}-{week_num}"
+                                    
+                                    if week_key in workout_weeks and workout_weeks[week_key] >= frequency_goal:
+                                        consecutive_weeks += 1
+                                    else:
+                                        # Break in the streak
+                                        max_consecutive_weeks = max(max_consecutive_weeks, consecutive_weeks)
+                                        consecutive_weeks = 0
+                                
+                                # Final check in case the streak is ongoing
+                                max_consecutive_weeks = max(max_consecutive_weeks, consecutive_weeks)
+                                progress = max_consecutive_weeks
+                        
+                        # For "Consistency King" achievement
+                        elif achievement.name == "Consistency King":
+                            # Get all workouts for the past 12 weeks
+                            today = datetime.now(timezone.utc).date()
+                            twelve_weeks_ago = today - timedelta(weeks=12)
+                            
+                            workouts = db.query(Workout).filter(
+                                Workout.user_id == user.id,
+                                Workout.date >= twelve_weeks_ago
+                            ).order_by(Workout.date.desc()).all()
+                            
+                            # Group workouts by week
+                            workout_weeks = {}
+                            for workout in workouts:
+                                week_num = workout.date.date().isocalendar()[1]
+                                year = workout.date.date().year
+                                week_key = f"{year}-{week_num}"
+                                
+                                if week_key not in workout_weeks:
+                                    workout_weeks[week_key] = 0
+                                workout_weeks[week_key] += 1
+                            
+                            # Count consecutive weeks with at least 3 workouts
+                            consecutive_weeks = 0
+                            max_consecutive_weeks = 0
+                            
+                            # Start from current week and go backwards
+                            for i in range(12):
+                                check_date = today - timedelta(weeks=i)
+                                week_num = check_date.isocalendar()[1]
+                                year = check_date.year
+                                week_key = f"{year}-{week_num}"
+                                
+                                if week_key in workout_weeks and workout_weeks[week_key] >= 3:
+                                    consecutive_weeks += 1
+                                else:
+                                    # Break in the streak
+                                    max_consecutive_weeks = max(max_consecutive_weeks, consecutive_weeks)
+                                    consecutive_weeks = 0
+                            
+                            # Final check in case the streak is ongoing
+                            max_consecutive_weeks = max(max_consecutive_weeks, consecutive_weeks)
+                            progress = max_consecutive_weeks
                     elif achievement.category == "profile":
                         if achievement.name == "Profile Picture":
                             # Check if user has a profile picture
@@ -1827,6 +2006,20 @@ def check_achievements(
                             if user.bio is not None and user.bio.strip():
                                 completed_fields += 1
                             progress = completed_fields
+                        elif achievement.name == "Weight Goal Achiever":
+                            # Check if user has reached their goal weight
+                            user_profile = db.query(UserProfile).filter(UserProfile.user_id == user.id).first()
+                            if user_profile and user_profile.goal_weight and user.weight:
+                                # Goal achieved if current weight is equal to or better than goal weight
+                                # For weight goals, "better" depends on whether the goal was to gain or lose weight
+                                initial_weight = user.initial_weight if user.initial_weight else user.weight
+                                if (initial_weight > user_profile.goal_weight and user.weight <= user_profile.goal_weight) or \
+                                   (initial_weight < user_profile.goal_weight and user.weight >= user_profile.goal_weight):
+                                    progress = 1
+                                else:
+                                    progress = 0
+                            else:
+                                progress = 0
                         elif achievement.name == "Username Change":
                             username_is_custom = False
                             if user.username and user.email:
@@ -1854,6 +2047,13 @@ def check_achievements(
                             except Exception as nutrition_error:
                                 print(f"Error checking nutrition achievements: {nutrition_error}")
                                 progress = 0
+                    elif achievement.category == "routines":
+                        if achievement.name == "Routine Creator":
+                            # Count the number of custom routines created by the user
+                            routine_count = db.query(Routine).filter(
+                                Routine.user_id == user.id
+                            ).count()
+                            progress = routine_count
                     elif achievement.category == "social":
                         if achievement.name == "Social Butterfly":
                             progress = 1 if user.profile_picture else 0
@@ -1885,8 +2085,24 @@ def check_achievements(
                         user_achievement.progress = progress
                         if progress >= achievement.requirement and not user_achievement.achieved_at:
                             user_achievement.achieved_at = datetime.now(timezone.utc)
+                            
+                            # Create notification for newly achieved achievement
+                            try:
+                                new_notification = Notification(
+                                    user_id=user.id,
+                                    message=f"🏆 Achievement Unlocked: {achievement.name} - {achievement.description}",
+                                    type="achievement_earned",
+                                    icon=achievement.icon or "trophy",
+                                    icon_color="text-yellow-500",
+                                    is_read=False,
+                                    created_at=datetime.now(timezone.utc)
+                                )
+                                db.add(new_notification)
+                            except Exception as notif_error:
+                                print(f"Error creating achievement notification: {notif_error}")
+                            
                         updated_achievements.append(achievement.name)
-                        
+
             except Exception as achievement_error:
                 print(f"Error processing achievement {achievement.name}: {achievement_error}")
                 # Continue with next achievement instead of aborting everything
@@ -2162,4 +2378,44 @@ def get_new_achievements(
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/achievements/refresh")
+def refresh_user_achievements(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Manually refresh achievements for the current user.
+    This is useful after adding new achievements to check progress right away.
+    """
+    try:
+        # Call the existing achievement check function
+        result = check_achievements(user, db)
+        
+        # Return achievements with progress
+        achievements = get_user_achievements(user, db)
+        
+        return {
+            "message": result.get("message", "Achievements refreshed"),
+            "achievements": achievements
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error refreshing achievements: {str(e)}")
+
+
+@app.get("/achievements/all", response_model=List[AchievementSchema])
+def get_all_achievements(
+    user: User = Depends(get_admin_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get all achievements in the system (admin only).
+    This is useful for debugging and checking which achievements exist.
+    """
+    try:
+        achievements = db.query(Achievement).all()
+        return achievements
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching achievements: {str(e)}")
 

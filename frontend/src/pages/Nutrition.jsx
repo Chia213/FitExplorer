@@ -30,8 +30,6 @@ import {
   ResponsiveContainer 
 } from "recharts";
 
-const backendURL = import.meta.env.VITE_API_URL;
-
 function Nutrition() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [meals, setMeals] = useState([]);
@@ -83,10 +81,7 @@ function Nutrition() {
       console.log("Using token:", token ? "Token exists" : "No token found");
       
       const response = await axios.get(
-        `${backendURL}/nutrition/meals?date=${selectedDate}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+        `/nutrition/meals?date=${selectedDate}`
       );
       console.log("Meals API response:", response.data);
       setMeals(response.data);
@@ -106,12 +101,8 @@ function Nutrition() {
 
   const fetchNutritionGoals = async () => {
     try {
-      const token = localStorage.getItem("token");
       const response = await axios.get(
-        `${backendURL}/nutrition/goals`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+        `/nutrition/goals`
       );
       if (response.data) {
         setNutritionGoals(response.data);
@@ -123,11 +114,8 @@ function Nutrition() {
 
   const fetchNutritionHistory = async () => {
     try {
-      const token = localStorage.getItem("token");
-      let endpoint = `${backendURL}/nutrition/history?range=${dateRange}`;
-      const response = await axios.get(endpoint, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      let endpoint = `/nutrition/history?range=${dateRange}`;
+      const response = await axios.get(endpoint);
       setNutritionHistory(response.data);
     } catch (err) {
       console.error("Error fetching nutrition history:", err);
@@ -158,12 +146,8 @@ function Nutrition() {
     if (!searchQuery.trim()) return;
 
     try {
-      const token = localStorage.getItem("token");
       const response = await axios.get(
-        `${backendURL}/nutrition/search?query=${searchQuery}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+        `/nutrition/search?query=${searchQuery}`
       );
       setSearchResults(response.data);
       setShowFoodSearchModal(true);
@@ -202,15 +186,11 @@ function Nutrition() {
     }
 
     try {
-      const token = localStorage.getItem("token");
       await axios.post(
-        `${backendURL}/nutrition/meals`,
+        `/nutrition/meals`,
         {
           ...newMeal,
           date: selectedDate
-        },
-        {
-          headers: { Authorization: `Bearer ${token}` },
         }
       );
       setShowAddMealModal(false);
@@ -230,12 +210,8 @@ function Nutrition() {
     if (!confirm("Are you sure you want to delete this meal?")) return;
 
     try {
-      const token = localStorage.getItem("token");
       await axios.delete(
-        `${backendURL}/nutrition/meals/${mealId}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+        `/nutrition/meals/${mealId}`
       );
       fetchMeals();
     } catch (err) {
@@ -246,13 +222,9 @@ function Nutrition() {
 
   const handleSaveNutritionGoals = async () => {
     try {
-      const token = localStorage.getItem("token");
       await axios.post(
-        `${backendURL}/nutrition/goals`,
-        nutritionGoals,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+        `/nutrition/goals`,
+        nutritionGoals
       );
       alert("Nutrition goals saved successfully!");
     } catch (err) {

@@ -28,6 +28,9 @@ const areAchievementAlertsEnabled = () => {
  * @returns {Promise} - The fetch promise
  */
 export const createNotification = async (message, type, icon = 'bell', iconColor = 'text-blue-500') => {
+  // Add detailed logging to debug notification creation
+  console.log(`Creating notification: "${message}" of type: ${type}`);
+  
   // Check if all notifications are disabled
   if (!areNotificationsEnabled()) {
     console.log('Notifications are disabled. Skipping notification:', message);
@@ -41,9 +44,13 @@ export const createNotification = async (message, type, icon = 'bell', iconColor
   }
 
   const token = localStorage.getItem('token');
-  if (!token) return null;
+  if (!token) {
+    console.log('No auth token found. Skipping notification:', message);
+    return null;
+  }
 
   try {
+    console.log(`Sending notification to API: ${message}`);
     const response = await fetch(`${apiUrl}/notifications`, {
       method: 'POST',
       headers: {
@@ -59,10 +66,14 @@ export const createNotification = async (message, type, icon = 'bell', iconColor
     });
 
     if (!response.ok) {
+      const errorData = await response.json();
+      console.error('Notification API error:', errorData);
       throw new Error('Failed to create notification');
     }
 
-    return await response.json();
+    const result = await response.json();
+    console.log('Notification created successfully:', result);
+    return result;
   } catch (error) {
     console.error('Error creating notification:', error);
     return null;
@@ -175,6 +186,31 @@ export const notifyWeightGoalUpdated = (goalWeight) => {
     'weight_goal_updated',
     'weight-hanging',
     'text-purple-500'
+  );
+};
+
+export const notifyWorkoutFrequencyGoalUpdated = (frequencyGoal) => {
+  console.log(`Creating workout frequency notification with value: ${frequencyGoal} (${typeof frequencyGoal})`);
+  
+  // Handle different data types more explicitly
+  let frequencyText;
+  if (frequencyGoal === null || frequencyGoal === undefined || frequencyGoal === '') {
+    frequencyText = 'daily workouts';
+    console.log("Detected null/empty frequency goal, using 'daily workouts'");
+  } else {
+    const goalNumber = parseInt(frequencyGoal);
+    frequencyText = `${goalNumber} ${goalNumber === 1 ? 'workout' : 'workouts'} per week`;
+    console.log(`Formatting frequency goal as: ${frequencyText}`);
+  }
+  
+  const message = `Your workout frequency goal was updated to ${frequencyText}.`;
+  console.log(`Notification message: ${message}`);
+  
+  return createNotification(
+    message,
+    'workout_frequency_updated',
+    'calendar-check',
+    'text-green-500'
   );
 };
 

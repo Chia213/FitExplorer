@@ -8,6 +8,7 @@ import {
   notifyProfilePictureUpdated,
   notifyCardColorUpdated,
   notifyWeightGoalUpdated,
+  notifyWorkoutFrequencyGoalUpdated,
   notifyHeightUpdated,
   notifyWeightUpdated,
   notifyAgeUpdated,
@@ -150,13 +151,33 @@ function Profile() {
         bio: userData.bio || ""
       });
 
+      // Variable to track workout frequency goal throughout function
+      let workoutFrequencyGoal = null;
+
       // Set user preferences
       if (userData.preferences) {
         console.log("Setting preferences from backend data:", userData.preferences);
+        
+        // First get workout preferences to ensure we have the correct workout frequency goal
+        const workoutPrefsRes = await fetch(`${backendURL}/workout-preferences`, {
+          headers: { 
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json"
+          },
+        });
+        
+        if (workoutPrefsRes.ok) {
+          const workoutPrefs = await workoutPrefsRes.json();
+          workoutFrequencyGoal = workoutPrefs.workout_frequency_goal;
+          console.log("Loaded workout frequency goal from preferences:", workoutFrequencyGoal);
+        } else {
+          console.error("Failed to fetch workout preferences:", workoutPrefsRes.status);
+        }
+        
         setPreferences((prev) => ({
           ...prev,
           cardColor: userData.preferences.card_color || prev.cardColor,
-          workoutFrequencyGoal: userData.preferences.workout_frequency_goal,
+          workoutFrequencyGoal: workoutFrequencyGoal, // Use the value from workout preferences
           goalWeight: userData.preferences.goal_weight,
           useCustomCardColor: userData.preferences.use_custom_card_color || false
         }));
@@ -189,12 +210,35 @@ function Profile() {
       // Handle workout stats
       if (statsRes.ok) {
         const statsData = await statsRes.json();
+        
+        // Fetch the workout streak information
+        const streakRes = await fetch(`${backendURL}/workout-streak`, {
+          headers: { 
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json"
+          },
+        });
+        
+        let currentStreak = 0;
+        
+        if (streakRes.ok) {
+          const streakData = await streakRes.json();
+          currentStreak = streakData.streak;
+          // If streakData has a frequency_goal and we didn't get it from preferences
+          if (streakData.frequency_goal !== null && !workoutFrequencyGoal) {
+            workoutFrequencyGoal = streakData.frequency_goal;
+          }
+        }
+        
         setWorkoutStats({
           totalWorkouts: statsData.total_workouts,
           favoriteExercise: statsData.favorite_exercise,
           lastWorkout: statsData.last_workout,
           totalCardioDuration: statsData.total_cardio_duration,
           weightProgression: statsData.weight_progression,
+          currentWeight: statsData.current_weight,
+          currentStreak: currentStreak,
+          frequencyGoal: workoutFrequencyGoal
         });
       } else if (statsRes.status !== 404) {
         console.error("Failed to fetch workout stats:", statsRes.status);
@@ -528,6 +572,18 @@ function Profile() {
   };
 
   const handlePreferenceChange = (newPrefs) => {
+    // If this change includes workoutFrequencyGoal, ensure it's stored as a number or null
+    if ('workoutFrequencyGoal' in newPrefs) {
+      const oldValue = preferences.workoutFrequencyGoal;
+      const frequencyGoal = newPrefs.workoutFrequencyGoal === "" 
+        ? null 
+        : parseInt(newPrefs.workoutFrequencyGoal);
+      
+      console.log(`Dropdown changed: workout frequency goal from "${oldValue}" to "${newPrefs.workoutFrequencyGoal}"`);
+      console.log(`Converting workout frequency goal from "${newPrefs.workoutFrequencyGoal}" to ${frequencyGoal}`);
+      newPrefs.workoutFrequencyGoal = frequencyGoal;
+    }
+    
     setPreferences(newPrefs);
     setPreferencesChanged(true);
   };
@@ -540,13 +596,16 @@ function Profile() {
       setIsSaving(true);
       const token = localStorage.getItem("token");
       
-      // Store old value for comparison
+      // Store old values for comparison
       const oldGoalWeight = user?.preferences?.goal_weight;
+      const oldFrequencyGoal = preferences.workoutFrequencyGoal;
       
-      // Create a variable to track if weight goal notification has been sent
+      // Create variables to track if notifications have been sent
       let weightGoalNotificationSent = false;
+      let frequencyGoalNotificationSent = false;
       
-      const response = await fetch(`${backendURL}/user/settings/notifications`, {
+      // First, update user profile settings
+      const userProfileResponse = await fetch(`${backendURL}/user/settings/notifications`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -558,7 +617,6 @@ function Profile() {
           progress_reports: true,
           language: "en", // Default language
           card_color: preferences.cardColor,
-          workout_frequency_goal: preferences.workoutFrequencyGoal,
           goal_weight: preferences.goalWeight,
           use_custom_card_color: preferences.useCustomCardColor,
           summary_frequency: "weekly", // Default values
@@ -566,8 +624,33 @@ function Profile() {
         }),
       });
 
-      if (response.ok) {
-        const updatedPreferences = await response.json();
+      // Next, update workout preferences to include the workout frequency goal
+      let updatedWorkoutPrefs = null;
+      try {
+        const workoutPrefsResponse = await fetch(`${backendURL}/workout-preferences`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            workout_frequency_goal: preferences.workoutFrequencyGoal ? parseInt(preferences.workoutFrequencyGoal) : null
+          }),
+        });
+    
+        if (workoutPrefsResponse.ok) {
+          updatedWorkoutPrefs = await workoutPrefsResponse.json();
+          console.log("Workout preferences response:", updatedWorkoutPrefs);
+        } else {
+          const errorData = await workoutPrefsResponse.json();
+          console.error("Error updating workout preferences:", errorData);
+        }
+      } catch (err) {
+        console.error("Exception during workout preferences update:", err);
+      }
+
+      if (userProfileResponse.ok) {
+        const updatedPreferences = await userProfileResponse.json();
         console.log("Server response:", updatedPreferences);
         
         // Update the state with server response format
@@ -575,7 +658,8 @@ function Profile() {
           const newPrefs = {
             ...prev,
             cardColor: updatedPreferences.card_color || prev.cardColor,
-            workoutFrequencyGoal: updatedPreferences.workout_frequency_goal,
+            // Use the workout frequency goal from the workout preferences response if available
+            workoutFrequencyGoal: updatedWorkoutPrefs?.workout_frequency_goal ?? prev.workoutFrequencyGoal,
             goalWeight: updatedPreferences.goal_weight,
             useCustomCardColor: updatedPreferences.use_custom_card_color !== undefined 
               ? updatedPreferences.use_custom_card_color  // Use server value if provided
@@ -600,14 +684,56 @@ function Profile() {
           setCardColor(updatedPreferences.card_color || preferences.cardColor);
         }
         
+        // Fetch updated workout stats to reflect the new frequency goal
+        const statsResponse = await fetch(`${backendURL}/workout-stats`, {
+          headers: { 
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json"
+          },
+        });
+        
+        if (statsResponse.ok) {
+          const statsData = await statsResponse.json();
+          setWorkoutStats(prev => ({
+            ...prev,
+            ...statsData,
+            // Use the frequency goal from the workout preferences response
+            frequencyGoal: updatedWorkoutPrefs?.workout_frequency_goal
+          }));
+        }
+        
         setPreferencesChanged(false);
         setSuccessMessage("Preferences updated successfully");
         setTimeout(() => setSuccessMessage(""), 3000);
         
         // Send a notification if notifications are enabled
         if (allNotificationsEnabled) {
+          console.log("All notifications are enabled, checking for changes to notify about");
+          
+          // Check if workout frequency goal was updated
+          if (updatedWorkoutPrefs && 
+              oldFrequencyGoal !== updatedWorkoutPrefs.workout_frequency_goal) {
+            // Log values to help debug
+            console.log("Workout frequency goal change detected:");
+            console.log(`Old value: ${oldFrequencyGoal} (${typeof oldFrequencyGoal})`);
+            console.log(`New value: ${updatedWorkoutPrefs.workout_frequency_goal} (${typeof updatedWorkoutPrefs.workout_frequency_goal})`);
+            
+            // Format goals for display in logs
+            const oldGoalDisplay = oldFrequencyGoal === null ? "daily workouts" : 
+              `${oldFrequencyGoal} ${parseInt(oldFrequencyGoal) === 1 ? 'workout' : 'workouts'} per week`;
+            
+            const newGoalDisplay = updatedWorkoutPrefs.workout_frequency_goal === null ? "daily workouts" : 
+              `${updatedWorkoutPrefs.workout_frequency_goal} ${parseInt(updatedWorkoutPrefs.workout_frequency_goal) === 1 ? 'workout' : 'workouts'} per week`;
+            
+            console.log(`Changing from "${oldGoalDisplay}" to "${newGoalDisplay}"`);
+              
+            // Send workout frequency goal notification
+            await notifyWorkoutFrequencyGoalUpdated(updatedWorkoutPrefs.workout_frequency_goal);
+            frequencyGoalNotificationSent = true;
+            console.log("Notification sent for workout frequency goal update");
+          }
           // Check if weight goal was updated
-          if (preferences.goalWeight !== oldGoalWeight && preferences.goalWeight !== null && !weightGoalNotificationSent) {
+          else if (preferences.goalWeight !== oldGoalWeight && preferences.goalWeight !== null && !weightGoalNotificationSent) {
             // Send weight goal notification
             await notifyWeightGoalUpdated(preferences.goalWeight);
             weightGoalNotificationSent = true;
@@ -620,10 +746,22 @@ function Profile() {
           
           // Check achievements after updating preferences
           await checkAchievementsProgress();
+        } else {
+          console.log("Notifications are disabled. Force sending workout frequency notification anyway for testing.");
+          if (updatedWorkoutPrefs && oldFrequencyGoal !== updatedWorkoutPrefs.workout_frequency_goal) {
+            // Force notification for debugging
+            await notifyWorkoutFrequencyGoalUpdated(updatedWorkoutPrefs.workout_frequency_goal);
+            console.log("Forced notification sent for workout frequency goal update (for testing)");
+          }
         }
       } else {
-        console.error("Error response:", response.status);
-        const errorData = await response.json();
+        console.error("Error response:", userProfileResponse.status);
+        let errorData;
+        
+        if (!userProfileResponse.ok) {
+          errorData = await userProfileResponse.json();
+        }
+        
         console.error("Error data:", errorData);
         setError("Failed to update preferences");
       }
@@ -841,6 +979,10 @@ function Profile() {
     // Make sure to trigger a save
     setPreferencesChanged(true);
   };
+
+  useEffect(() => {
+    console.log("Current preferences state:", preferences);
+  }, [preferences]);
 
   if (loading) {
     return (
@@ -1364,7 +1506,10 @@ function Profile() {
                       <div>
                         <p className="text-sm text-gray-600 dark:text-gray-300">Current Streak</p>
                         <span className="font-medium text-gray-900 dark:text-white">
-                          {workoutStats.currentStreak || 0} {workoutStats.frequencyGoal ? 'weeks' : 'days'}
+                          {workoutStats.currentStreak > 0 ? 
+                            <>Day {workoutStats.currentStreak} <span role="img" aria-label="fire">🔥</span></> : 
+                            <><span role="img" aria-label="broken">💔</span> Streak Broken</>
+                          }
                         </span>
                         <div className="mt-2">
                           <label className="text-xs text-gray-500 dark:text-gray-400">Workout Frequency Goal:</label>

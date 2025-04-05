@@ -21,35 +21,36 @@ def upgrade() -> None:
     op.create_table('nutrition_goals',
         sa.Column('id', sa.Integer(), nullable=False),
         sa.Column('user_id', sa.Integer(), nullable=False),
-        sa.Column('calories', sa.Float(), nullable=True),
-        sa.Column('protein', sa.Float(), nullable=True),
-        sa.Column('carbs', sa.Float(), nullable=True),
-        sa.Column('fat', sa.Float(), nullable=True),
+        sa.Column('calories', sa.Integer(), nullable=False),
+        sa.Column('protein', sa.Integer(), nullable=False),
+        sa.Column('carbs', sa.Integer(), nullable=False),
+        sa.Column('fat', sa.Integer(), nullable=False),
         sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
-        sa.PrimaryKeyConstraint('id')
+        sa.PrimaryKeyConstraint('id'),
+        sa.UniqueConstraint('user_id')
     )
 
-    op.create_table('meals',
+    op.create_table('nutrition_meals',
         sa.Column('id', sa.Integer(), nullable=False),
         sa.Column('user_id', sa.Integer(), nullable=False),
         sa.Column('name', sa.String(), nullable=False),
-        sa.Column('date', sa.Date(), nullable=False),
-        sa.Column('time', sa.Time(), nullable=True),
+        sa.Column('date', sa.String(), nullable=False),
+        sa.Column('time', sa.String(), nullable=False),
         sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
         sa.PrimaryKeyConstraint('id')
     )
 
-    op.create_table('meal_foods',
+    op.create_table('nutrition_foods',
         sa.Column('id', sa.Integer(), nullable=False),
         sa.Column('meal_id', sa.Integer(), nullable=False),
-        sa.Column('food_name', sa.String(), nullable=False),
-        sa.Column('serving_size', sa.String(), nullable=True),
-        sa.Column('quantity', sa.Float(), nullable=False),
-        sa.Column('calories', sa.Float(), nullable=True),
-        sa.Column('protein', sa.Float(), nullable=True),
-        sa.Column('carbs', sa.Float(), nullable=True),
-        sa.Column('fat', sa.Float(), nullable=True),
-        sa.ForeignKeyConstraint(['meal_id'], ['meals.id'], ondelete='CASCADE'),
+        sa.Column('name', sa.String(), nullable=False),
+        sa.Column('serving_size', sa.String(), nullable=False),
+        sa.Column('quantity', sa.Float(), nullable=False, default=1.0),
+        sa.Column('calories', sa.Float(), nullable=False),
+        sa.Column('protein', sa.Float(), nullable=False),
+        sa.Column('carbs', sa.Float(), nullable=False),
+        sa.Column('fat', sa.Float(), nullable=False),
+        sa.ForeignKeyConstraint(['meal_id'], ['nutrition_meals.id'], ondelete='CASCADE'),
         sa.PrimaryKeyConstraint('id')
     )
     # ### end Alembic commands ###

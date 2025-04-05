@@ -57,9 +57,6 @@ async def get_meals(date: str, current_user: User = Depends(get_current_user), d
         # Log debug info
         print(f"Fetching meals for user_id: {current_user.id}, date: {date}")
         
-        # No need to convert date string to date object since the field is stored as String in the database
-        # meal_date = datetime.strptime(date, "%Y-%m-%d").date()
-        
         # Query meals for user and date
         meals = db.query(NutritionMeal).filter(
             NutritionMeal.user_id == current_user.id,
@@ -73,19 +70,20 @@ async def get_meals(date: str, current_user: User = Depends(get_current_user), d
         for meal in meals:
             try:
                 meal_foods = db.query(NutritionFood).filter(NutritionFood.meal_id == meal.id).all()
-                foods = [
-                    {
+                foods = []
+                
+                for food in meal_foods:
+                    food_item = {
                         "id": food.id,
                         "name": food.name,
-                        "serving_size": food.serving_size,
-                        "quantity": food.quantity,
-                        "calories": food.calories,
-                        "protein": food.protein,
-                        "carbs": food.carbs,
-                        "fat": food.fat
+                        "serving_size": food.serving_size or "1 serving",
+                        "quantity": food.quantity or 1.0,
+                        "calories": food.calories or 0,
+                        "protein": food.protein or 0,
+                        "carbs": food.carbs or 0,
+                        "fat": food.fat or 0
                     }
-                    for food in meal_foods
-                ]
+                    foods.append(food_item)
                 
                 result.append({
                     "id": meal.id,
@@ -247,6 +245,10 @@ def get_nutrition_history(
         
         print(f"Found {len(meals)} meals in date range")
         
+        # If no meals, return empty list
+        if not meals:
+            return []
+            
         # Group meals by date and calculate totals
         date_totals = {}
         for meal in meals:
@@ -260,10 +262,11 @@ def get_nutrition_history(
                 
                 # Add up nutrition values
                 for food in foods:
-                    date_totals[date]["calories"] += food.calories * food.quantity
-                    date_totals[date]["protein"] += food.protein * food.quantity
-                    date_totals[date]["carbs"] += food.carbs * food.quantity
-                    date_totals[date]["fat"] += food.fat * food.quantity
+                    quantity = food.quantity if food.quantity is not None else 1.0
+                    date_totals[date]["calories"] += (food.calories or 0) * quantity
+                    date_totals[date]["protein"] += (food.protein or 0) * quantity
+                    date_totals[date]["carbs"] += (food.carbs or 0) * quantity
+                    date_totals[date]["fat"] += (food.fat or 0) * quantity
             except Exception as meal_err:
                 print(f"Error processing meal {meal.id}: {str(meal_err)}")
                 # Continue with other meals
@@ -273,10 +276,10 @@ def get_nutrition_history(
         for date, totals in date_totals.items():
             result.append({
                 "date": date,
-                "calories": round(totals["calories"]),
-                "protein": round(totals["protein"]),
-                "carbs": round(totals["carbs"]),
-                "fat": round(totals["fat"])
+                "calories": int(round(totals["calories"])),
+                "protein": int(round(totals["protein"])),
+                "carbs": int(round(totals["carbs"])),
+                "fat": int(round(totals["fat"]))
             })
         
         print(f"Returning {len(result)} nutrition history records")

@@ -301,6 +301,7 @@ class WorkoutPreferencesBase(BaseModel):
     last_bodyweight: Optional[float] = None
     last_weight_unit: Optional[str] = "kg"
     last_exercises: Optional[List[Dict[str, Any]]] = None
+    workout_frequency_goal: Optional[int] = None  # Number of workouts per week (1-7)
 
 
 class WorkoutPreferencesCreate(WorkoutPreferencesBase):
@@ -308,7 +309,7 @@ class WorkoutPreferencesCreate(WorkoutPreferencesBase):
 
 
 class WorkoutPreferencesUpdate(WorkoutPreferencesBase):
-    pass
+    workout_frequency_goal: Optional[int] = None  # Explicitly include the field for clarity
 
 
 class WorkoutPreferencesResponse(WorkoutPreferencesBase):

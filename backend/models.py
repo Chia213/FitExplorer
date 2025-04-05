@@ -268,7 +268,7 @@ class UserAchievement(Base):
 
 
 class NutritionMeal(Base):
-    __tablename__ = "nutrition_meals"
+    __tablename__ = "meals"
     
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
@@ -282,16 +282,16 @@ class NutritionMeal(Base):
 
 
 class NutritionFood(Base):
-    __tablename__ = "nutrition_foods"
+    __tablename__ = "meal_foods"
     
     id = Column(Integer, primary_key=True, index=True)
-    meal_id = Column(Integer, ForeignKey("nutrition_meals.id", ondelete="CASCADE"), nullable=False)
-    name = Column(String, nullable=False)
-    calories = Column(Float, nullable=False)
-    protein = Column(Float, nullable=False)
-    carbs = Column(Float, nullable=False)
-    fat = Column(Float, nullable=False)
-    serving_size = Column(String, nullable=False)
+    meal_id = Column(Integer, ForeignKey("meals.id", ondelete="CASCADE"), nullable=False)
+    name = Column(String, name="food_name", nullable=False)
+    calories = Column(Float, nullable=True)
+    protein = Column(Float, nullable=True)
+    carbs = Column(Float, nullable=True)
+    fat = Column(Float, nullable=True)
+    serving_size = Column(String, nullable=True)
     quantity = Column(Float, nullable=False, default=1.0)
     
     # Relationships
