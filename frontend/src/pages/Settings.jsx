@@ -17,7 +17,8 @@ function Settings() {
     premiumTheme, 
     changePremiumTheme, 
     unlockedThemes,
-    isAdmin 
+    isAdmin,
+    loading 
   } = useTheme();
   
   const [currentPassword, setCurrentPassword] = useState("");
@@ -46,6 +47,43 @@ function Settings() {
   });
   const [isSavingPreferences, setIsSavingPreferences] = useState(false);
   const [showColorOptions, setShowColorOptions] = useState(false);
+
+  // Apply a premium theme
+  const applyTheme = async (themeKey) => {
+    try {
+      const success = await changePremiumTheme(themeKey);
+      if (success) {
+        setSuccess(`Applied ${premiumThemes[themeKey].name} theme`);
+        setTimeout(() => setSuccess(null), 3000);
+      } else {
+        setError("Failed to apply theme. It may not be unlocked yet.");
+        setTimeout(() => setError(null), 3000);
+      }
+    } catch (error) {
+      console.error("Error applying theme:", error);
+      setError("There was an error applying the theme.");
+      setTimeout(() => setError(null), 3000);
+    }
+  };
+
+  // Check for theme parameter in URL and apply it if available
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const themeParam = urlParams.get('theme');
+    
+    if (themeParam && !loading && premiumThemes[themeParam]) {
+      // If we have a theme parameter and it's a valid theme, try to apply it
+      setActiveTab("appearance");
+      setTimeout(() => {
+        applyTheme(themeParam);
+        
+        // Remove the theme parameter from URL without page reload
+        const newUrl = window.location.pathname + 
+          window.location.search.replace(/[?&]theme=[^&]+/, '');
+        window.history.replaceState({}, '', newUrl);
+      }, 500);
+    }
+  }, [loading, navigate, premiumThemes]);
 
   // Apply language to the document
   useEffect(() => {
@@ -227,17 +265,6 @@ function Settings() {
     { id: "language", label: getTranslation("language", userPreferences.language), icon: <FaLanguage className="w-5 h-5" /> },
     { id: "appearance", label: getTranslation("appearance", userPreferences.language) || "Appearance", icon: <FaPalette className="w-5 h-5" /> }
   ];
-  
-  // Apply a premium theme
-  const applyTheme = (themeKey) => {
-    if (changePremiumTheme(themeKey)) {
-      setSuccess(`Applied ${premiumThemes[themeKey].name} theme`);
-      setTimeout(() => setSuccess(null), 3000);
-    } else {
-      setError("Failed to apply theme. It may not be unlocked yet.");
-      setTimeout(() => setError(null), 3000);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 px-4 sm:px-6 lg:px-8">

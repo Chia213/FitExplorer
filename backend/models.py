@@ -76,6 +76,10 @@ class UserProfile(Base):
     stats_features_unlocked = Column(Boolean, default=False)
     achievement_alerts = Column(Boolean, default=True)
     all_notifications_enabled = Column(Boolean, default=True)
+    # Theme-related fields
+    theme_mode = Column(String, default="light")  # light or dark
+    premium_theme = Column(String, default="default")  # theme key/name
+    unlocked_themes = Column(JSON, default=lambda: ["default"])  # list of unlocked theme keys
 
     user = relationship("User", back_populates="profile")
 

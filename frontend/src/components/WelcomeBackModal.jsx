@@ -100,12 +100,12 @@ const WelcomeBackModal = ({ username, onClose, isFirstLogin }) => {
               )}
 
               <button
-                onClick={() => navigateTo("/")}
+                onClick={() => navigateTo("/ai-workout-generator")}
                 className="p-4 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-lg transition shadow-md hover:shadow-lg flex flex-col items-center justify-center"
               >
                 <LuBicepsFlexed size={24} className="mb-2" />
                 <span className="font-semibold text-center">
-                  Generate Workout
+                  Generate AI Workout
                 </span>
               </button>
 

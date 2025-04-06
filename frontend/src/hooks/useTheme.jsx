@@ -1,4 +1,83 @@
 import { createContext, useContext, useEffect, useState } from "react";
+import { toast } from "react-hot-toast";
+
+// Define the API_URL constant
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+
+// Inline implementation of fetchWithTokenRefresh to avoid circular dependencies
+const fetchWithTokenRefresh = async (endpoint, options = {}) => {
+  const token = localStorage.getItem("token");
+  if (!token && endpoint !== "/auth/refresh-token") {
+    throw new Error("No authentication token found");
+  }
+
+  // Prepare headers with auth token
+  const headers = {
+    ...options.headers,
+    "Content-Type": options.headers?.["Content-Type"] || "application/json",
+  };
+
+  if (token && endpoint !== "/auth/refresh-token") {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  // Make the request
+  try {
+    const response = await fetch(`${API_URL}${endpoint}`, {
+      ...options,
+      headers,
+    });
+
+    // If unauthorized and not already trying to refresh token
+    if (response.status === 401 && endpoint !== "/auth/refresh-token") {
+      console.log("Token expired, attempting to refresh...");
+      
+      try {
+        // Try to refresh the token
+        const refreshResponse = await fetch(`${API_URL}/auth/refresh-token`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ refresh_token: localStorage.getItem("refreshToken") }),
+        });
+
+        if (refreshResponse.ok) {
+          const data = await refreshResponse.json();
+          localStorage.setItem("token", data.access_token);
+          
+          if (data.refresh_token) {
+            localStorage.setItem("refreshToken", data.refresh_token);
+          }
+
+          // Retry the original request with the new token
+          headers["Authorization"] = `Bearer ${data.access_token}`;
+          return fetch(`${API_URL}${endpoint}`, {
+            ...options,
+            headers,
+          });
+        } else {
+          // If refresh fails, logout
+          localStorage.removeItem("token");
+          localStorage.removeItem("refreshToken");
+          localStorage.removeItem("isAdmin");
+          window.location.href = "/login";
+          throw new Error("Session expired. Please log in again.");
+        }
+      } catch (error) {
+        console.error("Error refreshing token:", error);
+        localStorage.removeItem("token");
+        localStorage.removeItem("refreshToken");
+        localStorage.removeItem("isAdmin");
+        window.location.href = "/login";
+        throw new Error("Session expired. Please log in again.");
+      }
+    }
+
+    return response;
+  } catch (error) {
+    console.error(`API Error (${endpoint}):`, error);
+    throw error;
+  }
+};
 
 // Define premium themes
 export const premiumThemes = {
@@ -79,49 +158,80 @@ export const premiumThemes = {
 const ThemeContext = createContext(undefined);
 
 export function ThemeProvider({ children }) {
-  const [theme, setTheme] = useState(() => {
-    const savedTheme = localStorage.getItem("theme");
-    if (savedTheme) {
-      return savedTheme;
-    }
-
-    if (
-      window.matchMedia &&
-      window.matchMedia("(prefers-color-scheme: dark)").matches
-    ) {
-      return "dark";
-    }
-
-    return "light";
-  });
+  const [theme, setTheme] = useState("light"); // Default to light
+  const [premiumTheme, setPremiumTheme] = useState("default");
+  const [unlockedThemes, setUnlockedThemes] = useState(["default"]);
+  const [loading, setLoading] = useState(true);
   
-  // State for currently active premium theme
-  const [premiumTheme, setPremiumTheme] = useState(() => {
-    const savedPremiumTheme = localStorage.getItem("premiumTheme");
-    return savedPremiumTheme || "default";
-  });
-  
-  // State for unlocked premium themes
-  const [unlockedThemes, setUnlockedThemes] = useState(() => {
-    try {
-      const saved = localStorage.getItem("unlockedThemes");
-      return saved ? JSON.parse(saved) : ["default"];
-    } catch (err) {
-      console.error("Error parsing unlocked themes:", err);
-      return ["default"];
-    }
-  });
-
-  // Check if user is admin
+  // Check if user is admin - still use localStorage for this
   const isAdmin = localStorage.getItem("isAdmin") === "true";
 
+  // Load theme settings from backend on component mount
   useEffect(() => {
+    // Only fetch themes if user is logged in
+    const token = localStorage.getItem("token");
+    if (!token) {
+      // If not logged in, use localStorage for theme settings
+      const savedTheme = localStorage.getItem("theme") || "light";
+      const savedPremiumTheme = localStorage.getItem("premiumTheme") || "default";
+      
+      try {
+        const savedUnlockedThemes = JSON.parse(localStorage.getItem("unlockedThemes") || '["default"]');
+        setUnlockedThemes(savedUnlockedThemes);
+      } catch (err) {
+        console.error("Error parsing unlocked themes from localStorage:", err);
+        setUnlockedThemes(["default"]);
+      }
+      
+      setTheme(savedTheme);
+      setPremiumTheme(savedPremiumTheme);
+      setLoading(false);
+      return;
+    }
+    
+    // Fetch theme settings from backend
+    const fetchThemeSettings = async () => {
+      try {
+        setLoading(true);
+        const response = await fetchWithTokenRefresh("/user/themes");
+        
+        if (response.ok) {
+          const data = await response.json();
+          setTheme(data.theme || "light");
+          setPremiumTheme(data.premium_theme || "default");
+          setUnlockedThemes(data.unlocked_themes || ["default"]);
+        } else {
+          console.error("Failed to fetch theme settings, using defaults");
+          // Use defaults or localStorage fallbacks
+          const savedTheme = localStorage.getItem("theme") || "light";
+          const savedPremiumTheme = localStorage.getItem("premiumTheme") || "default";
+          setTheme(savedTheme);
+          setPremiumTheme(savedPremiumTheme);
+        }
+      } catch (error) {
+        console.error("Error fetching theme settings:", error);
+        // Use localStorage fallbacks
+        const savedTheme = localStorage.getItem("theme") || "light";
+        const savedPremiumTheme = localStorage.getItem("premiumTheme") || "default";
+        setTheme(savedTheme);
+        setPremiumTheme(savedPremiumTheme);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchThemeSettings();
+  }, []);
+
+  useEffect(() => {
+    if (loading) return; // Skip if still loading
+    
     const root = window.document.documentElement;
 
     // Apply light/dark mode
     root.classList.remove("light", "dark");
     root.classList.add(theme);
-    localStorage.setItem("theme", theme);
+    localStorage.setItem("theme", theme); // Keep in localStorage for faster initial load
 
     // Apply premium theme CSS variables
     const currentTheme = premiumThemes[premiumTheme] || premiumThemes.default;
@@ -136,66 +246,187 @@ export function ThemeProvider({ children }) {
     root.style.setProperty('--color-secondary-rgb', currentTheme.secondaryRgb);
     root.style.setProperty('--color-accent-rgb', currentTheme.accentRgb);
     
-    localStorage.setItem("premiumTheme", premiumTheme);
-  }, [theme, premiumTheme]);
+    localStorage.setItem("premiumTheme", premiumTheme); // Keep in localStorage for faster initial load
+  }, [theme, premiumTheme, loading]);
 
   // Effect to unlock all themes for admin users
   useEffect(() => {
-    if (isAdmin) {
+    if (isAdmin && !loading) {
       // Silently unlock all premium themes for admins
       const allThemes = Object.keys(premiumThemes);
       setUnlockedThemes(allThemes);
     }
-  }, [isAdmin]);
+  }, [isAdmin, loading]);
 
-  const toggleTheme = () => {
-    setTheme((prevTheme) => (prevTheme === "light" ? "dark" : "light"));
+  const toggleTheme = async () => {
+    const newTheme = theme === "light" ? "dark" : "light";
+    setTheme(newTheme); // Update local state immediately for responsive UI
+    
+    // Only update backend if user is logged in
+    const token = localStorage.getItem("token");
+    if (token) {
+      try {
+        const response = await fetchWithTokenRefresh("/user/themes/mode", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ theme_mode: newTheme }),
+        });
+        
+        if (!response.ok) {
+          console.error("Failed to update theme mode in backend");
+          // We don't revert the UI since it's not critical
+        }
+      } catch (error) {
+        console.error("Error updating theme mode:", error);
+      }
+    }
   };
 
-  const setThemeMode = (mode) => {
+  const setThemeMode = async (mode) => {
     if (mode === "light" || mode === "dark") {
-      setTheme(mode);
+      setTheme(mode); // Update local state immediately
+      
+      // Only update backend if user is logged in
+      const token = localStorage.getItem("token");
+      if (token) {
+        try {
+          const response = await fetchWithTokenRefresh("/user/themes/mode", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ theme_mode: mode }),
+          });
+          
+          if (!response.ok) {
+            console.error("Failed to update theme mode in backend");
+          }
+        } catch (error) {
+          console.error("Error updating theme mode:", error);
+        }
+      }
     }
   };
   
   // Function to change the premium theme
-  const changePremiumTheme = (themeKey) => {
+  const changePremiumTheme = async (themeKey) => {
+    // Check if theme exists
+    if (!premiumThemes[themeKey]) {
+      return false;
+    }
+    
     // Admin can change to any theme
-    if (isAdmin && premiumThemes[themeKey]) {
-      setPremiumTheme(themeKey);
+    const canChangeTheme = isAdmin || unlockedThemes.includes(themeKey);
+    
+    if (canChangeTheme) {
+      setPremiumTheme(themeKey); // Update local state immediately
+      
+      // Only update backend if user is logged in
+      const token = localStorage.getItem("token");
+      if (token) {
+        try {
+          const response = await fetchWithTokenRefresh("/user/themes/premium", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ theme_key: themeKey }),
+          });
+          
+          if (!response.ok) {
+            const data = await response.json();
+            toast.error(data.detail || "Failed to update premium theme");
+            return false;
+          }
+        } catch (error) {
+          console.error("Error updating premium theme:", error);
+          return false;
+        }
+      }
       return true;
     }
     
-    // Regular users need to have the theme unlocked
-    if (premiumThemes[themeKey] && unlockedThemes.includes(themeKey)) {
-      setPremiumTheme(themeKey);
-      return true;
-    }
+    toast.error("You must unlock this theme first");
     return false;
   };
   
   // Function to unlock a premium theme
-  const unlockTheme = (themeKey) => {
-    if (premiumThemes[themeKey] && !unlockedThemes.includes(themeKey)) {
-      const newUnlockedThemes = [...unlockedThemes, themeKey];
-      setUnlockedThemes(newUnlockedThemes);
-      // Only save to localStorage for non-admin users to avoid cluttering storage
-      if (!isAdmin) {
-        localStorage.setItem("unlockedThemes", JSON.stringify(newUnlockedThemes));
-      }
-      return true;
+  const unlockTheme = async (themeKey) => {
+    if (!premiumThemes[themeKey] || unlockedThemes.includes(themeKey)) {
+      return false; // Theme doesn't exist or is already unlocked
     }
-    return false;
+    
+    // Update local state immediately for responsive UI
+    const newUnlockedThemes = [...unlockedThemes, themeKey];
+    setUnlockedThemes(newUnlockedThemes);
+    
+    // Only update backend if user is logged in
+    const token = localStorage.getItem("token");
+    if (token) {
+      try {
+        const response = await fetchWithTokenRefresh("/user/themes/unlock", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ theme_key: themeKey }),
+        });
+        
+        if (!response.ok) {
+          // Revert the local state change
+          setUnlockedThemes(unlockedThemes);
+          const data = await response.json();
+          toast.error(data.detail || "Failed to unlock theme");
+          return false;
+        }
+      } catch (error) {
+        // Revert the local state change
+        setUnlockedThemes(unlockedThemes);
+        console.error("Error unlocking theme:", error);
+        return false;
+      }
+    } else {
+      // For non-logged in users, save to localStorage
+      localStorage.setItem("unlockedThemes", JSON.stringify(newUnlockedThemes));
+    }
+    
+    return true;
   };
   
   // Function to unlock all premium themes
-  const unlockAllThemes = () => {
+  const unlockAllThemes = async () => {
     const allThemes = Object.keys(premiumThemes);
+    
+    // Update local state immediately for responsive UI
     setUnlockedThemes(allThemes);
-    // Only save to localStorage for non-admin users
-    if (!isAdmin) {
+    
+    // Only update backend if user is logged in and not admin (admins have all themes by default)
+    const token = localStorage.getItem("token");
+    if (token && !isAdmin) {
+      // We need to unlock each theme individually in the backend
+      try {
+        const promises = allThemes.map(themeKey =>
+          fetchWithTokenRefresh("/user/themes/unlock", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ theme_key: themeKey }),
+          })
+        );
+        
+        await Promise.all(promises);
+      } catch (error) {
+        console.error("Error unlocking all themes:", error);
+        // We don't revert the UI since it's not critical and would be complex to determine which themes failed
+      }
+    } else if (!token) {
+      // For non-logged in users, save to localStorage
       localStorage.setItem("unlockedThemes", JSON.stringify(allThemes));
     }
+    
     return true;
   };
 
@@ -210,7 +441,8 @@ export function ThemeProvider({ children }) {
       unlockAllThemes,
       unlockedThemes,
       premiumThemes,
-      isAdmin
+      isAdmin,
+      loading
     }}>
       {children}
     </ThemeContext.Provider>

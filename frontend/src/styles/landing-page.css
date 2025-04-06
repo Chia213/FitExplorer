@@ -32,12 +32,36 @@
   }
 }
 
+@keyframes gleam {
+  0% {
+    transform: translateX(-100%) rotate(45deg);
+  }
+  20%, 100% {
+    transform: translateX(100%) rotate(45deg);
+  }
+}
+
 .float-animation {
   animation: float 5s ease-in-out infinite;
 }
 
 .pulse-animation {
   animation: pulse 4s ease-in-out infinite;
+}
+
+.animate-gleam {
+  animation: gleam 3s infinite;
+  pointer-events: none;
+}
+
+/* Hide scrollbar but allow scrolling */
+.hide-scrollbar {
+  -ms-overflow-style: none;  /* Internet Explorer and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari, Opera */
 }
 
 /* Feature card hover styles */
@@ -112,6 +136,22 @@
   }
 }
 
+/* Loading bar animation */
+@keyframes loadingBar {
+  0% {
+    width: 0%;
+  }
+  100% {
+    width: 100%;
+  }
+}
+
+.loading-bar {
+  height: 4px;
+  background: linear-gradient(to right, #4f46e5, #8b5cf6);
+  animation: loadingBar 4s infinite ease-in-out;
+}
+
 /* Media queries for responsive design */
 @media (max-width: 768px) {
   .hero-content {
@@ -120,6 +160,24 @@
   
   .float-animation {
     animation: none; /* Disable animations on mobile for better performance */
+  }
+
+  .feature-button {
+    font-size: 0.875rem;
+    padding: 0.4rem 0.75rem;
+    margin-bottom: 0.5rem;
+  }
+}
+
+/* For very small screens */
+@media (max-width: 360px) {
+  .feature-button {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+  }
+  
+  .feature-button span:first-child {
+    margin-right: 0.25rem;
   }
 }
 
@@ -143,4 +201,23 @@
 .dark .glass-effect {
   background: rgba(30, 41, 59, 0.5);
   border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Feature navigation responsiveness */
+@media (max-width: 768px) {
+  .feature-button {
+    font-size: 0.875rem;
+    padding: 0.4rem 0.75rem;
+    margin-bottom: 0.5rem;
+  }
+}
+
+/* Hide scrollbar but keep functionality */
+.hide-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari, Opera */
 } 

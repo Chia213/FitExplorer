@@ -55,6 +55,7 @@ import jwt
 from passlib.context import CryptContext
 from nutrition import router as nutrition_router
 from ai_workout import router as ai_workout_router
+from sqlalchemy.sql import text
 
 
 Base.metadata.create_all(bind=engine)
@@ -542,6 +543,126 @@ def get_workout_stats(
         total_cardio_duration=round(total_cardio_duration, 2),
         weight_progression=weight_progression_data
     )
+
+
+@app.get("/progress/strength")
+def get_strength_progress(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get strength progress data for the main lifts"""
+    try:
+        # Define the main lifts we want to track
+        main_lifts = ['Bench Press', 'Squat', 'Deadlift']
+        
+        # Query to find max weight for each main lift across time
+        strength_data = []
+        
+        # For each workout, get the maximum weight lifted for each main lift
+        workouts = db.query(Workout).filter(
+            Workout.user_id == user.id,
+            Workout.is_template == False  # Exclude templates
+        ).order_by(Workout.date).all()
+        
+        for workout in workouts:
+            # Find exercises matching main lifts
+            exercise_data = {}
+            exercise_data['date'] = workout.date.isoformat() if workout.date else None
+            
+            # For each main lift, find max weight
+            for lift in main_lifts:
+                exercise = db.query(Exercise).filter(
+                    Exercise.workout_id == workout.id,
+                    Exercise.name.ilike(f"%{lift}%")  # Case-insensitive partial match
+                ).first()
+                
+                if exercise:
+                    # Find max weight for this exercise
+                    max_weight_set = db.query(Set).filter(
+                        Set.exercise_id == exercise.id,
+                        Set.weight.isnot(None)
+                    ).order_by(Set.weight.desc()).first()
+                    
+                    if max_weight_set:
+                        # Convert lift name to camelCase for frontend
+                        lift_key = 'benchPress' if lift == 'Bench Press' else lift.lower()
+                        exercise_data[lift_key] = max_weight_set.weight
+            
+            # Only add to results if at least one lift was recorded
+            if len(exercise_data) > 1:  # More than just the date
+                for lift in main_lifts:
+                    lift_key = 'benchPress' if lift == 'Bench Press' else lift.lower()
+                    if lift_key not in exercise_data:
+                        # Find the most recent value for this lift
+                        recent_entries = [entry for entry in strength_data if lift_key in entry]
+                        if recent_entries:
+                            exercise_data[lift_key] = recent_entries[-1][lift_key]
+                        else:
+                            exercise_data[lift_key] = 0
+                            
+                strength_data.append(exercise_data)
+        
+        return strength_data
+    except Exception as e:
+        print(f"Error fetching strength progress: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error fetching strength progress: {str(e)}")
+
+
+@app.get("/progress/cardio")
+def get_cardio_progress(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get cardio progress data"""
+    try:
+        # Query to find cardio workouts over time
+        cardio_data = []
+        
+        # Get all workouts
+        workouts = db.query(Workout).filter(
+            Workout.user_id == user.id,
+            Workout.is_template == False  # Exclude templates
+        ).order_by(Workout.date).all()
+        
+        for workout in workouts:
+            # Find cardio exercises
+            cardio_exercises = db.query(Exercise).filter(
+                Exercise.workout_id == workout.id,
+                Exercise.is_cardio == True
+            ).all()
+            
+            if cardio_exercises:
+                for exercise in cardio_exercises:
+                    # Get all sets for this cardio exercise
+                    sets = db.query(Set).filter(Set.exercise_id == exercise.id).all()
+                    
+                    for set_item in sets:
+                        if set_item.duration or set_item.distance:
+                            entry = {
+                                'date': workout.date.isoformat() if workout.date else None,
+                                'exercise': exercise.name,
+                                'duration': set_item.duration or 0,
+                                'distance': set_item.distance or 0,
+                                'intensity': set_item.intensity or 'Medium'
+                            }
+                            
+                            # Calculate pace if both distance and duration are present
+                            if set_item.duration and set_item.distance and set_item.distance > 0:
+                                # Pace in minutes per km
+                                entry['pace'] = (set_item.duration / 60) / (set_item.distance / 1000)
+                            else:
+                                entry['pace'] = 0
+                                
+                            cardio_data.append(entry)
+        
+        return cardio_data
+    except Exception as e:
+        print(f"Error fetching cardio progress: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error fetching cardio progress: {str(e)}")
 
 
 @app.post("/upload-profile-picture")
@@ -1074,4 +1195,478 @@ def delete_saved_program(
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# Achievement Endpoints
+
+@app.get("/achievements")
+def get_user_achievements(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get all achievements with user progress"""
+    try:
+        # Get all achievements
+        achievements = db.query(Achievement).all()
+        
+        # Get user's achievement progress
+        user_achievements = db.query(UserAchievement).filter(
+            UserAchievement.user_id == user.id
+        ).all()
+        
+        # Create a mapping of achievement_id to user progress
+        progress_map = {ua.achievement_id: ua for ua in user_achievements}
+        
+        # Format response
+        result = []
+        for achievement in achievements:
+            user_achievement = progress_map.get(achievement.id)
+            
+            is_achieved = user_achievement is not None and user_achievement.progress >= achievement.requirement
+            
+            result.append({
+                "id": achievement.id,
+                "name": achievement.name,
+                "description": achievement.description,
+                "icon": achievement.icon,
+                "category": achievement.category,
+                "requirement": achievement.requirement,
+                "progress": user_achievement.progress if user_achievement else 0,
+                "achieved_at": user_achievement.achieved_at if user_achievement and is_achieved else None,
+                "is_achieved": is_achieved
+            })
+            
+        return result
+    except Exception as e:
+        print(f"Error fetching achievements: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error fetching achievements: {str(e)}")
+
+
+@app.post("/achievements/check")
+def check_achievements(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Check and update user's achievement progress"""
+    try:
+        # Get all achievements
+        achievements = db.query(Achievement).all()
+        
+        # Check and update progress for each achievement
+        updated_count = 0
+        newly_achieved = 0
+        
+        for achievement in achievements:
+            # Get current user progress
+            user_achievement = db.query(UserAchievement).filter(
+                UserAchievement.user_id == user.id,
+                UserAchievement.achievement_id == achievement.id
+            ).first()
+            
+            # If user doesn't have this achievement record yet, create it
+            if not user_achievement:
+                user_achievement = UserAchievement(
+                    user_id=user.id,
+                    achievement_id=achievement.id,
+                    progress=0
+                )
+                db.add(user_achievement)
+                
+            # Calculate progress based on achievement category
+            # This is a simplified version - you'd need to implement the actual logic
+            # based on your achievement categories and requirements
+            if achievement.category == "workout":
+                # Count user's workouts
+                workout_count = db.query(Workout).filter(Workout.user_id == user.id).count()
+                user_achievement.progress = workout_count
+                
+            elif achievement.category == "streak":
+                # This would need more complex logic to track streaks
+                # For now, we'll leave it as is
+                pass
+                
+            elif achievement.category == "profile":
+                # Check if user has completed profile
+                user_data = db.query(User).filter(User.id == user.id).first()
+                if user_data and user_data.profile_picture:
+                    user_achievement.progress = 1
+                    
+            elif achievement.category == "routines":
+                # Count user's routines
+                routine_count = db.query(Routine).filter(Routine.user_id == user.id).count()
+                user_achievement.progress = routine_count
+                
+            # Check if achievement is newly completed
+            was_achieved = user_achievement.progress >= achievement.requirement
+            is_achieved = user_achievement.progress >= achievement.requirement
+            
+            if is_achieved and not was_achieved:
+                user_achievement.achieved_at = datetime.now(timezone.utc)
+                newly_achieved += 1
+                
+            updated_count += 1
+            
+        db.commit()
+        
+        return {
+            "message": f"Checked {updated_count} achievements. {newly_achieved} newly achieved!",
+            "updated_count": updated_count,
+            "newly_achieved": newly_achieved
+        }
+    except Exception as e:
+        db.rollback()
+        print(f"Error checking achievements: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error checking achievements: {str(e)}")
+
+
+@app.post("/achievements/create")
+def create_achievement(
+    achievement_data: AchievementCreate,
+    user: User = Depends(get_current_user), 
+    db: Session = Depends(get_db)
+):
+    """Create a new achievement"""
+    try:
+        # Check if achievement with same name already exists
+        existing = db.query(Achievement).filter(
+            Achievement.name == achievement_data.name
+        ).first()
+        
+        if existing:
+            return {"message": f"Achievement '{achievement_data.name}' already exists", "id": existing.id}
+        
+        # Create new achievement
+        new_achievement = Achievement(
+            name=achievement_data.name,
+            description=achievement_data.description,
+            icon=achievement_data.icon,
+            category=achievement_data.category,
+            requirement=achievement_data.requirement
+        )
+        
+        db.add(new_achievement)
+        db.commit()
+        db.refresh(new_achievement)
+        
+        return {"message": "Achievement created successfully", "id": new_achievement.id}
+    except Exception as e:
+        db.rollback()
+        print(f"Error creating achievement: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error creating achievement: {str(e)}")
+
+
+@app.post("/achievements/cleanup-duplicates")
+def cleanup_duplicate_achievements(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Clean up duplicate achievements"""
+    try:
+        # Get all achievements grouped by name
+        achievements = db.query(Achievement).all()
+        
+        # Group by name
+        achievement_groups = {}
+        for achievement in achievements:
+            if achievement.name not in achievement_groups:
+                achievement_groups[achievement.name] = []
+            achievement_groups[achievement.name].append(achievement)
+        
+        # Find duplicates
+        duplicates_found = 0
+        duplicates_deleted = 0
+        
+        for name, group in achievement_groups.items():
+            if len(group) > 1:
+                duplicates_found += len(group) - 1
+                
+                # Keep the first one, delete the rest
+                # Be careful with foreign key constraints
+                for duplicate in group[1:]:
+                    # Check if there are user achievements referencing this
+                    has_references = db.query(UserAchievement).filter(
+                        UserAchievement.achievement_id == duplicate.id
+                    ).first() is not None
+                    
+                    if not has_references:
+                        db.delete(duplicate)
+                        duplicates_deleted += 1
+                    
+        db.commit()
+        
+        if duplicates_deleted == 0 and duplicates_found > 0:
+            return {"message": "No achievements were deleted due to foreign key references. Use force cleanup if needed."}
+        
+        return {
+            "message": f"Found {duplicates_found} duplicates, deleted {duplicates_deleted} achievements.",
+            "duplicates_found": duplicates_found,
+            "duplicates_deleted": duplicates_deleted
+        }
+    except Exception as e:
+        db.rollback()
+        print(f"Error cleaning up achievements: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error cleaning up achievements: {str(e)}")
+
+
+# User Theme Management
+
+@app.get("/user/themes")
+def get_user_themes(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get the user's theme preferences"""
+    try:
+        # Get or create profile
+        profile = db.query(UserProfile).filter(UserProfile.user_id == user.id).first()
+        
+        if not profile:
+            profile = UserProfile(user_id=user.id)
+            db.add(profile)
+            db.commit()
+            db.refresh(profile)
+        
+        # Return theme settings
+        return {
+            "theme": profile.theme_mode or "light",  # default to light
+            "premium_theme": profile.premium_theme or "default",  # default to default theme
+            "unlocked_themes": profile.unlocked_themes or ["default"],  # default to only default theme
+        }
+    except Exception as e:
+        print(f"Error getting user themes: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/user/themes/mode")
+def set_theme_mode(
+    theme_data: dict = Body(...),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Set the user's theme mode (light/dark)"""
+    try:
+        theme_mode = theme_data.get("theme_mode")
+        if theme_mode not in ["light", "dark"]:
+            raise HTTPException(status_code=400, detail="Invalid theme mode. Must be 'light' or 'dark'")
+            
+        # Get or create profile
+        profile = db.query(UserProfile).filter(UserProfile.user_id == user.id).first()
+        
+        if not profile:
+            profile = UserProfile(user_id=user.id, theme_mode=theme_mode)
+            db.add(profile)
+        else:
+            profile.theme_mode = theme_mode
+            
+        db.commit()
+        
+        return {"message": "Theme mode updated successfully", "theme_mode": theme_mode}
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        print(f"Error setting theme mode: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/user/themes/premium")
+def set_premium_theme(
+    theme_data: dict = Body(...),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Set the user's premium theme"""
+    try:
+        theme_key = theme_data.get("theme_key")
+        
+        # Get or create profile
+        profile = db.query(UserProfile).filter(UserProfile.user_id == user.id).first()
+        
+        if not profile:
+            profile = UserProfile(user_id=user.id, premium_theme=theme_key)
+            db.add(profile)
+        else:
+            # Check if theme is unlocked for the user, or user is admin
+            is_admin = db.query(User.is_admin).filter(User.id == user.id).scalar() or False
+            unlocked_themes = profile.unlocked_themes or ["default"]
+            
+            if theme_key not in unlocked_themes and not is_admin:
+                raise HTTPException(status_code=403, detail="Theme not unlocked for this user")
+                
+            profile.premium_theme = theme_key
+            
+        db.commit()
+        
+        return {"message": "Premium theme updated successfully", "premium_theme": theme_key}
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        print(f"Error setting premium theme: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/user/themes/unlock")
+def unlock_theme(
+    theme_data: dict = Body(...),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Unlock a premium theme for the user"""
+    try:
+        theme_key = theme_data.get("theme_key")
+        
+        # Get or create profile
+        profile = db.query(UserProfile).filter(UserProfile.user_id == user.id).first()
+        
+        if not profile:
+            profile = UserProfile(user_id=user.id, unlocked_themes=[theme_key])
+            db.add(profile)
+        else:
+            # Update unlocked themes
+            unlocked_themes = profile.unlocked_themes or ["default"]
+            
+            if theme_key not in unlocked_themes:
+                unlocked_themes.append(theme_key)
+                profile.unlocked_themes = unlocked_themes
+            
+        db.commit()
+        
+        return {"message": f"Theme '{theme_key}' unlocked successfully", "unlocked_themes": profile.unlocked_themes}
+    except Exception as e:
+        db.rollback()
+        print(f"Error unlocking theme: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/admin/database/add-theme-columns", response_model=Dict[str, str])
+async def add_theme_columns(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Admin endpoint to manually add theme columns to the user_profiles table"""
+    if not current_user.is_admin:
+        raise HTTPException(
+            status_code=403, detail="Only admin users can perform this action")
+    
+    try:
+        # Execute raw SQL to add the columns if they don't exist
+        # Check if columns exist first to avoid errors if columns already exist
+        db.execute(text("""
+        DO $$
+        BEGIN
+            -- Add theme_mode column if it doesn't exist
+            IF NOT EXISTS (
+                SELECT 1
+                FROM information_schema.columns
+                WHERE table_name = 'user_profiles' AND column_name = 'theme_mode'
+            ) THEN
+                ALTER TABLE user_profiles ADD COLUMN theme_mode VARCHAR DEFAULT 'light';
+            END IF;
+
+            -- Add premium_theme column if it doesn't exist
+            IF NOT EXISTS (
+                SELECT 1
+                FROM information_schema.columns
+                WHERE table_name = 'user_profiles' AND column_name = 'premium_theme'
+            ) THEN
+                ALTER TABLE user_profiles ADD COLUMN premium_theme VARCHAR DEFAULT 'default';
+            END IF;
+
+            -- Add unlocked_themes column if it doesn't exist
+            IF NOT EXISTS (
+                SELECT 1
+                FROM information_schema.columns
+                WHERE table_name = 'user_profiles' AND column_name = 'unlocked_themes'
+            ) THEN
+                ALTER TABLE user_profiles ADD COLUMN unlocked_themes JSONB DEFAULT '["default"]'::jsonb;
+            END IF;
+        END
+        $$;
+        """))
+        
+        db.commit()
+        return {"status": "success", "message": "Theme columns added successfully"}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=500, detail=f"Failed to add columns: {str(e)}")
+
+
+@app.get("/workout-streak", response_model=Dict[str, Any])
+def get_workout_streak(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get the user's current workout streak and frequency goal"""
+    try:
+        # Get user's workout preferences to get the frequency goal
+        workout_prefs = db.query(WorkoutPreferences).filter(
+            WorkoutPreferences.user_id == user.id
+        ).first()
+        
+        frequency_goal = None
+        if workout_prefs:
+            frequency_goal = workout_prefs.workout_frequency_goal
+        
+        # Get all of the user's workouts, sorted by date
+        workouts = db.query(Workout).filter(
+            Workout.user_id == user.id,
+            Workout.is_template == False  # Exclude templates
+        ).order_by(desc(Workout.date)).all()
+        
+        if not workouts:
+            return {
+                "streak": 0,
+                "frequency_goal": frequency_goal
+            }
+        
+        # Calculate workout streak
+        today = datetime.now(timezone.utc).date()
+        streak = 0
+        last_date = None
+        
+        # Handle first workout separately
+        first_workout = workouts[0]
+        first_date = first_workout.date.date() if first_workout.date else None
+        
+        if first_date and (today - first_date).days <= 1:
+            # The most recent workout is today or yesterday, streak starts at 1
+            streak = 1
+            last_date = first_date
+            
+            # Check the rest of the workouts for consecutive days
+            for workout in workouts[1:]:
+                workout_date = workout.date.date() if workout.date else None
+                if not workout_date:
+                    continue
+                    
+                # If the date difference is 1 day, increment streak
+                if last_date and (last_date - workout_date).days == 1:
+                    streak += 1
+                    last_date = workout_date
+                # If it's the same day, skip (multiple workouts in one day)
+                elif last_date and (last_date - workout_date).days == 0:
+                    last_date = workout_date
+                # If there's a gap, stop counting
+                else:
+                    break
+        
+        return {
+            "streak": streak,
+            "frequency_goal": frequency_goal
+        }
+    except Exception as e:
+        print(f"Error calculating workout streak: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error calculating workout streak: {str(e)}")
 

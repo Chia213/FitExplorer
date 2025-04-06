@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "../hooks/useTheme";
+import { useAuth } from "../hooks/useAuth.jsx";
+import { useAchievements } from "../hooks/useAchievements.jsx";
+import { useUser } from "../hooks/useUser.jsx";
 import {
   FaTrophy,
   FaDumbbell,
@@ -249,7 +252,19 @@ const achievementRewards = [
 ];
 
 function Achievements() {
-  const [achievements, setAchievements] = useState([]);
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { userData, loading: userLoading } = useUser();
+  const { unlockedThemes } = useTheme(); // Get unlocked themes from the theme hook
+  const { 
+    achievements: hookAchievements, 
+    loading: hookLoading, 
+    error: hookError, 
+    fetchAchievements: hookFetchAchievements, 
+    checkAchievements: hookCheckAchievements,
+    createAchievement: hookCreateAchievement 
+  } = useAchievements();
+  const [achievements, setAchievements] = useState([]); // Initialize as empty array instead of null
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -259,8 +274,7 @@ function Achievements() {
   const [selectedBadges, setSelectedBadges] = useState([]);
   const [showBadgeSelector, setShowBadgeSelector] = useState(false);
   const maxBadges = 3; // Maximum number of badges that can be displayed on profile
-  const navigate = useNavigate();
-  const { theme, unlockTheme, unlockAllThemes, isAdmin } = useTheme();
+  const { theme = "light", unlockTheme, unlockAllThemes, isAdmin = false } = useTheme() || {};
   const [showInsights, setShowInsights] = useState(false);
   const [claimedRewards, setClaimedRewards] = useState([]);
   const [rewardStatus, setRewardStatus] = useState({});
@@ -283,6 +297,14 @@ function Achievements() {
   const [confirmTitle, setConfirmTitle] = useState("");
   const [confirmMessage, setConfirmMessage] = useState("");
 
+  // Use the achievements from the hook
+  useEffect(() => {
+    if (hookAchievements) {
+      setAchievements(hookAchievements);
+      setLoading(hookLoading);
+    }
+  }, [hookAchievements, hookLoading]);
+
   // Auto-dismiss notification after 5 seconds
   useEffect(() => {
     let timer;
@@ -294,17 +316,26 @@ function Achievements() {
     return () => clearTimeout(timer);
   }, [notification.show]);
 
+  // Fetch achievements on component mount
   useEffect(() => {
-    fetchAchievements();
+    // We'll use the hook's fetchAchievements instead of our custom one
+    const initializeAchievements = async () => {
+      try {
+        setLoading(true);
+        // If we have no achievements, create default ones
+        if (hookAchievements && hookAchievements.length === 0) {
+          await createDefaultAchievements();
+        }
+      } catch (err) {
+        console.error("Error initializing achievements:", err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    initializeAchievements();
   }, []);
-
-  // Add a new useEffect to auto-check achievements whenever the component mounts
-  useEffect(() => {
-    // Only check achievements if they exist and user is logged in
-    if (achievements.length > 0 && localStorage.getItem("token")) {
-      checkAchievements();
-    }
-  }, [achievements.length]);
 
   // Load claimed rewards from localStorage on component mount
   useEffect(() => {
@@ -368,22 +399,10 @@ function Achievements() {
     try {
       setLoading(true);
       setStatusMessage("Checking achievements progress...");
-      const token = localStorage.getItem("token");
-      const response = await fetch(`${backendURL}/achievements/check`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log('Achievement check response:', data);
-        setStatusMessage(`${data.message}`);
-        fetchAchievements(); // Refresh achievements after checking
-      } else {
-        const errorData = await response.json();
-        throw new Error(`Failed to check achievements: ${errorData.detail || 'Unknown error'}`);
+      // Use the hook's checkAchievements function
+      const result = await hookCheckAchievements();
+      if (result) {
+        setStatusMessage(result.message || "Achievements updated!");
       }
     } catch (err) {
       console.error("Error checking achievements:", err);
@@ -404,48 +423,17 @@ function Achievements() {
         return;
       }
       
-      // Fetch existing achievements first to check for duplicates
-      const existingResponse = await fetch(`${backendURL}/achievements`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-      
-      if (!existingResponse.ok) {
-        throw new Error(`Failed to fetch existing achievements: ${existingResponse.status}`);
-      }
-      
-      const existingAchievements = await existingResponse.json();
-      const existingNames = new Set(existingAchievements.map(a => a.name));
-      
       // Only create achievements that don't already exist
       let createdCount = 0;
       for (const achievement of defaultAchievements) {
-        // Skip if achievement with this name already exists
-        if (existingNames.has(achievement.name)) {
-          console.log(`Achievement "${achievement.name}" already exists, skipping`);
-          continue;
-        }
-        
-        const response = await fetch(`${backendURL}/achievements/create`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`
-          },
-          body: JSON.stringify(achievement)
-        });
-        
-        if (!response.ok) {
-          const errorData = await response.json();
-          console.error(`Failed to create achievement ${achievement.name}:`, errorData);
-        } else {
+        const result = await hookCreateAchievement(achievement);
+        if (result) {
           createdCount++;
         }
       }
       
       // Refresh achievements
-      await fetchAchievements();
+      await hookFetchAchievements();
       setStatusMessage(`${createdCount} achievements created successfully`);
     } catch (err) {
       console.error("Error creating default achievements:", err);
@@ -725,6 +713,11 @@ function Achievements() {
 
   // Modify the claimReward function to use the useTheme hook
   const claimReward = (reward) => {
+    if (isRewardClaimed(reward.id)) {
+      // If the reward is already claimed, don't do anything
+      return;
+    }
+    
     // Check if user has enough achievements
     const achievedCount = achievements.filter(a => a.is_achieved).length;
     if (achievedCount < reward.requiredAchievements) {
@@ -757,8 +750,11 @@ function Achievements() {
         case 'themes':
           // Only for non-admin users
           if (!isAdmin) {
-            const themeToUnlock = reward.data.theme;
-            unlockTheme(themeToUnlock);
+            // Format the theme key with dashes instead of just removing spaces
+            const themeKey = reward.title.toLowerCase().replace(/\s+/g, '-');
+            // First unlock the theme
+            unlockTheme(themeKey);
+            // Then update the description
             description = `You've unlocked a premium theme: ${reward.title}. Go to Settings to apply it!`;
           }
           break;
@@ -817,6 +813,9 @@ function Achievements() {
           // Navigate to settings page
           navigate('/settings?tab=appearance');
         } else {
+          // Format the theme key with dashes for consistency
+          const themeKey = reward.title.toLowerCase().replace(/\s+/g, '-');
+          
           // Regular user flow for themes
           description = `You've unlocked a premium theme: ${reward.title}. Go to Settings to apply it!`;
           
@@ -826,8 +825,8 @@ function Achievements() {
             type: "success"
           });
           
-          // Navigate to settings page
-          navigate('/settings?tab=appearance');
+          // Navigate to settings page with the theme key as query parameter
+          navigate(`/settings?tab=appearance&theme=${themeKey}`);
         }
         break;
         
@@ -856,11 +855,6 @@ function Achievements() {
           type: "success"
         });
     }
-  };
-
-  // Add a function to check if reward is claimed
-  const isRewardClaimed = (rewardId) => {
-    return claimedRewards.includes(rewardId);
   };
 
   // Modify the RewardModal function to show admin-specific information
@@ -1093,6 +1087,23 @@ function Achievements() {
         </div>
       </div>
     );
+  };
+
+  // Move the hasUnlockedPremiumThemes and isRewardClaimed functions inside the component
+  // Add helper function to check if Premium Themes are actually unlocked
+  const hasUnlockedPremiumThemes = (themes) => {
+    // If the user has unlocked any theme besides the default one, premium themes are unlocked
+    return themes && themes.length > 1;
+  };
+  
+  // Function to check if a reward is claimed
+  const isRewardClaimed = (rewardId) => {
+    // For theme rewards, verify that at least one premium theme is actually unlocked
+    if (rewardId === "reward-1") { // Premium Themes reward ID
+      return claimedRewards.includes(rewardId) && hasUnlockedPremiumThemes(unlockedThemes);
+    }
+    // For other rewards, just check if they're in claimedRewards
+    return claimedRewards.includes(rewardId);
   };
 
   if (loading) {
@@ -1437,6 +1448,7 @@ function Achievements() {
               
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
                 {achievementRewards.map(reward => {
+                  // Here we use our enhanced isRewardClaimed function that checks for actually unlocked themes
                   const isClaimed = isRewardClaimed(reward.id);
                   const isThemeReward = reward.feature === 'themes';
                   // Admin already has access to themes

@@ -1,8 +1,13 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import titanImage from '../assets/titan.png';
 import femaleTitanImage from '../assets/female-titan.png';
+import aiWorkoutGeneratorImage from '../assets/ai-workoutgenerator.png';
+import nutritionTrackingImage from '../assets/nutrition-tracking.png';
+import progressTrackingImage from '../assets/progress-tracking.png';
+import personalRecordsImage from '../assets/personal-records.png';
+import fitnessCalculatorImage from '../assets/fitness-calculator.png';
 import '../styles/landing-page.css';
 
 // Animation variants
@@ -27,9 +32,25 @@ const staggerContainer = {
 };
 
 const LandingPage = () => {
+  const [activeFeature, setActiveFeature] = useState(0);
+  const [isAutoPlaying, setIsAutoPlaying] = useState(true);
+  
   useEffect(() => {
-    window.scrollTo(0, 0);
-  }, []);
+    // Only scroll to top on initial page load, not when changing features
+    if (activeFeature === 0) {
+      window.scrollTo(0, 0);
+    }
+    
+    // Auto-rotate through features
+    let interval;
+    if (isAutoPlaying) {
+      interval = setInterval(() => {
+        setActiveFeature(prev => (prev + 1) % features.length);
+      }, 4000);
+    }
+    
+    return () => clearInterval(interval);
+  }, [isAutoPlaying, activeFeature]);
 
   const features = [
     {
@@ -38,47 +59,80 @@ const LandingPage = () => {
       description: "Get personalized AI workouts based on your goals, equipment, and experience level that adapt as you progress.",
       icon: "🏋️‍♀️",
       link: "/ai-workout-generator",
-      color: "bg-blue-500"
+      color: "bg-blue-500",
+      bgGradient: "from-blue-600 to-indigo-700",
+      image: aiWorkoutGeneratorImage,
+      specialStyle: "h-full object-cover"
     },
     {
       id: 2,
+      title: "Workout Log & Routines",
+      description: "Track your training progress and create personalized workout plans. Log exercises, record sets, reps, and weights with our intuitive interface for a complete history of your fitness journey.",
+      icon: "📝",
+      link: "/workout-log",
+      color: "bg-orange-500",
+      bgGradient: "from-orange-500 to-amber-600",
+      image: titanImage,
+      hasSplitView: true,
+      splitViewLinks: [
+        { title: "Workout Log", subtitle: "Track your exercises", link: "/workout-log", icon: "📊" },
+        { title: "Routines", subtitle: "Build custom plans", link: "/routines", icon: "🔄" }
+      ]
+    },
+    {
+      id: 3,
       title: "Nutrition Tracking",
       description: "Track meals, calories, and macros with our smart nutrition system that provides personalized recommendations.",
       icon: "🥗",
       link: "/nutrition",
-      color: "bg-green-500"
+      color: "bg-green-500",
+      bgGradient: "from-green-600 to-teal-700",
+      image: nutritionTrackingImage,
+      specialStyle: "h-auto object-contain max-h-80"
     },
     {
-      id: 3,
+      id: 4,
       title: "Progress Tracking",
       description: "Visualize your fitness journey with detailed progress graphs, body measurements, and performance metrics.",
       icon: "📈",
       link: "/progress-tracker",
-      color: "bg-purple-500"
+      color: "bg-purple-500",
+      bgGradient: "from-purple-600 to-pink-700",
+      image: progressTrackingImage,
+      specialStyle: "h-auto object-contain max-h-80"
     },
     {
-      id: 4,
+      id: 5,
       title: "Exercise Library",
       description: "Access 500+ exercises with step-by-step instructions, video demonstrations, and proper form guidance.",
       icon: "📚",
       link: "/routines",
-      color: "bg-amber-500"
+      color: "bg-amber-500",
+      bgGradient: "from-amber-600 to-orange-700",
+      image: null,
+      hasBothImages: true
     },
     {
-      id: 5,
+      id: 6,
       title: "Personal Records",
       description: "Track and celebrate your personal bests with automatic PR detection and achievement unlocks.",
       icon: "🏆",
       link: "/personal-records",
-      color: "bg-red-500"
+      color: "bg-red-500",
+      bgGradient: "from-red-600 to-rose-700",
+      image: personalRecordsImage,
+      specialStyle: "h-auto object-contain max-h-80"
     },
     {
-      id: 6,
+      id: 7,
       title: "Fitness Calculators",
       description: "Optimize your fitness journey with BMI, TDEE, body fat, and other essential calculators in one place.",
       icon: "🧮",
       link: "/fitness-calculator",
-      color: "bg-teal-500"
+      color: "bg-teal-500",
+      bgGradient: "from-teal-600 to-cyan-700",
+      image: fitnessCalculatorImage,
+      specialStyle: "h-auto object-contain max-h-80"
     }
   ];
 
@@ -197,45 +251,225 @@ const LandingPage = () => {
         </div>
       </motion.section>
 
-      {/* Features Section */}
-      <section className="py-20 bg-gray-50 dark:bg-gray-800">
+      {/* App Showcase Section */}
+      <section className="py-20 bg-gray-50 dark:bg-gray-900 overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <span className="text-blue-600 dark:text-blue-400 font-semibold tracking-wide uppercase text-sm">Features</span>
-            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4 mt-2">Everything You Need For Success</h2>
-            <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">Our all-in-one platform provides the tools and guidance you need to achieve your fitness goals.</p>
+          <div className="text-center mb-10">
+            <span className="text-blue-600 dark:text-blue-400 font-semibold tracking-wide uppercase text-sm">App Features</span>
+            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4 mt-2">Explore Our Powerful Features</h2>
+            <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
+              Discover how our comprehensive fitness platform can transform your health and fitness journey.
+            </p>
           </div>
-          
-          <motion.div 
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
-            variants={staggerContainer}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-          >
-            {features.map((feature, index) => (
-              <motion.div
-                key={feature.id}
-                className="bg-white dark:bg-gray-700 rounded-xl shadow-md overflow-hidden transition-all hover:shadow-xl feature-card group"
-                variants={cardVariants}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-              >
-                <div className="p-8">
-                  <div className={`w-16 h-16 rounded-full ${feature.color} flex items-center justify-center text-white text-2xl mb-6 group-hover:scale-110 transition-transform`}>
-                    <span>{feature.icon}</span>
-                  </div>
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">{feature.title}</h3>
-                  <p className="text-gray-600 dark:text-gray-300 mb-6">{feature.description}</p>
-                  <Link to={feature.link} className="text-blue-600 dark:text-blue-400 font-medium hover:underline inline-flex items-center group">
-                    <span>Explore</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-1 group-hover:translate-x-1 transition-transform" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
-                    </svg>
-                  </Link>
+
+          {/* Feature Navigation */}
+          <div className="flex justify-center mb-8 overflow-x-auto pb-4 hide-scrollbar">
+            <div className="flex flex-wrap justify-center gap-2 md:gap-3 w-full max-w-5xl">
+              {features.map((feature, index) => (
+                <button
+                  key={feature.id}
+                  onClick={() => {
+                    setActiveFeature(index);
+                    setIsAutoPlaying(false);
+                  }}
+                  className={`flex items-center px-4 py-2 rounded-full transition-all whitespace-nowrap ${
+                    activeFeature === index 
+                      ? `bg-gradient-to-r ${feature.bgGradient} text-white shadow-md`
+                      : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  <span className="mr-2">{feature.icon}</span>
+                  <span>{feature.title}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Feature Showcase */}
+          <div className="relative bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl shadow-2xl overflow-hidden">
+            {/* Progress indicators */}
+            <div className="absolute top-0 left-0 right-0 flex">
+              {features.map((_, index) => (
+                <div key={index} className="h-1 flex-1 bg-gray-700">
+                  {index === activeFeature && (
+                    <div className="h-full loading-bar"></div>
+                  )}
                 </div>
-              </motion.div>
-            ))}
-          </motion.div>
+              ))}
+            </div>
+
+            <div className="p-8 md:p-12">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-center">
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={`content-${activeFeature}`}
+                    className="text-white"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <div className={`w-16 h-16 rounded-full ${features[activeFeature].color} flex items-center justify-center text-white text-2xl mb-6`}>
+                      <span>{features[activeFeature].icon}</span>
+                    </div>
+                    <h3 className="text-3xl font-bold mb-4">{features[activeFeature].title}</h3>
+                    <p className="text-gray-300 text-lg mb-8">{features[activeFeature].description}</p>
+                    <Link 
+                      to={features[activeFeature].link}
+                      className={`inline-flex items-center px-6 py-3 rounded-lg bg-gradient-to-r ${features[activeFeature].bgGradient} text-white font-medium shadow-lg transform transition hover:scale-105`}
+                    >
+                      Explore {features[activeFeature].title}
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                    </Link>
+                  </motion.div>
+                </AnimatePresence>
+
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={`image-${activeFeature}`}
+                    className="app-screen-container mx-auto"
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <div className="relative app-screen">
+                      {/* Simulated device frame */}
+                      <div className="absolute inset-0 border-[12px] border-gray-800 rounded-3xl z-10 pointer-events-none"></div>
+                      <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-1/3 h-6 bg-gray-800 rounded-b-xl z-20 pointer-events-none"></div>
+                      
+                      {/* Screen content */}
+                      <div className="overflow-hidden rounded-2xl relative">
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-white/20 animate-gleam z-10"></div>
+                        <div className={`pt-6 pb-12 px-4 bg-gradient-to-br ${features[activeFeature].bgGradient} bg-opacity-10`}>
+                          {features[activeFeature].hasBothImages ? (
+                            <div className="flex flex-col items-center space-y-6">
+                              <h4 className="text-white text-lg font-medium">Complete Exercise Library</h4>
+                              <div className="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-8">
+                                <div className="relative">
+                                  <div className="absolute -inset-1 bg-gradient-to-r from-amber-400 to-orange-500 rounded-lg blur opacity-30 animate-pulse"></div>
+                                  <div className="relative bg-gray-800 rounded-lg p-1">
+                                    <img 
+                                      src={titanImage} 
+                                      alt="Male Exercise Demonstrations" 
+                                      className="w-44 h-auto object-contain rounded shadow-lg"
+                                    />
+                                    <div className="absolute bottom-2 left-0 right-0 text-center text-xs text-white bg-black/50 py-1">Male Exercises</div>
+                                  </div>
+                                </div>
+                                <div className="relative">
+                                  <div className="absolute -inset-1 bg-gradient-to-r from-amber-400 to-orange-500 rounded-lg blur opacity-30 animate-pulse"></div>
+                                  <div className="relative bg-gray-800 rounded-lg p-1">
+                                    <img 
+                                      src={femaleTitanImage} 
+                                      alt="Female Exercise Demonstrations" 
+                                      className="w-44 h-auto object-contain rounded shadow-lg"
+                                    />
+                                    <div className="absolute bottom-2 left-0 right-0 text-center text-xs text-white bg-black/50 py-1">Female Exercises</div>
+                                  </div>
+                                </div>
+                              </div>
+                              <p className="text-white/70 text-sm text-center">500+ exercises with proper form demonstrations</p>
+                            </div>
+                          ) : features[activeFeature].hasSplitView ? (
+                            <div className="flex flex-col items-center space-y-6">
+                              <h4 className="text-white text-lg font-medium">Manage Your Training</h4>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 w-full max-w-xl mx-auto">
+                                {features[activeFeature].splitViewLinks.map((item, idx) => (
+                                  <Link 
+                                    key={idx}
+                                    to={item.link}
+                                    className="group relative"
+                                  >
+                                    <div className="absolute -inset-1 bg-gradient-to-r from-orange-400 to-amber-500 rounded-xl blur opacity-25 group-hover:opacity-50 transition duration-300"></div>
+                                    <div className="relative bg-gray-800 rounded-xl p-5 border border-gray-700 hover:border-amber-400 transition duration-300">
+                                      <div className="flex items-start space-x-3">
+                                        <div className="w-10 h-10 rounded-full bg-amber-500 flex items-center justify-center text-xl">
+                                          {item.icon}
+                                        </div>
+                                        <div>
+                                          <h5 className="text-white font-bold">{item.title}</h5>
+                                          <p className="text-gray-300 text-sm">{item.subtitle}</p>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </Link>
+                                ))}
+                              </div>
+                              <div className="w-full max-w-xl bg-black/30 rounded-xl p-4">
+                                <div className="flex justify-between items-center text-amber-300 text-sm font-semibold mb-2">
+                                  <span>Recent Workout: Push Day</span>
+                                  <span>3 days ago</span>
+                                </div>
+                                <div className="space-y-2">
+                                  <div className="flex justify-between text-white text-xs">
+                                    <span>Bench Press</span>
+                                    <span>3 × 8 @ 85kg</span>
+                                  </div>
+                                  <div className="flex justify-between text-white text-xs">
+                                    <span>Shoulder Press</span>
+                                    <span>3 × 10 @ 45kg</span>
+                                  </div>
+                                  <div className="flex justify-between text-white text-xs">
+                                    <span>Tricep Extensions</span>
+                                    <span>3 × 12 @ 25kg</span>
+                                  </div>
+                                </div>
+                                <div className="mt-3 pt-3 border-t border-gray-700">
+                                  <div className="flex justify-between items-center">
+                                    <span className="text-white text-xs">Next workout: Leg Day</span>
+                                    <span className="text-green-400 text-xs font-medium bg-green-900/30 px-2 py-1 rounded">Tomorrow</span>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="mt-2 flex justify-center space-x-3">
+                                <div className="bg-amber-500/20 border border-amber-500/30 rounded-full px-3 py-1 text-xs text-amber-300 flex items-center">
+                                  <span className="mr-1">⏱️</span> Track time
+                                </div>
+                                <div className="bg-amber-500/20 border border-amber-500/30 rounded-full px-3 py-1 text-xs text-amber-300 flex items-center">
+                                  <span className="mr-1">📊</span> Stats
+                                </div>
+                                <div className="bg-amber-500/20 border border-amber-500/30 rounded-full px-3 py-1 text-xs text-amber-300 flex items-center">
+                                  <span className="mr-1">🔄</span> History
+                                </div>
+                              </div>
+                            </div>
+                          ) : (
+                            <img 
+                              src={features[activeFeature].image} 
+                              alt={features[activeFeature].title} 
+                              className={`w-full max-w-md mx-auto rounded-lg shadow-lg ${features[activeFeature].specialStyle || 'h-auto object-contain'}`}
+                            />
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                </AnimatePresence>
+              </div>
+            </div>
+
+            {/* Pagination dots for mobile */}
+            <div className="flex justify-center pb-6">
+              {features.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => {
+                    setActiveFeature(index);
+                    setIsAutoPlaying(false);
+                  }}
+                  className={`w-3 h-3 mx-1 rounded-full transition-all ${
+                    activeFeature === index 
+                      ? 'bg-white' 
+                      : 'bg-gray-600 hover:bg-gray-500'
+                  }`}
+                  aria-label={`View feature ${index + 1}`}
+                />
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 
