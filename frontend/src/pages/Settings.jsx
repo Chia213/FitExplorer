@@ -18,7 +18,8 @@ function Settings() {
     changePremiumTheme, 
     unlockedThemes,
     isAdmin,
-    loading 
+    loading,
+    applyTheme
   } = useTheme();
   
   const [currentPassword, setCurrentPassword] = useState("");
@@ -48,17 +49,19 @@ function Settings() {
   const [isSavingPreferences, setIsSavingPreferences] = useState(false);
   const [showColorOptions, setShowColorOptions] = useState(false);
 
-  // Apply a premium theme
-  const applyTheme = async (themeKey) => {
+  // Replace the local applyTheme function with a wrapper that uses the useTheme hook's applyTheme
+  const handleApplyTheme = async (themeKey) => {
     try {
-      const success = await changePremiumTheme(themeKey);
+      const success = await applyTheme(themeKey); // Use the one from the hook
       if (success) {
         setSuccess(`Applied ${premiumThemes[themeKey].name} theme`);
-        setTimeout(() => setSuccess(null), 3000);
       } else {
         setError("Failed to apply theme. It may not be unlocked yet.");
-        setTimeout(() => setError(null), 3000);
       }
+      setTimeout(() => {
+        setSuccess(null);
+        setError(null);
+      }, 3000);
     } catch (error) {
       console.error("Error applying theme:", error);
       setError("There was an error applying the theme.");
@@ -66,7 +69,7 @@ function Settings() {
     }
   };
 
-  // Check for theme parameter in URL and apply it if available
+  // Update the useEffect to use our new handleApplyTheme function 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const themeParam = urlParams.get('theme');
@@ -75,7 +78,7 @@ function Settings() {
       // If we have a theme parameter and it's a valid theme, try to apply it
       setActiveTab("appearance");
       setTimeout(() => {
-        applyTheme(themeParam);
+        handleApplyTheme(themeParam);
         
         // Remove the theme parameter from URL without page reload
         const newUrl = window.location.pathname + 
@@ -83,7 +86,7 @@ function Settings() {
         window.history.replaceState({}, '', newUrl);
       }, 500);
     }
-  }, [loading, navigate, premiumThemes]);
+  }, [loading, navigate, premiumThemes, applyTheme]);
 
   // Apply language to the document
   useEffect(() => {
@@ -801,7 +804,7 @@ function Settings() {
                             </p>
                             
                             <button
-                              onClick={() => applyTheme(key)}
+                              onClick={() => handleApplyTheme(key)}
                               disabled={!isUnlocked && !isAdmin}
                               className={`w-full py-1.5 rounded-md text-center text-sm ${
                                 isUnlocked || isAdmin

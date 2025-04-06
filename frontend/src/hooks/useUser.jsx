@@ -1,13 +1,16 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useAuth } from './useAuth.jsx';
+import { useNavigate } from 'react-router-dom';
 
 const backendURL = 'http://localhost:8000';
 
 export const useUser = () => {
   const { user: authUser } = useAuth();
   const [userData, setUserData] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [unlockedFeatures, setUnlockedFeatures] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
   // Fetch user profile data
   const fetchUserData = useCallback(async () => {
@@ -25,11 +28,21 @@ export const useUser = () => {
       });
       
       if (!response.ok) {
-        throw new Error(`Failed to fetch user data: ${response.status}`);
+        if (response.status === 401) {
+          localStorage.removeItem("token");
+          navigate("/login");
+        } else {
+          throw new Error(`Failed to fetch user data: ${response.status}`);
+        }
+        return null;
       }
       
       const data = await response.json();
       setUserData(data);
+      
+      // Set unlocked features
+      setUnlockedFeatures(data.unlocked_features || []);
+      
       return data;
     } catch (err) {
       console.error("Error fetching user data:", err);
@@ -38,7 +51,7 @@ export const useUser = () => {
     } finally {
       setLoading(false);
     }
-  }, [authUser]);
+  }, [authUser, navigate]);
 
   // Update user profile
   const updateUserProfile = useCallback(async (profileData) => {
@@ -64,6 +77,10 @@ export const useUser = () => {
       
       const data = await response.json();
       setUserData(prev => ({ ...prev, ...data }));
+      
+      // Update unlocked features
+      setUnlockedFeatures(data.unlocked_features || []);
+      
       return true;
     } catch (err) {
       console.error("Error updating user profile:", err);
@@ -183,6 +200,15 @@ export const useUser = () => {
     }
   }, [authUser, fetchUserData]);
 
+  // Function to check if a feature is unlocked
+  const hasFeature = useCallback((featureKey) => {
+    // Admin users have all features
+    if (userData?.is_admin) return true;
+    
+    // Check if the feature is in the unlocked features array
+    return unlockedFeatures.includes(featureKey);
+  }, [userData, unlockedFeatures]);
+
   return {
     userData,
     loading,
@@ -191,6 +217,8 @@ export const useUser = () => {
     updateUserProfile,
     updateUserStats,
     getUserStreak,
-    updateProfilePicture
+    updateProfilePicture,
+    unlockedFeatures,
+    hasFeature
   };
 }; 

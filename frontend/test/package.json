@@ -1,0 +1,13 @@
+{
+  "name": "template-test",
+  "version": "1.0.0",
+  "description": "Test script for workout templates",
+  "main": "template_test.js",
+  "type": "module",
+  "scripts": {
+    "test": "node template_test.js"
+  },
+  "dependencies": {
+    "node-fetch": "^3.3.0"
+  }
+} 

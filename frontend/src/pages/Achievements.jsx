@@ -174,8 +174,13 @@ const calculateAchievementStats = (achievements) => {
   // Find the next closest achievements to unlock
   const unachievedSorted = achievements
     .filter(a => !a.is_achieved)
-    .sort((a, b) => (a.progress / a.requirement) - (b.progress / b.requirement))
-    .reverse()
+    .sort((a, b) => {
+      // Calculate progress percentage for comparison
+      const aProgress = a.progress / a.requirement;
+      const bProgress = b.progress / b.requirement;
+      // Sort descending (highest percentage first)
+      return bProgress - aProgress;
+    })
     .slice(0, 3);
   
   return {
@@ -195,7 +200,7 @@ const getAchievementTimeline = (achievements) => {
       ...a,
       date: new Date(a.achieved_at)
     }))
-    .sort((a, b) => b.date - a.date); // Sort descending
+    .sort((a, b) => b.date - a.date); // Sort descending (newest first)
   
   // Group by month and year
   const groupedByMonth = {};
@@ -254,7 +259,7 @@ const achievementRewards = [
 function Achievements() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { userData, loading: userLoading } = useUser();
+  const { userData, loading: userLoading, unlockedFeatures, hasFeature } = useUser();
   const { unlockedThemes } = useTheme(); // Get unlocked themes from the theme hook
   const { 
     achievements: hookAchievements, 
@@ -335,21 +340,53 @@ function Achievements() {
     };
     
     initializeAchievements();
-  }, []);
+  }, [user, userData, unlockedFeatures]);
 
-  // Load claimed rewards from localStorage on component mount
   useEffect(() => {
-    const savedRewards = localStorage.getItem('claimedRewards');
-    if (savedRewards) {
-      setClaimedRewards(JSON.parse(savedRewards));
+    // Load claimed rewards from localStorage
+    const storedClaimedRewards = localStorage.getItem('claimedRewards');
+    if (storedClaimedRewards) {
+      try {
+        setClaimedRewards(JSON.parse(storedClaimedRewards));
+      } catch (error) {
+        console.error("Error parsing claimed rewards:", error);
+        setClaimedRewards([]);
+      }
     }
     
-    // Load reward status from localStorage
-    const savedStatus = localStorage.getItem('rewardStatus');
-    if (savedStatus) {
-      setRewardStatus(JSON.parse(savedStatus));
+    // Sync with backend data if user is logged in
+    if (user && !userLoading && userData) {
+      // Check if user has unlocked features and update UI accordingly
+      const checkFeatures = async () => {
+        try {
+          // If user has unlocked themes but the claimedRewards doesn't include it, add it
+          if (hasFeature('themes') && !claimedRewards.includes('reward-1')) {
+            const updatedRewards = [...claimedRewards, 'reward-1'];
+            setClaimedRewards(updatedRewards);
+            localStorage.setItem('claimedRewards', JSON.stringify(updatedRewards));
+          }
+          
+          // If user has unlocked workout templates but the claimedRewards doesn't include it, add it
+          if (hasFeature('workouts') && !claimedRewards.includes('reward-2')) {
+            const updatedRewards = [...claimedRewards, 'reward-2'];
+            setClaimedRewards(updatedRewards);
+            localStorage.setItem('claimedRewards', JSON.stringify(updatedRewards));
+          }
+          
+          // If user has unlocked stats but the claimedRewards doesn't include it, add it
+          if (hasFeature('stats') && !claimedRewards.includes('reward-3')) {
+            const updatedRewards = [...claimedRewards, 'reward-3'];
+            setClaimedRewards(updatedRewards);
+            localStorage.setItem('claimedRewards', JSON.stringify(updatedRewards));
+          }
+        } catch (error) {
+          console.error("Error syncing features with claimed rewards:", error);
+        }
+      };
+      
+      checkFeatures();
     }
-  }, []);
+  }, [user, userLoading, userData, unlockedFeatures, hasFeature]);
 
   const fetchAchievements = async () => {
     try {
@@ -571,8 +608,38 @@ function Achievements() {
   };
 
   const filteredAchievements = selectedCategory === "all"
-    ? achievements
-    : achievements.filter(achievement => achievement.category === selectedCategory);
+    ? [...achievements].sort((a, b) => {
+        // Put achieved achievements first and sort them by date (newest first)
+        if (a.is_achieved && b.is_achieved) {
+          // If both are achieved, sort by date (newest first)
+          return new Date(b.achieved_at || 0) - new Date(a.achieved_at || 0);
+        } else if (a.is_achieved) {
+          // If only a is achieved, it comes first
+          return -1;
+        } else if (b.is_achieved) {
+          // If only b is achieved, it comes first
+          return 1;
+        }
+        // If neither is achieved, keep original order
+        return 0;
+      })
+    : [...achievements]
+        .filter(achievement => achievement.category === selectedCategory)
+        .sort((a, b) => {
+          // Put achieved achievements first and sort them by date (newest first)
+          if (a.is_achieved && b.is_achieved) {
+            // If both are achieved, sort by date (newest first)
+            return new Date(b.achieved_at || 0) - new Date(a.achieved_at || 0);
+          } else if (a.is_achieved) {
+            // If only a is achieved, it comes first
+            return -1;
+          } else if (b.is_achieved) {
+            // If only b is achieved, it comes first
+            return 1;
+          }
+          // If neither is achieved, keep original order
+          return 0;
+        });
 
   const categories = ["all", "workout", "streak", "profile", "customization", "nutrition", "social", "app"];
 
@@ -711,16 +778,127 @@ function Achievements() {
     };
   };
 
+  // Helper function to save workout templates
+  const saveWorkoutTemplates = async () => {
+    try {
+      console.log("===== WORKOUT TEMPLATE SAVING PROCESS START =====");
+      
+      // Verify if user already has templates
+      console.log("Checking for existing templates...");
+      const existingRoutinesResponse = await fetch(`${backendURL}/user/routines`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      
+      if (!existingRoutinesResponse.ok) {
+        console.error("Failed to fetch existing routines");
+      } else {
+        const existingRoutines = await existingRoutinesResponse.json();
+        const existingTemplates = existingRoutines.filter(r => 
+          (r.exercises && r.exercises.length > 0) || 
+          (r.workout && r.workout.is_template === true)
+        );
+        console.log(`User has ${existingTemplates.length} existing templates: ${existingTemplates.map(t => t.name).join(', ')}`);
+      }
+      
+      console.log("Initiating API call to save workout templates...");
+      
+      // Check if token exists
+      if (!token) {
+        console.error("No authentication token found");
+        setSuccessMessage("");
+        setError("Authentication required. Please log in.");
+        return false;
+      }
+      
+      // Make API call to save templates
+      const response = await fetch(`${backendURL}/user/workouts/save-templates`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      
+      console.log(`API response status: ${response.status}`);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Failed to save workout templates:", errorText);
+        setSuccessMessage("");
+        setError("Failed to save workout templates. Please try again.");
+        return false;
+      }
+      
+      const data = await response.json();
+      console.log("Full response data:", data);
+      
+      // Verify templates were created by fetching routines again
+      console.log("Verifying templates were created...");
+      const verifyResponse = await fetch(`${backendURL}/user/routines`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      
+      if (verifyResponse.ok) {
+        const routines = await verifyResponse.json();
+        const templates = routines.filter(r => 
+          (r.exercises && r.exercises.length > 0) || 
+          (r.workout && r.workout.is_template === true)
+        );
+        console.log(`After saving, found ${templates.length} templates`);
+        
+        // Log details of each template for verification
+        templates.forEach(template => {
+          const exercises = template.exercises || (template.workout ? template.workout.exercises : []);
+          console.log(`Template: ${template.name}, has ${exercises ? exercises.length : 0} exercises`);
+          
+          if (exercises && exercises.length > 0) {
+            exercises.forEach(ex => {
+              console.log(`  - Exercise: ${ex.name}, has ${ex.sets ? ex.sets.length : 0} sets`);
+            });
+          }
+        });
+      }
+      
+      console.log("===== WORKOUT TEMPLATE SAVING PROCESS COMPLETE =====");
+      
+      if (data.templates_added > 0) {
+        setSuccessMessage(`Successfully added ${data.templates_added} expert workout templates to your routines! Go to Routines to view them.`);
+        setError("");
+        
+        // Update claimed rewards state
+        const updatedClaimedRewards = [...claimedRewards, "workoutTemplates"];
+        setClaimedRewards(updatedClaimedRewards);
+        localStorage.setItem("claimedRewards", JSON.stringify(updatedClaimedRewards));
+        
+        return true;
+      } else {
+        setSuccessMessage("You already have all available expert workout templates.");
+        setError("");
+        return true;
+      }
+    } catch (err) {
+      console.error("Error saving workout templates:", err);
+      setSuccessMessage("");
+      setError("Failed to save workout templates. Please try again.");
+      return false;
+    }
+  };
+
   // Modify the claimReward function to use the useTheme hook
   const claimReward = (reward) => {
     if (isRewardClaimed(reward.id)) {
-      // If the reward is already claimed, don't do anything
+      // If the reward is already claimed, show info notification
+      setNotification({
+        show: true,
+        message: `You've already claimed the ${reward.title} reward.`,
+        type: "info"
+      });
       return;
     }
     
     // Check if user has enough achievements
-    const achievedCount = achievements.filter(a => a.is_achieved).length;
-    if (achievedCount < reward.requiredAchievements) {
+    const achievedCount = achievements?.filter(a => a.is_achieved)?.length || 0;
+    if (!isAdmin && achievedCount < reward.requiredAchievements) {
       setNotification({
         show: true,
         message: `You need ${reward.requiredAchievements - achievedCount} more achievements to claim this reward.`,
@@ -742,58 +920,103 @@ function Achievements() {
     // For non-admin users or non-theme rewards, proceed with claiming
     setLoading(true);
     
-    setTimeout(() => {
+    const processReward = async () => {
       let description = '';
+      let success = true;
       
-      // Handle based on feature type
-      switch(reward.feature) {
-        case 'themes':
-          // Only for non-admin users
-          if (!isAdmin) {
-            // Format the theme key with dashes instead of just removing spaces
-            const themeKey = reward.title.toLowerCase().replace(/\s+/g, '-');
-            // First unlock the theme
-            unlockTheme(themeKey);
-            // Then update the description
-            description = `You've unlocked a premium theme: ${reward.title}. Go to Settings to apply it!`;
+      try {
+        // Handle based on feature type
+        switch(reward.feature) {
+          case 'themes':
+            // Only for non-admin users
+            if (!isAdmin) {
+              // Format the theme key with dashes for consistency
+              const themeKey = reward.title.toLowerCase().replace(/\s+/g, '-');
+              
+              // First unlock the theme
+              await unlockTheme(themeKey);
+              
+              // Then update the description
+              description = `You've unlocked a premium theme: ${reward.title}. Go to Settings to apply it!`;
+            }
+            break;
+            
+          case 'workouts':
+            // Save workout templates to user's routines
+            console.log("Claiming workout templates reward...");
+            const templatesSaved = await saveWorkoutTemplates();
+            console.log("Templates save result:", templatesSaved);
+            
+            if (templatesSaved) {
+              description = `You've unlocked expert workout templates! Check them out in My Routines.`;
+            } else {
+              description = `Failed to save workout templates. Please try again later.`;
+              success = false;
+            }
+            break;
+            
+          case 'stats':
+            // Logic for unlocking advanced statistics
+            description = `You've unlocked advanced statistics and progress analysis!`;
+            break;
+            
+          case 'boostStreak':
+            // Logic for boosting streak
+            description = `You've boosted your streak by 5 days!`;
+            break;
+            
+          default:
+            description = `You've claimed the ${reward.title} reward.`;
+        }
+        
+        // Update claimed rewards in localStorage only if successful
+        if (success) {
+          // Update claimed rewards
+          const updatedClaimedRewards = [...claimedRewards, reward.id];
+          setClaimedRewards(updatedClaimedRewards);
+          localStorage.setItem('claimedRewards', JSON.stringify(updatedClaimedRewards));
+
+          // Refresh achievements to update the UI
+          if (hookFetchAchievements) {
+            await hookFetchAchievements();
           }
-          break;
           
-        case 'boostStreak':
-          // Logic for boosting streak
-          setStreak(prev => ({
-            ...prev,
-            value: prev.value + 5
-          }));
-          description = `You've boosted your streak by 5 days!`;
-          break;
+          // Show success notification
+          setNotification({
+            show: true,
+            message: description,
+            type: "success"
+          });
           
-        default:
-          description = `You've claimed the ${reward.title} reward.`;
+          // Also update the modal information
+          setRewardModalInfo({
+            show: true,
+            title: "Reward Claimed!",
+            message: description,
+            reward: reward
+          });
+        } else {
+          // Show error notification
+          setNotification({
+            show: true,
+            message: "Failed to claim reward. Please try again later.",
+            type: "error"
+          });
+        }
+      } catch (err) {
+        console.error("Error processing reward:", err);
+        setNotification({
+          show: true,
+          message: "Error claiming reward. Please try again later.",
+          type: "error"
+        });
+      } finally {
+        setLoading(false);
       }
-      
-      // Update claimed rewards
-      const updatedClaimedRewards = [...claimedRewards, reward.id];
-      setClaimedRewards(updatedClaimedRewards);
-      localStorage.setItem('claimedRewards', JSON.stringify(updatedClaimedRewards));
-      
-      // Show success notification
-      setNotification({
-        show: true,
-        message: description,
-        type: "success"
-      });
-      
-      setLoading(false);
-      
-      // Also update the modal information
-      setRewardModalInfo({
-        show: true,
-        title: "Reward Claimed!",
-        message: description,
-        reward: reward
-      });
-    }, 1000);
+    };
+
+    // Execute the reward processing
+    processReward();
   };
 
   // Add function to use a reward
@@ -828,6 +1051,34 @@ function Achievements() {
           // Navigate to settings page with the theme key as query parameter
           navigate(`/settings?tab=appearance&theme=${themeKey}`);
         }
+        break;
+        
+      // For workout templates
+      case 'workouts':
+        description = `View your expert workout templates`;
+        
+        setNotification({
+          show: true,
+          message: "Navigating to your workout templates...",
+          type: "success"
+        });
+        
+        // Navigate to the routines page where templates would be shown
+        navigate('/routines?tab=templates');
+        break;
+        
+      // For statistics and analytics features
+      case 'stats':
+        description = `View your advanced statistics`;
+        
+        setNotification({
+          show: true,
+          message: "Navigating to advanced statistics...",
+          type: "success"
+        });
+        
+        // Navigate to the stats page
+        navigate('/stats?view=advanced');
         break;
         
       // Other feature types...
@@ -1098,10 +1349,52 @@ function Achievements() {
   
   // Function to check if a reward is claimed
   const isRewardClaimed = (rewardId) => {
-    // For theme rewards, verify that at least one premium theme is actually unlocked
-    if (rewardId === "reward-1") { // Premium Themes reward ID
-      return claimedRewards.includes(rewardId) && hasUnlockedPremiumThemes(unlockedThemes);
+    // For admin users, show rewards as claimable but not claimed unless explicitly claimed
+    if (isAdmin) {
+      return claimedRewards.includes(rewardId);
     }
+    
+    // Get the count of achieved achievements
+    const achievedCount = achievements?.filter(a => a.is_achieved)?.length || 0;
+    
+    // Premium Themes reward (reward-1)
+    if (rewardId === "reward-1") {
+      // Check if claimed locally AND if user has at least one unlocked premium theme
+      const hasThemes = hasUnlockedPremiumThemes(unlockedThemes);
+      // Check if user has the 'themes' feature unlocked in their profile
+      const hasFeatureUnlocked = hasFeature('themes');
+      
+      return (claimedRewards.includes(rewardId) && hasThemes) || hasFeatureUnlocked;
+    }
+    
+    // Expert Workout Templates reward (reward-2)
+    else if (rewardId === "reward-2") {
+      // Required achievements count for this reward
+      const requiredCount = 10;
+      
+      // Has the user claimed this reward AND achieved enough achievements?
+      const hasClaimedAndQualified = claimedRewards.includes(rewardId) && achievedCount >= requiredCount;
+      
+      // Or is the feature unlocked in their profile?
+      const hasFeatureUnlocked = hasFeature('workouts');
+      
+      return hasClaimedAndQualified || hasFeatureUnlocked;
+    }
+    
+    // Stats Analysis reward (reward-3)
+    else if (rewardId === "reward-3") {
+      // Required achievements count for this reward
+      const requiredCount = 15;
+      
+      // Has the user claimed this reward AND achieved enough achievements?
+      const hasClaimedAndQualified = claimedRewards.includes(rewardId) && achievedCount >= requiredCount;
+      
+      // Or is the feature unlocked in their profile?
+      const hasFeatureUnlocked = hasFeature('stats');
+      
+      return hasClaimedAndQualified || hasFeatureUnlocked;
+    }
+    
     // For other rewards, just check if they're in claimedRewards
     return claimedRewards.includes(rewardId);
   };

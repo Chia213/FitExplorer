@@ -83,16 +83,53 @@ function Routines() {
 
   const fetchRoutines = async (token) => {
     try {
-      const response = await fetch(`${backendURL}/routines`, {
+      console.log("Fetching routines from backend...");
+      const response = await fetch(`${backendURL}/user/routines`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
       if (!response.ok) throw new Error("Failed to fetch routines");
 
       const data = await response.json();
-      setRoutines(data);
+      console.log(`Received ${data.length} routines from backend`);
+      
+      // Check specifically for templates
+      const templates = data.filter(routine => {
+        // For newly created templates using the updated backend endpoint
+        if (routine.exercises && routine.exercises.length > 0) {
+          console.log(`Found template routine: ${routine.name} with ${routine.exercises.length} exercises`);
+          return true;
+        }
+        // For legacy templates
+        if (routine.workout && routine.workout.is_template === true) {
+          console.log(`Found legacy template routine: ${routine.name}`);
+          return true;
+        }
+        return false;
+      });
+      
+      console.log(`Found ${templates.length} template routines`);
+      
+      // Process templates to ensure exercises are accessible
+      const processedData = data.map(routine => {
+        // Handle the new format where exercises are directly on the routine
+        if (routine.exercises && routine.exercises.length > 0) {
+          return {
+            ...routine,
+            workout: {
+              ...routine.workout,
+              exercises: routine.exercises,
+              is_template: true
+            }
+          };
+        }
+        return routine;
+      });
+      
+      setRoutines(processedData);
       setLoading(false);
     } catch (err) {
+      console.error("Failed to load routines:", err);
       setError("Failed to load routines. Please try again.");
       setLoading(false);
     }

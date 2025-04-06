@@ -44,7 +44,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import uuid
 import os
-from fastapi import FastAPI, Depends, HTTPException, File, UploadFile, BackgroundTasks, Body, Query
+from fastapi import FastAPI, Depends, HTTPException, File, UploadFile, BackgroundTasks, Body, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from background_task import send_summary_emails
@@ -928,36 +928,99 @@ def delete_routine(
     return {"message": "Routine deleted successfully"}
 
 
-@app.get("/routines", response_model=list[RoutineResponse])
-def get_routines(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+@app.get("/user/routines")
+async def get_routines(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     try:
-        routines = db.query(Routine)\
-            .options(
-                joinedload(Routine.workout)
-                .joinedload(Workout.exercises)
-                .joinedload(Exercise.sets)
-        )\
-            .filter(Routine.user_id == user.id)\
-            .order_by(Routine.created_at.desc())\
-            .all()
-
-        # Transform routines to include folder_name
-        return [
-            {
+        print(f"==== FETCHING ROUTINES START ====")
+        print(f"Fetching routines for user: {user.username} (ID: {user.id})")
+        
+        # First check how many templates are in the system for this user
+        template_workouts = db.query(Workout).filter(
+            Workout.user_id == user.id,
+            Workout.is_template == True
+        ).all()
+        print(f"User has {len(template_workouts)} template workouts in database")
+        for tw in template_workouts:
+            print(f"  - Template workout: {tw.name} (ID: {tw.id}, is_template: {tw.is_template})")
+            
+        # Get all routines with their associated workouts and exercises
+        routines = db.query(Routine).options(
+            joinedload(Routine.workout).options(
+                joinedload(Workout.exercises).joinedload(Exercise.sets)
+            )
+        ).filter(
+            Routine.user_id == user.id
+        ).all()
+        
+        print(f"Found {len(routines)} total routines for user")
+        
+        result = []
+        template_count = 0
+        
+        for routine in routines:
+            # Build dictionary with routine info
+            routine_dict = {
                 "id": routine.id,
                 "name": routine.name,
                 "workout_id": routine.workout_id,
-                "folder_id": routine.folder_id,
-                "folder_name": routine.folder.name if routine.folder else None,
-                "workout": routine.workout,
-                "created_at": routine.created_at,
-                "updated_at": routine.updated_at
+                "weight_unit": routine.weight_unit,
+                "created_at": routine.created_at.isoformat() if routine.created_at else None,
+                "exercises": []
             }
-            for routine in routines
-        ]
+            
+            # Check if this is a template routine
+            is_template = False
+            if routine.workout:
+                is_template = routine.workout.is_template
+                print(f"Routine: {routine.name} (ID: {routine.id}), linked to workout {routine.workout_id}, is_template: {is_template}")
+                
+                if is_template:
+                    template_count += 1
+                    # This is a template - gather exercises
+                    for exercise in routine.workout.exercises:
+                        exercise_dict = {
+                            "id": exercise.id,
+                            "name": exercise.name,
+                            "category": exercise.category,
+                            "is_cardio": exercise.is_cardio,
+                            "sets": []
+                        }
+                        
+                        # Add sets for this exercise
+                        for exercise_set in exercise.sets:
+                            set_dict = {
+                                "id": exercise_set.id,
+                                "weight": exercise_set.weight,
+                                "reps": exercise_set.reps,
+                                "distance": exercise_set.distance,
+                                "duration": exercise_set.duration,
+                                "notes": exercise_set.notes
+                            }
+                            exercise_dict["sets"].append(set_dict)
+                            
+                        routine_dict["exercises"].append(exercise_dict)
+                    
+                    print(f"  - Template has {len(routine_dict['exercises'])} exercises")
+                else:
+                    print(f"  - This is NOT a template routine")
+                    
+            result.append(routine_dict)
+        
+        print(f"Sending {len(result)} routines back to client, including {template_count} templates")
+        print(f"==== FETCHING ROUTINES COMPLETE ====")
+        
+        return result
     except Exception as e:
-        print(f"Error fetching routines: {e}")
-        raise HTTPException(status_code=500, detail="Error fetching routines")
+        print(f"Error fetching routines: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error fetching routines: {str(e)}"
+        )
 
 
 @app.post("/saved-programs", response_model=dict)
@@ -1669,4 +1732,411 @@ def get_workout_streak(
     except Exception as e:
         print(f"Error calculating workout streak: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error calculating workout streak: {str(e)}")
+
+
+@app.post("/user/themes/check-access")
+def check_theme_access(
+    theme_data: dict = Body(...),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Check if user has access to a specific theme"""
+    theme_key = theme_data.get("theme_key")
+    
+    if not theme_key:
+        raise HTTPException(status_code=400, detail="Theme key is required")
+    
+    # Default theme is always accessible
+    if theme_key == "default":
+        return {"has_access": True}
+    
+    # Admin users have access to all themes
+    if user.is_admin:
+        return {"has_access": True}
+    
+    # Check if theme is in user's unlocked themes
+    user_profile = db.query(UserProfile).filter(UserProfile.user_id == user.id).first()
+    
+    if not user_profile:
+        return {"has_access": False}
+    
+    # Get the unlocked themes array
+    unlocked_themes = user_profile.unlocked_themes or []
+    
+    # Check if the requested theme is in the unlocked themes
+    has_access = theme_key in unlocked_themes
+    
+    return {"has_access": has_access}
+
+
+@app.post("/user/workouts/save-templates")
+async def save_workout_templates(
+    request: Request,
+    background_tasks: BackgroundTasks,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    try:
+        print(f"==== SAVE WORKOUT TEMPLATES START ====")
+        print(f"Request from user: {user.username} (ID: {user.id})")
+        
+        # Define expert workout templates
+        expert_templates = [
+            {
+                "name": "Full Body Strength",
+                "description": "A comprehensive full body workout focusing on strength development",
+                "is_template": True,
+                "exercises": [
+                    {"name": "Barbell Squat", "sets": 4, "reps": 8, "weight": 0, "notes": "Focus on form"},
+                    {"name": "Bench Press", "sets": 4, "reps": 8, "weight": 0, "notes": "Control the descent"},
+                    {"name": "Deadlift", "sets": 3, "reps": 8, "weight": 0, "notes": "Maintain neutral spine"},
+                    {"name": "Pull-ups", "sets": 3, "reps": 8, "weight": 0, "notes": "Full range of motion"},
+                    {"name": "Overhead Press", "sets": 3, "reps": 10, "weight": 0, "notes": "Brace your core"}
+                ]
+            },
+            {
+                "name": "HIIT Cardio",
+                "description": "High intensity interval training for cardiovascular health and fat loss",
+                "is_template": True,
+                "exercises": [
+                    {"name": "Sprints", "sets": 10, "reps": 1, "duration": 30, "rest": 30, "notes": "All out effort"},
+                    {"name": "Burpees", "sets": 5, "reps": 15, "rest": 45, "notes": "Quick transitions"},
+                    {"name": "Mountain Climbers", "sets": 5, "reps": 30, "rest": 45, "notes": "Keep hips low"},
+                    {"name": "Jump Squats", "sets": 5, "reps": 15, "rest": 45, "notes": "Explosive power"}
+                ]
+            },
+            {
+                "name": "Upper Body Focus",
+                "description": "Targeted upper body workout for strength and definition",
+                "is_template": True,
+                "exercises": [
+                    {"name": "Bench Press", "sets": 4, "reps": 8, "weight": 0, "notes": "Control the movement"},
+                    {"name": "Lat Pulldown", "sets": 4, "reps": 10, "weight": 0, "notes": "Engage your lats"},
+                    {"name": "Overhead Press", "sets": 3, "reps": 10, "weight": 0, "notes": "Keep core tight"},
+                    {"name": "Dumbbell Row", "sets": 3, "reps": 10, "weight": 0, "notes": "Pull to hip"},
+                    {"name": "Tricep Pushdown", "sets": 3, "reps": 12, "weight": 0, "notes": "Isolate triceps"},
+                    {"name": "Bicep Curl", "sets": 3, "reps": 12, "weight": 0, "notes": "Control the curl"}
+                ]
+            }
+        ]
+        
+        # First check all workouts with is_template=True
+        all_template_workouts = db.query(Workout).filter(
+            Workout.is_template == True
+        ).all()
+        print(f"All template workouts in system: {len(all_template_workouts)}")
+        for w in all_template_workouts:
+            print(f"  - ID: {w.id}, Name: {w.name}, User ID: {w.user_id}")
+        
+        # Now check user's specific template workouts
+        template_workouts = db.query(Workout).filter(
+            Workout.user_id == user.id,
+            Workout.is_template == True
+        ).all()
+        print(f"User's template workouts found: {len(template_workouts)}")
+        for w in template_workouts:
+            print(f"  - ID: {w.id}, Name: {w.name}, is_template value: {w.is_template}")
+        
+        # First check if user has any routines
+        print(f"Checking existing routines for user {user.username} (ID: {user.id})...")
+        routines = db.query(Routine).filter(Routine.user_id == user.id).all()
+        print(f"Found {len(routines)} existing routines")
+        
+        # Get existing template names to avoid duplicates
+        existing_template_names = []
+        template_workout_ids = []
+        
+        for r in routines:
+            if r.workout_id is not None:
+                # Load the associated workout explicitly
+                workout = db.query(Workout).filter(Workout.id == r.workout_id).first()
+                if workout and workout.is_template:
+                    existing_template_names.append(r.name)
+                    template_workout_ids.append(r.workout_id)
+                    print(f"Found existing template: {r.name} (Workout ID: {r.workout_id}, is_template: {workout.is_template})")
+                
+        print(f"Existing template names: {existing_template_names}")
+        print(f"Associated workout IDs: {template_workout_ids}")
+        
+        # Add only new templates
+        templates_added = 0
+        for template in expert_templates:
+            if template["name"] not in existing_template_names:
+                print(f"Creating new template: {template['name']}")
+                
+                # Create workout first with is_template=True
+                new_workout = Workout(
+                    name=template["name"],
+                    user_id=user.id,
+                    date=datetime.now(timezone.utc),
+                    weight_unit="kg",
+                    is_template=True
+                )
+                db.add(new_workout)
+                db.commit()
+                db.refresh(new_workout)
+                
+                # CRITICAL: Verify workout was created with is_template=True
+                print(f"Workout created with ID: {new_workout.id}, is_template: {new_workout.is_template}")
+                
+                # Double check the is_template flag is set
+                db_workout = db.query(Workout).filter(Workout.id == new_workout.id).first()
+                if not db_workout.is_template:
+                    print(f"ERROR: Workout {db_workout.id} has is_template=False. Fixing...")
+                    db_workout.is_template = True
+                    db.commit()
+                    db.refresh(db_workout)
+                    print(f"After fix: is_template is now {db_workout.is_template}")
+                
+                # Create routine linked to workout
+                new_routine = Routine(
+                    name=template["name"],
+                    user_id=user.id,
+                    workout_id=new_workout.id,
+                    weight_unit="kg",
+                    created_at=datetime.now(timezone.utc)
+                )
+                db.add(new_routine)
+                db.commit()
+                db.refresh(new_routine)
+                print(f"Routine created with ID: {new_routine.id}, linked to workout ID: {new_routine.workout_id}")
+                
+                # Verify routine was created properly
+                db_routine = db.query(Routine).options(
+                    joinedload(Routine.workout)
+                ).filter(Routine.id == new_routine.id).first()
+                
+                if db_routine and db_routine.workout:
+                    print(f"Routine verification - Name: {db_routine.name}, Workout ID: {db_routine.workout_id}")
+                    print(f"Associated workout is_template: {db_routine.workout.is_template}")
+                else:
+                    print(f"ERROR: Could not verify routine {new_routine.id} properly")
+                
+                # Add exercises to workout
+                for exercise_data in template["exercises"]:
+                    new_exercise = Exercise(
+                        name=exercise_data["name"],
+                        category="Uncategorized",
+                        is_cardio=False,
+                        workout_id=new_workout.id
+                    )
+                    db.add(new_exercise)
+                    db.commit()
+                    db.refresh(new_exercise)
+                    print(f"  - Added exercise: {new_exercise.name} (ID: {new_exercise.id})")
+                    
+                    # Add sets for this exercise
+                    sets_added = 0
+                    for _ in range(exercise_data["sets"]):
+                        new_set = Set(
+                            weight=0,
+                            reps=exercise_data.get("reps", 0),
+                            distance=exercise_data.get("distance", None),
+                            duration=exercise_data.get("duration", None),
+                            notes=exercise_data.get("notes", ""),
+                            exercise_id=new_exercise.id
+                        )
+                        db.add(new_set)
+                        sets_added += 1
+                    
+                    db.commit()
+                    print(f"    - Added {sets_added} sets to exercise")
+                
+                templates_added += 1
+        
+        # Update user profile to mark workout templates as unlocked
+        user_profile = db.query(UserProfile).filter(UserProfile.user_id == user.id).first()
+        
+        if not user_profile:
+            # Create profile if it doesn't exist
+            print("Creating new user profile...")
+            user_profile = UserProfile(
+                user_id=user.id,
+                unlocked_features=["workouts"]
+            )
+            db.add(user_profile)
+        else:
+            # Ensure unlocked_features exists and add workouts
+            print("Updating existing user profile...")
+            unlocked_features = user_profile.unlocked_features or []
+            if "workouts" not in unlocked_features:
+                unlocked_features.append("workouts")
+                user_profile.unlocked_features = unlocked_features
+                
+        db.commit()
+        
+        # Double check that templates were created correctly
+        print("Final verification of templates...")
+        final_templates = db.query(Routine).join(Workout).filter(
+            Routine.user_id == user.id,
+            Workout.is_template == True
+        ).all()
+        
+        print(f"Final templates count: {len(final_templates)}")
+        for template in final_templates:
+            print(f"Template: {template.name}, Workout ID: {template.workout_id}")
+            # Load the workout with exercises
+            workout = db.query(Workout).options(
+                joinedload(Workout.exercises).joinedload(Exercise.sets)
+            ).filter(Workout.id == template.workout_id).first()
+            
+            if workout:
+                print(f"  - Workout found: {workout.name}, is_template: {workout.is_template}")
+                print(f"  - Has {len(workout.exercises) if workout.exercises else 0} exercises")
+            else:
+                print(f"  - ERROR: Workout {template.workout_id} not found")
+                
+        print(f"==== SAVE WORKOUT TEMPLATES COMPLETE ====")
+            
+        return {
+            "success": True,
+            "message": f"Added {templates_added} expert workout templates to your routines",
+            "templates_added": templates_added
+        }
+    except Exception as e:
+        db.rollback()
+        print(f"Error saving workout templates: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error saving workout templates: {str(e)}"
+        )
+
+
+@app.get("/routine-folders", response_model=list[RoutineFolderResponse])
+def get_routine_folders(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get all routine folders for the user"""
+    try:
+        folders = db.query(RoutineFolder).filter(
+            RoutineFolder.user_id == user.id
+        ).all()
+        
+        return folders
+    except Exception as e:
+        print(f"Error fetching routine folders: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error fetching routine folders: {str(e)}")
+
+
+@app.post("/routine-folders", response_model=RoutineFolderResponse)
+def create_routine_folder(
+    folder: RoutineFolderCreate,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Create a new routine folder"""
+    try:
+        # Check if folder with this name already exists
+        existing_folder = db.query(RoutineFolder).filter(
+            RoutineFolder.user_id == user.id,
+            RoutineFolder.name == folder.name
+        ).first()
+        
+        if existing_folder:
+            raise HTTPException(status_code=400, detail=f"Folder with name '{folder.name}' already exists")
+        
+        # Create new folder
+        new_folder = RoutineFolder(
+            name=folder.name,
+            user_id=user.id,
+            color=folder.color
+        )
+        
+        db.add(new_folder)
+        db.commit()
+        db.refresh(new_folder)
+        
+        return new_folder
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        print(f"Error creating routine folder: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error creating routine folder: {str(e)}")
+
+
+@app.put("/routines/{routine_id}/folder", response_model=dict)
+def assign_routine_to_folder(
+    routine_id: int,
+    folder_data: dict = Body(...),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Assign a routine to a folder"""
+    try:
+        # Check if routine exists and belongs to user
+        routine = db.query(Routine).filter(
+            Routine.id == routine_id,
+            Routine.user_id == user.id
+        ).first()
+        
+        if not routine:
+            raise HTTPException(status_code=404, detail="Routine not found")
+        
+        folder_id = folder_data.get("folder_id")
+        
+        # If folder_id is None, remove from current folder
+        if folder_id is None:
+            routine.folder_id = None
+            db.commit()
+            return {"message": "Routine removed from folder"}
+        
+        # Check if folder exists and belongs to user
+        folder = db.query(RoutineFolder).filter(
+            RoutineFolder.id == folder_id,
+            RoutineFolder.user_id == user.id
+        ).first()
+        
+        if not folder:
+            raise HTTPException(status_code=404, detail="Folder not found")
+        
+        # Assign routine to folder
+        routine.folder_id = folder_id
+        db.commit()
+        
+        return {"message": f"Routine assigned to folder '{folder.name}'"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        print(f"Error assigning routine to folder: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error assigning routine to folder: {str(e)}")
+
+
+@app.delete("/routine-folders/{folder_id}")
+def delete_routine_folder(
+    folder_id: int,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Delete a routine folder"""
+    try:
+        # Check if folder exists and belongs to user
+        folder = db.query(RoutineFolder).filter(
+            RoutineFolder.id == folder_id,
+            RoutineFolder.user_id == user.id
+        ).first()
+        
+        if not folder:
+            raise HTTPException(status_code=404, detail="Folder not found")
+        
+        # Update routines to remove folder_id reference
+        db.query(Routine).filter(
+            Routine.folder_id == folder_id
+        ).update({"folder_id": None})
+        
+        # Delete the folder
+        db.delete(folder)
+        db.commit()
+        
+        return {"message": f"Folder '{folder.name}' deleted successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        print(f"Error deleting routine folder: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error deleting routine folder: {str(e)}")
 

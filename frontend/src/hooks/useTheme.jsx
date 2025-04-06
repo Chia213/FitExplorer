@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { toast } from "react-hot-toast";
 
 // Define the API_URL constant
@@ -166,6 +166,59 @@ export function ThemeProvider({ children }) {
   // Check if user is admin - still use localStorage for this
   const isAdmin = localStorage.getItem("isAdmin") === "true";
 
+  // Declare function reference for memoization
+  const applyTheme = useCallback(async (targetTheme, targetMode = null) => {
+    // First check if user has access to this theme
+    const hasAccess = await checkThemeAccess(targetTheme);
+    
+    // Only allow admin or premium themes that have been unlocked
+    if (!hasAccess && targetTheme !== 'default' && !unlockedThemes.includes(targetTheme)) {
+      toast.error(`You don't have access to the ${targetTheme} theme`);
+      return false;
+    }
+    
+    // Set the theme after validation
+    setPremiumTheme(targetTheme);
+    
+    // Update theme mode if specified
+    if (targetMode) {
+      setTheme(targetMode);
+    }
+    
+    // Save to localStorage
+    localStorage.setItem("premiumTheme", targetTheme);
+    
+    // If user is logged in, save to backend
+    const token = localStorage.getItem("token");
+    if (token) {
+      try {
+        const response = await fetchWithTokenRefresh("/user/themes", {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ 
+            theme: theme,
+            premium_theme: targetTheme
+          })
+        });
+        
+        if (!response.ok) {
+          console.error("Failed to save theme settings to backend");
+        }
+      } catch (error) {
+        console.error("Error saving theme settings:", error);
+      }
+    }
+    
+    // Show success toast only if not the default theme
+    if (targetTheme !== 'default') {
+      toast.success(`${premiumThemes[targetTheme]?.name || 'Custom'} theme applied!`);
+    }
+    
+    return true;
+  }, [theme, unlockedThemes]);
+
   // Load theme settings from backend on component mount
   useEffect(() => {
     // Only fetch themes if user is logged in
@@ -199,22 +252,36 @@ export function ThemeProvider({ children }) {
           const data = await response.json();
           setTheme(data.theme || "light");
           setPremiumTheme(data.premium_theme || "default");
-          setUnlockedThemes(data.unlocked_themes || ["default"]);
+          
+          // Get unlocked themes
+          const backendUnlockedThemes = data.unlocked_themes || ["default"];
+          setUnlockedThemes(backendUnlockedThemes);
+          
+          // Save to localStorage for offline access
+          localStorage.setItem("theme", data.theme || "light");
+          localStorage.setItem("premiumTheme", data.premium_theme || "default");
+          localStorage.setItem("unlockedThemes", JSON.stringify(backendUnlockedThemes));
         } else {
-          console.error("Failed to fetch theme settings, using defaults");
-          // Use defaults or localStorage fallbacks
+          // If API fails, use localStorage
           const savedTheme = localStorage.getItem("theme") || "light";
           const savedPremiumTheme = localStorage.getItem("premiumTheme") || "default";
+          const savedUnlockedThemes = JSON.parse(localStorage.getItem("unlockedThemes") || '["default"]');
+          
           setTheme(savedTheme);
           setPremiumTheme(savedPremiumTheme);
+          setUnlockedThemes(savedUnlockedThemes);
         }
-      } catch (error) {
-        console.error("Error fetching theme settings:", error);
-        // Use localStorage fallbacks
+      } catch (err) {
+        console.error("Error fetching theme settings:", err);
+        
+        // Use localStorage as fallback
         const savedTheme = localStorage.getItem("theme") || "light";
         const savedPremiumTheme = localStorage.getItem("premiumTheme") || "default";
+        const savedUnlockedThemes = JSON.parse(localStorage.getItem("unlockedThemes") || '["default"]');
+        
         setTheme(savedTheme);
         setPremiumTheme(savedPremiumTheme);
+        setUnlockedThemes(savedUnlockedThemes);
       } finally {
         setLoading(false);
       }
@@ -430,20 +497,208 @@ export function ThemeProvider({ children }) {
     return true;
   };
 
+  // Add a function to verify theme access with the backend
+  const checkThemeAccess = async (themeKey) => {
+    // If it's the default theme, everyone has access
+    if (themeKey === 'default') return true;
+    
+    // Check if user is logged in
+    const token = localStorage.getItem("token");
+    if (!token) return false;
+    
+    try {
+      // Check with backend if user has access to this theme
+      const response = await fetchWithTokenRefresh("/user/themes/check-access", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ theme_key: themeKey })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        return data.has_access;
+      }
+      return false;
+    } catch (error) {
+      console.error("Error checking theme access:", error);
+      return false;
+    }
+  };
+
+  // Add a function to synchronize themes with the backend
+  const synchronizeThemes = useCallback(async () => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+    
+    try {
+      // Get current theme settings from backend
+      const response = await fetchWithTokenRefresh("/user/themes");
+      
+      if (response.ok) {
+        const data = await response.json();
+        
+        // Check if premium theme is valid according to backend
+        const backendPremiumTheme = data.premium_theme || "default";
+        const backendUnlockedThemes = data.unlocked_themes || ["default"];
+        
+        // If current theme is not in unlocked themes and user is not admin,
+        // reset to default theme
+        if (
+          premiumTheme !== "default" && 
+          !backendUnlockedThemes.includes(premiumTheme) && 
+          !isAdmin
+        ) {
+          console.warn("Current theme is not unlocked, resetting to default");
+          setPremiumTheme("default");
+          localStorage.setItem("premiumTheme", "default");
+          
+          // Update the backend
+          await fetchWithTokenRefresh("/user/themes", {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ 
+              theme: theme,
+              premium_theme: "default"
+            })
+          });
+          
+          // Show warning toast
+          toast.warning("Theme reset to default because you don't have access to the previous theme");
+        }
+        
+        // Update unlocked themes in local state
+        setUnlockedThemes(backendUnlockedThemes);
+      }
+    } catch (error) {
+      console.error("Error synchronizing themes:", error);
+    }
+  }, [premiumTheme, theme, isAdmin]);
+
+  // Call synchronizeThemes on login/logout or when admin status changes
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      synchronizeThemes();
+    }
+  }, [synchronizeThemes]);
+
   return (
-    <ThemeContext.Provider value={{ 
-      theme, 
-      toggleTheme, 
-      setThemeMode,
-      premiumTheme,
-      changePremiumTheme,
-      unlockTheme,
-      unlockAllThemes,
-      unlockedThemes,
-      premiumThemes,
-      isAdmin,
-      loading
-    }}>
+    <ThemeContext.Provider
+      value={{
+        theme,
+        toggleTheme: () => {
+          const newTheme = theme === "light" ? "dark" : "light";
+          setTheme(newTheme);
+          localStorage.setItem("theme", newTheme);
+        },
+        setThemeMode: (mode) => {
+          setTheme(mode);
+          localStorage.setItem("theme", mode);
+        },
+        premiumTheme,
+        changePremiumTheme: (newTheme) => {
+          setPremiumTheme(newTheme);
+          localStorage.setItem("premiumTheme", newTheme);
+        },
+        unlockTheme: async (themeKey) => {
+          if (!premiumThemes[themeKey]) {
+            console.error(`Theme ${themeKey} not found`);
+            return false;
+          }
+          
+          try {
+            // Update backend if user is logged in
+            const token = localStorage.getItem("token");
+            if (token) {
+              const response = await fetchWithTokenRefresh("/user/themes/unlock", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ theme_key: themeKey })
+              });
+              
+              if (!response.ok) {
+                console.error("Failed to unlock theme in backend");
+                return false;
+              }
+              
+              // Get updated unlocked themes from response
+              const data = await response.json();
+              const updatedUnlockedThemes = data.unlocked_themes || [];
+              setUnlockedThemes(updatedUnlockedThemes);
+              
+              // Save to localStorage
+              localStorage.setItem("unlockedThemes", JSON.stringify(updatedUnlockedThemes));
+              return true;
+            }
+            
+            // Handle unlocking theme locally if not logged in
+            if (!unlockedThemes.includes(themeKey)) {
+              const updatedUnlockedThemes = [...unlockedThemes, themeKey];
+              setUnlockedThemes(updatedUnlockedThemes);
+              localStorage.setItem("unlockedThemes", JSON.stringify(updatedUnlockedThemes));
+            }
+            
+            return true;
+          } catch (error) {
+            console.error("Error unlocking theme:", error);
+            return false;
+          }
+        },
+        unlockAllThemes: async () => {
+          try {
+            // Get all premium theme keys
+            const allThemeKeys = Object.keys(premiumThemes);
+            
+            // Update backend if user is logged in
+            const token = localStorage.getItem("token");
+            if (token) {
+              const response = await fetchWithTokenRefresh("/user/themes/unlock-all", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json"
+                }
+              });
+              
+              if (!response.ok) {
+                console.error("Failed to unlock all themes in backend");
+                return false;
+              }
+              
+              // Get updated unlocked themes from response
+              const data = await response.json();
+              const updatedUnlockedThemes = data.unlocked_themes || [];
+              setUnlockedThemes(updatedUnlockedThemes);
+              
+              // Save to localStorage
+              localStorage.setItem("unlockedThemes", JSON.stringify(updatedUnlockedThemes));
+              return true;
+            }
+            
+            // Handle unlocking all themes locally if not logged in
+            setUnlockedThemes(allThemeKeys);
+            localStorage.setItem("unlockedThemes", JSON.stringify(allThemeKeys));
+            
+            return true;
+          } catch (error) {
+            console.error("Error unlocking all themes:", error);
+            return false;
+          }
+        },
+        unlockedThemes,
+        premiumThemes,
+        isAdmin,
+        loading,
+        applyTheme,
+        synchronizeThemes,
+        checkThemeAccess
+      }}
+    >
       {children}
     </ThemeContext.Provider>
   );
