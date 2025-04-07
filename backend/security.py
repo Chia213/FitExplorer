@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from passlib.context import CryptContext
-import jwt
+import jwt as pyjwt
 import secrets
 from fastapi import HTTPException
 from config import settings
@@ -30,15 +30,28 @@ def create_access_token(data: dict, expires_delta: timedelta = None):
             minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES))
     to_encode.update({"exp": expire})
     print(f"Creating token with payload: {to_encode}")
-    return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=ALGORITHM)
+    
+    try:
+        # Always make sure we're using pyjwt directly to avoid any confusion
+        encoded_jwt = pyjwt.encode(to_encode, settings.SECRET_KEY, algorithm=ALGORITHM)
+        print(f"JWT encoding successful: {encoded_jwt[:10]}...")
+        return encoded_jwt
+    except Exception as e:
+        print(f"JWT encoding error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Token creation failed: {str(e)}"
+        )
 
 
 def decode_access_token(token: str):
     try:
-        payload = jwt.decode(token, settings.SECRET_KEY,
+        payload = pyjwt.decode(token, settings.SECRET_KEY,
                              algorithms=[ALGORITHM])
         return payload
-    except jwt as e:
+    except Exception as e:
         print(f"Token decode error: {str(e)}")
         raise HTTPException(
             status_code=401,

@@ -54,7 +54,7 @@ from background_task import send_summary_emails
 from email_service import (send_summary_email, send_security_alert, send_verification_email, send_password_reset_email,
                            send_password_changed_email, send_account_deletion_email, notify_admin_new_registration)
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-import jwt
+import jwt as pyjwt
 from passlib.context import CryptContext
 from nutrition import router as nutrition_router
 from ai_workout import router as ai_workout_router
@@ -71,7 +71,13 @@ app = FastAPI()
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],  # Include both localhost variations
+    allow_origins=[
+        "http://localhost:5173", 
+        "http://127.0.0.1:5173",
+        "http://localhost:8000",
+        "http://127.0.0.1:8000",
+        "https://accounts.google.com"
+    ],  # Include both localhost variations and Google's domain
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
@@ -759,50 +765,42 @@ def create_routine(
         )
         db.add(new_routine)
 
+        # Add exercises and sets to the workout
         for exercise_data in routine.exercises:
             new_exercise = Exercise(
                 name=exercise_data.name,
-                category=exercise_data.category or "Uncategorized",
+                category=exercise_data.category,
                 is_cardio=exercise_data.is_cardio,
                 workout_id=new_workout.id
             )
             db.add(new_exercise)
-            db.commit()
-            db.refresh(new_exercise)
+            db.flush()
 
-            # Add sets if they exist in the request
-            if hasattr(exercise_data, 'sets') and exercise_data.sets:
-                for set_data in exercise_data.sets:
-                    new_set = Set(
-                        weight=set_data.weight,
-                        reps=set_data.reps,
-                        distance=set_data.distance,
-                        duration=set_data.duration,
-                        intensity=set_data.intensity,
-                        notes=set_data.notes,
-                        exercise_id=new_exercise.id
-                    )
-                    db.add(new_set)
-            # If no sets provided, create empty sets based on initial_sets count
-            else:
-                initial_sets = exercise_data.initial_sets or 1
-                for _ in range(initial_sets):
-                    if exercise_data.is_cardio:
-                        new_set = Set(
-                            distance=None,
-                            duration=None,
-                            intensity="",
-                            notes="",
-                            exercise_id=new_exercise.id
-                        )
-                    else:
-                        new_set = Set(
-                            weight=None,
-                            reps=None,
-                            notes="",
-                            exercise_id=new_exercise.id
-                        )
-                    db.add(new_set)
+            for set_data in exercise_data.sets:
+                new_set = Set(
+                    exercise_id=new_exercise.id,
+                    weight=getattr(set_data, 'weight', None),
+                    reps=getattr(set_data, 'reps', None),
+                    distance=getattr(set_data, 'distance', None),
+                    duration=getattr(set_data, 'duration', None),
+                    intensity=getattr(set_data, 'intensity', None),
+                    notes=getattr(set_data, 'notes', None),
+                    is_warmup=getattr(set_data, 'is_warmup', False),
+                    is_drop_set=getattr(set_data, 'is_drop_set', False),
+                    is_superset=getattr(set_data, 'is_superset', False),
+                    is_amrap=getattr(set_data, 'is_amrap', False),
+                    is_restpause=getattr(set_data, 'is_restpause', False),
+                    is_pyramid=getattr(set_data, 'is_pyramid', False),
+                    is_giant=getattr(set_data, 'is_giant', False),
+                    drop_number=getattr(set_data, 'drop_number', None),
+                    original_weight=getattr(set_data, 'original_weight', None),
+                    superset_with=getattr(set_data, 'superset_with', None),
+                    rest_pauses=getattr(set_data, 'rest_pauses', None),
+                    pyramid_type=getattr(set_data, 'pyramid_type', None),
+                    pyramid_step=getattr(set_data, 'pyramid_step', None),
+                    giant_with=getattr(set_data, 'giant_with', None)
+                )
+                db.add(new_set)
 
             # Add custom exercise to user's custom exercises
             new_custom_exercise = CustomExercise(
@@ -821,6 +819,90 @@ def create_routine(
         db.rollback()
         print(f"Error creating routine: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/routines")
+def get_all_routines(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get all routines for the current user"""
+    try:
+        # Get all routines with their associated workouts and exercises
+        routines = db.query(Routine).options(
+            joinedload(Routine.workout).options(
+                joinedload(Workout.exercises).joinedload(Exercise.sets)
+            )
+        ).filter(
+            Routine.user_id == user.id
+        ).all()
+        
+        result = []
+        
+        for routine in routines:
+            # Build dictionary with routine info
+            routine_dict = {
+                "id": routine.id,
+                "name": routine.name,
+                "workout_id": routine.workout_id,
+                "weight_unit": routine.weight_unit,
+                "folder_id": routine.folder_id,
+                "created_at": routine.created_at.isoformat() if routine.created_at else None,
+                "exercises": []
+            }
+            
+            # Check if this routine has a workout
+            if routine.workout:
+                # Gather exercises
+                for exercise in routine.workout.exercises:
+                    exercise_dict = {
+                        "id": exercise.id,
+                        "name": exercise.name,
+                        "category": exercise.category,
+                        "is_cardio": exercise.is_cardio,
+                        "sets": []
+                    }
+                    
+                    # Add sets for this exercise
+                    for exercise_set in exercise.sets:
+                        set_dict = {
+                            "id": exercise_set.id,
+                            "weight": exercise_set.weight,
+                            "reps": exercise_set.reps,
+                            "distance": exercise_set.distance,
+                            "duration": exercise_set.duration,
+                            "intensity": exercise_set.intensity,
+                            "notes": exercise_set.notes,
+                            "is_warmup": exercise_set.is_warmup,
+                            "is_drop_set": exercise_set.is_drop_set,
+                            "is_superset": exercise_set.is_superset,
+                            "is_amrap": exercise_set.is_amrap,
+                            "is_restpause": exercise_set.is_restpause,
+                            "is_pyramid": exercise_set.is_pyramid,
+                            "is_giant": exercise_set.is_giant,
+                            "drop_number": exercise_set.drop_number,
+                            "original_weight": exercise_set.original_weight,
+                            "superset_with": exercise_set.superset_with,
+                            "rest_pauses": exercise_set.rest_pauses,
+                            "pyramid_type": exercise_set.pyramid_type,
+                            "pyramid_step": exercise_set.pyramid_step,
+                            "giant_with": exercise_set.giant_with
+                        }
+                        exercise_dict["sets"].append(set_dict)
+                        
+                    routine_dict["exercises"].append(exercise_dict)
+                
+            result.append(routine_dict)
+        
+        return result
+    except Exception as e:
+        print(f"Error fetching routines: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error fetching routines: {str(e)}"
+        )
 
 
 @app.put("/routines/{routine_id}", response_model=RoutineResponse)
@@ -917,18 +999,52 @@ def delete_routine(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    """Delete a routine by ID"""
+    # Check if the routine exists and belongs to the user
     routine = db.query(Routine).filter(
         Routine.id == routine_id,
         Routine.user_id == user.id
     ).first()
-
+    
     if not routine:
-        raise HTTPException(status_code=404, detail="Routine not found")
-
+        raise HTTPException(
+            status_code=404,
+            detail="Routine not found or you don't have permission to delete it"
+        )
+    
     db.delete(routine)
     db.commit()
 
     return {"message": "Routine deleted successfully"}
+
+
+@app.delete("/routines-delete-all")
+def delete_all_routines(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Delete all routines for the current user"""
+    try:
+        # Count how many routines we're deleting for logging purposes
+        count = db.query(Routine).filter(
+            Routine.user_id == user.id
+        ).count()
+        
+        # Delete all routines for this user
+        db.query(Routine).filter(
+            Routine.user_id == user.id
+        ).delete(synchronize_session=False)
+        
+        db.commit()
+        
+        return {"message": f"Successfully deleted {count} routines"}
+    except Exception as e:
+        db.rollback()
+        print(f"Error deleting all routines: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error deleting all routines: {str(e)}"
+        )
 
 
 @app.get("/user/routines")
@@ -2385,4 +2501,131 @@ async def create_template(
     db.refresh(new_template)
     
     return new_template
+
+# Workout Preferences Endpoints
+@app.get("/api/workout-preferences", response_model=WorkoutPreferencesResponse)
+def get_workout_preferences(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get the current user's workout preferences"""
+    preferences = db.query(WorkoutPreferences).filter(WorkoutPreferences.user_id == user.id).first()
+    
+    if not preferences:
+        # Create default preferences if they don't exist
+        preferences = WorkoutPreferences(user_id=user.id)
+        db.add(preferences)
+        db.commit()
+        db.refresh(preferences)
+        
+    return preferences
+
+
+@app.put("/api/workout-preferences", response_model=WorkoutPreferencesResponse)
+def update_workout_preferences(
+    preferences: WorkoutPreferencesCreate,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Update the current user's workout preferences"""
+    db_preferences = db.query(WorkoutPreferences).filter(WorkoutPreferences.user_id == user.id).first()
+    
+    if not db_preferences:
+        # Create preferences if they don't exist
+        db_preferences = WorkoutPreferences(user_id=user.id)
+        db.add(db_preferences)
+    
+    # Update preferences
+    for key, value in preferences.dict(exclude_unset=True).items():
+        setattr(db_preferences, key, value)
+    
+    db_preferences.updated_at = datetime.now(timezone.utc)
+    db.commit()
+    db.refresh(db_preferences)
+    
+    return db_preferences
+
+# Add user routines endpoint
+@app.get("/user/routines", response_model=List[Dict[str, Any]])
+def get_user_routines(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get the current user's workout routines"""
+    routines = db.query(Workout).filter(
+        Workout.user_id == user.id,
+        Workout.is_template == True
+    ).all()
+    
+    return [
+        {
+            "id": routine.id,
+            "name": routine.name,
+            "description": routine.description,
+            "exercises": routine.exercises
+        }
+        for routine in routines
+    ]
+
+# Add user routines endpoints for creation and updating
+@app.post("/user/routines", response_model=Dict[str, Any])
+def create_user_routine(
+    routine_data: Dict[str, Any],
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Create a new workout routine for the current user"""
+    # Create a new workout as a template (is_template=True)
+    new_routine = Workout(
+        user_id=user.id,
+        name=routine_data.get("name", "Untitled Routine"),
+        is_template=True,
+        exercises=routine_data.get("exercises", []),
+        date=datetime.now(timezone.utc)
+    )
+    
+    db.add(new_routine)
+    db.commit()
+    db.refresh(new_routine)
+    
+    return {
+        "id": new_routine.id,
+        "name": new_routine.name,
+        "description": new_routine.description,
+        "exercises": new_routine.exercises
+    }
+
+
+@app.put("/user/routines/{routine_id}", response_model=Dict[str, Any])
+def update_user_routine(
+    routine_id: int,
+    routine_data: Dict[str, Any],
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Update an existing workout routine for the current user"""
+    # Find the routine by ID for the current user
+    routine = db.query(Workout).filter(
+        Workout.id == routine_id,
+        Workout.user_id == user.id,
+        Workout.is_template == True
+    ).first()
+    
+    if not routine:
+        raise HTTPException(status_code=404, detail="Routine not found")
+    
+    # Update the routine
+    routine.name = routine_data.get("name", routine.name)
+    routine.exercises = routine_data.get("exercises", routine.exercises)
+    routine.updated_at = datetime.now(timezone.utc)
+    
+    db.commit()
+    db.refresh(routine)
+    
+    return {
+        "id": routine.id,
+        "name": routine.name,
+        "description": routine.description,
+        "exercises": routine.exercises
+    }
 

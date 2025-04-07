@@ -49,7 +49,7 @@ function Login() {
       const response = await loginUser(formData.email, formData.password);
       if (response.access_token) {
         // Store token
-        localStorage.setItem("token", response.access_token);
+        localStorage.setItem("access_token", response.access_token);
         console.log("Token stored successfully, length:", response.access_token.length);
 
         // Set just logged in flag to trigger welcome modal
@@ -120,11 +120,15 @@ function Login() {
   const handleGoogleLogin = async (credentialResponse) => {
     if (!credentialResponse || !credentialResponse.credential) {
       setError("Google login failed - no credentials received");
+      console.error("No Google credentials received", credentialResponse);
       return;
     }
 
     try {
+      console.log("Google credential received, sending to backend");
       const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+      console.log(`Using API URL: ${API_URL}`);
+      
       const response = await fetch(`${API_URL}/auth/google-verify`, {
         method: "POST",
         headers: {
@@ -133,8 +137,22 @@ function Login() {
         body: JSON.stringify({ token: credentialResponse.credential }),
       });
 
-      if (response.ok) {
-        const data = await response.json();
+      const responseText = await response.text();
+      console.log(`Response status: ${response.status}, body: ${responseText}`);
+      
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (e) {
+        console.error("Failed to parse response as JSON:", e);
+        setError(`Failed to parse response: ${responseText}`);
+        return;
+      }
+
+      if (response.ok && data.access_token) {
+        console.log("Google login successful, token received");
+        localStorage.setItem("access_token", data.access_token);
+        // Also store as "token" for compatibility with the rest of the app
         localStorage.setItem("token", data.access_token);
 
         // Set just logged in flag to trigger welcome modal
@@ -151,11 +169,12 @@ function Login() {
         // Navigate to home
         navigate("/");
       } else {
-        const errorData = await response.text();
-        setError(`Google login failed: ${response.status}`);
+        console.error(`Google login failed: Status ${response.status}`, responseText);
+        setError(`Google login failed: ${response.status} - ${responseText}`);
       }
     } catch (error) {
-      setError("Network error during authentication");
+      console.error("Error during Google login:", error);
+      setError(`Google login error: ${error.message}`);
     }
   };
 
@@ -310,7 +329,16 @@ function Login() {
         <div className="mt-6 flex justify-center">
           <GoogleLogin
             onSuccess={handleGoogleLogin}
-            onError={() => setError("Google login failed.")}
+            onError={(error) => {
+              console.error("Google login error:", error);
+              setError(`Google login failed: ${error.error || error}`);
+            }}
+            useOneTap
+            shape="pill"
+            type="standard"
+            theme="filled_blue"
+            text="continue_with"
+            locale="en_US"
           />
         </div>
 

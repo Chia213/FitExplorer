@@ -58,27 +58,43 @@ export const AuthProvider = ({ children }) => {
     setIsLoading(true);
     setError(null);
     
-    const token = localStorage.getItem('token');
+    // Check for token in both places
+    const accessToken = localStorage.getItem('access_token');
+    const legacyToken = localStorage.getItem('token');
     
-    if (!token) {
-      setUser(null);
-      setIsLoading(false);
-      return;
+    // Get the token, prioritizing access_token
+    const token = accessToken || legacyToken;
+    
+    // Synchronize tokens to ensure both are consistent
+    if (token) {
+      if (!accessToken) localStorage.setItem('access_token', token);
+      if (!legacyToken) localStorage.setItem('token', token);
     }
     
-    const userData = parseToken(token);
-    
-    if (!userData || isTokenExpired(userData.expiry)) {
-      // Token is invalid or expired
-      localStorage.removeItem('token');
-      localStorage.removeItem('isAdmin');
+    if (!token) {
+      console.log('No token found in localStorage, user is not authenticated');
       setUser(null);
       setIsLoading(false);
       return;
     }
     
     try {
+      console.log('Token found, attempting to parse and validate');
+      const userData = parseToken(token);
+      
+      if (!userData || isTokenExpired(userData.expiry)) {
+        // Token is invalid or expired
+        console.log('Token is invalid or expired, clearing auth state');
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('token');
+        localStorage.removeItem('isAdmin');
+        setUser(null);
+        setIsLoading(false);
+        return;
+      }
+      
       // Fetch additional user data from the backend
+      console.log('Token is valid, fetching user profile');
       const profileData = await fetchUserProfile(token);
       
       setUser({
@@ -89,9 +105,12 @@ export const AuthProvider = ({ children }) => {
       
       // Update admin status in local storage
       localStorage.setItem('isAdmin', userData.isAdmin ? 'true' : 'false');
+      console.log('User authenticated successfully');
     } catch (err) {
+      console.error('Authentication error:', err);
       setError('Failed to load user data');
       setUser(null);
+      localStorage.removeItem('access_token');
       localStorage.removeItem('token');
       localStorage.removeItem('isAdmin');
     } finally {
@@ -120,7 +139,7 @@ export const AuthProvider = ({ children }) => {
       }
       
       // Save token to local storage
-      localStorage.setItem('token', data.access_token);
+      localStorage.setItem('access_token', data.access_token);
       
       // Parse token and set user data
       const userData = parseToken(data.access_token);
@@ -181,6 +200,7 @@ export const AuthProvider = ({ children }) => {
 
   // Logout function
   const logout = useCallback(() => {
+    localStorage.removeItem('access_token');
     localStorage.removeItem('token');
     localStorage.removeItem('isAdmin');
     setUser(null);
@@ -285,7 +305,7 @@ export const AuthProvider = ({ children }) => {
     setError(null);
     
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('access_token');
       if (!token) {
         throw new Error('Not authenticated');
       }
@@ -323,7 +343,7 @@ export const AuthProvider = ({ children }) => {
     setError(null);
     
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('access_token');
       if (!token) {
         throw new Error('Not authenticated');
       }
@@ -345,7 +365,7 @@ export const AuthProvider = ({ children }) => {
       
       // Update local user state
       if (data.access_token) {
-        localStorage.setItem('token', data.access_token);
+        localStorage.setItem('access_token', data.access_token);
         
         // Update user data with new information
         const userData = parseToken(data.access_token);

@@ -7,7 +7,7 @@ from fastapi.responses import Response
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
 from datetime import timedelta, datetime, timezone
-import jwt
+import jwt as pyjwt
 from database import get_db, SessionLocal
 from models import User, AdminSettings, Set, Exercise, Workout, WorkoutPreferences
 from schemas import UserCreate, UserLogin, Token, GoogleTokenVerifyRequest, GoogleAuthResponse, ForgotPasswordRequest, ResetPasswordRequest, TokenVerificationRequest, ConfirmAccountDeletionRequest
@@ -35,6 +35,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 def create_access_token(data: dict, expires_delta: timedelta):
+    print("Creating access token with data:", data)
     to_encode = data.copy()
     expire = datetime.now(timezone.utc) + expires_delta
     to_encode.update({"exp": expire})
@@ -48,7 +49,17 @@ def create_access_token(data: dict, expires_delta: timedelta):
     finally:
         db.close()
 
-    return jwt.encode(to_encode, settings.SECRET_KEY, algorithm="HS256")
+    # Direct encoding to avoid any possible name conflicts
+    import jwt
+    try:
+        encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm="HS256")
+        print("JWT encoding successful")
+        return encoded_jwt
+    except Exception as e:
+        print(f"JWT encoding error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise
 
 
 @router.post("/register")
@@ -243,6 +254,17 @@ async def verify_google_token(
     db: Session = Depends(get_db)
 ):
     try:
+        print(f"=== GOOGLE VERIFICATION ATTEMPT ===")
+        # Log the token length to avoid printing the whole token
+        print(f"Received token of length: {len(request_data.token)}")
+        print(f"Using Google Client ID: {GOOGLE_CLIENT_ID}")
+        
+        # Print other crucial info
+        import sys
+        print(f"Python version: {sys.version}")
+        print(f"PyJWT version: {pyjwt.__version__}")
+        print(f"Is Google Client ID set: {bool(GOOGLE_CLIENT_ID)}")
+        
         request = google_requests.Request()
 
         id_info = id_token.verify_oauth2_token(
@@ -251,16 +273,23 @@ async def verify_google_token(
             GOOGLE_CLIENT_ID
         )
 
+        print(f"Token verification successful!")
+        print(f"Extracted email: {id_info.get('email')}")
+        print(f"Extracted name: {id_info.get('name', 'Not provided')}")
+        
         email = id_info.get('email')
         name = id_info.get('name', email.split(
             '@')[0] if email else "Google User")
 
         if not email:
+            print(f"Error: No email found in token")
             raise HTTPException(
                 status_code=400, detail="Email not found in token")
 
+        print(f"Looking for existing user with email: {email}")
         user = db.query(User).filter(User.email == email).first()
         if not user:
+            print(f"Creating new user with email: {email}")
             user = User(
                 email=email,
                 username=name,
@@ -282,19 +311,41 @@ async def verify_google_token(
             )
         elif not user.is_verified:
             # If they had a regular account that wasn't verified, verify it now
+            print(f"Verifying existing user: {email}")
             user.is_verified = True
             db.commit()
+        else:
+            print(f"Existing verified user logging in: {email}")
 
-        access_token = create_access_token(
-            {"sub": user.username},
-            timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-        )
-
-        return {"access_token": access_token, "token_type": "bearer"}
+        print(f"Creating access token for user {email}")
+        try:
+            access_token = create_access_token(
+                {"sub": user.username},
+                timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+            )
+            print(f"Token created successfully!")
+            
+            # Construct response
+            response = {"access_token": access_token, "token_type": "bearer"}
+            print(f"Returning response: {response}")
+            return response
+            
+        except Exception as token_error:
+            print(f"Error creating access token: {str(token_error)}")
+            import traceback
+            traceback.print_exc()
+            raise HTTPException(
+                status_code=500, 
+                detail=f"Error creating access token: {str(token_error)}"
+            )
 
     except ValueError as e:
+        print(f"Invalid token error: {str(e)}")
         raise HTTPException(status_code=401, detail=f"Invalid token: {str(e)}")
     except Exception as e:
+        print(f"Authentication error: {str(e)}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(
             status_code=500, detail=f"Authentication error: {str(e)}")
 

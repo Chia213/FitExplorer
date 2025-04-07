@@ -13,7 +13,7 @@ export const WelcomeProvider = ({ children }) => {
 
   // Function to check JWT token and extract user data
   const getUserDataFromToken = () => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("access_token");
     if (!token) return null;
 
     try {
@@ -38,7 +38,7 @@ export const WelcomeProvider = ({ children }) => {
   useEffect(() => {
     const checkLoginStatus = () => {
       // Check for token
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("access_token");
       if (!token) {
         setShowWelcomeModal(false);
         setUserData(null);

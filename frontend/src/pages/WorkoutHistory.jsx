@@ -61,13 +61,21 @@ function WorkoutHistory() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      navigate("/login");
-      return;
-    }
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const token = localStorage.getItem("access_token");
+        if (token) {
+          await fetchWorkoutHistory(token);
+        }
+      } catch (error) {
+        console.error("Error fetching workout history:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    fetchWorkoutHistory(token);
+    fetchData();
     
     // If we have a date from URL, set it as filter and expand those workouts
     if (dateFromUrl) {
@@ -278,7 +286,7 @@ function WorkoutHistory() {
 
   const handleSaveAsRoutine = async (workout) => {
     try {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("access_token");
       if (!token) {
         alert("You need to be logged in to save routines.");
         navigate("/login");
@@ -319,7 +327,7 @@ function WorkoutHistory() {
     setSavingRoutine(true);
 
     try {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("access_token");
       if (!token) {
         navigate("/login");
         return;
@@ -351,7 +359,7 @@ function WorkoutHistory() {
 
   const confirmDeleteWorkout = async () => {
     try {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("access_token");
       if (!token) {
         alert("You need to be logged in to delete workouts.");
         navigate("/login");

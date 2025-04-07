@@ -131,6 +131,25 @@ class Set(Base):
     notes = Column(String, nullable=True)
     exercise_id = Column(Integer, ForeignKey(
         "exercises.id", ondelete="CASCADE"), nullable=False)
+    
+    # Set type flags
+    is_warmup = Column(Boolean, default=False)
+    is_drop_set = Column(Boolean, default=False)
+    is_superset = Column(Boolean, default=False)
+    is_amrap = Column(Boolean, default=False)
+    is_restpause = Column(Boolean, default=False)
+    is_pyramid = Column(Boolean, default=False)
+    is_giant = Column(Boolean, default=False)
+    
+    # Additional set properties
+    drop_number = Column(Integer, nullable=True)
+    original_weight = Column(Float, nullable=True)
+    superset_with = Column(String, nullable=True)
+    rest_pauses = Column(Integer, nullable=True)
+    pyramid_type = Column(String, nullable=True)
+    pyramid_step = Column(Integer, nullable=True)
+    giant_with = Column(JSON, nullable=True)
+    
     exercise = relationship("Exercise", back_populates="sets")
 
 

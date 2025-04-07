@@ -65,74 +65,51 @@ function Routines() {
   const { theme } = useTheme();
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
+    const fetchRoutines = async () => {
+      setLoading(true);
+      try {
+        // Get token from both possible locations
+        const token = localStorage.getItem("access_token") || localStorage.getItem("token");
     if (!token) {
       navigate("/login");
       return;
     }
 
-    fetchRoutines(token);
-    fetchFolders(token);
+        // Fetch routines using the /routines endpoint instead of /user/routines
+        const response = await fetch(`${backendURL}/routines`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json"
+          },
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`Failed to fetch routines: ${response.status} ${response.statusText}`, errorText);
+          throw new Error("Failed to fetch routines");
+        }
+
+      const data = await response.json();
+        console.log(`Successfully fetched ${data.length} routines`);
+        setRoutines(data);
+        
+        // Also fetch folders after successful routines fetch
+        fetchFolders(token);
+      } catch (error) {
+        console.error("Error fetching routines:", error);
+        setError("Failed to load routines. Please try again later.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRoutines();
   }, [navigate]);
 
   const toggleWeightUnit = () => {
     const newUnit = weightUnit === "kg" ? "lbs" : "kg";
     setWeightUnit(newUnit);
     localStorage.setItem("weightUnit", newUnit);
-  };
-
-  const fetchRoutines = async (token) => {
-    try {
-      console.log("Fetching routines from backend...");
-      const response = await fetch(`${backendURL}/user/routines`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (!response.ok) throw new Error("Failed to fetch routines");
-
-      const data = await response.json();
-      console.log(`Received ${data.length} routines from backend`);
-      
-      // Check specifically for templates
-      const templates = data.filter(routine => {
-        // For newly created templates using the updated backend endpoint
-        if (routine.exercises && routine.exercises.length > 0) {
-          console.log(`Found template routine: ${routine.name} with ${routine.exercises.length} exercises`);
-          return true;
-        }
-        // For legacy templates
-        if (routine.workout && routine.workout.is_template === true) {
-          console.log(`Found legacy template routine: ${routine.name}`);
-          return true;
-        }
-        return false;
-      });
-      
-      console.log(`Found ${templates.length} template routines`);
-      
-      // Process templates to ensure exercises are accessible
-      const processedData = data.map(routine => {
-        // Handle the new format where exercises are directly on the routine
-        if (routine.exercises && routine.exercises.length > 0) {
-          return {
-            ...routine,
-            workout: {
-              ...routine.workout,
-              exercises: routine.exercises,
-              is_template: true
-            }
-          };
-        }
-        return routine;
-      });
-      
-      setRoutines(processedData);
-      setLoading(false);
-    } catch (err) {
-      console.error("Failed to load routines:", err);
-      setError("Failed to load routines. Please try again.");
-      setLoading(false);
-    }
   };
 
   const fetchFolders = async (token) => {
@@ -167,24 +144,50 @@ function Routines() {
       return;
 
     try {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("access_token") || localStorage.getItem("token");
+      if (!token) {
+        navigate("/login");
+        return;
+      }
+      
       const response = await fetch(`${backendURL}/routines/${routineId}`, {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json" 
+        },
       });
 
-      if (!response.ok) throw new Error("Failed to delete routine");
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`Failed to delete routine: ${response.status}`, errorText);
+        throw new Error("Failed to delete routine");
+      }
 
       setRoutines(routines.filter((r) => r.id !== routineId));
+      setSuccessMessage("Routine deleted successfully!");
+      setTimeout(() => setSuccessMessage(""), 3000);
     } catch (err) {
+      console.error("Error deleting routine:", err);
       setError("Failed to delete routine. Please try again.");
     }
   };
 
   const handleStartEditRoutine = (routine) => {
+    console.log("Starting to edit routine:", routine);
     setEditingRoutine(routine);
     setEditedRoutineName(routine.name);
-    setEditedExercises(routine.workout?.exercises || routine.exercises || []);
+    
+    // Determine where to find exercises based on the routine structure
+    let exercisesToEdit = [];
+    if (routine.workout?.exercises?.length > 0) {
+      exercisesToEdit = routine.workout.exercises;
+    } else if (routine.exercises?.length > 0) {
+      exercisesToEdit = routine.exercises;
+    }
+    
+    console.log("Found exercises for editing:", exercisesToEdit.length);
+    setEditedExercises(exercisesToEdit);
   };
 
   const handleSaveEditedRoutine = async () => {
@@ -200,7 +203,12 @@ function Routines() {
     }
 
     try {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("access_token") || localStorage.getItem("token");
+      if (!token) {
+        navigate("/login");
+        return;
+      }
+      
       const response = await fetch(
         `${backendURL}/routines/${editingRoutine.id}`,
         {
@@ -229,16 +237,7 @@ function Routines() {
                         is_warmup: !!set.is_warmup,
                         is_drop_set: !!set.is_drop_set,
                         is_superset: !!set.is_superset,
-                        is_amrap: !!set.is_amrap,
-                        is_restpause: !!set.is_restpause,
-                        is_pyramid: !!set.is_pyramid,
-                        is_giant: !!set.is_giant,
-                        drop_number: set.drop_number || null,
-                        superset_with: set.superset_with || null,
-                        rest_pauses: set.rest_pauses || null,
-                        pyramid_type: set.pyramid_type || null,
-                        pyramid_step: set.pyramid_step || null,
-                        giant_with: set.giant_with || null
+                        superset_with: set.is_superset ? set.superset_with : null
                       };
                     } else {
                       return {
@@ -248,162 +247,65 @@ function Routines() {
                         is_warmup: !!set.is_warmup,
                         is_drop_set: !!set.is_drop_set,
                         is_superset: !!set.is_superset,
-                        is_amrap: !!set.is_amrap,
-                        is_restpause: !!set.is_restpause,
-                        is_pyramid: !!set.is_pyramid,
-                        is_giant: !!set.is_giant,
-                        drop_number: set.drop_number || null,
-                        superset_with: set.superset_with || null,
-                        rest_pauses: set.rest_pauses || null,
-                        pyramid_type: set.pyramid_type || null,
-                        pyramid_step: set.pyramid_step || null,
-                        giant_with: set.giant_with || null
+                        superset_with: set.is_superset ? set.superset_with : null
                       };
                     }
                   })
-                : [],
+                : []
             })),
           }),
         }
       );
 
-      if (!response.ok) throw new Error("Failed to update routine");
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`Failed to update routine: ${response.status}`, errorText);
+        throw new Error("Failed to update routine");
+      }
 
-      const updatedRoutine = await response.json();
-      setRoutines((prev) =>
-        prev.map((r) => (r.id === editingRoutine.id ? updatedRoutine : r))
-      );
+      // Fetch updated routines
+      const updatedResponse = await fetch(`${backendURL}/routines`, {
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json" 
+        },
+      });
+      
+      if (updatedResponse.ok) {
+        const data = await updatedResponse.json();
+        setRoutines(data);
+      }
 
       setEditingRoutine(null);
-      setEditedRoutineName("");
-      setEditedExercises([]);
+      setSuccessMessage("Routine updated successfully!");
+      setTimeout(() => setSuccessMessage(""), 3000);
     } catch (err) {
-      alert("Failed to update routine. Please try again.");
+      console.error("Error updating routine:", err);
+      setError("Failed to update routine. Please try again.");
     }
   };
 
   const handleStartWorkout = (routine) => {
-    // Get exercises from either data structure
-    const exercises = routine.workout?.exercises || routine.exercises;
-    
-    if (!exercises || exercises.length === 0) {
-      alert("This routine doesn't have any exercises to start a workout.");
+    if (!routine.exercises || routine.exercises.length === 0) {
+      alert("This routine doesn't have any exercises");
       return;
     }
 
-    console.log("Starting workout with routine:", routine.name);
-    console.log("Number of exercises:", exercises.length);
-    console.log("Exercise structure:", JSON.stringify(exercises));
-
-    // Create the workout exercises data structure from the routine
-    const workoutExercises = exercises.map((exercise) => {
-      const isCardio = Boolean(exercise.is_cardio);
-      const initialSets = exercise.initial_sets || exercise.sets?.length || 1;
-
-      // If the exercise already has sets, use those
-      if (Array.isArray(exercise.sets) && exercise.sets.length > 0) {
-        return {
-          name: exercise.name,
-          category: exercise.category || "Uncategorized",
-          is_cardio: isCardio,
-          sets: exercise.sets.map((set) => {
-            const baseSet = {
-              notes: set.notes || "",
-              // Set type flags
-              is_warmup: !!set.is_warmup,
-              is_drop_set: !!set.is_drop_set,
-              is_superset: !!set.is_superset,
-              is_amrap: !!set.is_amrap,
-              is_restpause: !!set.is_restpause,
-              is_pyramid: !!set.is_pyramid,
-              is_giant: !!set.is_giant,
-              // Additional properties
-              drop_number: set.drop_number || null,
-              original_weight: set.original_weight || null,
-              superset_with: set.superset_with !== undefined ? set.superset_with : null,
-              rest_pauses: set.rest_pauses || null,
-              pyramid_type: set.pyramid_type || null,
-              pyramid_step: set.pyramid_step || null,
-              giant_with: Array.isArray(set.giant_with) ? set.giant_with : null
-            };
-
-            if (isCardio) {
-              return {
-                ...baseSet,
-                distance: set.distance || "",
-                duration: set.duration || "",
-                intensity: set.intensity || ""
-              };
-            } else {
-              return {
-                ...baseSet,
-                weight: set.weight || "",
-                reps: set.reps || ""
-              };
-            }
-          }),
-        };
+    // Create the correct structure for workout-log page
+    navigate("/workout-log", {
+      state: {
+        routineId: routine.id,
+        routineName: routine.name,
+        routine: {
+          id: routine.id,
+          name: routine.name,
+          weight_unit: routine.weight_unit || "kg",
+          workout: {
+            exercises: routine.exercises
+          }
+        }
       }
-
-      // Otherwise create empty sets based on the exercise type
-      const sets = isCardio
-        ? Array(initialSets)
-            .fill()
-            .map(() => ({
-              distance: "",
-              duration: "",
-              intensity: "",
-              notes: "",
-              is_warmup: false,
-              is_drop_set: false,
-              is_superset: false,
-              is_amrap: false,
-              is_restpause: false,
-              is_pyramid: false,
-              is_giant: false
-            }))
-        : Array(initialSets)
-            .fill()
-            .map(() => ({
-              weight: "",
-              reps: "",
-              notes: "",
-              is_warmup: false,
-              is_drop_set: false,
-              is_superset: false,
-              is_amrap: false,
-              is_restpause: false,
-              is_pyramid: false,
-              is_giant: false
-            }));
-
-      return {
-        name: exercise.name,
-        category: exercise.category || "Uncategorized",
-        is_cardio: isCardio,
-        sets: sets,
-      };
     });
-
-    console.log("Prepared workout exercises:", JSON.stringify(workoutExercises));
-    
-    // Make sure to clear any existing workout data before setting new data
-    localStorage.removeItem("preloadedWorkoutExercises");
-    localStorage.removeItem("preloadedWorkoutName");
-    
-    // Store the exercise data and workout name in localStorage for WorkoutLog to use
-    localStorage.setItem(
-      "preloadedWorkoutExercises",
-      JSON.stringify(workoutExercises)
-    );
-    localStorage.setItem("preloadedWorkoutName", routine.name);
-    
-    // Extra validation to ensure the data was properly stored
-    const storedData = localStorage.getItem("preloadedWorkoutExercises");
-    console.log("Stored exercises count:", storedData ? JSON.parse(storedData).length : 0);
-
-    // Navigate to the workout log
-    navigate("/workout-log", { state: { routineId: routine.id } });
   };
 
   const handleRemoveExercise = (indexToRemove) => {
@@ -472,7 +374,11 @@ function Routines() {
 
   const handleAssignToFolder = async (routineId, folderId) => {
     try {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("access_token") || localStorage.getItem("token");
+      if (!token) {
+        navigate("/login");
+        return;
+      }
 
       // Make sure folderId is treated as a proper number or null
       const payload = {
@@ -480,7 +386,7 @@ function Routines() {
       };
 
       const response = await fetch(
-        `${backendURL}/routines/${routineId}/move-to-folder`,
+        `${backendURL}/routines/${routineId}/folder`,
         {
           method: "PUT",
           headers: {
@@ -498,17 +404,27 @@ function Routines() {
 
       const updatedRoutine = await response.json();
 
-      // Update local state with the updated routine
-      setRoutines((prevRoutines) =>
-        prevRoutines.map((routine) =>
-          routine.id === routineId ? updatedRoutine : routine
-        )
-      );
-
       // Set success message
-      const folderName = updatedRoutine.folder_name || "Unassigned";
-      setSuccessMessage(`Routine successfully moved to "${folderName}"!`);
-      await notifyRoutineCreated(updatedRoutine.name);
+      const folderName = updatedRoutine.message || "Unknown action";
+      setSuccessMessage(`${folderName}`);
+      
+      // Refresh the routines data to ensure UI is up to date
+      const refreshResponse = await fetch(`${backendURL}/routines`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+      });
+      
+      if (refreshResponse.ok) {
+        const refreshedData = await refreshResponse.json();
+        setRoutines(refreshedData);
+      }
+      
+      // Close the folder modal
+      setTimeout(() => {
+        setShowFolderModal(false);
+      }, 500);
     } catch (error) {
       alert(`Error assigning routine to folder: ${error.message}`);
     }
@@ -854,17 +770,17 @@ function Routines() {
 
   // Add this function after the other helper functions
   const getExerciseOverview = (routine) => {
-    // Check for different possible data structures
-    let exercises = [];
+    // Get exercises directly from the routine
+    const exercises = routine.exercises || [];
     
-    if (routine.workout?.exercises?.length) {
-      // Standard structure from WorkoutGenerator
-      exercises = routine.workout.exercises;
-    } else if (routine.exercises?.length) {
-      // Alternative structure that might come from WorkoutLog/WorkoutHistory
-      exercises = routine.exercises;
-    } else {
-      return null;
+    if (exercises.length === 0) {
+      return (
+        <div className="mt-2">
+          <span className="px-2 py-1 rounded-full text-xs bg-yellow-100 text-yellow-800">
+            No exercises found
+          </span>
+        </div>
+      );
     }
     
     const maxExercises = 3; // Show up to 3 exercises in overview
@@ -897,26 +813,31 @@ function Routines() {
 
   // Add this function after other handler functions
   const handleDeleteAllRoutines = async () => {
-    if (!window.confirm("Are you sure you want to delete ALL routines? This action cannot be undone.")) {
-      return;
-    }
-
-    setDeletingAll(true);
     try {
+      setDeletingAll(true);
       const token = localStorage.getItem("token");
-      const response = await fetch(`${backendURL}/routines/delete-all`, {
+      
+      if (!token) {
+        setError("You must be logged in to delete all routines");
+        return;
+      }
+      
+      const response = await fetch(`${backendURL}/routines-delete-all`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
 
       if (!response.ok) {
-        throw new Error("Failed to delete all routines");
+        const errorData = await response.text();
+        throw new Error(`Failed to delete all routines: ${errorData}`);
       }
 
+      const result = await response.json();
       setRoutines([]);
-      setSuccessMessage("All routines have been deleted successfully");
+      setSuccessMessage(result.message || "All routines have been deleted successfully");
     } catch (error) {
-      setError("Failed to delete all routines. Please try again.");
+      console.error("Error deleting all routines:", error);
+      setError(`Failed to delete all routines: ${error.message}`);
     } finally {
       setDeletingAll(false);
       setShowDeleteAllModal(false);
@@ -933,6 +854,236 @@ function Routines() {
     if (set.is_pyramid) return "pyramid";
     if (set.is_giant) return "giant";
     return "normal";
+  };
+
+  // Render all routines regardless of folder
+  const renderAllRoutines = () => {
+    const filteredRoutines = filterRoutines(routines);
+    
+    return (
+      <div className="space-y-4">
+        {filteredRoutines.length === 0 ? (
+          <div
+            className={`text-center p-6 rounded-lg ${
+              theme === "dark" ? "bg-gray-800" : "bg-white"
+            }`}
+          >
+            <FaExclamationTriangle 
+              className="mx-auto mb-4 text-4xl text-yellow-500"
+            />
+            <p className="mb-2 font-semibold">No routines found</p>
+            <p className={`${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>
+              {filterOptions.search ? 
+                "Try adjusting your search or filters" : 
+                "You haven't created any routines yet"}
+            </p>
+          </div>
+        ) : (
+          filteredRoutines.map((routine) => (
+            <div
+              key={routine.id}
+              className={`${
+                theme === "dark" ? "bg-gray-800" : "bg-white"
+              } rounded-lg overflow-hidden shadow`}
+            >
+              <div className="p-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-xl font-semibold">{routine.name}</h3>
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => handleStartWorkout(routine)}
+                      className="bg-teal-500 hover:bg-teal-600 text-white p-2 rounded-full"
+                      title="Start routine"
+                    >
+                      <FaPlay />
+                    </button>
+                    <button
+                      onClick={() => openFolderModal(routine.id)}
+                      className="bg-yellow-500 hover:bg-yellow-600 text-white p-2 rounded-full"
+                      title="Move to folder"
+                    >
+                      <FaFolder />
+                    </button>
+                    <button
+                      onClick={() => handleStartEditRoutine(routine)}
+                      className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-full"
+                      title="Edit routine"
+                    >
+                      <FaEdit />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteRoutine(routine.id)}
+                      className="bg-red-500 hover:bg-red-600 text-white p-2 rounded-full"
+                      title="Delete routine"
+                    >
+                      <FaTrash />
+                    </button>
+                  </div>
+                </div>
+                <div className="mt-2 flex items-center gap-2 text-sm">
+                  <span className={`${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>
+                    {routine.exercises?.length 
+                      ? `${routine.exercises.length} Exercise${
+                          routine.exercises.length !== 1 ? "s" : ""
+                        }`
+                      : "0 Exercises"}
+                  </span>
+                  {routine.created_at && (
+                    <span className={`${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>
+                      • Created {new Date(routine.created_at).toLocaleDateString('en-GB')} at {new Date(routine.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  )}
+                  {routine.updated_at && routine.updated_at !== routine.created_at && (
+                    <span className={`${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>
+                      • Last modified {new Date(routine.updated_at).toLocaleDateString('en-GB')}
+                    </span>
+                  )}
+                </div>
+                {getExerciseOverview(routine)}
+                {routine.folder_id && (
+                  <div className="mt-2">
+                    <span className={`px-2 py-1 rounded-full text-xs ${
+                      theme === "dark" ? "bg-yellow-800 text-yellow-200" : "bg-yellow-100 text-yellow-800"
+                    } flex items-center w-fit`}>
+                      <FaFolder className="mr-1" />
+                      {folders.find(f => f.id === routine.folder_id)?.name || "Folder"}
+                    </span>
+                  </div>
+                )}
+                {expandedRoutines[routine.id] && (
+                  <div className="mt-3 border-t pt-3 border-gray-600">
+                    <h4 className="font-semibold mb-2">Exercises</h4>
+                    <div className="space-y-3">
+                      {routine.exercises?.map((exercise, index) => (
+                        <div
+                          key={index}
+                          className={`p-3 rounded ${
+                            theme === "dark" ? "bg-gray-800" : "bg-white"
+                          }`}
+                        >
+                          <div className="flex justify-between items-center">
+                            <h5 className="font-medium">{exercise.name}</h5>
+                            <span
+                              className={`px-2 py-1 rounded-full text-xs ${
+                                exercise.is_cardio
+                                  ? "bg-blue-100 text-blue-800"
+                                  : "bg-purple-100 text-purple-800"
+                              }`}
+                            >
+                              {exercise.category || "Uncategorized"}
+                            </span>
+                          </div>
+                          <div className="mt-2">
+                            <h6 className="text-sm mb-1">Sets:</h6>
+                            <div className="space-y-1">
+                              {exercise.sets?.map((set, setIndex) => (
+                                <div
+                                  key={setIndex}
+                                  className={`text-sm p-1 rounded ${
+                                    set.is_warmup 
+                                      ? theme === "dark" ? "bg-blue-900/30" : "bg-blue-100"
+                                      : set.is_drop_set
+                                      ? theme === "dark" ? "bg-red-900/30" : "bg-red-100" 
+                                      : set.is_superset
+                                      ? theme === "dark" ? "bg-purple-900/30" : "bg-purple-100"
+                                      : set.is_amrap
+                                      ? theme === "dark" ? "bg-green-900/30" : "bg-green-100"
+                                      : set.is_restpause
+                                      ? theme === "dark" ? "bg-yellow-900/30" : "bg-yellow-100"
+                                      : theme === "dark"
+                                      ? "bg-gray-700/50"
+                                      : "bg-gray-50"
+                                  }`}
+                                >
+                                  <div className="flex flex-wrap items-center gap-1">
+                                    <span className="font-medium">Set {setIndex + 1}:</span>
+                                    
+                                    {/* Set Type Badge */}
+                                    {(set.is_warmup || set.is_drop_set || set.is_superset || 
+                                      set.is_amrap || set.is_restpause || set.is_pyramid || set.is_giant) && (
+                                      <span className={`text-xs px-1.5 py-0.5 rounded-full ${
+                                        set.is_warmup 
+                                          ? "bg-blue-500 text-white" 
+                                          : set.is_drop_set 
+                                          ? "bg-red-500 text-white"
+                                          : set.is_superset
+                                          ? "bg-purple-500 text-white"
+                                          : set.is_amrap
+                                          ? "bg-green-500 text-white"
+                                          : set.is_restpause
+                                          ? "bg-yellow-500 text-black"
+                                          : set.is_pyramid
+                                          ? "bg-orange-500 text-white"
+                                          : "bg-pink-500 text-white"
+                                      }`}>
+                                        {set.is_warmup 
+                                          ? "Warm-up" 
+                                          : set.is_drop_set 
+                                          ? "Drop Set"
+                                          : set.is_superset
+                                          ? "Superset"
+                                          : set.is_amrap
+                                          ? "AMRAP"
+                                          : set.is_restpause
+                                          ? "Rest-Pause"
+                                          : set.is_pyramid
+                                          ? "Pyramid"
+                                          : "Giant Set"}
+                                      </span>
+                                    )}
+                                    
+                                    {/* Exercise data based on type */}
+                                    {exercise.is_cardio ? (
+                                      <span>
+                                        {set.distance && <span className="ml-1">{set.distance} meters</span>}
+                                        {set.duration && set.distance && <span className="mx-1">•</span>}
+                                        {set.duration && <span>{set.duration} minutes</span>}
+                                        {set.intensity && <span className="mx-1">• Intensity: {set.intensity}</span>}
+                                      </span>
+                                    ) : (
+                                      <span>
+                                        {set.weight && <span className="ml-1">{set.weight} {routine.weight_unit}</span>}
+                                        {set.reps && set.weight && <span className="mx-1">×</span>}
+                                        {set.reps && <span>{set.reps} reps</span>}
+                                      </span>
+                                    )}
+                                    
+                                    {/* Notes for both types */}
+                                    {set.notes && <span className="ml-2 italic text-gray-500">"{set.notes}"</span>}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <button
+                  onClick={() => toggleRoutineExpand(routine.id)}
+                  className={`mt-2 flex items-center text-sm ${
+                    theme === "dark"
+                      ? "text-gray-400 hover:text-gray-300"
+                      : "text-gray-600 hover:text-gray-800"
+                  }`}
+                >
+                  {expandedRoutines[routine.id] ? (
+                    <>
+                      <FaChevronUp className="mr-1" /> Show Less
+                    </>
+                  ) : (
+                    <>
+                      <FaChevronDown className="mr-1" /> Show More
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    );
   };
 
   if (loading) {
@@ -1054,328 +1205,7 @@ function Routines() {
             </button>
           </div>
         ) : activeView === "all" ? (
-          <div className="space-y-4">
-            {filterRoutines(routines).map((routine) => (
-              <div
-                key={routine.id}
-                className={`${
-                  theme === "dark" ? "bg-gray-800" : "bg-white"
-                } rounded-lg overflow-hidden shadow`}
-              >
-                <div
-                  className={`p-4 flex justify-between items-center cursor-pointer ${
-                    theme === "dark" ? "hover:bg-gray-700" : "hover:bg-gray-50"
-                  }`}
-                  onClick={() => toggleRoutineExpand(routine.id)}
-                >
-                  <div className="flex-1">
-                    <h2 className="text-xl font-semibold">{routine.name}</h2>
-                    <div className="flex items-center gap-2 mt-1">
-                      <p
-                        className={`text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>
-                        {(routine.workout?.exercises?.length || routine.exercises?.length) 
-                          ? `${routine.workout?.exercises?.length || routine.exercises?.length} Exercise${
-                              (routine.workout?.exercises?.length || routine.exercises?.length) !== 1 ? "s" : ""
-                            }`
-                          : "0 Exercises"}
-                      </p>
-                      {routine.folder_id && (
-                        <span className="ml-1 flex items-center text-xs bg-blue-900 text-blue-200 px-2 py-1 rounded-full">
-                          <FaFolder className="mr-1" />
-                          {folders.find((f) => f.id === routine.folder_id)?.name || "Folder"}
-                        </span>
-                      )}
-                      {routine.created_at && (
-                        <span className={`text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>
-                          • Created {new Date(routine.created_at).toLocaleDateString('en-GB')} at {new Date(routine.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                      )}
-                      {routine.updated_at && routine.updated_at !== routine.created_at && (
-                        <span className={`text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>
-                          • Last modified {new Date(routine.updated_at).toLocaleDateString('en-GB')} at {new Date(routine.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                      )}
-                    </div>
-                    {getExerciseOverview(routine)}
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleStartWorkout(routine);
-                      }}
-                      className="text-teal-500 hover:text-teal-400"
-                      title="Start this routine"
-                    >
-                      <FaPlay />
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openFolderModal(routine.id);
-                      }}
-                      className="text-yellow-500 hover:text-yellow-400"
-                      title="Move to folder"
-                    >
-                      <FaFolder />
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleStartEditRoutine(routine);
-                      }}
-                      className="text-blue-500 hover:text-blue-400"
-                      title="Edit routine"
-                    >
-                      <FaEdit />
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteRoutine(routine.id);
-                      }}
-                      className="text-red-500 hover:text-red-400"
-                      title="Delete routine"
-                    >
-                      <FaTrash />
-                    </button>
-                    {expandedRoutines[routine.id] ? (
-                      <FaChevronUp
-                        className={`${
-                          theme === "dark" ? "text-gray-400" : "text-gray-500"
-                        }`}
-                      />
-                    ) : (
-                      <FaChevronDown
-                        className={`${
-                          theme === "dark" ? "text-gray-400" : "text-gray-500"
-                        }`}
-                      />
-                    )}
-                  </div>
-                </div>
-
-                {expandedRoutines[routine.id] &&
-                  routine.workout &&
-                  routine.workout.exercises && (
-                    <div
-                      className={`${
-                        theme === "dark" ? "bg-gray-700" : "bg-gray-50"
-                      } p-4`}
-                    >
-                      {routine.workout.exercises.map((exercise, index) => (
-                        <div key={index} className="mb-4 last:mb-0">
-                          <h3
-                            className={`text-lg font-medium mb-2 border-b ${
-                              theme === "dark"
-                                ? "border-gray-600"
-                                : "border-gray-300"
-                            } pb-2`}
-                          >
-                            {exercise.name}
-                            <span
-                              className={`ml-2 text-sm ${
-                                theme === "dark"
-                                  ? "text-gray-400"
-                                  : "text-gray-500"
-                              }`}
-                            >
-                              {exercise.is_cardio ? "(Cardio)" : "(Strength)"}
-                            </span>
-                          </h3>
-
-                          <table className="w-full table-fixed mb-4">
-                            <thead>
-                              <tr
-                                className={`text-left border-b ${
-                                  theme === "dark"
-                                    ? "border-gray-600"
-                                    : "border-gray-300"
-                                }`}
-                              >
-                                <th className="pb-2 w-1/12">Set</th>
-                                {exercise.is_cardio ? (
-                                  <>
-                                    <th className="pb-2 w-1/5 text-center">
-                                      Distance
-                                    </th>
-                                    <th className="pb-2 w-1/5 text-center">
-                                      Duration
-                                    </th>
-                                    <th className="pb-2 w-1/5 text-center">
-                                      Intensity
-                                    </th>
-                                    <th className="pb-2 w-1/5 text-center">
-                                      Set Type
-                                    </th>
-                                    <th className="pb-2 w-2/5 text-center">
-                                      Notes
-                                    </th>
-                                  </>
-                                ) : (
-                                  <>
-                                    <th className="pb-2 w-1/5 text-center">
-                                      Weight
-                                    </th>
-                                    <th className="pb-2 w-1/5 text-center">
-                                      Reps
-                                    </th>
-                                    <th className="pb-2 w-1/5 text-center">
-                                      Set Type
-                                    </th>
-                                    <th className="pb-2 w-1/5 text-center">
-                                      Notes
-                                    </th>
-                                  </>
-                                )}
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {exercise.sets && exercise.sets.length > 0 ? (
-                                exercise.sets.map((set, setIndex) => (
-                                  <tr
-                                    key={setIndex}
-                                    className={`border-b ${
-                                      theme === "dark"
-                                        ? "border-gray-600"
-                                        : "border-gray-300"
-                                    } last:border-b-0`}
-                                  >
-                                    <td className="py-2">{setIndex + 1}</td>
-                                    {exercise.is_cardio ? (
-                                      <>
-                                        <td className="py-2 text-center">
-                                          {set.distance
-                                            ? `${set.distance} km`
-                                            : "-"}
-                                        </td>
-                                        <td className="py-2 text-center">
-                                          {set.duration
-                                            ? `${set.duration} min`
-                                            : "-"}
-                                        </td>
-                                        <td className="py-2 text-center">
-                                          {set.intensity || "-"}
-                                        </td>
-                                        <td className="py-2 text-center">
-                                          {set.is_warmup ? (
-                                            <span className="px-2 py-1 rounded-full text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200">
-                                              Warm-up
-                                            </span>
-                                          ) : set.is_drop_set ? (
-                                            <span className="px-2 py-1 rounded-full text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200">
-                                              Drop Set {set.drop_number || ""}
-                                            </span>
-                                          ) : set.is_superset ? (
-                                            <span className="px-2 py-1 rounded-full text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200">
-                                              Superset
-                                            </span>
-                                          ) : set.is_amrap ? (
-                                            <span className="px-2 py-1 rounded-full text-xs bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
-                                              AMRAP
-                                            </span>
-                                          ) : set.is_restpause ? (
-                                            <span className="px-2 py-1 rounded-full text-xs bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200">
-                                              Rest-Pause
-                                            </span>
-                                          ) : set.is_pyramid ? (
-                                            <span className="px-2 py-1 rounded-full text-xs bg-pink-100 dark:bg-pink-900/30 text-pink-800 dark:text-pink-200">
-                                              Pyramid
-                                            </span>
-                                          ) : set.is_giant ? (
-                                            <span className="px-2 py-1 rounded-full text-xs bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-200">
-                                              Giant Set
-                                            </span>
-                                          ) : (
-                                            <span className="px-2 py-1 rounded-full text-xs bg-gray-100 dark:bg-gray-700/30 text-gray-600 dark:text-gray-300">
-                                              Normal Set
-                                            </span>
-                                          )}
-                                        </td>
-                                        <td className="py-2 text-center break-words px-2">
-                                          {set.notes || "-"}
-                                        </td>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <td className="py-2 text-center">
-                                          {set.weight
-                                            ? formatWeight(
-                                                set.weight,
-                                                routine.weight_unit
-                                              )
-                                            : "-"}
-                                        </td>
-                                        <td className="py-2 text-center">
-                                          {set.reps || "-"}
-                                        </td>
-                                        <td className="py-2 text-center">
-                                          {set.is_warmup ? (
-                                            <span className="px-2 py-1 rounded-full text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200">
-                                              Warm-up
-                                            </span>
-                                          ) : set.is_drop_set ? (
-                                            <span className="px-2 py-1 rounded-full text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200">
-                                              Drop Set {set.drop_number || ""}
-                                            </span>
-                                          ) : set.is_superset ? (
-                                            <span className="px-2 py-1 rounded-full text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200">
-                                              Superset
-                                            </span>
-                                          ) : set.is_amrap ? (
-                                            <span className="px-2 py-1 rounded-full text-xs bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
-                                              AMRAP
-                                            </span>
-                                          ) : set.is_restpause ? (
-                                            <span className="px-2 py-1 rounded-full text-xs bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200">
-                                              Rest-Pause
-                                            </span>
-                                          ) : set.is_pyramid ? (
-                                            <span className="px-2 py-1 rounded-full text-xs bg-pink-100 dark:bg-pink-900/30 text-pink-800 dark:text-pink-200">
-                                              Pyramid
-                                            </span>
-                                          ) : set.is_giant ? (
-                                            <span className="px-2 py-1 rounded-full text-xs bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-200">
-                                              Giant Set
-                                            </span>
-                                          ) : (
-                                            <span className="px-2 py-1 rounded-full text-xs bg-gray-100 dark:bg-gray-700/30 text-gray-600 dark:text-gray-300">
-                                              Normal Set
-                                            </span>
-                                          )}
-                                        </td>
-                                        <td className="py-2 text-center break-words px-2">
-                                          {set.notes || "-"}
-                                        </td>
-                                      </>
-                                    )}
-                                  </tr>
-                                ))
-                              ) : (
-                                <tr>
-                                  <td
-                                    colSpan={exercise.is_cardio ? 6 : 5}
-                                    className={`py-2 text-center ${
-                                      theme === "dark"
-                                        ? "text-gray-400"
-                                        : "text-gray-500"
-                                    }`}
-                                  >
-                                    {exercise.is_cardio
-                                      ? "No cardio data recorded"
-                                      : "No sets recorded"}
-                                  </td>
-                                </tr>
-                              )}
-                            </tbody>
-                          </table>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-              </div>
-            ))}
-          </div>
+          renderAllRoutines()
         ) : (
           <div className="space-y-6">
             {/* Unassigned routines */}
@@ -1391,7 +1221,7 @@ function Routines() {
                 onClick={() => toggleFolderExpand("unassigned")}
               >
                 <div className="flex items-center">
-                  <FaFolderOpen className="mr-2 text-yellow-400" />
+                  <FaFolderOpen className="mr-2 text-yellow-500" />
                   <h2 className="text-xl font-semibold">Unassigned</h2>
                   <span
                     className={`ml-2 text-sm ${
@@ -1483,6 +1313,145 @@ function Routines() {
                           )}
                         </div>
                         {getExerciseOverview(routine)}
+                        {routine.folder_id && (
+                          <div className="mt-2">
+                            <span className={`px-2 py-1 rounded-full text-xs ${
+                              theme === "dark" ? "bg-yellow-800 text-yellow-200" : "bg-yellow-100 text-yellow-800"
+                            } flex items-center w-fit`}>
+                              <FaFolder className="mr-1" />
+                              {folders.find(f => f.id === routine.folder_id)?.name || "Folder"}
+                            </span>
+                          </div>
+                        )}
+                        {expandedRoutines[routine.id] && (
+                          <div className="mt-3 border-t pt-3 border-gray-600">
+                            <h4 className="font-semibold mb-2">Exercises</h4>
+                            <div className="space-y-3">
+                              {routine.exercises?.map((exercise, index) => (
+                                <div
+                                  key={index}
+                                  className={`p-3 rounded ${
+                                    theme === "dark" ? "bg-gray-800" : "bg-white"
+                                  }`}
+                                >
+                                  <div className="flex justify-between items-center">
+                                    <h5 className="font-medium">{exercise.name}</h5>
+                                    <span
+                                      className={`px-2 py-1 rounded-full text-xs ${
+                                        exercise.is_cardio
+                                          ? "bg-blue-100 text-blue-800"
+                                          : "bg-purple-100 text-purple-800"
+                                      }`}
+                                    >
+                                      {exercise.category || "Uncategorized"}
+                                    </span>
+                                  </div>
+                                  <div className="mt-2">
+                                    <h6 className="text-sm mb-1">Sets:</h6>
+                                    <div className="space-y-1">
+                                      {exercise.sets?.map((set, setIndex) => (
+                                        <div
+                                          key={setIndex}
+                                          className={`text-sm p-1 rounded ${
+                                            set.is_warmup 
+                                              ? theme === "dark" ? "bg-blue-900/30" : "bg-blue-100"
+                                              : set.is_drop_set
+                                              ? theme === "dark" ? "bg-red-900/30" : "bg-red-100" 
+                                              : set.is_superset
+                                              ? theme === "dark" ? "bg-purple-900/30" : "bg-purple-100"
+                                              : set.is_amrap
+                                              ? theme === "dark" ? "bg-green-900/30" : "bg-green-100"
+                                              : set.is_restpause
+                                              ? theme === "dark" ? "bg-yellow-900/30" : "bg-yellow-100"
+                                              : theme === "dark"
+                                              ? "bg-gray-700/50"
+                                              : "bg-gray-50"
+                                          }`}
+                                        >
+                                          <div className="flex flex-wrap items-center gap-1">
+                                            <span className="font-medium">Set {setIndex + 1}:</span>
+                                            
+                                            {/* Set Type Badge */}
+                                            {(set.is_warmup || set.is_drop_set || set.is_superset || 
+                                              set.is_amrap || set.is_restpause || set.is_pyramid || set.is_giant) && (
+                                              <span className={`text-xs px-1.5 py-0.5 rounded-full ${
+                                                set.is_warmup 
+                                                  ? "bg-blue-500 text-white" 
+                                                  : set.is_drop_set 
+                                                  ? "bg-red-500 text-white"
+                                                  : set.is_superset
+                                                  ? "bg-purple-500 text-white"
+                                                  : set.is_amrap
+                                                  ? "bg-green-500 text-white"
+                                                  : set.is_restpause
+                                                  ? "bg-yellow-500 text-black"
+                                                  : set.is_pyramid
+                                                  ? "bg-orange-500 text-white"
+                                                  : "bg-pink-500 text-white"
+                                              }`}>
+                                                {set.is_warmup 
+                                                  ? "Warm-up" 
+                                                  : set.is_drop_set 
+                                                  ? "Drop Set"
+                                                  : set.is_superset
+                                                  ? "Superset"
+                                                  : set.is_amrap
+                                                  ? "AMRAP"
+                                                  : set.is_restpause
+                                                  ? "Rest-Pause"
+                                                  : set.is_pyramid
+                                                  ? "Pyramid"
+                                                  : "Giant Set"}
+                                              </span>
+                                            )}
+                                            
+                                            {/* Exercise data based on type */}
+                                            {exercise.is_cardio ? (
+                                              <span>
+                                                {set.distance && <span className="ml-1">{set.distance} meters</span>}
+                                                {set.duration && set.distance && <span className="mx-1">•</span>}
+                                                {set.duration && <span>{set.duration} minutes</span>}
+                                                {set.intensity && <span className="mx-1">• Intensity: {set.intensity}</span>}
+                                              </span>
+                                            ) : (
+                                              <span>
+                                                {set.weight && <span className="ml-1">{set.weight} {routine.weight_unit}</span>}
+                                                {set.reps && set.weight && <span className="mx-1">×</span>}
+                                                {set.reps && <span>{set.reps} reps</span>}
+                                              </span>
+                                            )}
+                                            
+                                            {/* Notes for both types */}
+                                            {set.notes && <span className="ml-2 italic text-gray-500">"{set.notes}"</span>}
+                      </div>
+                    </div>
+                  ))}
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        
+                        <button
+                          onClick={() => toggleRoutineExpand(routine.id)}
+                          className={`mt-2 flex items-center text-sm ${
+                            theme === "dark"
+                              ? "text-gray-400 hover:text-gray-300"
+                              : "text-gray-600 hover:text-gray-800"
+                          }`}
+                        >
+                          {expandedRoutines[routine.id] ? (
+                            <>
+                              <FaChevronUp className="mr-1" /> Show Less
+                            </>
+                          ) : (
+                            <>
+                              <FaChevronDown className="mr-1" /> Show More
+                            </>
+                          )}
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -1505,7 +1474,7 @@ function Routines() {
                   onClick={() => toggleFolderExpand(folder.id)}
                 >
                   <div className="flex items-center">
-                    <FaFolderOpen className="mr-2 text-yellow-400" />
+                    <FaFolderOpen className="mr-2 text-yellow-500" />
                     <h2 className="text-xl font-semibold">{folder.name}</h2>
                     <span
                       className={`ml-2 text-sm ${
@@ -1557,7 +1526,7 @@ function Routines() {
                               <button
                                 onClick={() => openFolderModal(routine.id)}
                                 className="text-yellow-500 hover:text-yellow-400"
-                                title="Move to different folder"
+                                title="Move to folder"
                               >
                                 <FaFolder />
                               </button>
@@ -1597,6 +1566,144 @@ function Routines() {
                             )}
                           </div>
                           {getExerciseOverview(routine)}
+                          {routine.folder_id && (
+                            <div className="mt-2">
+                              <span className={`px-2 py-1 rounded-full text-xs ${
+                                theme === "dark" ? "bg-yellow-800 text-yellow-200" : "bg-yellow-100 text-yellow-800"
+                              } flex items-center w-fit`}>
+                                <FaFolder className="mr-1" />
+                                {folders.find(f => f.id === routine.folder_id)?.name || "Folder"}
+                              </span>
+                            </div>
+                          )}
+                          {expandedRoutines[routine.id] && (
+                            <div className="mt-3 border-t pt-3 border-gray-600">
+                              <h4 className="font-semibold mb-2">Exercises</h4>
+                              <div className="space-y-3">
+                                {routine.exercises?.map((exercise, index) => (
+                                  <div
+                                    key={index}
+                                    className={`p-3 rounded ${
+                                      theme === "dark" ? "bg-gray-800" : "bg-white"
+                                    }`}
+                                  >
+                                    <div className="flex justify-between items-center">
+                                      <h5 className="font-medium">{exercise.name}</h5>
+                                      <span
+                                        className={`px-2 py-1 rounded-full text-xs ${
+                                          exercise.is_cardio
+                                            ? "bg-blue-100 text-blue-800"
+                                            : "bg-purple-100 text-purple-800"
+                                        }`}
+                                      >
+                                        {exercise.category || "Uncategorized"}
+                                      </span>
+                                    </div>
+                                    <div className="mt-2">
+                                      <h6 className="text-sm mb-1">Sets:</h6>
+                                      <div className="space-y-1">
+                                        {exercise.sets?.map((set, setIndex) => (
+                                          <div
+                                            key={setIndex}
+                                            className={`text-sm p-1 rounded ${
+                                              set.is_warmup 
+                                                ? theme === "dark" ? "bg-blue-900/30" : "bg-blue-100"
+                                                : set.is_drop_set
+                                                ? theme === "dark" ? "bg-red-900/30" : "bg-red-100" 
+                                                : set.is_superset
+                                                ? theme === "dark" ? "bg-purple-900/30" : "bg-purple-100"
+                                                : set.is_amrap
+                                                ? theme === "dark" ? "bg-green-900/30" : "bg-green-100"
+                                                : set.is_restpause
+                                                ? theme === "dark" ? "bg-yellow-900/30" : "bg-yellow-100"
+                                                : theme === "dark"
+                                                ? "bg-gray-700/50"
+                                                : "bg-gray-50"
+                                            }`}
+                                          >
+                                            <div className="flex flex-wrap items-center gap-1">
+                                              <span className="font-medium">Set {setIndex + 1}:</span>
+                                              
+                                              {/* Set Type Badge */}
+                                              {(set.is_warmup || set.is_drop_set || set.is_superset || 
+                                                set.is_amrap || set.is_restpause || set.is_pyramid || set.is_giant) && (
+                                                <span className={`text-xs px-1.5 py-0.5 rounded-full ${
+                                                  set.is_warmup 
+                                                    ? "bg-blue-500 text-white" 
+                                                    : set.is_drop_set 
+                                                    ? "bg-red-500 text-white"
+                                                    : set.is_superset
+                                                    ? "bg-purple-500 text-white"
+                                                    : set.is_amrap
+                                                    ? "bg-green-500 text-white"
+                                                    : set.is_restpause
+                                                    ? "bg-yellow-500 text-black"
+                                                    : set.is_pyramid
+                                                    ? "bg-orange-500 text-white"
+                                                    : "bg-pink-500 text-white"
+                                                }`}>
+                                                  {set.is_warmup 
+                                                    ? "Warm-up" 
+                                                    : set.is_drop_set 
+                                                    ? "Drop Set"
+                                                    : set.is_superset
+                                                    ? "Superset"
+                                                    : set.is_amrap
+                                                    ? "AMRAP"
+                                                    : set.is_restpause
+                                                    ? "Rest-Pause"
+                                                    : set.is_pyramid
+                                                    ? "Pyramid"
+                                                    : "Giant Set"}
+                                                </span>
+                                              )}
+                                              
+                                              {/* Exercise data based on type */}
+                                              {exercise.is_cardio ? (
+                                                <span>
+                                                  {set.distance && <span className="ml-1">{set.distance} meters</span>}
+                                                  {set.duration && set.distance && <span className="mx-1">•</span>}
+                                                  {set.duration && <span>{set.duration} minutes</span>}
+                                                  {set.intensity && <span className="mx-1">• Intensity: {set.intensity}</span>}
+                                                </span>
+                                              ) : (
+                                                <span>
+                                                  {set.weight && <span className="ml-1">{set.weight} {routine.weight_unit}</span>}
+                                                  {set.reps && set.weight && <span className="mx-1">×</span>}
+                                                  {set.reps && <span>{set.reps} reps</span>}
+                                                </span>
+                                              )}
+                                              
+                                              {/* Notes for both types */}
+                                              {set.notes && <span className="ml-2 italic text-gray-500">"{set.notes}"</span>}
+                        </div>
+                      </div>
+                    ))}
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          <button
+                            onClick={() => toggleRoutineExpand(routine.id)}
+                            className={`mt-2 flex items-center text-sm ${
+                              theme === "dark"
+                                ? "text-gray-400 hover:text-gray-300"
+                                : "text-gray-600 hover:text-gray-800"
+                            }`}
+                          >
+                            {expandedRoutines[routine.id] ? (
+                              <>
+                                <FaChevronUp className="mr-1" /> Show Less
+                              </>
+                            ) : (
+                              <>
+                                <FaChevronDown className="mr-1" /> Show More
+                              </>
+                            )}
+                          </button>
                         </div>
                       </div>
                     ))}

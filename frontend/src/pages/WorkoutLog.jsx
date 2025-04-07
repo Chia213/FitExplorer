@@ -102,50 +102,17 @@ const WorkoutLog = () => {
   const [showExerciseChartsModal, setShowExerciseChartsModal] = useState(false);
   const [showPersonalRecordsModal, setShowPersonalRecordsModal] = useState(false);
   const [selectedExerciseForHistory, setSelectedExerciseForHistory] = useState(null);
+  const isLocalStorageDisabled = false;
 
   const toggleWeightUnit = () => {
     const newUnit = weightUnit === "kg" ? "lbs" : "kg";
     setWeightUnit(newUnit);
     localStorage.setItem("weightUnit", newUnit);
-
-    // Convert existing bodyweight
-    if (bodyweight) {
-      const numValue = parseFloat(bodyweight);
-      if (!isNaN(numValue)) {
-        const convertedValue =
-          newUnit === "kg"
-            ? (numValue / 2.20462).toFixed(1) // lbs to kg
-            : (numValue * 2.20462).toFixed(1); // kg to lbs
-        setBodyweight(convertedValue);
-      }
-    }
-
-    // Convert all exercise weights
-    setWorkoutExercises((prev) =>
-      prev.map((exercise) => {
-        if (!exercise.is_cardio) {
-          return {
-            ...exercise,
-            sets: exercise.sets.map((set) => {
-              if (set.weight) {
-                const weight = parseFloat(set.weight);
-                if (!isNaN(weight)) {
-                  return {
-                    ...set,
-                    weight:
-                      newUnit === "kg"
-                        ? (weight / 2.20462).toFixed(1) // lbs to kg
-                        : (weight * 2.20462).toFixed(1), // kg to lbs
-                  };
-                }
-              }
-              return set;
-            }),
-          };
-        }
-        return exercise;
-      })
-    );
+    
+    // Save to server preferences
+    saveUserPreferences({
+      weight_unit: newUnit
+    });
   };
 
   const toggleExerciseCollapse = (exerciseIndex) => {
@@ -237,7 +204,7 @@ const WorkoutLog = () => {
   };
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("access_token");
     if (!token) {
       navigate("/login");
       return;
@@ -317,11 +284,30 @@ const WorkoutLog = () => {
   async function fetchRoutines(token) {
     setLoadingRoutines(true);
     try {
+      // Make sure we have a valid token
+      const authToken = token || localStorage.getItem("access_token") || localStorage.getItem("token");
+      
+      if (!authToken) {
+        console.error("No authentication token found");
+        throw new Error("Authentication required");
+      }
+      
+      console.log("Fetching routines with token");
       const response = await fetch(`${API_BASE_URL}/routines`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { 
+          Authorization: `Bearer ${authToken}`,
+          "Content-Type": "application/json"
+        },
       });
-      if (!response.ok) throw new Error("Failed to fetch routines");
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`Failed to fetch routines: ${response.status} ${response.statusText}`, errorText);
+        throw new Error(`Failed to fetch routines: ${response.status}`);
+      }
+      
       const data = await response.json();
+      console.log(`Successfully fetched ${data.length} routines`);
       setRoutines(data);
     } catch (error) {
       console.error("Error fetching routines:", error);
@@ -331,7 +317,10 @@ const WorkoutLog = () => {
   }
 
   const handleSelectRoutine = (routine) => {
-    if (!routine || !routine.workout || !routine.workout.exercises) {
+    // First determine where the exercises are located - support both formats
+    const exercises = routine.workout?.exercises || routine.exercises;
+    
+    if (!exercises || exercises.length === 0) {
       alert("This routine doesn't have any exercises.");
       return;
     }
@@ -349,7 +338,7 @@ const WorkoutLog = () => {
     setWorkoutName(routine.name);
 
     // Convert routine exercises to workout exercises
-    const newExercises = routine.workout.exercises.map((exercise) => {
+    const newExercises = exercises.map((exercise) => {
       // Ensure is_cardio is properly set as a boolean
       const isCardio = Boolean(exercise.is_cardio);
       const initialSets = exercise.initial_sets || exercise.sets?.length || 1;
@@ -466,7 +455,7 @@ const WorkoutLog = () => {
 
   const checkForPersonalRecords = async (workout) => {
     try {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("access_token");
       const response = await fetch(`${API_BASE_URL}/personal-records`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -503,7 +492,7 @@ const WorkoutLog = () => {
 
   const checkWorkoutStreak = async () => {
     try {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("access_token");
       const response = await fetch(`${API_BASE_URL}/workout-streak`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -652,7 +641,7 @@ const WorkoutLog = () => {
     }
 
     try {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("access_token");
       if (!token) {
         navigate("/login");
         return;
@@ -734,8 +723,12 @@ const WorkoutLog = () => {
     setSavingRoutine(true);
 
     try {
-      const token = localStorage.getItem("token");
-      if (!token) {
+      // Get token, checking both localStorage keys
+      const authToken = localStorage.getItem("access_token") || localStorage.getItem("token");
+      
+      if (!authToken) {
+        console.error("No authentication token found");
+        alert("Please log in to save routines");
         navigate("/login");
         return;
       }
@@ -775,6 +768,7 @@ const WorkoutLog = () => {
       // Create the routine data
       const routineData = {
         name: routineName,
+        weight_unit: weightUnit || "kg",
         exercises: formattedExercises
       };
 
@@ -782,11 +776,16 @@ const WorkoutLog = () => {
 
       // Check for duplicate routine names
       const routinesResponse = await fetch(`${API_BASE_URL}/routines`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { 
+          Authorization: `Bearer ${authToken}`,
+          "Content-Type": "application/json"
+        }
       });
 
       if (!routinesResponse.ok) {
-        throw new Error("Failed to check existing routines");
+        const errorText = await routinesResponse.text();
+        console.error(`Failed to check existing routines: ${routinesResponse.status} ${routinesResponse.statusText}`, errorText);
+        throw new Error(`Failed to check existing routines: ${routinesResponse.status}`);
       }
 
       const existingRoutines = await routinesResponse.json();
@@ -810,25 +809,30 @@ const WorkoutLog = () => {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`
+            Authorization: `Bearer ${authToken}`
           },
           body: JSON.stringify(routineData)
         });
       } else {
-        // Create a new routine
+        // Create a new routine - use the /routines endpoint
         response = await fetch(`${API_BASE_URL}/routines`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`
+            Authorization: `Bearer ${authToken}`
           },
           body: JSON.stringify(routineData)
         });
       }
 
       if (!response.ok) {
-        throw new Error("Failed to save routine");
+        const errorText = await response.text();
+        console.error(`Error saving routine: ${response.status} ${response.statusText}`, errorText);
+        throw new Error(`Failed to save routine: ${response.status}`);
       }
+
+      const responseData = await response.json();
+      console.log("Routine saved successfully:", responseData);
 
       setShowSaveRoutineModal(false);
       setRoutineName("");
@@ -1627,7 +1631,7 @@ const WorkoutLog = () => {
     });
 
     try {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("access_token");
       if (!token) {
         navigate("/login");
         return;
@@ -1695,6 +1699,13 @@ const WorkoutLog = () => {
       const routineId = location.state.routineId;
       console.log("Detected navigation with routineId:", routineId);
       
+      // If the routine is directly included in the state, use it immediately
+      if (location.state?.routine) {
+        console.log("Found routine in state:", location.state.routine.name);
+        handleSelectRoutine(location.state.routine);
+        return;
+      }
+      
       // Load the routine data from localStorage if it exists
       const preloadedExercises = localStorage.getItem("preloadedWorkoutExercises");
       const preloadedWorkoutName = localStorage.getItem("preloadedWorkoutName");
@@ -1722,7 +1733,7 @@ const WorkoutLog = () => {
         console.log("No preloaded data found for routine:", routineId);
         
         // If no preloaded data is found, try to fetch all routines and find the one we need
-        const token = localStorage.getItem("token");
+        const token = localStorage.getItem("access_token") || localStorage.getItem("token");
         if (token) {
           console.log("Attempting to fetch routines with routineId:", routineId);
           fetch(`${API_BASE_URL}/routines`, {
@@ -1738,7 +1749,14 @@ const WorkoutLog = () => {
               const routine = routines.find(r => r.id === routineIdNum);
               if (routine) {
                 console.log("Found routine in fetch response:", routine.name);
-                handleSelectRoutine(routine);
+                // Transform the routine to the expected format with workout.exercises
+                const formattedRoutine = {
+                  ...routine,
+                  workout: {
+                    exercises: routine.exercises || []
+                  }
+                };
+                handleSelectRoutine(formattedRoutine);
               } else {
                 console.error("Routine not found in fetch response. Available routines:", routines.map(r => `ID: ${r.id}, Name: ${r.name}`));
               }
@@ -1751,6 +1769,32 @@ const WorkoutLog = () => {
     }
   }, [location.state]);
 
+  // Load user preferences function
+  const loadUserPreferences = useCallback(async () => {
+    const token = localStorage.getItem('access_token');
+    if (!token) return;
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/workout-preferences`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.bodyweight) {
+          setBodyweight(data.bodyweight);
+        }
+        if (data.weight_unit) {
+          setWeightUnit(data.weight_unit);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading user preferences:', error);
+    }
+  }, []);
+
   // Load the last used bodyweight from localStorage when the component mounts
   useEffect(() => {
     // First try to load from localStorage as a quick solution
@@ -1760,44 +1804,8 @@ const WorkoutLog = () => {
     }
     
     // Then try to load from the server preferences
-    const loadWorkoutPreferences = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        if (!token) return;
-
-        const response = await fetch(`${API_BASE_URL}/workout-preferences`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (!response.ok) return;
-
-        const preferences = await response.json();
-        
-        // Only update bodyweight if we have a value from the server and it's not already set
-        if (preferences.last_bodyweight && (!bodyweight || bodyweight === "")) {
-          const weightValue = preferences.last_bodyweight.toString();
-          setBodyweight(weightValue);
-          // Also update localStorage for future quick access
-          localStorage.setItem("lastBodyweight", weightValue);
-        }
-        
-        if (preferences.last_weight_unit) {
-          setWeightUnit(preferences.last_weight_unit);
-        }
-        
-        // Optionally load saved exercises if needed
-        // if (preferences.last_exercises && !workoutExercises.length) {
-        //   setWorkoutExercises(preferences.last_exercises);
-        // }
-      } catch (error) {
-        console.error("Error loading workout preferences:", error);
-      }
-    };
-
-    loadWorkoutPreferences();
-  }, []);
+    loadUserPreferences();
+  }, [loadUserPreferences]);
 
   // Update localStorage and API whenever bodyweight changes
   useEffect(() => {
@@ -1806,28 +1814,15 @@ const WorkoutLog = () => {
       localStorage.setItem("lastBodyweight", bodyweight);
       
       // Also update on the server if we have a token
-      const saveBodyweight = async () => {
-        try {
-          const token = localStorage.getItem("token");
-          if (!token) return;
-          
-          // Only save if we have an actual value
-          if (!bodyweight || bodyweight === "") return;
-
-          await fetch(`${API_BASE_URL}/workout-preferences`, {
-            method: "PUT",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-              last_bodyweight: parseFloat(bodyweight),
-              last_weight_unit: weightUnit
-            }),
-          });
-        } catch (error) {
-          console.error("Error saving bodyweight preference:", error);
-        }
+      const saveBodyweight = () => {
+        // Save to localStorage for immediate access in future sessions
+        localStorage.setItem("lastBodyweight", bodyweight);
+        
+        // Save to server for persistence across devices
+        saveUserPreferences({
+          bodyweight: bodyweight,
+          weight_unit: weightUnit
+        });
       };
       
       // Debounce the API call to avoid too many requests
@@ -1847,6 +1842,55 @@ const WorkoutLog = () => {
       }
     };
   }, [timerInterval]);
+
+  // Save all user preferences
+  const saveUserPreferences = async (preferences) => {
+    const token = localStorage.getItem('access_token');
+    if (!token) return;
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/workout-preferences`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(preferences)
+      });
+      
+      if (!response.ok) {
+        console.error('Failed to save user preferences');
+      }
+    } catch (error) {
+      console.error('Error saving user preferences:', error);
+    }
+  };
+
+  // Save to local storage for multi-day workouts
+  useEffect(() => {
+    if (!isLocalStorageDisabled && workoutExercises.length > 0) {
+      try {
+        const token = localStorage.getItem("access_token");
+        
+        // Only attempt to save if a token exists
+        if (token) {
+          const savedWorkout = {
+            name: workoutName,
+            start_time: startTime,
+            end_time: endTime,
+            bodyweight: bodyweight,
+            notes: notes,
+            weight_unit: weightUnit,
+            exercises: workoutExercises
+          };
+          
+          localStorage.setItem("savedWorkout", JSON.stringify(savedWorkout));
+        }
+      } catch (error) {
+        console.error("Error saving workout to localStorage:", error);
+      }
+    }
+  }, [workoutName, startTime, endTime, bodyweight, notes, weightUnit, workoutExercises, isLocalStorageDisabled]);
 
   return (
     <div className="min-h-screen flex flex-col items-center p-6 bg-gray-100 dark:bg-gray-900">

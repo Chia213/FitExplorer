@@ -11,7 +11,7 @@ export const registerUser = async (email, password, username) => {
 };
 
 export const checkAdminStatus = async () => {
-  const token = localStorage.getItem("token");
+  const token = localStorage.getItem("access_token");
   if (!token) {
     localStorage.removeItem("isAdmin");
     return false;
