@@ -11,9 +11,13 @@ class Settings:
     ACCESS_TOKEN_EXPIRE_MINUTES: int = int(
         os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 1000000))
 
-    MAIL_USERNAME = os.getenv("MAIL_USERNAME", "chiaranchber@gmail.com")
-    MAIL_PASSWORD = os.getenv("MAIL_PASSWORD", "rtlqkkmcwuzbslnj")
-    MAIL_FROM = os.getenv("MAIL_FROM", "chiaranchber@gmail.com")
+    # Gmail API Configuration
+    GMAIL_FROM_EMAIL = os.getenv("GMAIL_FROM_EMAIL", "fitexplorer.fitnessapp@gmail.com")
+
+    # Legacy email settings (to be removed after migration)
+    MAIL_USERNAME = os.getenv("MAIL_USERNAME", "fitexplorer.fitnessapp@gmail.com")
+    MAIL_PASSWORD = os.getenv("MAIL_PASSWORD", "rznlquqvjqulvwxy")
+    MAIL_FROM = os.getenv("MAIL_FROM", "fitexplorer.fitnessapp@gmail.com")
     MAIL_PORT = int(os.getenv("MAIL_PORT", 587))
     MAIL_SERVER = os.getenv("MAIL_SERVER", "smtp.gmail.com")
     MAIL_STARTTLS = os.getenv("MAIL_TLS", "true").lower() == "true"
@@ -31,7 +35,7 @@ class Settings:
     # Frontend URL for email verification links
     FRONTEND_URL: str = os.getenv("FRONTEND_URL", "http://localhost:5173")
     DEFAULT_ADMIN_EMAIL: str = os.getenv(
-        "DEFAULT_ADMIN_EMAIL", "chiaranchber@gmail.com")
+        "DEFAULT_ADMIN_EMAIL", "fitexplorer.fitnessapp@gmail.com")
 
     # Security token settings
     VERIFICATION_TOKEN_EXPIRE_HOURS: int = int(
@@ -47,6 +51,7 @@ settings = Settings()
 DB_URL = settings.DB_URL
 SECRET_KEY = settings.SECRET_KEY
 ACCESS_TOKEN_EXPIRE_MINUTES = settings.ACCESS_TOKEN_EXPIRE_MINUTES
+GMAIL_FROM_EMAIL = settings.GMAIL_FROM_EMAIL
 MAIL_USERNAME = settings.MAIL_USERNAME
 MAIL_PASSWORD = settings.MAIL_PASSWORD
 MAIL_FROM = settings.MAIL_FROM

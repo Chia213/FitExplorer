@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { FaCheckCircle, FaTimesCircle } from "react-icons/fa";
+import { FaCheckCircle, FaTimesCircle, FaInfoCircle } from "react-icons/fa";
 
 function VerifyEmail() {
-  const [status, setStatus] = useState("verifying"); // "verifying", "success", "error"
+  const [status, setStatus] = useState("verifying"); // "verifying", "success", "error", "already_verified"
   const [message, setMessage] = useState("Verifying your email...");
   const navigate = useNavigate();
   const location = useLocation();
@@ -30,15 +30,24 @@ function VerifyEmail() {
         });
 
         if (response.ok) {
+          const data = await response.json();
           setStatus("success");
-          setMessage("Email verified successfully! You can now log in.");
+          setMessage(data.message || "Email verified successfully! You can now log in.");
           setTimeout(() => navigate("/login"), 3000);
         } else {
           const error = await response.json();
-          setStatus("error");
-          setMessage(
-            error.detail || "Failed to verify email. The link may be expired."
-          );
+          
+          // Check if this might be an already verified account
+          if (error.detail && (
+            error.detail.includes("already verified") || 
+            error.detail.includes("Invalid verification token")
+          )) {
+            setStatus("already_verified");
+            setMessage("Your account may already be verified. Please try logging in.");
+          } else {
+            setStatus("error");
+            setMessage(error.detail || "Failed to verify email. The link may be expired.");
+          }
         }
       } catch (error) {
         setStatus("error");
@@ -74,6 +83,22 @@ function VerifyEmail() {
               className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-lg"
             >
               Log In
+            </button>
+          </div>
+        )}
+        
+        {status === "already_verified" && (
+          <div className="flex flex-col items-center">
+            <FaInfoCircle className="text-blue-500 text-6xl mb-4" />
+            <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-4">
+              Already Verified
+            </h1>
+            <p className="text-gray-600 dark:text-gray-300 mb-6">{message}</p>
+            <button
+              onClick={() => navigate("/login")}
+              className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-lg"
+            >
+              Go to Login
             </button>
           </div>
         )}

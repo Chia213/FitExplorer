@@ -797,7 +797,7 @@ function Profile() {
     try {
       setIsSaving(true);
       const token = localStorage.getItem("token");
-      const response = await fetch(`${backendURL}/request-account-deletion`, {
+      const response = await fetch(`${backendURL}/auth/request-account-deletion`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
