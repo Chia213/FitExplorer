@@ -26,11 +26,14 @@ from schemas import (
     UserProfileUpdateRequest,
     AchievementCreate,
     Achievement as AchievementSchema,
-    UserAchievementResponse
+    UserAchievementResponse,
+    WorkoutTemplateCreate,
+    WorkoutTemplateResponse
 )
 from models import (
     Workout, User, Exercise, Set, Routine, CustomExercise, SavedWorkoutProgram, RoutineFolder, WorkoutPreferences, 
-    Notification, Achievement, UserAchievement, AdminSettings, NutritionMeal, NutritionGoal, UserProfile, CommonFood
+    Notification, Achievement, UserAchievement, AdminSettings, NutritionMeal, NutritionGoal, UserProfile, CommonFood,
+    WorkoutTemplate, UserUnlockedTemplates
 )
 from typing import List, Dict, Any, Optional
 from admin import router as admin_router
@@ -44,7 +47,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import uuid
 import os
-from fastapi import FastAPI, Depends, HTTPException, File, UploadFile, BackgroundTasks, Body, Query, Request
+from fastapi import FastAPI, Depends, HTTPException, File, UploadFile, BackgroundTasks, Body, Query, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from background_task import send_summary_emails
@@ -2139,4 +2142,247 @@ def delete_routine_folder(
         db.rollback()
         print(f"Error deleting routine folder: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error deleting routine folder: {str(e)}")
+
+
+# Workout Templates endpoints
+@app.get("/workout-templates", response_model=List[WorkoutTemplateResponse], tags=["workout-templates"])
+async def get_all_templates(
+    is_premium: Optional[bool] = Query(None),
+    category: Optional[str] = Query(None),
+    level: Optional[str] = Query(None),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get all non-premium workout templates or filter by parameters.
+    Premium templates require separate endpoint.
+    """
+    query = db.query(WorkoutTemplate)
+    
+    # Apply filters if provided
+    if is_premium is not None:
+        query = query.filter(WorkoutTemplate.is_premium == is_premium)
+    if category:
+        query = query.filter(WorkoutTemplate.category == category)
+    if level:
+        query = query.filter(WorkoutTemplate.level == level)
+    
+    # If requesting non-premium templates only
+    if is_premium is False:
+        templates = query.all()
+        return templates
+    
+    # If a filter isn't specifying premium status, only return non-premium by default
+    if is_premium is None:
+        query = query.filter(WorkoutTemplate.is_premium == False)
+        templates = query.all()
+        return templates
+
+    # Otherwise, check for premium access
+    # Get user unlocked templates
+    user_unlocked = db.query(UserUnlockedTemplates).filter(
+        UserUnlockedTemplates.user_id == user.id
+    ).first()
+    
+    if user.is_admin:
+        # Admins have access to all templates
+        templates = query.all()
+        return templates
+    
+    if not user_unlocked:
+        # User hasn't unlocked any premium templates
+        if is_premium:
+            return []  # Return empty list if only premium templates requested
+        templates = query.filter(WorkoutTemplate.is_premium == False).all()
+        return templates
+    
+    # Get templates that user has unlocked
+    unlocked_ids = user_unlocked.template_ids
+    
+    if is_premium:
+        # If specifically requesting premium templates, return only unlocked premium
+        templates = query.filter(WorkoutTemplate.id.in_(unlocked_ids)).all()
+        return templates
+    
+    # Otherwise return non-premium + unlocked premium
+    non_premium = query.filter(WorkoutTemplate.is_premium == False).all()
+    premium = query.filter(
+        WorkoutTemplate.is_premium == True,
+        WorkoutTemplate.id.in_(unlocked_ids)
+    ).all()
+    
+    return non_premium + premium
+
+@app.get("/workout-templates/premium", response_model=List[WorkoutTemplateResponse], tags=["workout-templates"])
+async def get_premium_templates(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get premium workout templates that the user has unlocked.
+    """
+    if user.is_admin:
+        # Admins have access to all premium templates
+        premium_templates = db.query(WorkoutTemplate).filter(
+            WorkoutTemplate.is_premium == True
+        ).all()
+        return premium_templates
+    
+    # For regular users, check unlocked templates
+    user_unlocked = db.query(UserUnlockedTemplates).filter(
+        UserUnlockedTemplates.user_id == user.id
+    ).first()
+    
+    if not user_unlocked:
+        return []  # No unlocked templates
+    
+    unlocked_ids = user_unlocked.template_ids
+    premium_templates = db.query(WorkoutTemplate).filter(
+        WorkoutTemplate.is_premium == True,
+        WorkoutTemplate.id.in_(unlocked_ids)
+    ).all()
+    
+    return premium_templates
+
+@app.get("/workout-templates/available-premium", response_model=List[WorkoutTemplateResponse], tags=["workout-templates"])
+async def get_available_premium_templates(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get premium templates that are available but the user hasn't unlocked yet.
+    """
+    if user.is_admin:
+        # Admins have access to all templates, so there are no "available but not unlocked"
+        return []
+    
+    # For regular users, check unlocked templates
+    user_unlocked = db.query(UserUnlockedTemplates).filter(
+        UserUnlockedTemplates.user_id == user.id
+    ).first()
+    
+    if not user_unlocked:
+        # No unlocked templates, all premium templates are available
+        premium_templates = db.query(WorkoutTemplate).filter(
+            WorkoutTemplate.is_premium == True
+        ).all()
+        return premium_templates
+    
+    unlocked_ids = user_unlocked.template_ids
+    available_templates = db.query(WorkoutTemplate).filter(
+        WorkoutTemplate.is_premium == True,
+        ~WorkoutTemplate.id.in_(unlocked_ids)  # Not in unlocked IDs
+    ).all()
+    
+    return available_templates
+
+@app.get("/workout-templates/{template_id}", response_model=WorkoutTemplateResponse, tags=["workout-templates"])
+async def get_template(
+    template_id: str,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get a specific workout template by ID.
+    """
+    template = db.query(WorkoutTemplate).filter(WorkoutTemplate.id == template_id).first()
+    
+    if not template:
+        raise HTTPException(status_code=404, detail="Template not found")
+    
+    # If template is not premium, return it
+    if not template.is_premium:
+        return template
+    
+    if user.is_admin:
+        # Admins have access to all templates
+        return template
+    
+    # For regular users, check if they've unlocked this template
+    user_unlocked = db.query(UserUnlockedTemplates).filter(
+        UserUnlockedTemplates.user_id == user.id
+    ).first()
+    
+    if not user_unlocked or template_id not in user_unlocked.template_ids:
+        raise HTTPException(
+            status_code=403,
+            detail="You do not have access to this premium template. Unlock it through achievements."
+        )
+    
+    return template
+
+@app.post("/workout-templates/unlock/{template_id}", status_code=status.HTTP_200_OK, tags=["workout-templates"])
+async def unlock_template(
+    template_id: str,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Unlock a premium workout template.
+    """
+    # Check if template exists and is premium
+    template = db.query(WorkoutTemplate).filter(WorkoutTemplate.id == template_id).first()
+    
+    if not template:
+        raise HTTPException(status_code=404, detail="Template not found")
+    
+    if not template.is_premium:
+        return {"message": "Template is not premium and doesn't need to be unlocked"}
+    
+    if user.is_admin:
+        return {"message": "As an admin, you already have access to all premium templates"}
+    
+    # Check if user already has unlocked templates
+    user_unlocked = db.query(UserUnlockedTemplates).filter(
+        UserUnlockedTemplates.user_id == user.id
+    ).first()
+    
+    if not user_unlocked:
+        # Create new record for user
+        new_unlocked = UserUnlockedTemplates(
+            user_id=user.id,
+            template_ids=[template_id]
+        )
+        db.add(new_unlocked)
+        db.commit()
+    else:
+        # Update existing record
+        if template_id not in user_unlocked.template_ids:
+            user_unlocked.template_ids.append(template_id)
+            db.commit()
+    
+    return {"message": f"Template {template_id} unlocked successfully"}
+
+@app.post("/workout-templates", response_model=WorkoutTemplateResponse, status_code=status.HTTP_201_CREATED, tags=["workout-templates"])
+async def create_template(
+    template: WorkoutTemplateCreate,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Create a new workout template (admin only).
+    """
+    if not user.is_admin:
+        raise HTTPException(
+            status_code=403,
+            detail="Only administrators can create workout templates"
+        )
+    
+    new_template = WorkoutTemplate(
+        id=str(uuid.uuid4()),
+        name=template.name,
+        description=template.description,
+        level=template.level,
+        category=template.category,
+        creator=template.creator,
+        image_url=template.image_url,
+        is_premium=template.is_premium,
+        workouts=[workout.dict() for workout in template.workouts]
+    )
+    
+    db.add(new_template)
+    db.commit()
+    db.refresh(new_template)
+    
+    return new_template
 

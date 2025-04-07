@@ -4,6 +4,7 @@ from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy.ext.declarative import declarative_base
 from database import Base
 from datetime import datetime, timezone
+import uuid
 
 Base = declarative_base()
 
@@ -340,3 +341,30 @@ class CommonFood(Base):
     sodium = Column(Float, nullable=True)
     food_group = Column(String, nullable=True)  # e.g., "Fruits", "Vegetables", "Proteins", etc.
     brand = Column(String, nullable=True)  # For branded products
+
+
+class WorkoutTemplate(Base):
+    __tablename__ = "workout_templates"
+
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    name = Column(String, nullable=False)
+    description = Column(String, nullable=False)
+    level = Column(String, nullable=False)
+    category = Column(String, nullable=False)
+    creator = Column(String, nullable=False)
+    image_url = Column(String, nullable=True)
+    is_premium = Column(Boolean, default=False)
+    workouts = Column(JSON, nullable=False)
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
+
+
+class UserUnlockedTemplates(Base):
+    __tablename__ = "user_unlocked_templates"
+
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    template_ids = Column(JSON, nullable=False, default=lambda: [])  # Array of template IDs
+    last_updated = Column(DateTime, default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
+    
+    user = relationship("User", backref="unlocked_templates")

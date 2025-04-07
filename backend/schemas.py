@@ -429,3 +429,44 @@ class UserAchievementResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+# Workout Templates Schemas
+class WorkoutTemplateExercise(BaseModel):
+    name: str
+    sets: int
+    reps: str
+    rest: int
+    notes: Optional[str] = None
+
+class WorkoutTemplateWorkout(BaseModel):
+    name: str
+    day: int
+    exercises: List[WorkoutTemplateExercise]
+    duration: int
+    notes: Optional[str] = None
+
+class WorkoutTemplateCreate(BaseModel):
+    name: str
+    description: str
+    level: str
+    category: str
+    creator: str
+    image_url: Optional[str] = None
+    is_premium: bool = False
+    workouts: List[WorkoutTemplateWorkout]
+
+class WorkoutTemplateResponse(BaseModel):
+    id: str
+    name: str
+    description: str
+    level: str
+    category: str
+    creator: str
+    image_url: Optional[str] = None
+    is_premium: bool
+    workouts: List[WorkoutTemplateWorkout]
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True

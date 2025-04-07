@@ -427,30 +427,174 @@ function Nutrition() {
       // Set the selected date to the one we're saving to
       setSelectedDate(date);
       
-      // De-duplicate meals by name (breakfast, lunch, dinner)
-      const mealTypeMap = {};
+      // First, delete all existing meals for this date
+      try {
+        console.log(`Deleting existing meals for date ${date}`);
+        const existingMealsResponse = await axios.get(`/nutrition/meals?date=${date}`);
+        const existingMeals = existingMealsResponse.data;
+        
+        // Delete each existing meal
+        for (const meal of existingMeals) {
+          await axios.delete(`/nutrition/meals/${meal.id}`);
+          console.log(`Deleted meal: ${meal.name} (ID: ${meal.id})`);
+        }
+      } catch (err) {
+        console.error("Error clearing existing meals:", err);
+        // Continue anyway - we'll overwrite with new meals
+      }
       
-      // Group meals by their name (Breakfast, Lunch, Dinner, Snack, etc.)
+      // Create a map to categorize meals by their primary type
+      const mealCategories = {
+        breakfast: [],
+        lunch: [],
+        dinner: [],
+        snack: [],
+        other: []
+      };
+      
+      // Categorize each meal
       mealPlan.meals.forEach(meal => {
-        const mealType = meal.name.split(' ')[0]; // Get base meal type (Breakfast, Lunch, Dinner)
-        if (!mealTypeMap[mealType]) {
-          mealTypeMap[mealType] = meal;
+        // Log each meal to see what's happening
+        console.log(`Processing meal: ${meal.name}`, meal);
+        
+        const nameLower = meal.name.toLowerCase();
+        
+        // More explicit matching to catch variations
+        if (nameLower.includes("breakfast")) {
+          console.log(`Categorizing ${meal.name} as breakfast`);
+          mealCategories.breakfast.push(meal);
+        } else if (nameLower.includes("lunch")) {
+          console.log(`Categorizing ${meal.name} as lunch`);
+          mealCategories.lunch.push(meal);
+        } else if (nameLower.includes("dinner")) {
+          console.log(`Categorizing ${meal.name} as dinner`);
+          mealCategories.dinner.push(meal);
+        } else if (nameLower.includes("snack")) {
+          console.log(`Categorizing ${meal.name} as snack`);
+          mealCategories.snack.push(meal);
         } else {
-          // If this meal type already exists, combine the foods
-          mealTypeMap[mealType].foods = [...mealTypeMap[mealType].foods, ...meal.foods];
+          console.log(`Categorizing ${meal.name} as other`);
+          mealCategories.other.push(meal);
         }
       });
       
-      // Convert the map back to an array and sort by time
-      const uniqueMeals = Object.values(mealTypeMap).sort((a, b) => {
-        // Convert time strings to comparable values
+      // After categorizing, log the counts
+      console.log("MEAL CATEGORY COUNTS:", {
+        breakfast: mealCategories.breakfast.length,
+        lunch: mealCategories.lunch.length, 
+        dinner: mealCategories.dinner.length,
+        snack: mealCategories.snack.length,
+        other: mealCategories.other.length
+      });
+      
+      // For each category, combine all foods into a single meal
+      const consolidatedMeals = [];
+      
+      // Process breakfast
+      if (mealCategories.breakfast.length > 0) {
+        const allBreakfastFoods = [];
+        let breakfastTime = "08:00";
+        
+        mealCategories.breakfast.forEach(meal => {
+          if (meal.foods) allBreakfastFoods.push(...meal.foods);
+          if (meal.time) breakfastTime = meal.time;
+        });
+        
+        // Create consolidated breakfast
+        consolidatedMeals.push({
+          name: "Breakfast",
+          time: breakfastTime,
+          foods: allBreakfastFoods
+        });
+      }
+      
+      // Process lunch
+      if (mealCategories.lunch.length > 0) {
+        const allLunchFoods = [];
+        let lunchTime = "12:00";
+        
+        mealCategories.lunch.forEach(meal => {
+          if (meal.foods) allLunchFoods.push(...meal.foods);
+          if (meal.time) lunchTime = meal.time;
+        });
+        
+        // Create consolidated lunch
+        consolidatedMeals.push({
+          name: "Lunch",
+          time: lunchTime,
+          foods: allLunchFoods
+        });
+      }
+      
+      // Process dinner
+      if (mealCategories.dinner.length > 0) {
+        const allDinnerFoods = [];
+        let dinnerTime = "18:00";
+        
+        mealCategories.dinner.forEach(meal => {
+          if (meal.foods) allDinnerFoods.push(...meal.foods);
+          if (meal.time) dinnerTime = meal.time;
+        });
+        
+        // Create consolidated dinner
+        consolidatedMeals.push({
+          name: "Dinner",
+          time: dinnerTime,
+          foods: allDinnerFoods
+        });
+      }
+      
+      // Process snacks - keep them separate by time if possible
+      mealCategories.snack.forEach((snack, index) => {
+        const snackTypes = ["Morning Snack", "Afternoon Snack", "Evening Snack"];
+        const snackTimes = ["10:00", "15:00", "20:00"];
+        
+        let snackName = snack.name;
+        // If the snack doesn't have a specific type, assign one based on order
+        if (snackName.toLowerCase() === "snack") {
+          snackName = snackTypes[Math.min(index, snackTypes.length - 1)];
+        }
+        
+        consolidatedMeals.push({
+          name: snackName,
+          time: snack.time || snackTimes[Math.min(index, snackTimes.length - 1)],
+          foods: snack.foods || []
+        });
+      });
+      
+      // Add any other meal types
+      mealCategories.other.forEach(meal => {
+        consolidatedMeals.push({
+          name: meal.name,
+          time: meal.time,
+          foods: meal.foods || []
+        });
+      });
+      
+      // Sort consolidated meals by time
+      consolidatedMeals.sort((a, b) => {
         const timeA = a.time.split(':').map(Number);
         const timeB = b.time.split(':').map(Number);
         return (timeA[0] * 60 + timeA[1]) - (timeB[0] * 60 + timeB[1]);
       });
       
+      console.log("Consolidated meals:", consolidatedMeals);
+      
+      // After consolidation but before saving:
+      console.log("FINAL CONSOLIDATED MEALS:", consolidatedMeals.map(m => ({
+        name: m.name,
+        time: m.time,
+        foodCount: m.foods?.length || 0
+      })));
+      
       // For each unique meal in the plan, save it to the user's meals
-      for (const meal of uniqueMeals) {
+      for (const meal of consolidatedMeals) {
+        // Skip meals with no foods
+        if (!meal.foods || meal.foods.length === 0) {
+          console.log(`Skipping empty meal: ${meal.name}`);
+          continue;
+        }
+        
         const mealData = {
           name: meal.name,
           time: meal.time,
@@ -460,7 +604,13 @@ function Nutrition() {
         
         console.log(`Saving ${meal.name} to date ${date}:`, mealData);
         
-        await axios.post(`/nutrition/meals`, mealData);
+        try {
+          await axios.post(`/nutrition/meals`, mealData);
+          console.log(`Successfully saved ${meal.name}`);
+        } catch (saveErr) {
+          console.error(`Error saving ${meal.name}:`, saveErr);
+          // Continue with other meals
+        }
       }
       
       alert("Meal plan saved successfully!");
@@ -541,8 +691,8 @@ function Nutrition() {
             </div>
           ) : (
             <div className="space-y-4">
-              {meals.map((meal) => (
-                <div key={meal.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+              {meals.map((meal, index) => (
+                <div key={`meal-${meal.id}-${index}`} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
                   {/* Same meal rendering as in dashboard */}
                   <div className="flex justify-between items-center mb-2">
                     <h4 className="font-medium">{meal.name}</h4>
@@ -572,8 +722,8 @@ function Nutrition() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                        {meal.foods.map((food, index) => (
-                          <tr key={index}>
+                        {meal.foods.map((food, foodIndex) => (
+                          <tr key={`food-${food.id || foodIndex}-${foodIndex}`}>
                             <td className="px-3 py-2 whitespace-nowrap text-sm">{food.name}</td>
                             <td className="px-3 py-2 whitespace-nowrap text-sm">{food.quantity || 1} {food.serving_size}</td>
                             <td className="px-3 py-2 whitespace-nowrap text-sm">{food.calories * (food.quantity || 1)} kcal</td>
@@ -716,8 +866,8 @@ function Nutrition() {
             </div>
           ) : (
             <div className="space-y-4">
-              {meals.map((meal) => (
-                <div key={meal.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+              {meals.map((meal, index) => (
+                <div key={`meal-${meal.id}-${index}`} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
                   <div className="flex justify-between items-center mb-2">
                     <h4 className="font-medium">{meal.name}</h4>
                     <div className="flex items-center space-x-2">
@@ -746,8 +896,8 @@ function Nutrition() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                        {meal.foods.map((food, index) => (
-                          <tr key={index}>
+                        {meal.foods.map((food, foodIndex) => (
+                          <tr key={`food-${food.id || foodIndex}-${foodIndex}`}>
                             <td className="px-3 py-2 whitespace-nowrap text-sm">{food.name}</td>
                             <td className="px-3 py-2 whitespace-nowrap text-sm">{food.quantity || 1} {food.serving_size}</td>
                             <td className="px-3 py-2 whitespace-nowrap text-sm">{food.calories * (food.quantity || 1)} kcal</td>
@@ -1673,10 +1823,12 @@ function Nutrition() {
                         
                         <div className="space-y-2 mt-2">
                           {meal.foods.map((food, foodIndex) => (
-                            <div key={foodIndex} className="flex justify-between items-center text-sm py-1 border-b last:border-b-0 border-gray-100 dark:border-gray-700">
-                              <div className="font-medium">{food.name}</div>
-                              <div className="text-gray-500 dark:text-gray-400">
-                                {food.calories} kcal | {food.protein}g P | {food.carbs}g C | {food.fat}g F
+                            <div key={`food-${food.id || foodIndex}-${foodIndex}`}>
+                              <div className="flex justify-between items-center text-sm py-1 border-b last:border-b-0 border-gray-100 dark:border-gray-700">
+                                <div className="font-medium">{food.name}</div>
+                                <div className="text-gray-500 dark:text-gray-400">
+                                  {food.calories} kcal | {food.protein}g P | {food.carbs}g C | {food.fat}g F
+                                </div>
                               </div>
                             </div>
                           ))}
