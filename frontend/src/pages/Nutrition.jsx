@@ -427,8 +427,30 @@ function Nutrition() {
       // Set the selected date to the one we're saving to
       setSelectedDate(date);
       
-      // For each meal in the plan, save it to the user's meals
-      for (const meal of mealPlan.meals) {
+      // De-duplicate meals by name (breakfast, lunch, dinner)
+      const mealTypeMap = {};
+      
+      // Group meals by their name (Breakfast, Lunch, Dinner, Snack, etc.)
+      mealPlan.meals.forEach(meal => {
+        const mealType = meal.name.split(' ')[0]; // Get base meal type (Breakfast, Lunch, Dinner)
+        if (!mealTypeMap[mealType]) {
+          mealTypeMap[mealType] = meal;
+        } else {
+          // If this meal type already exists, combine the foods
+          mealTypeMap[mealType].foods = [...mealTypeMap[mealType].foods, ...meal.foods];
+        }
+      });
+      
+      // Convert the map back to an array and sort by time
+      const uniqueMeals = Object.values(mealTypeMap).sort((a, b) => {
+        // Convert time strings to comparable values
+        const timeA = a.time.split(':').map(Number);
+        const timeB = b.time.split(':').map(Number);
+        return (timeA[0] * 60 + timeA[1]) - (timeB[0] * 60 + timeB[1]);
+      });
+      
+      // For each unique meal in the plan, save it to the user's meals
+      for (const meal of uniqueMeals) {
         const mealData = {
           name: meal.name,
           time: meal.time,
@@ -1546,7 +1568,7 @@ function Nutrition() {
                 <h4 className="font-medium text-green-800 dark:text-green-300 flex items-center">
                   <FaUtensils className="mr-2" /> Generated Meal Plan
                 </h4>
-                    <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2">
                   <div className="relative">
                     <input
                       id="meal-plan-date-picker"
@@ -1556,14 +1578,14 @@ function Nutrition() {
                       className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700"
                     />
                   </div>
-                      <button
+                  <button
                     onClick={() => handleSaveMealPlanToDay(selectedDate, generatedMealPlan)}
                     className="px-3 py-1 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors flex items-center"
-                      >
+                  >
                     <FaPlus className="mr-1" /> Save to Selected Date
-                      </button>
-                    </div>
-                  </div>
+                  </button>
+                </div>
+              </div>
                   
               {/* Workout Adjustment Info */}
               {mealPlanPreferences.adjust_for_workouts && (
@@ -1618,26 +1640,50 @@ function Nutrition() {
                   </div>
                 </div>
                 
-                {/* Individual Meals */}
-                {generatedMealPlan.meals.map((meal, index) => (
-                  <div key={index} className="bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm">
-                    <div className="flex justify-between items-center mb-2">
-                      <h5 className="font-medium">{meal.name}</h5>
-                      <span className="text-sm text-gray-500 dark:text-gray-400">{meal.time}</span>
-                    </div>
-                    
-                    <div className="space-y-2 mt-2">
-                      {meal.foods.map((food, foodIndex) => (
-                        <div key={foodIndex} className="flex justify-between items-center text-sm py-1 border-b last:border-b-0 border-gray-100 dark:border-gray-700">
-                          <div className="font-medium">{food.name}</div>
-                          <div className="text-gray-500 dark:text-gray-400">
-                            {food.calories} kcal | {food.protein}g P | {food.carbs}g C | {food.fat}g F
-                          </div>
+                {/* Individual Meals - With uniqueness filter */}
+                {(() => {
+                  // Create a map to store unique meal types
+                  const mealTypeMap = {};
+                  
+                  // Group meals by their name (Breakfast, Lunch, Dinner, Snack, etc.)
+                  generatedMealPlan.meals.forEach(meal => {
+                    const mealType = meal.name.split(' ')[0]; // Get base meal type (Breakfast, Lunch, Dinner)
+                    if (!mealTypeMap[mealType]) {
+                      mealTypeMap[mealType] = meal;
+                    } else {
+                      // If this meal type already exists, combine the foods
+                      mealTypeMap[mealType].foods = [...mealTypeMap[mealType].foods, ...meal.foods];
+                    }
+                  });
+                  
+                  // Convert the map back to an array and sort by time
+                  return Object.values(mealTypeMap)
+                    .sort((a, b) => {
+                      // Convert time strings to comparable values
+                      const timeA = a.time.split(':').map(Number);
+                      const timeB = b.time.split(':').map(Number);
+                      return (timeA[0] * 60 + timeA[1]) - (timeB[0] * 60 + timeB[1]);
+                    })
+                    .map((meal, index) => (
+                      <div key={index} className="bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm">
+                        <div className="flex justify-between items-center mb-2">
+                          <h5 className="font-medium">{meal.name}</h5>
+                          <span className="text-sm text-gray-500 dark:text-gray-400">{meal.time}</span>
                         </div>
-                      ))}
-                  </div>
-                </div>
-              ))}
+                        
+                        <div className="space-y-2 mt-2">
+                          {meal.foods.map((food, foodIndex) => (
+                            <div key={foodIndex} className="flex justify-between items-center text-sm py-1 border-b last:border-b-0 border-gray-100 dark:border-gray-700">
+                              <div className="font-medium">{food.name}</div>
+                              <div className="text-gray-500 dark:text-gray-400">
+                                {food.calories} kcal | {food.protein}g P | {food.carbs}g C | {food.fat}g F
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ));
+                })()}
               </div>
             </div>
           )}

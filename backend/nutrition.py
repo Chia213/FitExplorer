@@ -623,8 +623,8 @@ def generate_meal_plan(
             ],
             4: [
                 {"name": "Breakfast", "time": "08:00", "calorie_percent": 0.25},
+                {"name": "Morning Snack", "time": "11:00", "calorie_percent": 0.10},
                 {"name": "Lunch", "time": "13:00", "calorie_percent": 0.35},
-                {"name": "Snack", "time": "16:00", "calorie_percent": 0.10},
                 {"name": "Dinner", "time": "19:00", "calorie_percent": 0.30},
             ],
             5: [

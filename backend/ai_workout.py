@@ -33,6 +33,10 @@ class Exercise(BaseModel):
     sets: int
     reps: str
     rest: str
+    is_cardio: bool = False
+    target_duration: int = 0
+    target_distance: float = 0
+    calories: int = 0
 
 class WorkoutDay(BaseModel):
     day: str
@@ -161,6 +165,10 @@ The workout plan should include:
    - List of exercises with sets, reps, and rest periods
    - Any special notes
 
+Important notes:
+- For cardio exercises, always specify the machine or type (e.g., "Treadmill - Steady State Cardio", "Exercise Bike - HIIT", etc.)
+- If including cardio, mark it as cardio and include target duration, distance and calorie goals
+
 Format the response as valid JSON following this structure exactly:
 {
   "name": "Program Name",
@@ -175,6 +183,16 @@ Format the response as valid JSON following this structure exactly:
           "sets": 3,
           "reps": "8-12",
           "rest": "60-90 sec"
+        },
+        {
+          "name": "Treadmill - Steady State Cardio",
+          "sets": 1,
+          "reps": "30 minutes",
+          "rest": "N/A",
+          "is_cardio": true,
+          "target_duration": 30,
+          "target_distance": 5,
+          "calories": 300
         }
       ],
       "notes": "Any special instructions"
@@ -250,7 +268,11 @@ def parse_ai_response(response: str) -> WorkoutPlan:
                             name=exercise.get("name", "Exercise"),
                             sets=parse_sets(exercise.get("sets", 3)),
                             reps=exercise.get("reps", "10-12"),
-                            rest=exercise.get("rest", "60 sec")
+                            rest=exercise.get("rest", "60 sec"),
+                            is_cardio=exercise.get("is_cardio", False),
+                            target_duration=exercise.get("target_duration", 0),
+                            target_distance=exercise.get("target_distance", 0),
+                            calories=exercise.get("calories", 0)
                         )
                         for exercise in day.get("exercises", [])
                     ],
@@ -572,12 +594,44 @@ async def generate_workout_fallback(
         
         # Add cardio for endurance or weight loss goals
         if goal in ["endurance", "weight_loss"]:
-            exercises.append(Exercise(
-                name="HIIT Cardio" if goal == "weight_loss" else "Steady State Cardio",
-                sets=1,
-                reps="20 minutes",
-                rest="N/A"
-            ))
+            # Determine appropriate cardio machines based on equipment availability
+            cardio_options = []
+            if equipment in ["full_gym", "home_gym"]:
+                cardio_options = ["Treadmill", "Exercise Bike", "Elliptical", "Rowing Machine", "Stair Climber"]
+            else:
+                cardio_options = ["Outdoor Running", "Outdoor Cycling", "Jumping Rope", "Walking"]
+            
+            # Choose a default based on goal
+            default_cardio = "Treadmill" if equipment in ["full_gym", "home_gym"] else "Outdoor Running"
+            
+            # Add multiple cardio options as separate exercises
+            if goal == "endurance":
+                # For endurance goals, add 2-3 cardio options
+                cardio_machines = cardio_options[:3] if len(cardio_options) >= 3 else cardio_options
+                
+                for machine in cardio_machines:
+                    exercises.append(Exercise(
+                        name=f"{machine} - Steady State Cardio",
+                        sets=1,
+                        reps=f"{25 if experience == 'beginner' else 35} minutes",
+                        rest="N/A",
+                        is_cardio=True,
+                        target_duration=25 if experience == "beginner" else 35,
+                        target_distance=4 if experience == "beginner" else 6,
+                        calories=200 if experience == "beginner" else 300
+                    ))
+            else:
+                # For weight loss, add 1-2 HIIT options
+                exercises.append(Exercise(
+                    name=f"{default_cardio} - HIIT Cardio",
+                    sets=1,
+                    reps="20 minutes",
+                    rest="N/A",
+                    is_cardio=True,
+                    target_duration=20,
+                    target_distance=3,
+                    calories=250
+                ))
         
         workout_days.append(WorkoutDay(
             day=f"Day {i+1}",
