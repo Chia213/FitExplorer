@@ -250,17 +250,28 @@ export function ThemeProvider({ children }) {
         
         if (response.ok) {
           const data = await response.json();
-          setTheme(data.theme || "light");
-          setPremiumTheme(data.premium_theme || "default");
           
-          // Get unlocked themes
+          // Always prioritize the backed theme settings over localStorage
+          // to ensure user gets their own themes, not the previous user's
+          const backendThemeMode = data.theme || "light";
+          const backendPremiumTheme = data.premium_theme || "default";
           const backendUnlockedThemes = data.unlocked_themes || ["default"];
+          
+          // Set the state with backend data
+          setTheme(backendThemeMode);
+          setPremiumTheme(backendPremiumTheme);
           setUnlockedThemes(backendUnlockedThemes);
           
-          // Save to localStorage for offline access
-          localStorage.setItem("theme", data.theme || "light");
-          localStorage.setItem("premiumTheme", data.premium_theme || "default");
+          // Update localStorage with backend data
+          localStorage.setItem("theme", backendThemeMode);
+          localStorage.setItem("premiumTheme", backendPremiumTheme);
           localStorage.setItem("unlockedThemes", JSON.stringify(backendUnlockedThemes));
+          
+          console.log("Theme settings synchronized from backend:", {
+            mode: backendThemeMode,
+            premiumTheme: backendPremiumTheme,
+            unlockedThemes: backendUnlockedThemes
+          });
         } else {
           // If API fails, use localStorage
           const savedTheme = localStorage.getItem("theme") || "light";
@@ -301,6 +312,13 @@ export function ThemeProvider({ children }) {
     localStorage.setItem("theme", theme); // Keep in localStorage for faster initial load
 
     // Apply premium theme CSS variables
+    if (!premiumTheme || (premiumThemes && !premiumThemes[premiumTheme])) {
+      console.warn(`Theme "${premiumTheme}" not found, falling back to default`);
+      setPremiumTheme("default");
+      localStorage.setItem("premiumTheme", "default");
+      return;
+    }
+
     const currentTheme = premiumThemes[premiumTheme] || premiumThemes.default;
     
     // Apply color values as CSS variables
@@ -381,6 +399,8 @@ export function ThemeProvider({ children }) {
   const changePremiumTheme = async (themeKey) => {
     // Check if theme exists
     if (!premiumThemes[themeKey]) {
+      console.error(`Theme "${themeKey}" not found`);
+      toast.error(`Theme "${themeKey}" not found`);
       return false;
     }
     
@@ -586,6 +606,21 @@ export function ThemeProvider({ children }) {
     }
   }, [synchronizeThemes]);
 
+  // Add a function to clear theme storage on logout
+  const clearThemeStorage = useCallback(() => {
+    // Reset to defaults in localStorage
+    localStorage.setItem("theme", "light");
+    localStorage.setItem("premiumTheme", "default");
+    localStorage.setItem("unlockedThemes", JSON.stringify(["default"]));
+    
+    // Update state
+    setTheme("light");
+    setPremiumTheme("default");
+    setUnlockedThemes(["default"]);
+    
+    console.log("Theme settings reset to defaults");
+  }, []);
+
   return (
     <ThemeContext.Provider
       value={{
@@ -696,7 +731,8 @@ export function ThemeProvider({ children }) {
         loading,
         applyTheme,
         synchronizeThemes,
-        checkThemeAccess
+        checkThemeAccess,
+        clearThemeStorage
       }}
     >
       {children}

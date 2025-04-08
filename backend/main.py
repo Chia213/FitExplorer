@@ -76,6 +76,8 @@ app.add_middleware(
         "http://127.0.0.1:5173",
         "http://localhost:8000",
         "http://127.0.0.1:8000",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
         "https://accounts.google.com"
     ],  # Include both localhost variations and Google's domain
     allow_credentials=True,
@@ -1465,9 +1467,72 @@ def check_achievements(
                 user_achievement.progress = workout_count
                 
             elif achievement.category == "streak":
-                # This would need more complex logic to track streaks
-                # For now, we'll leave it as is
-                pass
+                # Get user's workout preferences to find their frequency goal
+                workout_prefs = db.query(WorkoutPreferences).filter(WorkoutPreferences.user_id == user.id).first()
+                frequency_goal = workout_prefs.workout_frequency_goal if workout_prefs else None
+                
+                if achievement.name == "Workout Frequency Champion" and frequency_goal:
+                    # This achievement tracks if user maintains their workout frequency goal
+                    # Get workouts from the past 4 weeks (28 days)
+                    four_weeks_ago = datetime.now(timezone.utc) - timedelta(days=28)
+                    workouts = db.query(Workout).filter(
+                        Workout.user_id == user.id,
+                        Workout.date >= four_weeks_ago,
+                        Workout.is_template == False
+                    ).order_by(Workout.date.desc()).all()
+                    
+                    # Group workouts by week
+                    weeks_achieved = 0
+                    workouts_by_week = {}
+                    
+                    for workout in workouts:
+                        # Calculate the week number (0-3, where 0 is current week)
+                        days_ago = (datetime.now(timezone.utc) - workout.date).days
+                        week_number = min(3, days_ago // 7)
+                        
+                        if week_number not in workouts_by_week:
+                            workouts_by_week[week_number] = 0
+                        workouts_by_week[week_number] += 1
+                    
+                    # Check how many weeks met the frequency goal
+                    for week in range(4):  # Check all 4 weeks
+                        week_workouts = workouts_by_week.get(week, 0)
+                        if week_workouts >= frequency_goal:
+                            weeks_achieved += 1
+                    
+                    # Update progress (number of weeks the goal was achieved)
+                    user_achievement.progress = weeks_achieved
+                
+                elif achievement.name == "Consistency King":
+                    # This checks for completing at least 3 workouts per week for 4 consecutive weeks
+                    four_weeks_ago = datetime.now(timezone.utc) - timedelta(days=28)
+                    workouts = db.query(Workout).filter(
+                        Workout.user_id == user.id,
+                        Workout.date >= four_weeks_ago,
+                        Workout.is_template == False
+                    ).order_by(Workout.date.desc()).all()
+                    
+                    # Group workouts by week
+                    weeks_with_three_plus = 0
+                    workouts_by_week = {}
+                    
+                    for workout in workouts:
+                        # Calculate the week number (0-3, where 0 is current week)
+                        days_ago = (datetime.now(timezone.utc) - workout.date).days
+                        week_number = min(3, days_ago // 7)
+                        
+                        if week_number not in workouts_by_week:
+                            workouts_by_week[week_number] = 0
+                        workouts_by_week[week_number] += 1
+                    
+                    # Check how many weeks had at least 3 workouts
+                    for week in range(4):  # Check all 4 weeks
+                        week_workouts = workouts_by_week.get(week, 0)
+                        if week_workouts >= 3:  # At least 3 workouts
+                            weeks_with_three_plus += 1
+                    
+                    # Update progress
+                    user_achievement.progress = weeks_with_three_plus
                 
             elif achievement.category == "profile":
                 # Check if user has completed profile
@@ -1486,6 +1551,10 @@ def check_achievements(
             
             if is_achieved and not was_achieved:
                 user_achievement.achieved_at = datetime.now(timezone.utc)
+                user_achievement.earned_at = datetime.now(timezone.utc)
+                user_achievement.is_read = False  # Mark as unread so it shows up in notifications
+                user_achievement.title = achievement.name
+                user_achievement.description = achievement.description
                 newly_achieved += 1
                 
             updated_count += 1
@@ -2628,4 +2697,116 @@ def update_user_routine(
         "description": routine.description,
         "exercises": routine.exercises
     }
+
+# Add endpoint for getting last saved routine
+@app.get("/api/last-saved-routine", response_model=Dict[str, Any])
+def get_last_saved_routine(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get the last saved routine for the current user"""
+    # Find the most recent workout
+    last_workout = db.query(Workout).filter(
+        Workout.user_id == user.id,
+        Workout.is_template == False  # Only real workouts, not templates
+    ).order_by(Workout.date.desc()).first()
+    
+    if not last_workout:
+        return {
+            "message": "No workouts found",
+            "data": None
+        }
+    
+    # Get the exercises for this workout
+    exercises = db.query(Exercise).filter(
+        Exercise.workout_id == last_workout.id
+    ).all()
+    
+    exercise_data = []
+    for exercise in exercises:
+        # Get sets for this exercise
+        sets = db.query(Set).filter(
+            Set.exercise_id == exercise.id
+        ).all()
+        
+        # Format sets data
+        sets_data = []
+        for set_item in sets:
+            set_dict = {
+                "id": set_item.id,
+                "weight": set_item.weight,
+                "reps": set_item.reps,
+                "distance": set_item.distance,
+                "duration": set_item.duration,
+                "intensity": set_item.intensity,
+                "notes": set_item.notes
+            }
+            sets_data.append(set_dict)
+        
+        # Format exercise data
+        exercise_dict = {
+            "id": exercise.id,
+            "name": exercise.name,
+            "category": exercise.category,
+            "is_cardio": exercise.is_cardio,
+            "sets": sets_data
+        }
+        exercise_data.append(exercise_dict)
+    
+    return {
+        "id": last_workout.id,
+        "name": last_workout.name,
+        "date": last_workout.date.isoformat() if last_workout.date else None,
+        "exercises": exercise_data
+    }
+
+# Add endpoint for getting new achievements
+@app.get("/api/achievements/new", response_model=List[Dict[str, Any]])
+def get_new_achievements(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get new/unread achievements for the current user"""
+    try:
+        # Get user achievements that haven't been read yet
+        user_achievements = db.query(UserAchievement).filter(
+            UserAchievement.user_id == user.id,
+            UserAchievement.is_read == False
+        ).all()
+        
+        result = []
+        for user_achievement in user_achievements:
+            # Get the associated achievement
+            achievement = db.query(Achievement).filter(
+                Achievement.id == user_achievement.achievement_id
+            ).first()
+            
+            if not achievement:
+                continue
+                
+            # Mark as read
+            user_achievement.is_read = True
+            
+            # Use fields from user_achievement if available, otherwise fall back to achievement
+            result.append({
+                "id": user_achievement.id,
+                "type": user_achievement.achievement_type or "achievement",
+                "title": user_achievement.title or achievement.name,
+                "description": user_achievement.description or achievement.description,
+                "earned_at": user_achievement.earned_at.isoformat() if user_achievement.earned_at else 
+                             (user_achievement.achieved_at.isoformat() if user_achievement.achieved_at else None),
+                "icon": user_achievement.icon or achievement.icon or "trophy",
+                "level": user_achievement.level or 1
+            })
+        
+        # Commit changes to mark achievements as read
+        db.commit()
+        
+        return result
+    except Exception as e:
+        db.rollback()
+        print(f"Error fetching new achievements: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error fetching new achievements: {str(e)}")
 

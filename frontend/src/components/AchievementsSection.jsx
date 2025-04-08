@@ -103,7 +103,10 @@ const AchievementsSection = ({ backendURL }) => {
     
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${backendURL}/achievements/new`, {
+      if (!token) return;
+      
+      const response = await fetch(`${backendURL}/api/achievements/new`, {
+        method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`
         }

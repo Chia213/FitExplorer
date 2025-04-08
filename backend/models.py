@@ -292,6 +292,13 @@ class UserAchievement(Base):
     achieved_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))
     progress = Column(Integer, default=0)  # Track progress towards achievement
     reward_claimed = Column(Boolean, default=False)  # Track if reward has been claimed
+    is_read = Column(Boolean, default=False)  # Track if achievement notification has been read
+    achievement_type = Column(String, default="achievement")  # Type of achievement
+    title = Column(String, nullable=True)  # Achievement title (can be separate from name)
+    description = Column(String, nullable=True)  # Achievement description (can override)
+    earned_at = Column(DateTime(timezone=True), nullable=True)  # Time when earned (can be different from achieved_at)
+    icon = Column(String, nullable=True)  # Custom icon override
+    level = Column(Integer, default=1)  # Achievement level
 
     user = relationship("User", back_populates="achievements")
     achievement = relationship("Achievement", back_populates="users")

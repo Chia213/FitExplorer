@@ -123,7 +123,7 @@ function Navbar() {
   const authDropdownRef = useRef(null);
   const searchRef = useRef(null);
   
-  const { theme } = useTheme();
+  const { theme, clearThemeStorage } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
   const { unreadCount, addNotification } = useNotifications();
@@ -209,11 +209,19 @@ function Navbar() {
 
   // Handle logout
   const handleLogout = () => {
+    // Clear authentication data
     localStorage.removeItem("token");
     localStorage.removeItem("isAdmin");
+    
+    // Reset theme settings to prevent theme leakage between users
+    clearThemeStorage();
+    
+    // Update state
     setIsAuthenticated(false);
     setUsername(null);
     setIsAdmin(false);
+    
+    // Navigate to login page
     navigate("/login");
   };
 

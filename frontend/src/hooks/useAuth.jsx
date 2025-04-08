@@ -1,8 +1,23 @@
 import { useState, useEffect, useCallback, createContext, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
 
 // Create context
-const AuthContext = createContext(null);
+const AuthContext = createContext({
+  user: null,
+  isLoading: false,
+  error: null,
+  login: async () => false,
+  logout: () => {},
+  register: async () => false,
+  isAuthenticated: () => false,
+  verifyEmail: async () => false,
+  requestPasswordReset: async () => false,
+  resetPassword: async () => false,
+  changePassword: async () => false,
+  updateProfile: async () => false,
+  checkAdminStatus: async () => false,
+});
 
 // Define the backend URL - should be in an environment variable
 const BACKEND_URL = 'http://localhost:8000';
@@ -12,6 +27,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
 
   // Parse JWT token and extract user data
@@ -200,10 +216,20 @@ export const AuthProvider = ({ children }) => {
 
   // Logout function
   const logout = useCallback(() => {
+    // Clear auth tokens
     localStorage.removeItem('access_token');
     localStorage.removeItem('token');
     localStorage.removeItem('isAdmin');
+    
+    // Reset theme settings directly in localStorage to avoid circular dependency with useTheme
+    localStorage.setItem("theme", "light");
+    localStorage.setItem("premiumTheme", "default");
+    localStorage.setItem("unlockedThemes", JSON.stringify(["default"]));
+    
+    // Update UI state
     setUser(null);
+    
+    // Navigate to login page
     navigate('/login');
   }, [navigate]);
 

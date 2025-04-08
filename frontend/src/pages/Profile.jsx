@@ -115,7 +115,7 @@ function Profile() {
             "Content-Type": "application/json"
           },
         }),
-        fetch(`${backendURL}/last-saved-routine`, {
+        fetch(`${backendURL}/api/last-saved-routine`, {
           headers: { 
             "Authorization": `Bearer ${token}`,
             "Content-Type": "application/json"
@@ -159,11 +159,9 @@ function Profile() {
         console.log("Setting preferences from backend data:", userData.preferences);
         
         // First get workout preferences to ensure we have the correct workout frequency goal
-        const workoutPrefsRes = await fetch(`${backendURL}/workout-preferences`, {
-          headers: { 
-            "Authorization": `Bearer ${token}`,
-            "Content-Type": "application/json"
-          },
+        const workoutPrefsRes = await fetch(`${backendURL}/api/workout-preferences`, {
+          method: "GET",
+          headers: { Authorization: `Bearer ${token}` },
         });
         
         if (workoutPrefsRes.ok) {
@@ -171,7 +169,7 @@ function Profile() {
           workoutFrequencyGoal = workoutPrefs.workout_frequency_goal;
           console.log("Loaded workout frequency goal from preferences:", workoutFrequencyGoal);
         } else {
-          console.error("Failed to fetch workout preferences:", workoutPrefsRes.status);
+          console.warn("Failed to fetch workout preferences:", workoutPrefsRes.status);
         }
         
         setPreferences((prev) => ({
@@ -627,13 +625,15 @@ function Profile() {
       // Next, update workout preferences to include the workout frequency goal
       let updatedWorkoutPrefs = null;
       try {
-        const workoutPrefsResponse = await fetch(`${backendURL}/workout-preferences`, {
+        const workoutPrefsResponse = await fetch(`${backendURL}/api/workout-preferences`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
+            last_bodyweight: preferences.weight ? parseFloat(preferences.weight) : null,
+            last_weight_unit: preferences.weightUnit,
             workout_frequency_goal: preferences.workoutFrequencyGoal ? parseInt(preferences.workoutFrequencyGoal) : null
           }),
         });
@@ -731,6 +731,10 @@ function Profile() {
             await notifyWorkoutFrequencyGoalUpdated(updatedWorkoutPrefs.workout_frequency_goal);
             frequencyGoalNotificationSent = true;
             console.log("Notification sent for workout frequency goal update");
+            
+            // Check achievements after updating preferences
+            console.log("Checking achievements after workout frequency goal update");
+            await checkAchievementsProgress();
           }
           // Check if weight goal was updated
           else if (preferences.goalWeight !== oldGoalWeight && preferences.goalWeight !== null && !weightGoalNotificationSent) {
@@ -752,6 +756,10 @@ function Profile() {
             // Force notification for debugging
             await notifyWorkoutFrequencyGoalUpdated(updatedWorkoutPrefs.workout_frequency_goal);
             console.log("Forced notification sent for workout frequency goal update (for testing)");
+            
+            // Still check achievements even if notifications are disabled
+            console.log("Checking achievements even though notifications are disabled");
+            await checkAchievementsProgress();
           }
         }
       } else {
@@ -776,6 +784,7 @@ function Profile() {
   // Function to check achievements after profile updates
   const checkAchievementsProgress = async () => {
     try {
+      console.log("Starting achievement check process");
       const token = localStorage.getItem("token");
       const response = await fetch(`${backendURL}/achievements/check`, {
         method: "POST",
@@ -784,7 +793,11 @@ function Profile() {
         },
       });
       
-      if (!response.ok) {
+      if (response.ok) {
+        const result = await response.json();
+        console.log("Achievement check completed:", result);
+        console.log(`Updated ${result.updated_count} achievements, ${result.newly_achieved} newly achieved!`);
+      } else {
         console.error("Failed to check achievements:", response.status);
       }
     } catch (error) {
@@ -1022,20 +1035,20 @@ function Profile() {
           // If useCustomCardColor is true, always use the custom color regardless of premium theme
           backgroundColor: preferences.useCustomCardColor 
             ? preferences.cardColor 
-            : (premiumTheme && premiumTheme !== "default" && premiumThemes[premiumTheme])
+            : (premiumTheme && premiumTheme !== "default" && premiumThemes && premiumThemes[premiumTheme])
               ? premiumThemes[premiumTheme].primary
               : preferences.cardColor,
           // Same logic for background gradient
           background: preferences.useCustomCardColor 
             ? preferences.cardColor 
-            : (premiumTheme && premiumTheme !== "default" && premiumThemes[premiumTheme])
+            : (premiumTheme && premiumTheme !== "default" && premiumThemes && premiumThemes[premiumTheme])
               ? `linear-gradient(135deg, ${premiumThemes[premiumTheme].primary}dd, ${premiumThemes[premiumTheme].secondary}aa)`
               : preferences.cardColor,
           color: theme === "dark" ? "white" : "#334155" // text color that works on gradient
         }}>
           {console.log("Rendering card with:", 
             preferences.useCustomCardColor ? "custom color" : "theme color", 
-            preferences.useCustomCardColor ? preferences.cardColor : (premiumTheme && premiumThemes[premiumTheme] ? premiumThemes[premiumTheme].primary : "default")
+            preferences.useCustomCardColor ? preferences.cardColor : (premiumTheme && premiumThemes && premiumThemes[premiumTheme] ? premiumThemes[premiumTheme].primary : "default")
           )}
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-6">
@@ -1134,9 +1147,17 @@ function Profile() {
               {premiumTheme && premiumTheme !== "default" ? (
                 <div className="flex flex-col items-end space-y-2">
                   <div className="flex items-center space-x-2">
-                    <span className="text-sm font-medium">Using {premiumThemes[premiumTheme].name} Theme</span>
-                    <div className="w-6 h-6 rounded-full" style={{ backgroundColor: premiumThemes[premiumTheme].primary }}></div>
-                    {isAdmin && premiumThemes[premiumTheme].isPremium && (
+                    <span className="text-sm font-medium">
+                      {premiumThemes && premiumThemes[premiumTheme] 
+                        ? `Using ${premiumThemes[premiumTheme].name} Theme` 
+                        : "Using Theme"}
+                    </span>
+                    <div className="w-6 h-6 rounded-full" style={{ 
+                      backgroundColor: premiumThemes && premiumThemes[premiumTheme] 
+                        ? premiumThemes[premiumTheme].primary 
+                        : "#3b82f6" 
+                    }}></div>
+                    {isAdmin && premiumThemes && premiumThemes[premiumTheme] && premiumThemes[premiumTheme].isPremium && (
                       <span className="text-xs px-2 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 rounded-full">
                         Admin
                       </span>
@@ -1549,25 +1570,29 @@ function Profile() {
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-gray-600 dark:text-gray-300">Last Workout</span>
                     <span className="font-medium text-gray-900 dark:text-white">
-                      {workoutStats.lastWorkout ? new Date(workoutStats.lastWorkout).toLocaleDateString() : "Never"}
+                      {workoutStats.lastWorkout ? new Date(workoutStats.lastWorkout).toLocaleDateString('en-GB') : "Never"}
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-gray-600 dark:text-gray-300">Total Duration</span>
                     <span className="font-medium text-gray-900 dark:text-white">
-                      {Math.floor(workoutStats.totalCardioDuration / 60)} hours
+                      {workoutStats.totalCardioDuration ? 
+                        `${Math.floor(workoutStats.totalCardioDuration / 60)} hour${Math.floor(workoutStats.totalCardioDuration / 60) !== 1 ? 's' : ''} ${Math.round(workoutStats.totalCardioDuration % 60)} min` : 
+                        "0 hours"}
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-gray-600 dark:text-gray-300">Favorite Exercise</span>
                     <span className="font-medium text-gray-900 dark:text-white">
-                      {workoutStats.favoriteExercise || "None"}
+                      {workoutStats.favoriteExercise ? 
+                        workoutStats.favoriteExercise.charAt(0).toUpperCase() + workoutStats.favoriteExercise.slice(1) : 
+                        "None"}
                     </span>
                   </div>
                 </div>
 
                 {/* Last Saved Routine */}
-                {lastSavedRoutine && (
+                {lastSavedRoutine && lastSavedRoutine.name && (
                   <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2">
@@ -1576,7 +1601,7 @@ function Profile() {
                           <p className="text-sm text-gray-600 dark:text-gray-300">Last Saved Routine</p>
                           <div className="flex items-center space-x-2">
                             <span className="font-medium text-gray-900 dark:text-white">
-                              {lastSavedRoutine.name}
+                              {lastSavedRoutine.name || "Untitled Routine"}
                             </span>
                             <button
                               onClick={() => navigate(`/routines`)}
@@ -1586,7 +1611,11 @@ function Profile() {
                             </button>
                           </div>
                           <p className="text-xs text-gray-500 dark:text-gray-400">
-                            {new Date(lastSavedRoutine.created_at).toLocaleDateString()}
+                            {lastSavedRoutine.created_at ? 
+                              new Date(lastSavedRoutine.created_at).toLocaleDateString('en-GB') : 
+                              (lastSavedRoutine.date ? 
+                                new Date(lastSavedRoutine.date).toLocaleDateString('en-GB') : 
+                                "No date")}
                           </p>
                         </div>
                       </div>
@@ -1598,16 +1627,19 @@ function Profile() {
                 {workoutStats.weightProgression && workoutStats.weightProgression.length > 0 && (
                   <div className="h-24 bg-gray-50 dark:bg-gray-700 rounded-lg p-2">
                     <div className="flex items-end h-full space-x-1">
-                      {workoutStats.weightProgression.map((entry, index) => (
-                        <div
-                          key={index}
-                          className="flex-1 bg-blue-500 rounded-t hover:bg-blue-600 transition-colors"
-                          style={{
-                            height: `${(entry.weight / Math.max(...workoutStats.weightProgression.map(e => e.weight))) * 100}%`,
-                          }}
-                          title={`${entry.weight}kg on ${new Date(entry.date).toLocaleDateString()}`}
-                        />
-                      ))}
+                      {workoutStats.weightProgression.map((entry, index) => {
+                        const heightPercentage = (entry.weight / Math.max(...workoutStats.weightProgression.map(e => e.weight))) * 100;
+                        const tooltipText = `${entry.weight}kg on ${new Date(entry.date).toLocaleDateString('en-GB')}`;
+                        
+                        return (
+                          <div
+                            key={index}
+                            className="flex-1 bg-blue-500 rounded-t hover:bg-blue-600 transition-colors"
+                            style={{ height: `${heightPercentage}%` }}
+                            title={tooltipText}
+                          />
+                        );
+                      })}
                     </div>
                   </div>
                 )}
