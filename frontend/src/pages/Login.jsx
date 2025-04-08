@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { GoogleLogin } from "@react-oauth/google";
 import { useNavigate, useLocation } from "react-router-dom";
-import { FaEye, FaEyeSlash, FaCheckCircle } from "react-icons/fa";
+import { FaEye, FaEyeSlash, FaCheckCircle, FaGoogle } from "react-icons/fa";
 import { loginUser, checkAdminStatus } from "../api/auth";
 import { useWelcome } from "../contexts/WelcomeContext";
 
@@ -326,20 +326,36 @@ function Login() {
           </p>
         </form>
 
-        <div className="mt-6 flex justify-center">
-          <GoogleLogin
-            onSuccess={handleGoogleLogin}
-            onError={(error) => {
-              console.error("Google login error:", error);
-              setError(`Google login failed: ${error.error || error}`);
+        <div className="mt-6 flex justify-center flex-col items-center">
+          {/* Hide the default Google button but keep its functionality */}
+          <div style={{ height: 0, overflow: 'hidden', visibility: 'hidden' }}>
+            <GoogleLogin
+              onSuccess={handleGoogleLogin}
+              onError={(error) => {
+                console.error("Google login error:", error);
+                setError(`Google login failed: ${error.error || error}`);
+              }}
+              shape="pill"
+              type="standard"
+              theme="filled_blue"
+              text="signin_with"
+              locale="en"
+              useOneTap={false}
+              cookiePolicy={'single_host_origin'}
+            />
+          </div>
+          
+          {/* Custom English Google sign-in button */}
+          <button
+            onClick={() => {
+              // Trigger the GoogleLogin click programmatically
+              document.querySelector('[aria-labelledby="button-label"]')?.click();
             }}
-            useOneTap
-            shape="pill"
-            type="standard"
-            theme="filled_blue"
-            text="continue_with"
-            locale="en_US"
-          />
+            className="flex items-center justify-center gap-2 bg-white text-gray-700 border border-gray-300 rounded-full px-6 py-2 font-medium hover:bg-gray-50 transition-colors"
+          >
+            <FaGoogle className="text-blue-500" />
+            Sign in with Google
+          </button>
         </div>
 
         {showForgotPassword && (

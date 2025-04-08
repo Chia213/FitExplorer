@@ -38,8 +38,12 @@ const WelcomeBackModal = ({ username, onClose, isFirstLogin }) => {
     fetchSavedPrograms();
   }, []);
 
-  const navigateTo = (path) => {
-    navigate(path);
+  const navigateTo = (path, params) => {
+    if (params) {
+      navigate(path, { state: params });
+    } else {
+      navigate(path);
+    }
     onClose();
   };
 
@@ -85,7 +89,7 @@ const WelcomeBackModal = ({ username, onClose, isFirstLogin }) => {
               {!isFirstLogin && savedPrograms.length > 0 && (
                 <div className="col-span-2">
                   <button
-                    onClick={() => navigateTo("/program-tracker")}
+                    onClick={() => navigateTo("/program-tracker", { programId: savedPrograms[0]?.id })}
                     className="w-full py-4 px-6 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-lg transition shadow-md hover:shadow-lg flex flex-col items-center justify-center"
                   >
                     <FaSave size={24} className="mb-2" />
@@ -93,7 +97,7 @@ const WelcomeBackModal = ({ username, onClose, isFirstLogin }) => {
                       Continue Your Latest Program
                     </span>
                     <span className="text-xs mt-1 text-blue-100">
-                      {savedPrograms[0]?.program_data?.title || "Saved Program"}
+                      {savedPrograms[0]?.name || "Saved Program"}
                     </span>
                   </button>
                 </div>

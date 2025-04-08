@@ -148,6 +148,10 @@ function ProgramTracker() {
     reps: ""
   });
 
+  // Get programId from URL query parameters if available
+  const queryParams = new URLSearchParams(location.search);
+  const programIdFromQuery = queryParams.get('programId');
+  
   // Initialize the tracker with workout data
   useEffect(() => {
     const initializeTracker = async () => {
@@ -155,9 +159,10 @@ function ProgramTracker() {
         setIsLoading(true);
         // Log the entire location state for debugging
         console.log("Location state:", location.state);
+        console.log("Program ID from query:", programIdFromQuery);
         
         // Check if we're initializing with a program ID
-        const programId = location.state?.programId;
+        const programId = programIdFromQuery || location.state?.programId;
         
         // Fetch the saved program if a programId is provided
         if (programId) {
@@ -347,9 +352,39 @@ function ProgramTracker() {
             }
           }
 
-          // Validate required data
+          // Validate required data and handle missing data gracefully
           if (!workoutData || !progressData) {
-            throw new Error("Incomplete workout or progress information");
+            console.warn("Missing workout or progress information, checking localStorage");
+            
+            // Try to recover data from localStorage
+            const savedWorkoutData = localStorage.getItem("currentWorkout");
+            const savedProgressData = localStorage.getItem("programProgress");
+            
+            if (savedWorkoutData) {
+              try {
+                workoutData = JSON.parse(savedWorkoutData);
+                console.log("Recovered workout data from localStorage");
+              } catch (e) {
+                console.error("Failed to parse saved workout data:", e);
+              }
+            }
+            
+            if (savedProgressData) {
+              try {
+                progressData = JSON.parse(savedProgressData);
+                console.log("Recovered progress data from localStorage");
+              } catch (e) {
+                console.error("Failed to parse saved progress data:", e);
+              }
+            }
+            
+            // If still missing required data
+            if (!workoutData || !progressData) {
+              // Redirect to program selection page
+              toast.error("Program data not found. Please select a program.");
+              navigate('/programs');
+              return;
+            }
           }
 
           // Ensure sixWeekProgram exists and is an array
@@ -579,7 +614,7 @@ function ProgramTracker() {
     };
 
     initializeTracker();
-  }, [location.state, navigate]);
+  }, [location.state, navigate, programIdFromQuery]);
 
   // Helper function to calculate week statistics for dashboard
   const calculateWeekStats = (weights, weekWorkout) => {
@@ -813,6 +848,9 @@ function ProgramTracker() {
 
   const updateProgramProgress = async (newProgress) => {
     try {
+      // Always save the progress to localStorage for persistence
+      localStorage.setItem("programProgress", JSON.stringify(newProgress));
+      
       if (!savedProgramId) {
         console.warn("No saved program ID available");
         setProgramProgress(newProgress);
@@ -948,6 +986,17 @@ function ProgramTracker() {
         return;
       }
 
+      // Save current workout and progress data to localStorage
+      // to ensure it's available if the page is refreshed
+      localStorage.setItem("currentWorkout", JSON.stringify(workout));
+      
+      const initialProgress = {
+        currentWeek: 1,
+        completedWeeks: [],
+      };
+      
+      localStorage.setItem("programProgress", JSON.stringify(initialProgress));
+
       const programData = {
         program_data: workout,
         current_week: 1,
@@ -969,10 +1018,7 @@ function ProgramTracker() {
 
       const savedProgram = await response.json();
       setSavedProgramId(savedProgram.id);
-      setProgramProgress({
-        currentWeek: 1,
-        completedWeeks: [],
-      });
+      setProgramProgress(initialProgress);
       setShowStartProgramModal(false);
       await notifyProgramStarted(workout.name);
     } catch (error) {

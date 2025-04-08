@@ -12,6 +12,12 @@ const clientId =
 
 console.log("Using Google Client ID:", clientId);
 
+// Force Google Identity library to use English
+window.google = window.google || {};
+window.google.accounts = window.google.accounts || {};
+window.google.accounts.id = window.google.accounts.id || {};
+window.google.accounts.id.locale = 'en';
+
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <GoogleOAuthProvider 
