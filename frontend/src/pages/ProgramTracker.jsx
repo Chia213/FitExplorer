@@ -1414,6 +1414,7 @@ function ProgramTracker() {
                         <>
                           <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Weight</th>
                           <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Reps</th>
+                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Type</th>
                         </>
                       )}
                       {isCardio && (
@@ -1439,6 +1440,41 @@ function ProgramTracker() {
                             </td>
                             <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
                               {set.reps}
+                            </td>
+                            <td className="px-3 py-2 whitespace-nowrap text-sm">
+                              {set.is_warmup ? (
+                                <span className="px-2 py-1 rounded-full text-xs bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200">
+                                  Warm-up
+                                </span>
+                              ) : set.is_drop_set ? (
+                                <span className="px-2 py-1 rounded-full text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
+                                  Drop Set
+                                </span>
+                              ) : set.is_superset ? (
+                                <span className="px-2 py-1 rounded-full text-xs bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200">
+                                  Superset
+                                </span>
+                              ) : set.is_amrap ? (
+                                <span className="px-2 py-1 rounded-full text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">
+                                  AMRAP
+                                </span>
+                              ) : set.is_restpause ? (
+                                <span className="px-2 py-1 rounded-full text-xs bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200">
+                                  Rest-Pause
+                                </span>
+                              ) : set.is_pyramid ? (
+                                <span className="px-2 py-1 rounded-full text-xs bg-pink-100 dark:bg-pink-900 text-pink-800 dark:text-pink-200">
+                                  Pyramid
+                                </span>
+                              ) : set.is_giant ? (
+                                <span className="px-2 py-1 rounded-full text-xs bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200">
+                                  Giant Set
+                                </span>
+                              ) : (
+                                <span className="px-2 py-1 rounded-full text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+                                  Normal
+                                </span>
+                              )}
                             </td>
                           </>
                         )}
@@ -2369,6 +2405,7 @@ function ProgramTracker() {
                                                 <>
                                                   <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Weight</th>
                                                   <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Reps</th>
+                                                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Type</th>
                                                 </>
                                               )}
                                               {isCardio && (
@@ -2394,6 +2431,41 @@ function ProgramTracker() {
                                                     </td>
                                                     <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
                                                       {set.reps}
+                                                    </td>
+                                                    <td className="px-3 py-2 whitespace-nowrap text-sm">
+                                                      {set.is_warmup ? (
+                                                        <span className="px-2 py-1 rounded-full text-xs bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200">
+                                                          Warm-up
+                                                        </span>
+                                                      ) : set.is_drop_set ? (
+                                                        <span className="px-2 py-1 rounded-full text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
+                                                          Drop Set
+                                                        </span>
+                                                      ) : set.is_superset ? (
+                                                        <span className="px-2 py-1 rounded-full text-xs bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200">
+                                                          Superset
+                                                        </span>
+                                                      ) : set.is_amrap ? (
+                                                        <span className="px-2 py-1 rounded-full text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">
+                                                          AMRAP
+                                                        </span>
+                                                      ) : set.is_restpause ? (
+                                                        <span className="px-2 py-1 rounded-full text-xs bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200">
+                                                          Rest-Pause
+                                                        </span>
+                                                      ) : set.is_pyramid ? (
+                                                        <span className="px-2 py-1 rounded-full text-xs bg-pink-100 dark:bg-pink-900 text-pink-800 dark:text-pink-200">
+                                                          Pyramid
+                                                        </span>
+                                                      ) : set.is_giant ? (
+                                                        <span className="px-2 py-1 rounded-full text-xs bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200">
+                                                          Giant Set
+                                                        </span>
+                                                      ) : (
+                                                        <span className="px-2 py-1 rounded-full text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+                                                          Normal
+                                                        </span>
+                                                      )}
                                                     </td>
                                                   </>
                                                 )}
@@ -2685,6 +2757,92 @@ function ProgramTracker() {
         
         {/* Render tracking modal */}
         {renderTrackingModal()}
+
+        {/* Program Complete Modal */}
+        {showProgramCompleteModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full">
+              <div className="text-center mb-6">
+                <div className="inline-flex items-center justify-center h-16 w-16 rounded-full bg-green-100 dark:bg-green-900 mb-4">
+                  <FaTrophy className="h-8 w-8 text-green-600 dark:text-green-300" />
+                </div>
+                <h3 className="text-2xl font-bold mb-2">Congratulations!</h3>
+                <p className="text-gray-600 dark:text-gray-300">
+                  You've successfully completed the entire 6-week workout program! 
+                  Your dedication and hard work have paid off.
+                </p>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800">
+                  <p className="text-blue-700 dark:text-blue-300 font-medium">
+                    Would you like to generate a new program to continue your fitness journey?
+                  </p>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <button
+                    onClick={() => {
+                      setShowProgramCompleteModal(false);
+                      navigate('/ai-workout-generator');
+                    }}
+                    className="py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center justify-center"
+                  >
+                    <FaPlus className="mr-2" /> New Program
+                  </button>
+                  
+                  <button
+                    onClick={() => setShowProgramCompleteModal(false)}
+                    className="py-3 border border-gray-300 dark:border-gray-600 rounded-lg transition-colors flex items-center justify-center text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  >
+                    Continue Current
+                  </button>
+                </div>
+                
+                <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
+                  <button
+                    onClick={() => {
+                      setShowProgramCompleteModal(false);
+                      navigate('/saved-programs');
+                    }}
+                    className="w-full py-2 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-center transition-colors"
+                  >
+                    View All Programs
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Week Complete Modal */}
+        {showWeekCompleteModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full">
+              <div className="text-center mb-6">
+                <div className="inline-flex items-center justify-center h-16 w-16 rounded-full bg-green-100 dark:bg-green-900 mb-4">
+                  <FaCheckCircle className="h-8 w-8 text-green-600 dark:text-green-300" />
+                </div>
+                <h3 className="text-2xl font-bold mb-2">Week {lastCompletedWeek} Complete!</h3>
+                <p className="text-gray-600 dark:text-gray-300">
+                  Great job completing Week {lastCompletedWeek} of your workout program!
+                </p>
+              </div>
+              
+              <div className="text-center">
+                <button
+                  onClick={() => {
+                    setShowWeekCompleteModal(false);
+                    setActiveTab("dashboard");
+                  }}
+                  className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors inline-flex items-center justify-center"
+                >
+                  Continue to Week {Math.min(lastCompletedWeek + 1, 6)}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1022,7 +1022,7 @@ function Routines() {
                                     <div className="grid grid-cols-6 gap-2 items-center">
                                       <div className="font-medium">Set {setIndex + 1}</div>
                                       <div>{set.duration ? `${set.duration} min` : '-'}</div>
-                                      <div>{set.distance ? `${set.distance} m` : '-'}</div>
+                                      <div>{set.distance ? `${set.distance} km` : '-'}</div>
                                       <div>{set.intensity || 'Medium'}</div>
                                       <div>
                                         {(set.is_warmup || set.is_drop_set || set.is_superset || 

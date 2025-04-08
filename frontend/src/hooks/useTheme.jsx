@@ -192,14 +192,13 @@ export function ThemeProvider({ children }) {
     const token = localStorage.getItem("token");
     if (token) {
       try {
-        const response = await fetchWithTokenRefresh("/user/themes", {
-          method: "PUT",
+        const response = await fetchWithTokenRefresh("/user/themes/premium", {
+          method: "POST",
           headers: {
             "Content-Type": "application/json"
           },
           body: JSON.stringify({ 
-            theme: theme,
-            premium_theme: targetTheme
+            theme_key: targetTheme
           })
         });
         
@@ -575,14 +574,13 @@ export function ThemeProvider({ children }) {
           localStorage.setItem("premiumTheme", "default");
           
           // Update the backend
-          await fetchWithTokenRefresh("/user/themes", {
-            method: "PUT",
+          await fetchWithTokenRefresh("/user/themes/premium", {
+            method: "POST",
             headers: {
               "Content-Type": "application/json"
             },
             body: JSON.stringify({ 
-              theme: theme,
-              premium_theme: "default"
+              theme_key: "default"
             })
           });
           

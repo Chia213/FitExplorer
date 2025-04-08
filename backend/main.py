@@ -1802,6 +1802,36 @@ def unlock_theme(
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/user/themes/unlock-all")
+def unlock_all_themes(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Unlock all premium themes for the user"""
+    try:
+        # Get or create profile
+        profile = db.query(UserProfile).filter(UserProfile.user_id == user.id).first()
+        
+        if not profile:
+            # Create profile with all themes unlocked
+            # We'd need to know all theme keys here, but we'll use a placeholder
+            all_themes = ["default", "forest", "ocean", "sunset", "cosmos", "royal"]
+            profile = UserProfile(user_id=user.id, unlocked_themes=all_themes)
+            db.add(profile)
+        else:
+            # Add all available themes to the unlocked list
+            all_themes = ["default", "forest", "ocean", "sunset", "cosmos", "royal"]
+            profile.unlocked_themes = all_themes
+            
+        db.commit()
+        
+        return {"message": "All themes unlocked successfully", "unlocked_themes": profile.unlocked_themes}
+    except Exception as e:
+        db.rollback()
+        print(f"Error unlocking all themes: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/admin/database/add-theme-columns", response_model=Dict[str, str])
 async def add_theme_columns(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):

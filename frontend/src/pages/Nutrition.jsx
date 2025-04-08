@@ -430,17 +430,27 @@ function Nutrition() {
       // First, delete all existing meals for this date
       try {
         console.log(`Deleting existing meals for date ${date}`);
-        const existingMealsResponse = await axios.get(`/nutrition/meals?date=${date}`);
-        const existingMeals = existingMealsResponse.data;
         
-        // Delete each existing meal
-        for (const meal of existingMeals) {
-          await axios.delete(`/nutrition/meals/${meal.id}`);
-          console.log(`Deleted meal: ${meal.name} (ID: ${meal.id})`);
+        // Use the new bulk delete endpoint instead of individual deletions
+        const deleteResponse = await axios.delete(`/nutrition/meals/by-date/${date}`);
+        console.log(`Delete response:`, deleteResponse.data);
+        
+        if (deleteResponse.data.deleted_count > 0) {
+          console.log(`Successfully deleted ${deleteResponse.data.deleted_count} existing meals`);
+        } else {
+          console.log('No existing meals found for this date');
+        }
+        
+        // Verify all meals were deleted
+        const verifyDeletion = await axios.get(`/nutrition/meals?date=${date}`);
+        if (verifyDeletion.data.length > 0) {
+          console.warn(`Warning: ${verifyDeletion.data.length} meals still exist after deletion attempt`);
+        } else {
+          console.log('All existing meals successfully deleted');
         }
       } catch (err) {
         console.error("Error clearing existing meals:", err);
-        // Continue anyway - we'll overwrite with new meals
+        alert("Failed to clear existing meals. The new meal plan may be added to existing meals.");
       }
       
       // Create a map to categorize meals by their primary type
@@ -587,6 +597,9 @@ function Nutrition() {
         foodCount: m.foods?.length || 0
       })));
       
+      // Track which meal types we've already saved to prevent duplicates
+      const savedMealTypes = new Set();
+      
       // For each unique meal in the plan, save it to the user's meals
       for (const meal of consolidatedMeals) {
         // Skip meals with no foods
@@ -594,6 +607,16 @@ function Nutrition() {
           console.log(`Skipping empty meal: ${meal.name}`);
           continue;
         }
+        
+        // Skip duplicate meal types (e.g., multiple breakfasts)
+        const mealTypeLower = meal.name.toLowerCase();
+        if (savedMealTypes.has(mealTypeLower)) {
+          console.log(`Skipping duplicate meal type: ${meal.name}`);
+          continue;
+        }
+        
+        // Mark this meal type as saved
+        savedMealTypes.add(mealTypeLower);
         
         const mealData = {
           name: meal.name,
@@ -611,6 +634,18 @@ function Nutrition() {
           console.error(`Error saving ${meal.name}:`, saveErr);
           // Continue with other meals
         }
+      }
+      
+      // Final verification after saving
+      try {
+        const finalCheck = await axios.get(`/nutrition/meals?date=${date}`);
+        console.log(`Final verification: ${finalCheck.data.length} meals saved for date ${date}`);
+        
+        if (finalCheck.data.length !== savedMealTypes.size) {
+          console.warn(`Warning: Expected ${savedMealTypes.size} meals but found ${finalCheck.data.length}`);
+        }
+      } catch (err) {
+        console.error("Error during final verification:", err);
       }
       
       alert("Meal plan saved successfully!");

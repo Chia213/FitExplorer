@@ -101,22 +101,23 @@ def get_meals(
             food_list = []
             for food in foods:
                 food_list.append({
-                        "name": food.name,
-                        "calories": food.calories,
-                        "protein": food.protein,
-                        "carbs": food.carbs,
+                    "name": food.name,
+                    "calories": food.calories,
+                    "protein": food.protein,
+                    "carbs": food.carbs,
                     "fat": food.fat,
                     "serving_size": food.serving_size,
                     "quantity": food.quantity
                 })
-                
-                result.append({
-                    "id": meal.id,
-                    "name": meal.name,
+            
+            # Add the meal with all its foods to the result list - OUTSIDE the food loop
+            result.append({
+                "id": meal.id,
+                "name": meal.name,
                 "date": meal.date,
                 "time": meal.time,
                 "foods": food_list
-                })
+            })
         
         print(f"Returning {len(result)} meals with foods")
         return result
@@ -186,6 +187,45 @@ def create_meal(
         import traceback
         print(f"Traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=f"Error creating meal: {str(e)}")
+
+@router.delete("/meals/by-date/{date}")
+def delete_meals_by_date(
+    date: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Delete all meals for a specific date"""
+    try:
+        print(f"\n==== DELETE MEALS BY DATE ====")
+        print(f"Deleting all meals for date: {date}, user_id: {current_user.id}")
+        
+        # Find all meals for this date
+        meals = db.query(NutritionMeal).filter(
+            NutritionMeal.user_id == current_user.id,
+            NutritionMeal.date == date
+        ).all()
+        
+        if not meals:
+            print(f"No meals found for date {date}")
+            return {"message": "No meals found for this date", "deleted_count": 0}
+        
+        meal_count = len(meals)
+        print(f"Found {meal_count} meals to delete")
+        
+        # Delete all meals (cascade will handle deleting associated foods)
+        for meal in meals:
+            db.delete(meal)
+        
+        db.commit()
+        print(f"Successfully deleted {meal_count} meals for date {date}")
+        
+        return {"message": f"Successfully deleted {meal_count} meals", "deleted_count": meal_count}
+    except Exception as e:
+        db.rollback()
+        print(f"Error deleting meals by date: {str(e)}")
+        import traceback
+        print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"Error deleting meals by date: {str(e)}")
 
 @router.delete("/meals/{meal_id}")
 def delete_meal(
@@ -604,61 +644,6 @@ def generate_meal_plan(
         if len(available_foods) == 0:
             raise HTTPException(status_code=404, detail="No foods found in database to generate meal plan")
         
-        # Group foods by food group
-        food_groups = {}
-        for food in available_foods:
-            group = food.food_group or "Other"
-            if group not in food_groups:
-                food_groups[group] = []
-            food_groups[group].append(food)
-        
-        print(f"Foods grouped into {len(food_groups)} categories")
-        
-        # Set default meal names and times based on number of meals
-        meal_templates = {
-            3: [
-                {"name": "Breakfast", "time": "08:00", "calorie_percent": 0.25},
-                {"name": "Lunch", "time": "13:00", "calorie_percent": 0.40},
-                {"name": "Dinner", "time": "19:00", "calorie_percent": 0.35},
-            ],
-            4: [
-                {"name": "Breakfast", "time": "08:00", "calorie_percent": 0.25},
-                {"name": "Morning Snack", "time": "11:00", "calorie_percent": 0.10},
-                {"name": "Lunch", "time": "13:00", "calorie_percent": 0.35},
-                {"name": "Dinner", "time": "19:00", "calorie_percent": 0.30},
-            ],
-            5: [
-                {"name": "Breakfast", "time": "07:30", "calorie_percent": 0.20},
-                {"name": "Morning Snack", "time": "10:30", "calorie_percent": 0.10},
-                {"name": "Lunch", "time": "13:00", "calorie_percent": 0.30},
-                {"name": "Afternoon Snack", "time": "16:00", "calorie_percent": 0.10},
-                {"name": "Dinner", "time": "19:00", "calorie_percent": 0.30},
-            ],
-            6: [
-                {"name": "Breakfast", "time": "07:00", "calorie_percent": 0.20},
-                {"name": "Morning Snack", "time": "10:00", "calorie_percent": 0.10},
-                {"name": "Lunch", "time": "13:00", "calorie_percent": 0.25},
-                {"name": "Afternoon Snack", "time": "16:00", "calorie_percent": 0.10},
-                {"name": "Dinner", "time": "19:00", "calorie_percent": 0.25},
-                {"name": "Evening Snack", "time": "21:30", "calorie_percent": 0.10},
-            ]
-        }
-        
-        # Use 3 meals as default if invalid meal count
-        meal_count = preferences.meals if preferences.meals in meal_templates else 3
-        
-        # Create the meal plan structure
-        meal_plan = {
-            "date": datetime.now().strftime("%Y-%m-%d"),
-            "totalNutrition": {
-                "calories": preferences.calories,
-                "protein": preferences.protein,
-                "carbs": preferences.carbs,
-                "fat": preferences.fat
-            },
-            "meals": []
-        }
-        
         # Process dietary restrictions
         restrictions_list = [r.strip().lower() for r in preferences.restrictions.split(',') if r.strip()] if preferences.restrictions else []
         print(f"Dietary restrictions: {restrictions_list}")
@@ -673,7 +658,7 @@ def generate_meal_plan(
         gluten_keywords = ["wheat", "bread", "pasta", "cereal", "flour", "bun", "cracker", "gluten", 
                           "barley", "rye", "oats", "malt"]
         
-        # Filter foods based on restrictions (improved implementation)
+        # Filter foods based on restrictions
         filtered_foods = []
         for food in available_foods:
             skip = False
@@ -725,91 +710,291 @@ def generate_meal_plan(
                 detail=f"Not enough food options available with your dietary restrictions. Only {len(filtered_foods)} foods found."
             )
         
-        # Generate each meal
-        for meal_template in meal_templates[meal_count]:
-            meal_name = meal_template["name"]
-            meal_time = meal_template["time"]
-            meal_calories = preferences.calories * meal_template["calorie_percent"]
-            
-            print(f"Generating {meal_name} with target {meal_calories} calories")
-            
-            meal = {
-                "name": meal_name,
-                "time": meal_time,
-                "foods": []
-            }
-            
-            # Determine how many food items to include in this meal
-            food_count = 2
-            if "snack" in meal_name.lower():
-                food_count = random.randint(1, 2)
-            elif "breakfast" in meal_name.lower():
-                food_count = random.randint(2, 3)
-            elif "lunch" in meal_name.lower() or "dinner" in meal_name.lower():
-                food_count = random.randint(2, 4)
-            
-            # Calculate target calories per food item
-            calories_per_food = meal_calories / food_count
-            
-            # Select foods for this meal
-            selected_foods = []
-            remaining_calories = meal_calories
-            
-            for i in range(food_count):
-                # For last food item, try to match remaining calories more closely
-                if i == food_count - 1:
-                    calories_per_food = remaining_calories
-                
-                # Find a suitable food that roughly matches our calorie target
-                suitable_foods = [f for f in filtered_foods if abs(f.calories - calories_per_food) < calories_per_food * 0.5]
-                
-                # If no suitable foods, relax constraints
-                if not suitable_foods:
-                    suitable_foods = filtered_foods
-                
-                # Select a random food
-                if suitable_foods:
-                    selected_food = random.choice(suitable_foods)
-                    
-                    # Calculate quantity based on target calories
-                    quantity = round(calories_per_food / max(selected_food.calories, 1), 1)
-                    quantity = max(0.5, min(3.0, quantity))  # Limit to realistic quantities
-                    
-                    # Add to meal
-                    selected_foods.append({
-                        "name": selected_food.name,
-                        "calories": round(selected_food.calories * quantity, 1),
-                        "protein": round(selected_food.protein * quantity, 1),
-                        "carbs": round(selected_food.carbs * quantity, 1),
-                        "fat": round(selected_food.fat * quantity, 1),
-                        "serving_size": selected_food.serving_size,
-                        "quantity": quantity
-                    })
-                    
-                    # Update remaining calories
-                    remaining_calories -= selected_food.calories * quantity
-                
-            meal["foods"] = selected_foods
-            meal_plan["meals"].append(meal)
-            
-            print(f"Added {meal_name} with {len(selected_foods)} foods")
-            
-        # Recalculate actual total nutrition after food selection
-        actual_totals = {"calories": 0, "protein": 0, "carbs": 0, "fat": 0}
-        for meal in meal_plan["meals"]:
-            for food in meal["foods"]:
-                actual_totals["calories"] += food["calories"]
-                actual_totals["protein"] += food["protein"]
-                actual_totals["carbs"] += food["carbs"]
-                actual_totals["fat"] += food["fat"]
+        # Set default meal names and times based on number of meals
+        meal_templates = {
+            3: [
+                {"name": "Breakfast", "time": "08:00", "calorie_percent": 0.25},
+                {"name": "Lunch", "time": "13:00", "calorie_percent": 0.40},
+                {"name": "Dinner", "time": "19:00", "calorie_percent": 0.35},
+            ],
+            4: [
+                {"name": "Breakfast", "time": "08:00", "calorie_percent": 0.25},
+                {"name": "Morning Snack", "time": "11:00", "calorie_percent": 0.10},
+                {"name": "Lunch", "time": "13:00", "calorie_percent": 0.35},
+                {"name": "Dinner", "time": "19:00", "calorie_percent": 0.30},
+            ],
+            5: [
+                {"name": "Breakfast", "time": "07:30", "calorie_percent": 0.20},
+                {"name": "Morning Snack", "time": "10:30", "calorie_percent": 0.10},
+                {"name": "Lunch", "time": "13:00", "calorie_percent": 0.30},
+                {"name": "Afternoon Snack", "time": "16:00", "calorie_percent": 0.10},
+                {"name": "Dinner", "time": "19:00", "calorie_percent": 0.30},
+            ],
+            6: [
+                {"name": "Breakfast", "time": "07:00", "calorie_percent": 0.20},
+                {"name": "Morning Snack", "time": "10:00", "calorie_percent": 0.10},
+                {"name": "Lunch", "time": "13:00", "calorie_percent": 0.25},
+                {"name": "Afternoon Snack", "time": "16:00", "calorie_percent": 0.10},
+                {"name": "Dinner", "time": "19:00", "calorie_percent": 0.25},
+                {"name": "Evening Snack", "time": "21:30", "calorie_percent": 0.10},
+            ]
+        }
         
-        # Round final values
-        for key in actual_totals:
-            actual_totals[key] = round(actual_totals[key])
+        # Use 3 meals as default if invalid meal count
+        meal_count = preferences.meals if preferences.meals in meal_templates else 3
         
-        meal_plan["totalNutrition"] = actual_totals
+        # Create the meal plan structure with EXACTLY the user's target macros
+        meal_plan = {
+            "date": datetime.now().strftime("%Y-%m-%d"),
+            "totalNutrition": {
+                "calories": preferences.calories,
+                "protein": preferences.protein,
+                "carbs": preferences.carbs,
+                "fat": preferences.fat
+            },
+            "meals": []
+        }
         
-        print(f"Meal plan generated with {len(meal_plan['meals'])} meals and totals: {actual_totals}")
+        # Track the actual nutrition totals
+        actual_total = {
+            "calories": 0,
+            "protein": 0,
+            "carbs": 0,
+            "fat": 0
+        }
+        
+        # Function to score how well a food matches our remaining nutritional needs
+        def score_food_match(food, target_calories, target_protein, target_carbs, target_fat):
+            # Base quantity on calories
+            quantity = min(3.0, max(0.5, target_calories / max(food.calories, 1)))
+            
+            # Calculate the actual nutrition with this quantity
+            actual_cals = food.calories * quantity
+            actual_protein = food.protein * quantity
+            actual_carbs = food.carbs * quantity
+            actual_fat = food.fat * quantity
+            
+            # Calculate how well this food matches our targets (lower is better)
+            cal_score = abs(actual_cals - target_calories) / max(target_calories, 1)
+            protein_score = abs(actual_protein - target_protein) / max(target_protein, 1)  
+            carbs_score = abs(actual_carbs - target_carbs) / max(target_carbs, 1)
+            fat_score = abs(actual_fat - target_fat) / max(target_fat, 1)
+            
+            # Weight the scores - prioritize calories and protein
+            # Heavily penalize going over the calorie target
+            if actual_cals > target_calories * 1.1:  # 10% over target
+                cal_score *= 3  # Triple the penalty
+            
+            total_score = (cal_score * 0.4) + (protein_score * 0.3) + (carbs_score * 0.15) + (fat_score * 0.15)
+            return total_score, quantity
+        
+        # Number of iterations to try improving the meal plan
+        max_iterations = 3  # Increased from 2 for better optimization
+        
+        # Generate a meal plan iteratively, improving it each time
+        for iteration in range(max_iterations):
+            print(f"Meal plan generation iteration {iteration+1}/{max_iterations}")
+            
+            # Reset the meals and actual totals for each iteration
+            if iteration > 0:
+                meal_plan["meals"] = []
+                actual_total = {
+                    "calories": 0,
+                    "protein": 0,
+                    "carbs": 0,
+                    "fat": 0
+                }
+            
+            # Calculate targets for each meal
+            for meal_template in meal_templates[meal_count]:
+                meal_name = meal_template["name"]
+                meal_time = meal_template["time"]
+                calorie_percent = meal_template["calorie_percent"]
+                
+                # Calculate this meal's target based on the overall preferences
+                # For the first meal(s), just use the percentage
+                # For the last meal, adjust to exactly hit the remaining target
+                is_last_meal = meal_name == meal_templates[meal_count][-1]["name"]
+                
+                if is_last_meal:
+                    # For the last meal, use the remaining nutrition needed to hit the target
+                    meal_calories = max(0, preferences.calories - actual_total["calories"])
+                    meal_protein = max(0, preferences.protein - actual_total["protein"])
+                    meal_carbs = max(0, preferences.carbs - actual_total["carbs"])
+                    meal_fat = max(0, preferences.fat - actual_total["fat"])
+                else:
+                    # For earlier meals, use the specified percentage
+                    meal_calories = preferences.calories * calorie_percent
+                    meal_protein = preferences.protein * calorie_percent
+                    meal_carbs = preferences.carbs * calorie_percent
+                    meal_fat = preferences.fat * calorie_percent
+                
+                print(f"Generating {meal_name} with targets: {meal_calories:.1f} cal, {meal_protein:.1f}g protein, "
+                      f"{meal_carbs:.1f}g carbs, {meal_fat:.1f}g fat")
+            
+                meal = {
+                    "name": meal_name,
+                    "time": meal_time,
+                    "foods": []
+                }
+                
+                # Determine how many food items to include in this meal
+                food_count = 2  # Default
+                if "snack" in meal_name.lower():
+                    food_count = random.randint(1, 2)
+                elif "breakfast" in meal_name.lower():
+                    food_count = random.randint(2, 3)
+                elif "lunch" in meal_name.lower() or "dinner" in meal_name.lower():
+                    food_count = random.randint(2, 4)
+                
+                # Check if this is the last meal and we're already over calorie budget
+                if is_last_meal and actual_total["calories"] >= preferences.calories * 0.95:
+                    # We're already at or above target calories, so reduce the number of foods
+                    food_count = max(1, food_count - 2)
+                    print(f"Reducing food count for {meal_name} to {food_count} to avoid exceeding calorie target")
+                
+                # Track nutrition for this meal
+                meal_total = {
+                    "calories": 0,
+                    "protein": 0,
+                    "carbs": 0,
+                    "fat": 0
+                }
+                
+                # Randomly select a diverse set of foods for this meal
+                remaining_foods = filtered_foods.copy()  # Copy to avoid modifying original
+                
+                # Check if we're approaching calorie limit
+                exceeding_calories = actual_total["calories"] >= preferences.calories * 0.9
+                
+                for i in range(food_count):
+                    # Stop adding foods if we're already over calorie target
+                    if actual_total["calories"] >= preferences.calories:
+                        print(f"Stopping food addition for {meal_name} - already reached calorie target")
+                        break
+                        
+                    # Calculate what's still needed for this meal
+                    remaining_calories = meal_calories - meal_total["calories"]
+                    remaining_protein = meal_protein - meal_total["protein"]
+                    remaining_carbs = meal_carbs - meal_total["carbs"]
+                    remaining_fat = meal_fat - meal_total["fat"]
+                    
+                    # Adjust calorie target down further if we're close to daily target
+                    if exceeding_calories:
+                        remaining_calories = min(remaining_calories, preferences.calories - actual_total["calories"])
+                        
+                    # Adjust targets based on number of foods left to add
+                    foods_left = food_count - i
+                    target_calories = remaining_calories / foods_left
+                    target_protein = remaining_protein / foods_left
+                    target_carbs = remaining_carbs / foods_left
+                    target_fat = remaining_fat / foods_left
+                    
+                    # Find the best matching food
+                    best_score = float('inf')
+                    best_food = None
+                    best_quantity = 1.0
+                    
+                    # Try to find a good food match
+                    for food in remaining_foods:
+                        # Skip high-calorie foods when we're close to our target
+                        if exceeding_calories and food.calories > target_calories * 1.5:
+                            continue
+                            
+                        score, quantity = score_food_match(food, target_calories, target_protein, target_carbs, target_fat)
+                        if score < best_score:
+                            best_score = score
+                            best_food = food
+                            best_quantity = quantity
+                    
+                    # If we couldn't find a good match, use any available food
+                    if best_food is None and filtered_foods:
+                        # Pick lower calorie options if we're close to target
+                        if exceeding_calories:
+                            # Sort by calories and pick from the lowest third
+                            sorted_foods = sorted(filtered_foods, key=lambda f: f.calories)
+                            best_food = sorted_foods[min(len(sorted_foods) // 3, random.randint(0, len(sorted_foods) - 1))]
+                        else:
+                            best_food = random.choice(filtered_foods)
+                        
+                        best_quantity = min(3.0, max(0.5, target_calories / max(best_food.calories, 1)))
+                    
+                    # Add the selected food to the meal
+                    if best_food:
+                        # Remove from available foods to avoid duplicates in the same meal
+                        if best_food in remaining_foods:
+                            remaining_foods.remove(best_food)
+                        
+                        # For the last food in the meal, try to exactly hit the remaining targets
+                        if i == food_count - 1:
+                            # Fine-tune the quantity to better hit the target
+                            # but keep it within reasonable bounds
+                            best_quantity = min(3.0, max(0.5, remaining_calories / max(best_food.calories, 1)))
+                        
+                        # Additional check to avoid going way over daily calories
+                        estimated_calories = best_food.calories * best_quantity
+                        if actual_total["calories"] + estimated_calories > preferences.calories * 1.1:
+                            # Reduce quantity to stay within calorie target
+                            max_allowed_calories = max(0, preferences.calories - actual_total["calories"])
+                            best_quantity = min(best_quantity, max_allowed_calories / max(best_food.calories, 1))
+                            best_quantity = max(0.5, best_quantity)  # Don't go below 0.5 serving
+                                
+                        # Round the quantity to a reasonable number
+                        best_quantity = round(best_quantity * 2) / 2  # Round to nearest 0.5
+                        
+                        # Calculate the food's actual nutrition
+                        food_calories = round(best_food.calories * best_quantity, 1)
+                        food_protein = round(best_food.protein * best_quantity, 1)
+                        food_carbs = round(best_food.carbs * best_quantity, 1)
+                        food_fat = round(best_food.fat * best_quantity, 1)
+                        
+                        # Add to meal totals
+                        meal_total["calories"] += food_calories
+                        meal_total["protein"] += food_protein
+                        meal_total["carbs"] += food_carbs
+                        meal_total["fat"] += food_fat
+                        
+                        # Add to overall totals
+                        actual_total["calories"] += food_calories
+                        actual_total["protein"] += food_protein
+                        actual_total["carbs"] += food_carbs
+                        actual_total["fat"] += food_fat
+                        
+                        # Add food to the meal
+                        meal["foods"].append({
+                            "name": best_food.name,
+                            "calories": food_calories,
+                            "protein": food_protein,
+                            "carbs": food_carbs,
+                            "fat": food_fat,
+                            "serving_size": best_food.serving_size,
+                            "quantity": best_quantity
+                        })
+                
+                meal_plan["meals"].append(meal)
+                print(f"Added {meal_name} with {len(meal['foods'])} foods: {meal_total['calories']:.1f} cal, "
+                      f"{meal_total['protein']:.1f}g protein, {meal_total['carbs']:.1f}g carbs, {meal_total['fat']:.1f}g fat")
+                      
+                # Check if we've already hit our calorie target
+                if actual_total["calories"] >= preferences.calories:
+                    print(f"Reached calorie target after adding {meal_name}. Stopping meal generation.")
+                    break
+        
+        # Round values in the actual total
+        for key in actual_total:
+            actual_total[key] = round(actual_total[key])
+        
+        # Set the actual nutrition totals in the meal plan
+        meal_plan["totalNutrition"] = actual_total
+        
+        # Log the results
+        print(f"Final meal plan: {len(meal_plan['meals'])} meals with totals: {actual_total}")
+        print(f"Target was: {preferences.calories} cal, {preferences.protein}g protein, {preferences.carbs}g carbs, {preferences.fat}g fat")
+        print(f"Difference: {actual_total['calories'] - preferences.calories} cal, "
+              f"{actual_total['protein'] - preferences.protein}g protein, "
+              f"{actual_total['carbs'] - preferences.carbs}g carbs, "
+              f"{actual_total['fat'] - preferences.fat}g fat")
+        
         return meal_plan
                 
     except Exception as e:
