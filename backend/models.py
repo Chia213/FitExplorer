@@ -58,7 +58,7 @@ class User(Base):
     admin_settings_updates = relationship(
         "AdminSettings", back_populates="updated_by_user", cascade="all, delete-orphan"
     )
-    achievements = relationship("UserAchievement", back_populates="user")
+    achievements = relationship("UserAchievement", back_populates="user", cascade="all, delete-orphan")
     nutrition_meals = relationship("NutritionMeal", back_populates="user", cascade="all, delete-orphan")
     nutrition_goal = relationship("NutritionGoal", back_populates="user", uselist=False, cascade="all, delete-orphan")
 
@@ -195,6 +195,7 @@ class RoutineFolder(Base):
     user_id = Column(Integer, ForeignKey(
         "users.id", ondelete="CASCADE"), nullable=False)
     created_at = Column(DateTime, default=datetime.now(timezone.utc))
+    color = Column(String, nullable=True)
 
     user = relationship("User", back_populates="routine_folders")
     routines = relationship("Routine", back_populates="folder")
@@ -290,7 +291,7 @@ class UserAchievement(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
     achievement_id = Column(Integer, ForeignKey("achievements.id"))
-    achieved_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))
+    achieved_at = Column(DateTime(timezone=True), nullable=True)
     progress = Column(Integer, default=0)  # Track progress towards achievement
     reward_claimed = Column(Boolean, default=False)  # Track if reward has been claimed
     is_read = Column(Boolean, default=False)  # Track if achievement notification has been read

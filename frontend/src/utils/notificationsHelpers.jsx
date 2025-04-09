@@ -1,5 +1,5 @@
-// src/utils/notificationHelpers.js
 import { apiUrl } from './config';
+import { toast } from 'react-hot-toast';
 
 /**
  * Check if notifications are enabled globally
@@ -304,11 +304,46 @@ export const notifyProgressMilestone = (metric, value) => {
   );
 };
 
-export const notifyAchievementEarned = (achievementName, description, icon) => {
-  return createNotification(
-    `🏆 Achievement Unlocked: "${achievementName}" - ${description}`,
-    'achievement_earned',
-    icon || 'trophy',
-    'text-yellow-500'
-  );
+export const notifyAchievementEarned = async (achievementName, description, icon) => {
+  // Check if notifications are enabled
+  if (!areNotificationsEnabled()) {
+    console.log('Notifications are disabled, skipping achievement notification');
+    return null;
+  }
+
+  // Check if achievement alerts specifically are enabled
+  if (!areAchievementAlertsEnabled()) {
+    console.log('Achievement alerts are disabled, skipping achievement notification');
+    return null;
+  }
+
+  try {
+    // Create notification in the backend
+    const notification = await createNotification(
+      `🏆 Achievement Unlocked: "${achievementName}" - ${description}`,
+      'achievement_earned',
+      icon || 'trophy',
+      'text-yellow-500'
+    );
+
+    // Show toast notification
+    toast.success(
+      <div className="achievement-toast">
+        <h3 className="font-bold">Achievement Unlocked! 🏆</h3>
+        <p className="text-lg">{achievementName}</p>
+        <p className="text-sm text-gray-600">{description}</p>
+      </div>,
+      {
+        duration: 5000,
+        position: "top-right",
+        className: "achievement-notification",
+        icon: icon ? <i className={`fas fa-${icon}`}></i> : "🏆"
+      }
+    );
+
+    return notification;
+  } catch (error) {
+    console.error('Error creating achievement notification:', error);
+    return null;
+  }
 };

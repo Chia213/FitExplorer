@@ -260,12 +260,14 @@ class SavedWorkoutProgramResponse(BaseModel):
 
 class RoutineFolderCreate(BaseModel):
     name: str
+    color: Optional[str] = None
 
 
 class RoutineFolderResponse(BaseModel):
     id: int
     name: str
     created_at: datetime
+    color: Optional[str] = None
 
     class Config:
         from_attributes = True

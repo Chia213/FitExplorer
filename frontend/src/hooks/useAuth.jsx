@@ -415,6 +415,15 @@ export const AuthProvider = ({ children }) => {
   // Initialize auth on mount
   useEffect(() => {
     initializeAuth();
+
+    // Listen for storage events to sync auth state
+    const handleStorageChange = () => {
+      console.log('Storage changed, refreshing auth state');
+      initializeAuth();
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, [initializeAuth]);
 
   // Provide the auth context to children

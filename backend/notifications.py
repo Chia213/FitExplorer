@@ -54,35 +54,39 @@ def get_notifications(
 
 
 @router.post("")
-def create_notification(
-    notification: NotificationCreate,
+async def create_notification(
+    notification_data: dict,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Create a new notification"""
-    new_notification = Notification(
-        user_id=user.id,
-        message=notification.message,
-        type=notification.type,
-        read=False,
-        icon=notification.icon,
-        icon_color=notification.icon_color,
-        created_at=datetime.now(timezone.utc)
-    )
-    
-    db.add(new_notification)
-    db.commit()
-    db.refresh(new_notification)
-    
-    return {
-        "id": new_notification.id,
-        "message": new_notification.message,
-        "type": new_notification.type,
-        "date": new_notification.created_at.isoformat(),
-        "read": new_notification.read,
-        "icon": new_notification.icon,
-        "iconColor": new_notification.icon_color,
-    }
+    try:
+        # Create notification
+        new_notification = Notification(
+            user_id=user.id,
+            type=notification_data.get("type", "info"),
+            title=notification_data.get("title", ""),
+            message=notification_data.get("message", ""),
+            icon=notification_data.get("icon", "info"),
+            is_read=False,
+            created_at=datetime.now(timezone.utc)
+        )
+        
+        db.add(new_notification)
+        db.commit()
+        db.refresh(new_notification)
+        
+        return {
+            "id": new_notification.id,
+            "message": "Notification created successfully"
+        }
+    except Exception as e:
+        db.rollback()
+        print(f"Error creating notification: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error creating notification: {str(e)}"
+        )
 
 
 @router.patch("/{notification_id}")

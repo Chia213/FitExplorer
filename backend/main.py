@@ -89,12 +89,71 @@ app.add_middleware(
 
 @app.on_event("startup")
 async def startup_event():
+    """Initialize database and create default achievements if they don't exist"""
+    db = SessionLocal()
+    try:
+        # Initialize default achievements
+        default_achievements = [
+            {
+                "name": "Profile Pioneer",
+                "description": "Complete your profile information",
+                "icon": "FaUser",
+                "category": "profile",
+                "requirement": 6  # All profile fields filled
+            },
+            {
+                "name": "Workout Warrior",
+                "description": "Complete your first workout",
+                "icon": "FaDumbbell",
+                "category": "workout",
+                "requirement": 1
+            },
+            {
+                "name": "Exercise Explorer",
+                "description": "Try 5 different exercises",
+                "icon": "FaRunning",
+                "category": "variety",
+                "requirement": 5
+            },
+            {
+                "name": "Fitness Enthusiast",
+                "description": "Complete 10 workouts",
+                "icon": "FaFire",
+                "category": "workout",
+                "requirement": 10
+            },
+            {
+                "name": "Variety Master",
+                "description": "Try 20 different exercises",
+                "icon": "FaDumbbell",
+                "category": "variety",
+                "requirement": 20
+            }
+        ]
+
+        # Check if achievements exist
+        existing_count = db.query(Achievement).count()
+        if existing_count == 0:
+            print("Initializing default achievements...")
+            for achievement_data in default_achievements:
+                achievement = Achievement(**achievement_data)
+                db.add(achievement)
+            db.commit()
+            print(f"Created {len(default_achievements)} default achievements")
+        else:
+            print(f"Found {existing_count} existing achievements")
+
+    except Exception as e:
+        print(f"Error during startup: {str(e)}")
+        db.rollback()
+    finally:
+        db.close()
+
     print("Starting background task for email summaries")
     background_tasks = BackgroundTasks()
     background_tasks.add_task(send_summary_emails)
     
     # Initialize achievements
-    db = SessionLocal()
     try:
         initialize_achievements(db)
     finally:
@@ -494,34 +553,53 @@ def profile(user: User = Depends(get_current_user), db: Session = Depends(get_db
 
 @app.put("/user-profile")
 def update_profile(
-    preferences: UserProfileUpdate,
+    profile_data: UserProfileUpdateRequest,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     try:
-        # Get or create user profile
-        user_profile = db.query(UserProfile).filter(UserProfile.user_id == user.id).first()
-        if not user_profile:
-            user_profile = UserProfile(user_id=user.id)
-            db.add(user_profile)
+        # Check if username is being updated
+        username_changed = False
+        if hasattr(profile_data, 'username') and profile_data.username != user.username:
+            # Check if new username is already taken
+            existing_user = db.query(User).filter(
+                User.username == profile_data.username,
+                User.id != user.id
+            ).first()
+            if existing_user:
+                raise HTTPException(status_code=400, detail="Username already taken")
+            username_changed = True
 
-        # Update profile fields
-        for field, value in preferences.dict(exclude_unset=True).items():
-            setattr(user_profile, field, value)
+        # Update user fields
+        for field, value in profile_data.dict(exclude_unset=True).items():
+            setattr(user, field, value)
 
         db.commit()
-        db.refresh(user_profile)
+        db.refresh(user)
 
-        return {
-            "message": "Profile updated successfully",
-            "preferences": {
-                "goal_weight": user_profile.goal_weight,
-                "email_notifications": user_profile.email_notifications,
-                "summary_frequency": user_profile.summary_frequency,
-                "summary_day": user_profile.summary_day,
-                "card_color": user_profile.card_color
-            }
+        # If username was changed, create new access token
+        response_data = {
+            "username": user.username,
+            "email": user.email,
+            "height": user.height,
+            "weight": user.weight,
+            "age": user.age,
+            "gender": user.gender,
+            "fitness_goals": user.fitness_goals,
+            "bio": user.bio
         }
+
+        if username_changed:
+            # Create new access token with updated username
+            access_token = create_access_token(
+                data={"sub": user.username},
+                expires_delta=timedelta(days=7)  # Match your token expiry setting
+            )
+            response_data["access_token"] = access_token
+
+        return response_data
+    except HTTPException:
+        raise
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
@@ -642,11 +720,27 @@ def get_workout_stats(
         .order_by(desc(Workout.date))\
         .first()
 
-    total_cardio_duration = db.query(func.sum(func.coalesce(Set.duration, 0)))\
+    # Calculate total duration from cardio exercises
+    cardio_duration = db.query(func.sum(func.coalesce(Set.duration, 0)))\
         .join(Exercise)\
         .join(Workout)\
         .filter(Workout.user_id == user.id, Exercise.is_cardio == True)\
         .scalar() or 0
+
+    # Calculate total duration from workout start/end times
+    workout_duration = db.query(
+        func.sum(
+            func.extract('epoch', Workout.end_time) - 
+            func.extract('epoch', Workout.start_time)
+        ) / 60  # Convert seconds to minutes
+    ).filter(
+        Workout.user_id == user.id,
+        Workout.start_time.isnot(None),
+        Workout.end_time.isnot(None)
+    ).scalar() or 0
+
+    # Total duration is the sum of both
+    total_duration = cardio_duration + workout_duration
 
     weight_progression = db.query(Workout.date, Workout.bodyweight)\
         .filter(Workout.user_id == user.id, Workout.bodyweight.isnot(None))\
@@ -665,7 +759,7 @@ def get_workout_stats(
         total_workouts=total_workouts,
         favorite_exercise=favorite_exercise,
         last_workout=last_workout.date if last_workout else None,
-        total_cardio_duration=round(total_cardio_duration, 2),
+        total_cardio_duration=round(total_duration, 2),  # Use total_duration instead of just cardio_duration
         weight_progression=weight_progression_data
     )
 
@@ -1664,27 +1758,33 @@ def get_user_achievements(
 
 
 @app.post("/achievements/check")
-def check_achievements(
+async def check_achievements(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Check and update user's achievement progress"""
     try:
-        # Get all achievements
-        achievements = db.query(Achievement).all()
-        
-        # Check and update progress for each achievement
         updated_count = 0
         newly_achieved = 0
         
+        # Get all achievements
+        achievements = db.query(Achievement).all()
+        
+        # Get user's current achievements
+        user_achievements = {
+            ua.achievement_id: ua 
+            for ua in db.query(UserAchievement)
+            .filter(UserAchievement.user_id == user.id)
+            .all()
+        }
+        
         for achievement in achievements:
-            # Get current user progress
-            user_achievement = db.query(UserAchievement).filter(
-                UserAchievement.user_id == user.id,
-                UserAchievement.achievement_id == achievement.id
-            ).first()
+            was_achieved = False
+            is_achieved = False
+            progress = 0
             
-            # If user doesn't have this achievement record yet, create it
+            # Get or create user achievement
+            user_achievement = user_achievements.get(achievement.id)
             if not user_achievement:
                 user_achievement = UserAchievement(
                     user_id=user.id,
@@ -1692,106 +1792,65 @@ def check_achievements(
                     progress=0
                 )
                 db.add(user_achievement)
-                
-            # Calculate progress based on achievement category
-            # This is a simplified version - you'd need to implement the actual logic
-            # based on your achievement categories and requirements
-            if achievement.category == "workout":
-                # Count user's workouts
-                workout_count = db.query(Workout).filter(Workout.user_id == user.id).count()
-                user_achievement.progress = workout_count
-                
-            elif achievement.category == "streak":
-                # Get user's workout preferences to find their frequency goal
-                workout_prefs = db.query(WorkoutPreferences).filter(WorkoutPreferences.user_id == user.id).first()
-                frequency_goal = workout_prefs.workout_frequency_goal if workout_prefs else None
-                
-                if achievement.name == "Workout Frequency Champion" and frequency_goal:
-                    # This achievement tracks if user maintains their workout frequency goal
-                    # Get workouts from the past 4 weeks (28 days)
-                    four_weeks_ago = datetime.now(timezone.utc) - timedelta(days=28)
-                    workouts = db.query(Workout).filter(
-                        Workout.user_id == user.id,
-                        Workout.date >= four_weeks_ago,
-                        Workout.is_template == False
-                    ).order_by(Workout.date.desc()).all()
-                    
-                    # Group workouts by week
-                    weeks_achieved = 0
-                    workouts_by_week = {}
-                    
-                    for workout in workouts:
-                        # Calculate the week number (0-3, where 0 is current week)
-                        days_ago = (datetime.now(timezone.utc) - workout.date).days
-                        week_number = min(3, days_ago // 7)
-                        
-                        if week_number not in workouts_by_week:
-                            workouts_by_week[week_number] = 0
-                        workouts_by_week[week_number] += 1
-                    
-                    # Check how many weeks met the frequency goal
-                    for week in range(4):  # Check all 4 weeks
-                        week_workouts = workouts_by_week.get(week, 0)
-                        if week_workouts >= frequency_goal:
-                            weeks_achieved += 1
-                    
-                    # Update progress (number of weeks the goal was achieved)
-                    user_achievement.progress = weeks_achieved
-                
-                elif achievement.name == "Consistency King":
-                    # This checks for completing at least 3 workouts per week for 4 consecutive weeks
-                    four_weeks_ago = datetime.now(timezone.utc) - timedelta(days=28)
-                    workouts = db.query(Workout).filter(
-                        Workout.user_id == user.id,
-                        Workout.date >= four_weeks_ago,
-                        Workout.is_template == False
-                    ).order_by(Workout.date.desc()).all()
-                    
-                    # Group workouts by week
-                    weeks_with_three_plus = 0
-                    workouts_by_week = {}
-                    
-                    for workout in workouts:
-                        # Calculate the week number (0-3, where 0 is current week)
-                        days_ago = (datetime.now(timezone.utc) - workout.date).days
-                        week_number = min(3, days_ago // 7)
-                        
-                        if week_number not in workouts_by_week:
-                            workouts_by_week[week_number] = 0
-                        workouts_by_week[week_number] += 1
-                    
-                    # Check how many weeks had at least 3 workouts
-                    for week in range(4):  # Check all 4 weeks
-                        week_workouts = workouts_by_week.get(week, 0)
-                        if week_workouts >= 3:  # At least 3 workouts
-                            weeks_with_three_plus += 1
-                    
-                    # Update progress
-                    user_achievement.progress = weeks_with_three_plus
-                
-            elif achievement.category == "profile":
-                # Check if user has completed profile
-                user_data = db.query(User).filter(User.id == user.id).first()
-                if user_data and user_data.profile_picture:
-                    user_achievement.progress = 1
-                    
-            elif achievement.category == "routines":
-                # Count user's routines
-                routine_count = db.query(Routine).filter(Routine.user_id == user.id).count()
-                user_achievement.progress = routine_count
-                
-            # Check if achievement is newly completed
-            was_achieved = user_achievement.progress >= achievement.requirement
-            is_achieved = user_achievement.progress >= achievement.requirement
+            else:
+                was_achieved = user_achievement.achieved_at is not None
+            
+            # Check different achievement types
+            if achievement.category == "profile":
+                # Profile completion achievements
+                profile_fields = [
+                    user.height is not None,
+                    user.weight is not None,
+                    user.age is not None,
+                    user.gender is not None,
+                    user.fitness_goals is not None,
+                    user.bio is not None
+                ]
+                progress = sum(profile_fields)
+                is_achieved = progress >= achievement.requirement
+            
+            elif achievement.category == "workout":
+                # Workout related achievements
+                total_workouts = db.query(Workout).filter(
+                    Workout.user_id == user.id,
+                    Workout.is_template.is_(False)
+                ).count()
+                progress = total_workouts
+                is_achieved = progress >= achievement.requirement
+            
+            elif achievement.category == "variety":
+                # Exercise variety achievements
+                unique_exercises = db.query(Exercise.name).distinct().join(
+                    Workout, Exercise.workout_id == Workout.id
+                ).filter(
+                    Workout.user_id == user.id,
+                    Workout.is_template.is_(False)
+                ).count()
+                progress = unique_exercises
+                is_achieved = progress >= achievement.requirement
+            
+            # Update user achievement
+            user_achievement.progress = progress
             
             if is_achieved and not was_achieved:
                 user_achievement.achieved_at = datetime.now(timezone.utc)
                 user_achievement.earned_at = datetime.now(timezone.utc)
-                user_achievement.is_read = False  # Mark as unread so it shows up in notifications
+                user_achievement.is_read = False
                 user_achievement.title = achievement.name
                 user_achievement.description = achievement.description
                 newly_achieved += 1
                 
+                # Create notification for new achievement
+                notification = Notification(
+                    user_id=user.id,
+                    type="achievement",
+                    title=f"Achievement Unlocked: {achievement.name}",
+                    message=achievement.description,
+                    icon=achievement.icon,
+                    is_read=False
+                )
+                db.add(notification)
+            
             updated_count += 1
             
         db.commit()
@@ -2592,6 +2651,50 @@ def delete_routine_folder(
         db.rollback()
         print(f"Error deleting routine folder: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error deleting routine folder: {str(e)}")
+
+
+@app.put("/routine-folders/{folder_id}", response_model=RoutineFolderResponse)
+def update_routine_folder(
+    folder_id: int,
+    folder_data: RoutineFolderCreate,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Update a routine folder"""
+    try:
+        # Check if folder exists and belongs to user
+        folder = db.query(RoutineFolder).filter(
+            RoutineFolder.id == folder_id,
+            RoutineFolder.user_id == user.id
+        ).first()
+        
+        if not folder:
+            raise HTTPException(status_code=404, detail="Folder not found")
+        
+        # Check if another folder with this name exists for this user
+        existing_folder = db.query(RoutineFolder).filter(
+            RoutineFolder.user_id == user.id,
+            RoutineFolder.name == folder_data.name,
+            RoutineFolder.id != folder_id
+        ).first()
+        
+        if existing_folder:
+            raise HTTPException(status_code=400, detail=f"Folder with name '{folder_data.name}' already exists")
+        
+        # Update folder fields
+        folder.name = folder_data.name
+        folder.color = folder_data.color
+        
+        db.commit()
+        db.refresh(folder)
+        
+        return folder
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        print(f"Error updating routine folder: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error updating routine folder: {str(e)}")
 
 
 # Workout Templates endpoints

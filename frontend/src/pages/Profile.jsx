@@ -40,6 +40,7 @@ import {
   FaFire,
   FaExternalLinkAlt,
 } from "react-icons/fa";
+import { toast } from "react-hot-toast";
 
 const backendURL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
@@ -147,7 +148,7 @@ function Profile() {
         weight: userData.weight?.toString() || "",
         age: userData.age?.toString() || "",
         gender: userData.gender || "",
-        fitnessGoals: userData.fitness_goals || "",
+        fitnessGoals: userData.fitness_goals || "",  // This matches the backend's snake_case
         bio: userData.bio || ""
       });
 
@@ -392,99 +393,63 @@ function Profile() {
     }
   };
 
-  const handleUpdateProfile = async () => {
-    // Clear any previous inline errors
-    const errorElement = document.getElementById('username-error');
-    if (errorElement) {
-      errorElement.textContent = '';
-      errorElement.classList.add('hidden');
-    }
-
-    if (!editedUsername.trim() || editedUsername.length < 3) {
-      if (errorElement) {
-        errorElement.textContent = "Username must be at least 3 characters";
-        errorElement.classList.remove('hidden');
-      }
-      return;
-    }
-
+  const handleUpdateProfile = async (updatedData) => {
     try {
-      console.log("Updating username to:", editedUsername);
-      setIsSaving(true);
-      const token = localStorage.getItem("token");
-      const response = await fetch(`${backendURL}/update-profile`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ username: editedUsername }),
-      });
+        setLoading(true);
+        setError(null);
 
-      if (response.ok) {
-        const updatedUser = await response.json();
-        console.log("Server response after update:", updatedUser);
-        
-        // Update user state with the data returned from the server
-        setUser((prevUser) => {
-          const newUserState = {
-            ...prevUser,
-            username: updatedUser.username || editedUsername // Use server value if available
-          };
-          console.log("Updated user state:", newUserState);
-          return newUserState;
+        const token = localStorage.getItem("token");
+        const response = await fetch(`${backendURL}/user-profile`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify(updatedData),
         });
 
-        // Update the token in local storage
-        if (updatedUser.access_token) {
-          console.log("New access token received, updating localStorage");
-          localStorage.setItem("token", updatedUser.access_token);
-        } else {
-          console.log("No new access token received from server");
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-        setIsEditing(false);
-        setError(null);
-        
-        // Only send notification if notifications are enabled
-        if (allNotificationsEnabled) {
-          await notifyUsernameChanged(editedUsername);
+        const data = await response.json();
+        console.log("Server response after update:", data);
+
+        // Check if we received a new access token (happens when username changes)
+        if (data.access_token) {
+            console.log("Received new access token after username update");
+            localStorage.setItem("token", data.access_token);
+            localStorage.setItem("access_token", data.access_token);
         }
-        
-        // Fetch updated user data to ensure it's properly synced
-        console.log("Re-fetching user data after username update");
+
+        // Update user state with new data
+        setUser(prevUser => ({
+            ...prevUser,
+            ...data
+        }));
+
+        // Show success message
+        toast.success("Profile updated successfully!");
+
+        // If username was changed, create a notification
+        if (updatedData.username && updatedData.username !== user.username) {
+            try {
+                await notifyUsernameChanged(updatedData.username);
+            } catch (notificationError) {
+                console.error("Error creating notification:", notificationError);
+                // Don't fail the whole update if notification fails
+            }
+        }
+
+        // Refresh user data to ensure everything is in sync
         await fetchUserData();
-      } else {
-        const errorData = await response.json();
-        console.error("Error response from server:", errorData);
-        
-        // Handle 409 conflict differently to avoid global error state
-        if (response.status === 409) {
-          if (errorElement) {
-            errorElement.textContent = errorData.detail || "Username already taken. Please choose a different username.";
-            errorElement.classList.remove('hidden');
-          }
-        } else {
-          // For other errors, use the global error handler
-          setError(errorData.detail || "Failed to update profile");
-        }
-        
-        // Reset edited username to current username
-        setEditedUsername(user.username);
-      }
+
     } catch (err) {
-      console.error("Exception during username update:", err);
-      
-      // Set inline error instead of global error
-      if (errorElement) {
-        errorElement.textContent = "Something went wrong. Please try again.";
-        errorElement.classList.remove('hidden');
-      }
-      
-      // Reset to current username
-      setEditedUsername(user.username);
+        console.error("Error updating profile:", err);
+        setError(err.message);
+        toast.error("Failed to update profile");
     } finally {
-      setIsSaving(false);
+        setLoading(false);
     }
   };
 
@@ -840,121 +805,117 @@ function Profile() {
     navigate("/login");
   };
 
-  const handlePersonalInfoUpdate = async () => {
+  const handlePersonalInfoUpdate = async (updatedData) => {
+    setLoading(true);
     try {
-      setIsSaving(true);
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${backendURL}/user-profile`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(updatedData)
+      });
 
-      // Save original values for comparison
+      if (!response.ok) {
+        throw new Error('Failed to update profile');
+      }
+
+      const data = await response.json();
+      setUser(data);
+      
+      // Store original values for comparison
       const originalHeight = user?.height;
       const originalWeight = user?.weight;
       const originalAge = user?.age;
       const originalGender = user?.gender;
       const originalFitnessGoals = user?.fitness_goals;
       const originalBio = user?.bio;
+      
+      let notificationSent = false;
 
-      // Update user profile using the correct endpoint
-      const response = await fetch(`${backendURL}/update-profile`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          height: parseFloat(personalInfo.height) || null,
-          weight: parseFloat(personalInfo.weight) || null,
-          age: parseInt(personalInfo.age) || null,
-          gender: personalInfo.gender,
-          fitness_goals: personalInfo.fitnessGoals,
-          bio: personalInfo.bio
-        }),
-      });
-
-      if (response.ok) {
-        const updatedData = await response.json();
-        
-        // Update the local state with the response data
-        setUser(prevUser => ({
-          ...prevUser,
-          height: updatedData.height,
-          weight: updatedData.weight,
-          age: updatedData.age,
-          gender: updatedData.gender,
-          fitness_goals: updatedData.fitness_goals,
-          bio: updatedData.bio
-        }));
-
-        // Update personal info state to match the response
-        setPersonalInfo({
-          height: updatedData.height?.toString() || "",
-          weight: updatedData.weight?.toString() || "",
-          age: updatedData.age?.toString() || "",
-          gender: updatedData.gender || "",
-          fitnessGoals: updatedData.fitness_goals || "",
-          bio: updatedData.bio || ""
-        });
-
-        setIsEditingPersonalInfo(false);
-        setPersonalInfoError("");
-        setSuccessMessage("Personal information updated successfully");
-        
-        // Only send notifications if notifications are enabled
-        if (allNotificationsEnabled) {
-          // Track if any notifications were sent
-          let notificationSent = false;
-
-          // Check which fields were updated and send specific notifications
-          if (updatedData.height !== originalHeight && updatedData.height !== null) {
-            await notifyHeightUpdated(updatedData.height);
-            notificationSent = true;
-          }
-          
-          if (updatedData.weight !== originalWeight && updatedData.weight !== null) {
-            await notifyWeightUpdated(updatedData.weight);
-            notificationSent = true;
-          }
-          
-          if (updatedData.age !== originalAge && updatedData.age !== null) {
-            await notifyAgeUpdated(updatedData.age);
-            notificationSent = true;
-          }
-          
-          if (updatedData.gender !== originalGender && updatedData.gender) {
-            await notifyGenderUpdated();
-            notificationSent = true;
-          }
-          
-          if (updatedData.fitness_goals !== originalFitnessGoals && updatedData.fitness_goals) {
-            await notifyFitnessGoalsUpdated();
-            notificationSent = true;
-          }
-          
-          if (updatedData.bio !== originalBio && updatedData.bio) {
-            await notifyBioUpdated();
-            notificationSent = true;
-          }
-          
-          // If no specific field notifications were sent but something changed, send generic update
-          if (!notificationSent) {
-            await notifyPersonalInfoUpdated();
-          }
+      if (allNotificationsEnabled) {
+        // Check which fields were updated and send specific notifications
+        if (updatedData.height !== originalHeight && updatedData.height !== null) {
+          await notifyHeightUpdated(updatedData.height);
+          notificationSent = true;
         }
         
-        // Check achievements after updating personal info
-        await checkAchievementsProgress();
-      } else if (response.status === 401) {
-        setPersonalInfoError("Session expired. Please log in again.");
-        localStorage.removeItem("token");
-        navigate("/login");
-      } else {
-        const data = await response.json();
-        const errorMessage = data.detail || "Failed to update personal information";
-        setPersonalInfoError(errorMessage);
+        if (updatedData.weight !== originalWeight && updatedData.weight !== null) {
+          await notifyWeightUpdated(updatedData.weight);
+          notificationSent = true;
+        }
+        
+        if (updatedData.age !== originalAge && updatedData.age !== null) {
+          await notifyAgeUpdated(updatedData.age);
+          notificationSent = true;
+        }
+        
+        if (updatedData.gender !== originalGender && updatedData.gender) {
+          await notifyGenderUpdated();
+          notificationSent = true;
+        }
+        
+        if (updatedData.fitness_goals !== originalFitnessGoals && updatedData.fitness_goals) {
+          await notifyFitnessGoalsUpdated();
+          notificationSent = true;
+        }
+        
+        if (updatedData.bio !== originalBio && updatedData.bio) {
+          await notifyBioUpdated();
+          notificationSent = true;
+        }
+        
+        // If no specific field notifications were sent but something changed, send generic update
+        if (!notificationSent) {
+          await notifyPersonalInfoUpdated();
+        }
       }
-    } catch (err) {
-      setPersonalInfoError("Failed to update personal information. Please try again.");
-    } finally {
-      setIsSaving(false);
+
+      // Check achievements after profile update
+      try {
+        const achievementsResponse = await fetch(`${backendURL}/achievements/check`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (achievementsResponse.ok) {
+          const achievementsData = await achievementsResponse.json();
+          if (achievementsData.newly_achieved > 0) {
+            // Fetch updated achievements to show new ones
+            const newAchievementsResponse = await fetch(`${backendURL}/api/achievements/new`, {
+              headers: {
+                'Authorization': `Bearer ${token}`
+              }
+            });
+
+            if (newAchievementsResponse.ok) {
+              const newAchievements = await newAchievementsResponse.json();
+              newAchievements.forEach(achievement => {
+                if (achievementAlertsEnabled) {
+                  notifyAchievementEarned(
+                    achievement.name,
+                    achievement.description,
+                    achievement.icon
+                  );
+                }
+              });
+            }
+          }
+        }
+      } catch (error) {
+        console.warn("Failed to check achievements:", error);
+      }
+
+      setLoading(false);
+      toast.success('Profile updated successfully!');
+    } catch (error) {
+      setLoading(false);
+      toast.error('Failed to update profile');
+      console.error('Error updating profile:', error);
     }
   };
 
@@ -1092,7 +1053,7 @@ function Profile() {
                           className="text-2xl font-bold bg-transparent border-b-2 border-blue-500 focus:outline-none"
                         />
                         <button
-                          onClick={handleUpdateProfile}
+                          onClick={() => handleUpdateProfile({ username: editedUsername })}
                           disabled={isSaving}
                           className="text-green-500 hover:text-green-600"
                         >
@@ -1295,7 +1256,7 @@ function Profile() {
               ) : (
                 <div className="flex space-x-2">
                   <button
-                    onClick={handlePersonalInfoUpdate}
+                    onClick={() => handlePersonalInfoUpdate(personalInfo)}
                     className="text-teal-500 hover:text-teal-400"
                     title="Save changes"
                     disabled={isSaving}

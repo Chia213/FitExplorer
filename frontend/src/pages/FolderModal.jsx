@@ -14,6 +14,7 @@ const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 function FolderModal({ isOpen, onClose, onSelectFolder, selectedRoutineId }) {
   const [folders, setFolders] = useState([]);
   const [newFolderName, setNewFolderName] = useState("");
+  const [newFolderColor, setNewFolderColor] = useState("#808080");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [editingFolder, setEditingFolder] = useState(null);
@@ -60,20 +61,32 @@ function FolderModal({ isOpen, onClose, onSelectFolder, selectedRoutineId }) {
       const token = localStorage.getItem("token");
       if (!token) throw new Error("Authentication required");
 
+      console.log('Creating folder with data:', {
+        name: newFolderName,
+        color: newFolderColor
+      });
+
       const response = await fetch(`${API_URL}/routine-folders`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ name: newFolderName }),
+        body: JSON.stringify({ 
+          name: newFolderName,
+          color: newFolderColor 
+        }),
       });
 
       if (!response.ok) {
         throw new Error(`Failed to create folder: ${response.status}`);
       }
 
+      const createdFolder = await response.json();
+      console.log('Successfully created folder:', createdFolder);
+
       setNewFolderName("");
+      setNewFolderColor("#808080");
       await loadFolders();
     } catch (err) {
       console.error("Error creating folder:", err);
@@ -200,6 +213,13 @@ function FolderModal({ isOpen, onClose, onSelectFolder, selectedRoutineId }) {
                   : "bg-white border-gray-300 text-gray-900"
               }`}
             />
+            <input
+              type="color"
+              value={newFolderColor}
+              onChange={(e) => setNewFolderColor(e.target.value)}
+              className="w-10 h-10 p-1 border rounded cursor-pointer"
+              title="Choose folder color"
+            />
             <button
               onClick={handleCreateFolder}
               disabled={!newFolderName.trim()}
@@ -252,6 +272,7 @@ function FolderModal({ isOpen, onClose, onSelectFolder, selectedRoutineId }) {
                       : "bg-gray-100 hover:bg-gray-200"
                   } cursor-pointer`}
                   onClick={() => handleSelectFolder(folder.id)}
+                  style={{ borderLeft: `4px solid ${folder.color || '#808080'}` }}
                 >
                   {editingFolder && editingFolder.id === folder.id ? (
                     <div className="flex items-center">

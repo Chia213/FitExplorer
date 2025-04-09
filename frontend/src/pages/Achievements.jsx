@@ -1399,6 +1399,90 @@ function Achievements() {
     return claimedRewards.includes(rewardId);
   };
 
+  useEffect(() => {
+    // Check for new achievements periodically
+    const checkInterval = setInterval(async () => {
+      if (user) {
+        const response = await fetch(`${backendURL}/api/achievements/new`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        });
+        
+        if (response.ok) {
+          const newAchievements = await response.json();
+          if (newAchievements.length > 0) {
+            // Show notification for each new achievement
+            newAchievements.forEach(achievement => {
+              toast.success(
+                <div>
+                  <h3 className="font-bold">Achievement Unlocked! 🏆</h3>
+                  <p>{achievement.title}</p>
+                  <p className="text-sm">{achievement.description}</p>
+                </div>,
+                {
+                  duration: 5000,
+                  position: "top-right"
+                }
+              );
+            });
+            // Refresh achievements list
+            fetchAchievements();
+          }
+        }
+      }
+    }, 30000); // Check every 30 seconds
+
+    return () => clearInterval(checkInterval);
+  }, [user]);
+
+  // Add achievement check after relevant actions
+  const checkAchievementsAfterAction = async () => {
+    try {
+      const result = await checkAchievements();
+      if (result && result.newly_achieved > 0) {
+        // Refresh achievements list to show new progress
+        await fetchAchievements();
+      }
+    } catch (err) {
+      console.error("Error checking achievements:", err);
+    }
+  };
+
+  // Add this effect to watch for relevant actions
+  useEffect(() => {
+    // Listen for workout completion
+    const handleWorkoutComplete = () => {
+      checkAchievementsAfterAction();
+    };
+
+    // Listen for profile updates
+    const handleProfileUpdate = () => {
+      checkAchievementsAfterAction();
+    };
+
+    // Listen for routine creation
+    const handleRoutineCreate = () => {
+      checkAchievementsAfterAction();
+    };
+
+    window.addEventListener('workoutComplete', handleWorkoutComplete);
+    window.addEventListener('profileUpdate', handleProfileUpdate);
+    window.addEventListener('routineCreate', handleRoutineCreate);
+
+    return () => {
+      window.removeEventListener('workoutComplete', handleWorkoutComplete);
+      window.removeEventListener('profileUpdate', handleProfileUpdate);
+      window.removeEventListener('routineCreate', handleRoutineCreate);
+    };
+  }, []);
+
+  // Add this to the component's return statement near the top
+  useEffect(() => {
+    // Check achievements on component mount
+    checkAchievementsAfterAction();
+  }, []);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">

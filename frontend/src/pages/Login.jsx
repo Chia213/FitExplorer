@@ -70,6 +70,9 @@ function Login() {
           localStorage.setItem("isAdmin", "false");
         }
 
+        // Force auth state refresh before navigation
+        window.dispatchEvent(new Event('storage'));
+
         // Navigate to home
         navigate("/");
       } else {

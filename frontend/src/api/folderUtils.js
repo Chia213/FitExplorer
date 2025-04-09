@@ -1,6 +1,6 @@
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
-export const createFolder = async (folderName, token) => {
+export const createFolder = async (folderName, token, color = "#808080") => {
   if (!token) {
     throw new Error("Authentication token is required");
   }
@@ -11,7 +11,7 @@ export const createFolder = async (folderName, token) => {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ name: folderName }),
+    body: JSON.stringify({ name: folderName, color }),
   });
 
   if (!response.ok) {
@@ -37,7 +37,7 @@ export const getFolders = async (token) => {
   return await response.json();
 };
 
-export const updateFolder = async (folderId, folderName, token) => {
+export const updateFolder = async (folderId, folderName, token, color) => {
   if (!token) {
     throw new Error("Authentication token is required");
   }
@@ -48,7 +48,7 @@ export const updateFolder = async (folderId, folderName, token) => {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ name: folderName }),
+    body: JSON.stringify({ name: folderName, color }),
   });
 
   if (!response.ok) {
