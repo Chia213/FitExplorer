@@ -1,8 +1,8 @@
 """add routines relationship to workout model
 
 Revision ID: bd62777e6305
-Revises: add_workout_preferences_table
-Create Date: 2025-04-03 23:55:07.330685
+Revises: 09e51a36eeef
+Create Date: 2025-04-04 09:40:32.027838
 
 """
 from alembic import op
@@ -11,7 +11,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = 'bd62777e6305'
-down_revision = 'add_workout_preferences_table'
+down_revision = '09e51a36eeef'
 branch_labels = None
 depends_on = None
 

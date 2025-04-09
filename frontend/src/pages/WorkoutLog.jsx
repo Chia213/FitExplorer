@@ -633,40 +633,79 @@ const WorkoutLog = () => {
 
   // Check if we're working from a routine when finalizing workout
   const handleFinishWorkout = async () => {
-    // Check if we're coming from a routine
-    const isFromRoutine = !!location.state?.routineId;
-    
-    if (!validateWorkout(isFromRoutine)) {
+    // Validate workout data before proceeding
+    if (!validateWorkout()) {
       return;
     }
 
     try {
       const token = localStorage.getItem("access_token");
       if (!token) {
+        alert("You need to be logged in to save workouts.");
         navigate("/login");
         return;
       }
 
+      // Update end time to current time
+      const endTime = new Date().toISOString();
+      setEndTime(endTime);
+
       // Prepare the workout data
       const workoutData = {
-        name: workoutName,
+        name: workoutName.trim(),
         start_time: new Date(startTime).toISOString(),
-        end_time: new Date(endTime).toISOString(),
+        end_time: endTime,
         bodyweight: bodyweight ? parseFloat(bodyweight) : null,
-        notes: notes,
+        notes: notes.trim(),
+        weight_unit: weightUnit,
         exercises: workoutExercises.map(exercise => ({
           name: exercise.name,
           category: exercise.category || "Uncategorized",
           is_cardio: exercise.is_cardio,
-          sets: exercise.sets.map(set => ({
-            ...set,
-            weight: set.weight ? parseFloat(set.weight) : null,
-            reps: set.reps ? parseInt(set.reps) : null,
-            distance: set.distance ? parseFloat(set.distance) : null,
-            duration: set.duration ? parseInt(set.duration) : null
-          }))
+          sets: exercise.sets.map(set => {
+            const baseSet = {
+              weight: set.weight ? parseFloat(set.weight) : null,
+              reps: set.reps ? parseInt(set.reps) : null,
+              distance: set.distance ? parseFloat(set.distance) : null,
+              duration: set.duration ? parseInt(set.duration) : null,
+              intensity: set.intensity || "",
+              notes: set.notes || "",
+              // Set type flags
+              is_warmup: !!set.is_warmup,
+              is_drop_set: !!set.is_drop_set,
+              is_superset: !!set.is_superset,
+              is_amrap: !!set.is_amrap,
+              is_restpause: !!set.is_restpause,
+              is_pyramid: !!set.is_pyramid,
+              is_giant: !!set.is_giant,
+              // Additional set properties 
+              drop_number: set.drop_number || null,
+              original_weight: set.original_weight || null,
+              superset_with: set.superset_with !== undefined ? set.superset_with : null,
+              rest_pauses: set.rest_pauses || null,
+              pyramid_type: set.pyramid_type || null,
+              pyramid_step: set.pyramid_step || null,
+              giant_with: Array.isArray(set.giant_with) ? set.giant_with : null
+            };
+            return baseSet;
+          })
         }))
       };
+
+      // Check that exercises and sets are properly formatted
+      if (!workoutData.exercises || workoutData.exercises.length === 0) {
+        alert("Your workout must include at least one exercise.");
+        return;
+      }
+
+      for (const exercise of workoutData.exercises) {
+        if (!exercise.sets || exercise.sets.length === 0) {
+          alert(`Exercise '${exercise.name}' must have at least one set.`);
+          return;
+        }
+      }
+
+      console.log("Sending workout data:", workoutData);
 
       // Send the request to create a workout
       const response = await fetch(`${API_BASE_URL}/workouts`, {
@@ -679,8 +718,13 @@ const WorkoutLog = () => {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to save workout");
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.detail || "Failed to save workout";
+        throw new Error(errorMessage);
       }
+
+      const responseData = await response.json();
+      console.log("Workout saved successfully:", responseData);
 
       // Show success message and reset form
       alert("Workout saved successfully!");
@@ -700,7 +744,7 @@ const WorkoutLog = () => {
       navigate("/workout-history");
     } catch (error) {
       console.error("Error saving workout:", error);
-      alert("Failed to save workout. Please try again.");
+      alert(`Failed to save workout: ${error.message}`);
     }
   };
 

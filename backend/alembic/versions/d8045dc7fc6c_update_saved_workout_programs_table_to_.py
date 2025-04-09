@@ -1,7 +1,7 @@
 """Update saved workout programs table to use JSON
 
 Revision ID: d8045dc7fc6c
-Revises: ce4233aefb7a
+Revises: 1c6fcfce4f45
 Create Date: 2025-03-26 19:00:58.960478
 
 """
@@ -12,7 +12,7 @@ import json
 
 # revision identifiers, used by Alembic.
 revision = 'd8045dc7fc6c'
-down_revision = 'ce4233aefb7a'
+down_revision = '1c6fcfce4f45'
 branch_labels = None
 depends_on = None
 

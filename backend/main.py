@@ -225,7 +225,7 @@ def create_workout(
     db: Session = Depends(get_db)
 ):
     try:
-        # Create the workout
+        # Create the workout in a transaction
         db_workout = Workout(
             name=workout.name,
             date=datetime.now(timezone.utc),
@@ -234,14 +234,18 @@ def create_workout(
             bodyweight=workout.bodyweight,
             notes=workout.notes,
             user_id=user.id,
-            weight_unit=workout.weight_unit,
+            weight_unit=workout.weight_unit or "kg",
             is_template=False
         )
+        
+        # Create all related objects before committing
         db.add(db_workout)
-        db.commit()
-        db.refresh(db_workout)
-
-        # Add exercises and sets
+        db.flush()  # Assign ID but don't commit yet
+        
+        # Validate exercises exist
+        if not workout.exercises or len(workout.exercises) == 0:
+            raise ValueError("Workout must contain at least one exercise")
+        
         for exercise_data in workout.exercises:
             new_exercise = Exercise(
                 name=exercise_data.name,
@@ -250,9 +254,12 @@ def create_workout(
                 workout_id=db_workout.id
             )
             db.add(new_exercise)
-            db.commit()
-            db.refresh(new_exercise)
-
+            db.flush()  # Assign ID but don't commit yet
+            
+            # Validate sets exist
+            if not exercise_data.sets or len(exercise_data.sets) == 0:
+                raise ValueError(f"Exercise '{exercise_data.name}' must contain at least one set")
+            
             # Add sets
             for set_data in exercise_data.sets:
                 new_set = Set(
@@ -262,20 +269,44 @@ def create_workout(
                     duration=set_data.duration,
                     intensity=set_data.intensity,
                     notes=set_data.notes,
-                    exercise_id=new_exercise.id
+                    exercise_id=new_exercise.id,
+                    # Add support for set types
+                    is_warmup=getattr(set_data, 'is_warmup', False),
+                    is_drop_set=getattr(set_data, 'is_drop_set', False),
+                    is_superset=getattr(set_data, 'is_superset', False),
+                    is_amrap=getattr(set_data, 'is_amrap', False),
+                    is_restpause=getattr(set_data, 'is_restpause', False),
+                    is_pyramid=getattr(set_data, 'is_pyramid', False),
+                    is_giant=getattr(set_data, 'is_giant', False),
+                    # Additional set properties
+                    drop_number=getattr(set_data, 'drop_number', None),
+                    original_weight=getattr(set_data, 'original_weight', None),
+                    superset_with=getattr(set_data, 'superset_with', None),
+                    rest_pauses=getattr(set_data, 'rest_pauses', None),
+                    pyramid_type=getattr(set_data, 'pyramid_type', None),
+                    pyramid_step=getattr(set_data, 'pyramid_step', None)
                 )
                 db.add(new_set)
-
+        
+        # Commit all changes at once when we're sure everything is valid
         db.commit()
         db.refresh(db_workout)
-
+        
         # Check achievements after workout creation
-        check_achievements(user, db)
-
+        try:
+            check_achievements(user, db)
+        except Exception as achievement_error:
+            print(f"Error checking achievements: {str(achievement_error)}")
+            # Don't fail the whole workout save if achievements checking fails
+            
         return db_workout
+    except ValueError as ve:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=str(ve))
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"Error creating workout: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error creating workout: {str(e)}")
 
 
 def _determine_exercise_category(exercise_name):
@@ -332,6 +363,47 @@ def delete_workout(
         raise HTTPException(
             status_code=500,
             detail=f"Error deleting workout: {str(e)}"
+        )
+
+
+@app.delete("/api/workouts-delete-all")
+async def delete_all_workouts(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    try:
+        # Get count of workouts to be deleted
+        workout_count = db.query(Workout).filter(Workout.user_id == user.id).count()
+        
+        # Delete all related sets first
+        db.query(Set).filter(
+            Set.exercise_id.in_(
+                db.query(Exercise.id).filter(
+                    Exercise.workout_id.in_(
+                        db.query(Workout.id).filter(Workout.user_id == user.id)
+                    )
+                )
+            )
+        ).delete(synchronize_session=False)
+
+        # Delete all related exercises
+        db.query(Exercise).filter(
+            Exercise.workout_id.in_(
+                db.query(Workout.id).filter(Workout.user_id == user.id)
+            )
+        ).delete(synchronize_session=False)
+
+        # Finally delete all workouts
+        db.query(Workout).filter(Workout.user_id == user.id).delete(synchronize_session=False)
+        
+        db.commit()
+        return {"message": f"All workouts deleted successfully. {workout_count} workout(s) removed."}
+
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error deleting workouts: {str(e)}"
         )
 
 

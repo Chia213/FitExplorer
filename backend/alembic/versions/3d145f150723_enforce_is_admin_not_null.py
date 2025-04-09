@@ -1,8 +1,8 @@
 """enforce_is_admin_not_null
 
 Revision ID: 3d145f150723
-Revises: 9059f193539c
-Create Date: 2025-04-02 15:09:12.253805
+Revises: 88099d6dfa8b
+Create Date: 2025-04-01 12:53:03.821819
 
 """
 from alembic import op
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = '3d145f150723'
-down_revision = '9059f193539c'
+down_revision = '88099d6dfa8b'
 branch_labels = None
 depends_on = None
 

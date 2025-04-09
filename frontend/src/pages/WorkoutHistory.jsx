@@ -15,6 +15,7 @@ import {
   FaEye,
   FaChevronLeft,
   FaChevronRight,
+  FaExclamationTriangle,
 } from "react-icons/fa";
 import { Line } from "react-chartjs-2";
 
@@ -51,6 +52,8 @@ function WorkoutHistory() {
   const [savingRoutine, setSavingRoutine] = useState(false);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [workoutToDelete, setWorkoutToDelete] = useState(null);
+  const [showDeleteAllConfirmation, setShowDeleteAllConfirmation] = useState(false);
+  const [deletingAll, setDeletingAll] = useState(false);
   const [weightUnit, setWeightUnit] = useState(() => {
     return localStorage.getItem("weightUnit") || "kg";
   });
@@ -781,6 +784,47 @@ function WorkoutHistory() {
     });
   };
 
+  const handleDeleteAllWorkouts = () => {
+    setShowDeleteAllConfirmation(true);
+  };
+
+  const confirmDeleteAllWorkouts = async () => {
+    setDeletingAll(true);
+    try {
+      const token = localStorage.getItem("access_token");
+      const response = await fetch(`${API_BASE_URL}/api/workouts-delete-all`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete all workouts");
+      }
+
+      const result = await response.json();
+      console.log(result.message);
+      
+      // Clear the workout history
+      setWorkoutHistory([]);
+      setShowDeleteAllConfirmation(false);
+      
+      // Show success message
+      setError(`Success: ${result.message}`);
+      
+      // Clear the success message after 5 seconds
+      setTimeout(() => {
+        setError(null);
+      }, 5000);
+    } catch (error) {
+      console.error("Error deleting all workouts:", error);
+      setError(`Failed to delete all workouts: ${error.message}`);
+    } finally {
+      setDeletingAll(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-6">
       <div className="max-w-4xl mx-auto">
@@ -957,6 +1001,17 @@ function WorkoutHistory() {
               />
               <FaSearch className="absolute left-3 top-3 text-gray-500 dark:text-gray-400" />
             </div>
+          </div>
+
+          <div className="mt-4 flex justify-between items-center">
+            <button
+              onClick={handleDeleteAllWorkouts}
+              className="px-3 py-1 rounded-lg bg-red-500 hover:bg-red-600 text-white flex items-center space-x-1"
+              title="Delete all workouts"
+            >
+              <FaTrash />
+              <span>Delete All</span>
+            </button>
           </div>
         </div>
 
@@ -1395,6 +1450,37 @@ function WorkoutHistory() {
                 onClick={() => {
                   setShowDeleteConfirmation(false);
                   setWorkoutToDelete(null);
+                }}
+                className="flex-1 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-white py-2 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDeleteAllConfirmation && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
+            <h2 className="text-xl font-bold mb-4 text-red-600 dark:text-red-500">
+              Delete All Workouts
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
+              Are you sure you want to delete all workouts? This action cannot
+              be undone.
+            </p>
+
+            <div className="flex space-x-3">
+              <button
+                onClick={confirmDeleteAllWorkouts}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg"
+              >
+                Delete
+              </button>
+              <button
+                onClick={() => {
+                  setShowDeleteAllConfirmation(false);
                 }}
                 className="flex-1 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-white py-2 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500"
               >

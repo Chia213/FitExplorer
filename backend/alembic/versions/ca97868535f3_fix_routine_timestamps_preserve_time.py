@@ -1,18 +1,19 @@
 """fix_routine_timestamps_preserve_time
 
 Revision ID: ca97868535f3
-Revises: 57933cfabf1f
-Create Date: 2025-04-04 09:37:00.515924
+Revises: 86fcec28dc21
+Create Date: 2025-04-04 09:14:33.162753
 
 """
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy.dialects import postgresql
 from datetime import datetime
 
 
 # revision identifiers, used by Alembic.
 revision = 'ca97868535f3'
-down_revision = '57933cfabf1f'
+down_revision = '86fcec28dc21'
 branch_labels = None
 depends_on = None
 

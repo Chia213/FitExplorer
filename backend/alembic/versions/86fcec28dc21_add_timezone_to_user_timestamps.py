@@ -1,7 +1,7 @@
 """add timezone to user timestamps
 
 Revision ID: 86fcec28dc21
-Revises: 7cb67c816dce
+Revises: 3d145f150723
 Create Date: 2024-03-07
 
 """
@@ -11,7 +11,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = '86fcec28dc21'
-down_revision = '7cb67c816dce'  # Set this to point to the other head
+down_revision = '3d145f150723'
 branch_labels = None
 depends_on = None
 

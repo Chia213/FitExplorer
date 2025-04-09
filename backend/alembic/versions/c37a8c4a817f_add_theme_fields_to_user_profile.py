@@ -1,8 +1,8 @@
 """add_theme_fields_to_user_profile
 
 Revision ID: c37a8c4a817f
-Revises: 09cb351f4043
-Create Date: 2025-04-06 09:18:12.671862
+Revises: ca97868535f3
+Create Date: 2025-04-04 09:40:32.027838
 
 """
 from alembic import op
@@ -12,7 +12,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = 'c37a8c4a817f'
-down_revision = '09cb351f4043'
+down_revision = 'ca97868535f3'
 branch_labels = None
 depends_on = None
 
