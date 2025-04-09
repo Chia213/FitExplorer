@@ -234,20 +234,44 @@ function Routines() {
                         duration: set.duration || null,
                         intensity: set.intensity || "",
                         notes: set.notes || "",
+                        // Set type flags
                         is_warmup: !!set.is_warmup,
                         is_drop_set: !!set.is_drop_set,
                         is_superset: !!set.is_superset,
-                        superset_with: set.is_superset ? set.superset_with : null
+                        is_amrap: !!set.is_amrap,
+                        is_restpause: !!set.is_restpause,
+                        is_pyramid: !!set.is_pyramid,
+                        is_giant: !!set.is_giant,
+                        // Additional properties for special set types
+                        drop_number: set.drop_number || null,
+                        original_weight: set.original_weight || null,
+                        superset_with: set.is_superset ? set.superset_with : null,
+                        rest_pauses: set.is_restpause ? set.rest_pauses : null,
+                        pyramid_type: set.is_pyramid ? set.pyramid_type : null,
+                        pyramid_step: set.is_pyramid ? set.pyramid_step : null,
+                        giant_with: set.is_giant ? set.giant_with : null
                       };
                     } else {
                       return {
                         weight: set.weight || null,
                         reps: set.reps || null,
                         notes: set.notes || "",
+                        // Set type flags
                         is_warmup: !!set.is_warmup,
                         is_drop_set: !!set.is_drop_set,
                         is_superset: !!set.is_superset,
-                        superset_with: set.is_superset ? set.superset_with : null
+                        is_amrap: !!set.is_amrap,
+                        is_restpause: !!set.is_restpause,
+                        is_pyramid: !!set.is_pyramid,
+                        is_giant: !!set.is_giant,
+                        // Additional properties for special set types
+                        drop_number: set.drop_number || null,
+                        original_weight: set.original_weight || null,
+                        superset_with: set.is_superset ? set.superset_with : null,
+                        rest_pauses: set.is_restpause ? set.rest_pauses : null,
+                        pyramid_type: set.is_pyramid ? set.pyramid_type : null,
+                        pyramid_step: set.is_pyramid ? set.pyramid_step : null,
+                        giant_with: set.is_giant ? set.giant_with : null
                       };
                     }
                   })
@@ -301,7 +325,22 @@ function Routines() {
           name: routine.name,
           weight_unit: routine.weight_unit || "kg",
           workout: {
-            exercises: routine.exercises
+            exercises: routine.exercises.map(exercise => ({
+              ...exercise,
+              sets: exercise.sets.sort((a, b) => {
+                // First, handle warmup sets (should be first)
+                if (a.is_warmup && !b.is_warmup) return -1;
+                if (!a.is_warmup && b.is_warmup) return 1;
+                
+                // Then handle drop sets (should be ordered by drop_number)
+                if (a.is_drop_set && b.is_drop_set) {
+                  return (a.drop_number || 0) - (b.drop_number || 0);
+                }
+                
+                // Keep original order for other sets
+                return 0;
+              })
+            }))
           }
         }
       }
@@ -322,23 +361,43 @@ function Routines() {
     // Create empty sets based on exercise type and initialSets
     const initialSets = exercise.initialSets || 1;
 
+    const baseSetProperties = {
+      notes: "",
+      // Set type flags
+      is_warmup: false,
+      is_drop_set: false,
+      is_superset: false,
+      is_amrap: false,
+      is_restpause: false,
+      is_pyramid: false,
+      is_giant: false,
+      // Additional properties for special set types
+      drop_number: null,
+      original_weight: null,
+      superset_with: null,
+      rest_pauses: null,
+      pyramid_type: null,
+      pyramid_step: null,
+      giant_with: null
+    };
+
     let sets;
     if (exercise.is_cardio) {
       sets = Array(initialSets)
         .fill()
         .map(() => ({
+          ...baseSetProperties,
           distance: "",
           duration: "",
-          intensity: "",
-          notes: "",
+          intensity: ""
         }));
     } else {
       sets = Array(initialSets)
         .fill()
         .map(() => ({
+          ...baseSetProperties,
           weight: "",
-          reps: "",
-          notes: "",
+          reps: ""
         }));
     }
 
@@ -1045,16 +1104,16 @@ function Routines() {
                                             {set.is_warmup 
                                               ? "Warm-up" 
                                               : set.is_drop_set 
-                                              ? "Drop Set"
+                                              ? `Drop Set${set.drop_number ? ` #${set.drop_number}` : ""}`
                                               : set.is_superset
-                                              ? "Superset"
+                                              ? `Superset${set.superset_with ? ` with ${set.superset_with}` : ""}`
                                               : set.is_amrap
                                               ? "AMRAP"
                                               : set.is_restpause
-                                              ? "Rest-Pause"
+                                              ? `Rest-Pause${set.rest_pauses ? ` (${set.rest_pauses})` : ""}`
                                               : set.is_pyramid
-                                              ? "Pyramid"
-                                              : "Giant Set"}
+                                              ? `Pyramid${set.pyramid_type ? ` (${set.pyramid_type})` : ""}${set.pyramid_step ? ` Step ${set.pyramid_step}` : ""}`
+                                              : `Giant Set${Array.isArray(set.giant_with) && set.giant_with.length > 0 ? ` with ${set.giant_with.join(", ")}` : ""}`}
                                           </span>
                                         ) : (
                                           <span>Normal</span>
@@ -1088,16 +1147,16 @@ function Routines() {
                                             {set.is_warmup 
                                               ? "Warm-up" 
                                               : set.is_drop_set 
-                                              ? "Drop Set"
+                                              ? `Drop Set${set.drop_number ? ` #${set.drop_number}` : ""}`
                                               : set.is_superset
-                                              ? "Superset"
+                                              ? `Superset${set.superset_with ? ` with ${set.superset_with}` : ""}`
                                               : set.is_amrap
                                               ? "AMRAP"
                                               : set.is_restpause
-                                              ? "Rest-Pause"
+                                              ? `Rest-Pause${set.rest_pauses ? ` (${set.rest_pauses})` : ""}`
                                               : set.is_pyramid
-                                              ? "Pyramid"
-                                              : "Giant Set"}
+                                              ? `Pyramid${set.pyramid_type ? ` (${set.pyramid_type})` : ""}${set.pyramid_step ? ` Step ${set.pyramid_step}` : ""}`
+                                              : `Giant Set${Array.isArray(set.giant_with) && set.giant_with.length > 0 ? ` with ${set.giant_with.join(", ")}` : ""}`}
                                           </span>
                                         ) : (
                                           <span>Normal</span>
@@ -1813,6 +1872,141 @@ function Routines() {
                                           <option value="pyramid">Pyramid</option>
                                           <option value="giant">Giant Set</option>
                                         </select>
+                                        
+                                        {/* Additional fields for special set types */}
+                                        {set.is_drop_set && (
+                                          <div className="mt-1 space-y-1">
+                                            <input
+                                              type="number"
+                                              value={set.drop_number || ""}
+                                              onChange={(e) => {
+                                                const newExercises = [...editedExercises];
+                                                newExercises[exerciseIndex].sets[setIndex].drop_number = e.target.value;
+                                                setEditedExercises(newExercises);
+                                              }}
+                                              placeholder="Drop #"
+                                              className={`w-full text-center ${
+                                                theme === "dark"
+                                                  ? "bg-gray-600 text-white"
+                                                  : "bg-white text-gray-800"
+                                              } rounded p-1 text-xs`}
+                                            />
+                                            <input
+                                              type="number"
+                                              value={set.original_weight || ""}
+                                              onChange={(e) => {
+                                                const newExercises = [...editedExercises];
+                                                newExercises[exerciseIndex].sets[setIndex].original_weight = e.target.value;
+                                                setEditedExercises(newExercises);
+                                              }}
+                                              placeholder="Original Weight"
+                                              className={`w-full text-center ${
+                                                theme === "dark"
+                                                  ? "bg-gray-600 text-white"
+                                                  : "bg-white text-gray-800"
+                                              } rounded p-1 text-xs`}
+                                            />
+                                          </div>
+                                        )}
+                                        
+                                        {set.is_superset && (
+                                          <div className="mt-1">
+                                            <input
+                                              type="text"
+                                              value={set.superset_with || ""}
+                                              onChange={(e) => {
+                                                const newExercises = [...editedExercises];
+                                                newExercises[exerciseIndex].sets[setIndex].superset_with = e.target.value;
+                                                setEditedExercises(newExercises);
+                                              }}
+                                              placeholder="Superset with"
+                                              className={`w-full text-center ${
+                                                theme === "dark"
+                                                  ? "bg-gray-600 text-white"
+                                                  : "bg-white text-gray-800"
+                                              } rounded p-1 text-xs`}
+                                            />
+                                          </div>
+                                        )}
+                                        
+                                        {set.is_restpause && (
+                                          <div className="mt-1">
+                                            <input
+                                              type="number"
+                                              value={set.rest_pauses || ""}
+                                              onChange={(e) => {
+                                                const newExercises = [...editedExercises];
+                                                newExercises[exerciseIndex].sets[setIndex].rest_pauses = e.target.value;
+                                                setEditedExercises(newExercises);
+                                              }}
+                                              placeholder="Rest-Pause Count"
+                                              className={`w-full text-center ${
+                                                theme === "dark"
+                                                  ? "bg-gray-600 text-white"
+                                                  : "bg-white text-gray-800"
+                                              } rounded p-1 text-xs`}
+                                            />
+                                          </div>
+                                        )}
+                                        
+                                        {set.is_pyramid && (
+                                          <div className="mt-1 space-y-1">
+                                            <select
+                                              value={set.pyramid_type || ""}
+                                              onChange={(e) => {
+                                                const newExercises = [...editedExercises];
+                                                newExercises[exerciseIndex].sets[setIndex].pyramid_type = e.target.value;
+                                                setEditedExercises(newExercises);
+                                              }}
+                                              className={`w-full text-center ${
+                                                theme === "dark"
+                                                  ? "bg-gray-600 text-white"
+                                                  : "bg-white text-gray-800"
+                                              } rounded p-1 text-xs`}
+                                            >
+                                              <option value="">Select Type</option>
+                                              <option value="ascending">Ascending</option>
+                                              <option value="descending">Descending</option>
+                                              <option value="triangle">Triangle</option>
+                                            </select>
+                                            <input
+                                              type="number"
+                                              value={set.pyramid_step || ""}
+                                              onChange={(e) => {
+                                                const newExercises = [...editedExercises];
+                                                newExercises[exerciseIndex].sets[setIndex].pyramid_step = e.target.value;
+                                                setEditedExercises(newExercises);
+                                              }}
+                                              placeholder="Pyramid Step"
+                                              className={`w-full text-center ${
+                                                theme === "dark"
+                                                  ? "bg-gray-600 text-white"
+                                                  : "bg-white text-gray-800"
+                                              } rounded p-1 text-xs`}
+                                            />
+                                          </div>
+                                        )}
+                                        
+                                        {set.is_giant && (
+                                          <div className="mt-1">
+                                            <input
+                                              type="text"
+                                              value={Array.isArray(set.giant_with) ? set.giant_with.join(", ") : ""}
+                                              onChange={(e) => {
+                                                const newExercises = [...editedExercises];
+                                                newExercises[exerciseIndex].sets[setIndex].giant_with = 
+                                                  e.target.value ? e.target.value.split(",").map(item => item.trim()) : [];
+                                                setEditedExercises(newExercises);
+                                              }}
+                                              placeholder="Giant set with (comma separated)"
+                                              className={`w-full text-center ${
+                                                theme === "dark"
+                                                  ? "bg-gray-600 text-white"
+                                                  : "bg-white text-gray-800"
+                                              } rounded p-1 text-xs`}
+                                            />
+                                          </div>
+                                        )}
                                       </td>
                                       <td className="py-2 text-center">
                                         <input
@@ -1959,6 +2153,141 @@ function Routines() {
                                           <option value="pyramid">Pyramid</option>
                                           <option value="giant">Giant Set</option>
                                         </select>
+                                        
+                                        {/* Additional fields for special set types */}
+                                        {set.is_drop_set && (
+                                          <div className="mt-1 space-y-1">
+                                            <input
+                                              type="number"
+                                              value={set.drop_number || ""}
+                                              onChange={(e) => {
+                                                const newExercises = [...editedExercises];
+                                                newExercises[exerciseIndex].sets[setIndex].drop_number = e.target.value;
+                                                setEditedExercises(newExercises);
+                                              }}
+                                              placeholder="Drop #"
+                                              className={`w-full text-center ${
+                                                theme === "dark"
+                                                  ? "bg-gray-600 text-white"
+                                                  : "bg-white text-gray-800"
+                                              } rounded p-1 text-xs`}
+                                            />
+                                            <input
+                                              type="number"
+                                              value={set.original_weight || ""}
+                                              onChange={(e) => {
+                                                const newExercises = [...editedExercises];
+                                                newExercises[exerciseIndex].sets[setIndex].original_weight = e.target.value;
+                                                setEditedExercises(newExercises);
+                                              }}
+                                              placeholder="Original Weight"
+                                              className={`w-full text-center ${
+                                                theme === "dark"
+                                                  ? "bg-gray-600 text-white"
+                                                  : "bg-white text-gray-800"
+                                              } rounded p-1 text-xs`}
+                                            />
+                                          </div>
+                                        )}
+                                        
+                                        {set.is_superset && (
+                                          <div className="mt-1">
+                                            <input
+                                              type="text"
+                                              value={set.superset_with || ""}
+                                              onChange={(e) => {
+                                                const newExercises = [...editedExercises];
+                                                newExercises[exerciseIndex].sets[setIndex].superset_with = e.target.value;
+                                                setEditedExercises(newExercises);
+                                              }}
+                                              placeholder="Superset with"
+                                              className={`w-full text-center ${
+                                                theme === "dark"
+                                                  ? "bg-gray-600 text-white"
+                                                  : "bg-white text-gray-800"
+                                              } rounded p-1 text-xs`}
+                                            />
+                                          </div>
+                                        )}
+                                        
+                                        {set.is_restpause && (
+                                          <div className="mt-1">
+                                            <input
+                                              type="number"
+                                              value={set.rest_pauses || ""}
+                                              onChange={(e) => {
+                                                const newExercises = [...editedExercises];
+                                                newExercises[exerciseIndex].sets[setIndex].rest_pauses = e.target.value;
+                                                setEditedExercises(newExercises);
+                                              }}
+                                              placeholder="Rest-Pause Count"
+                                              className={`w-full text-center ${
+                                                theme === "dark"
+                                                  ? "bg-gray-600 text-white"
+                                                  : "bg-white text-gray-800"
+                                              } rounded p-1 text-xs`}
+                                            />
+                                          </div>
+                                        )}
+                                        
+                                        {set.is_pyramid && (
+                                          <div className="mt-1 space-y-1">
+                                            <select
+                                              value={set.pyramid_type || ""}
+                                              onChange={(e) => {
+                                                const newExercises = [...editedExercises];
+                                                newExercises[exerciseIndex].sets[setIndex].pyramid_type = e.target.value;
+                                                setEditedExercises(newExercises);
+                                              }}
+                                              className={`w-full text-center ${
+                                                theme === "dark"
+                                                  ? "bg-gray-600 text-white"
+                                                  : "bg-white text-gray-800"
+                                              } rounded p-1 text-xs`}
+                                            >
+                                              <option value="">Select Type</option>
+                                              <option value="ascending">Ascending</option>
+                                              <option value="descending">Descending</option>
+                                              <option value="triangle">Triangle</option>
+                                            </select>
+                                            <input
+                                              type="number"
+                                              value={set.pyramid_step || ""}
+                                              onChange={(e) => {
+                                                const newExercises = [...editedExercises];
+                                                newExercises[exerciseIndex].sets[setIndex].pyramid_step = e.target.value;
+                                                setEditedExercises(newExercises);
+                                              }}
+                                              placeholder="Pyramid Step"
+                                              className={`w-full text-center ${
+                                                theme === "dark"
+                                                  ? "bg-gray-600 text-white"
+                                                  : "bg-white text-gray-800"
+                                              } rounded p-1 text-xs`}
+                                            />
+                                          </div>
+                                        )}
+                                        
+                                        {set.is_giant && (
+                                          <div className="mt-1">
+                                            <input
+                                              type="text"
+                                              value={Array.isArray(set.giant_with) ? set.giant_with.join(", ") : ""}
+                                              onChange={(e) => {
+                                                const newExercises = [...editedExercises];
+                                                newExercises[exerciseIndex].sets[setIndex].giant_with = 
+                                                  e.target.value ? e.target.value.split(",").map(item => item.trim()) : [];
+                                                setEditedExercises(newExercises);
+                                              }}
+                                              placeholder="Giant set with (comma separated)"
+                                              className={`w-full text-center ${
+                                                theme === "dark"
+                                                  ? "bg-gray-600 text-white"
+                                                  : "bg-white text-gray-800"
+                                              } rounded p-1 text-xs`}
+                                            />
+                                          </div>
+                                        )}
                                       </td>
                                       <td className="py-2 text-center">
                                         <input

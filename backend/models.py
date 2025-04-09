@@ -131,6 +131,7 @@ class Set(Base):
     notes = Column(String, nullable=True)
     exercise_id = Column(Integer, ForeignKey(
         "exercises.id", ondelete="CASCADE"), nullable=False)
+    order = Column(Integer, nullable=False, default=0)
     
     # Set type flags
     is_warmup = Column(Boolean, default=False)

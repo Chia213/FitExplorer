@@ -29,6 +29,7 @@ class SetBase(BaseModel):
     duration: Optional[int] = None
     intensity: Optional[str] = None
     notes: Optional[str] = None
+    order: Optional[int] = 0
     # Set type flags
     is_warmup: Optional[bool] = False
     is_drop_set: Optional[bool] = False
@@ -184,6 +185,23 @@ class RoutineSetCreate(BaseModel):
     duration: Optional[float] = None
     intensity: Optional[str] = None
     notes: Optional[str] = None
+    order: Optional[int] = 0
+    # Set type flags
+    is_warmup: Optional[bool] = False
+    is_drop_set: Optional[bool] = False
+    is_superset: Optional[bool] = False
+    is_amrap: Optional[bool] = False
+    is_restpause: Optional[bool] = False
+    is_pyramid: Optional[bool] = False
+    is_giant: Optional[bool] = False
+    # Additional set properties
+    drop_number: Optional[int] = None
+    original_weight: Optional[float] = None
+    superset_with: Optional[str] = None
+    rest_pauses: Optional[int] = None
+    pyramid_type: Optional[str] = None
+    pyramid_step: Optional[int] = None
+    giant_with: Optional[List[str]] = None
 
 
 class RoutineExerciseCreate(BaseModel):

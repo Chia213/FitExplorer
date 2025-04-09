@@ -783,27 +783,53 @@ const WorkoutLog = () => {
         category: exercise.category || "Uncategorized",
         is_cardio: Boolean(exercise.is_cardio),
         initial_sets: exercise.sets?.length || 1,
-        sets: exercise.sets?.map(set => {
+        sets: exercise.sets?.map((set, index) => {
           if (exercise.is_cardio) {
             return {
               distance: set.distance || null,
               duration: set.duration || null,
               intensity: set.intensity || "",
               notes: set.notes || "",
+              order: index,  // Keep the same order as in workout log
+              // Set type flags
               is_warmup: !!set.is_warmup,
               is_drop_set: !!set.is_drop_set,
               is_superset: !!set.is_superset,
-              superset_with: set.is_superset ? set.superset_with : null
+              is_amrap: !!set.is_amrap,
+              is_restpause: !!set.is_restpause,
+              is_pyramid: !!set.is_pyramid,
+              is_giant: !!set.is_giant,
+              // Additional properties for special set types
+              drop_number: set.drop_number || null,
+              original_weight: set.original_weight || null,
+              superset_with: set.is_superset ? set.superset_with : null,
+              rest_pauses: set.is_restpause ? set.rest_pauses : null,
+              pyramid_type: set.is_pyramid ? set.pyramid_type : null,
+              pyramid_step: set.is_pyramid ? set.pyramid_step : null,
+              giant_with: set.is_giant ? set.giant_with : null
             };
           } else {
             return {
               weight: set.weight || null,
               reps: set.reps || null,
               notes: set.notes || "",
+              order: index,  // Keep the same order as in workout log
+              // Set type flags
               is_warmup: !!set.is_warmup,
               is_drop_set: !!set.is_drop_set,
               is_superset: !!set.is_superset,
-              superset_with: set.is_superset ? set.superset_with : null
+              is_amrap: !!set.is_amrap,
+              is_restpause: !!set.is_restpause,
+              is_pyramid: !!set.is_pyramid,
+              is_giant: !!set.is_giant,
+              // Additional properties for special set types
+              drop_number: set.drop_number || null,
+              original_weight: set.original_weight || null,
+              superset_with: set.is_superset ? set.superset_with : null,
+              rest_pauses: set.is_restpause ? set.rest_pauses : null,
+              pyramid_type: set.is_pyramid ? set.pyramid_type : null,
+              pyramid_step: set.is_pyramid ? set.pyramid_step : null,
+              giant_with: set.is_giant ? set.giant_with : null
             };
           }
         }) || []
@@ -907,9 +933,22 @@ const WorkoutLog = () => {
           duration: "",
           intensity: "",
           notes: "",
+          // Set type flags
           is_warmup: false,
           is_drop_set: false,
-          is_superset: false
+          is_superset: false,
+          is_amrap: false,
+          is_restpause: false,
+          is_pyramid: false,
+          is_giant: false,
+          // Additional properties for special set types
+          drop_number: null,
+          original_weight: null,
+          superset_with: null,
+          rest_pauses: null,
+          pyramid_type: null,
+          pyramid_step: null,
+          giant_with: null
         }));
 
       setWorkoutExercises([
@@ -927,9 +966,22 @@ const WorkoutLog = () => {
           weight: "",
           reps: "",
           notes: "",
+          // Set type flags
           is_warmup: false,
           is_drop_set: false,
-          is_superset: false
+          is_superset: false,
+          is_amrap: false,
+          is_restpause: false,
+          is_pyramid: false,
+          is_giant: false,
+          // Additional properties for special set types
+          drop_number: null,
+          original_weight: null,
+          superset_with: null,
+          rest_pauses: null,
+          pyramid_type: null,
+          pyramid_step: null,
+          giant_with: null
         }));
 
       setWorkoutExercises([
@@ -996,29 +1048,143 @@ const WorkoutLog = () => {
 
   const handleEditSet = (exerciseIndex, setIndex, field, value) => {
     setWorkoutExercises((prev) =>
-      prev.map((exercise, eIndex) =>
-        eIndex === exerciseIndex
-          ? {
-              ...exercise,
-              sets: exercise.sets.map((set, sIndex) =>
-                sIndex === setIndex ? { ...set, [field]: value } : set
-              ),
-            }
-          : exercise
-      )
+      prev.map((exercise, eIndex) => {
+        if (eIndex === exerciseIndex) {
+          return {
+            ...exercise,
+            sets: exercise.sets.map((set, sIndex) => {
+              if (sIndex === setIndex) {
+                // Handle special set type changes
+                if (field.startsWith('is_')) {
+                  // Reset all set type flags when changing to a new type
+                  const newSet = {
+                    ...set,
+                    is_warmup: false,
+                    is_drop_set: false,
+                    is_superset: false,
+                    is_amrap: false,
+                    is_restpause: false,
+                    is_pyramid: false,
+                    is_giant: false,
+                    // Reset additional properties
+                    drop_number: null,
+                    original_weight: null,
+                    superset_with: null,
+                    rest_pauses: null,
+                    pyramid_type: null,
+                    pyramid_step: null,
+                    giant_with: null
+                  };
+                  // Set the new type flag
+                  newSet[field] = value;
+                  return newSet;
+                }
+                
+                // For regular field updates
+                return { ...set, [field]: value };
+              }
+              return set;
+            }),
+          };
+        }
+        return exercise;
+      })
     );
   };
 
   const handleDeleteSet = (exerciseIndex, setIndex) => {
     setWorkoutExercises((prev) =>
-      prev.map((exercise, eIndex) =>
-        eIndex === exerciseIndex
-          ? {
-              ...exercise,
-              sets: exercise.sets.filter((_, sIndex) => sIndex !== setIndex),
-            }
-          : exercise
-      )
+      prev.map((exercise, eIndex) => {
+        if (eIndex === exerciseIndex) {
+          // Don't allow deleting the last set
+          if (exercise.sets.length <= 1) {
+            return exercise;
+          }
+
+          const setToDelete = exercise.sets[setIndex];
+          let updatedSets = exercise.sets.filter((_, sIndex) => sIndex !== setIndex);
+
+          // If the deleted set was part of a superset, update the related set
+          if (setToDelete.is_superset && setToDelete.superset_with !== null) {
+            updatedSets = updatedSets.map(set => {
+              if (set.superset_with === setIndex) {
+                return {
+                  ...set,
+                  is_superset: false,
+                  superset_with: null
+                };
+              }
+              // Update superset_with indices for sets that were after the deleted set
+              if (set.superset_with > setIndex) {
+                return {
+                  ...set,
+                  superset_with: set.superset_with - 1
+                };
+              }
+              return set;
+            });
+          }
+
+          // If the deleted set was part of a giant set, update the related sets
+          if (setToDelete.is_giant && setToDelete.giant_with) {
+            updatedSets = updatedSets.map(set => {
+              if (set.giant_with && set.giant_with.includes(setIndex)) {
+                const newGiantWith = set.giant_with
+                  .filter(idx => idx !== setIndex)
+                  .map(idx => idx > setIndex ? idx - 1 : idx);
+                
+                return {
+                  ...set,
+                  is_giant: newGiantWith.length > 0,
+                  giant_with: newGiantWith.length > 0 ? newGiantWith : null
+                };
+              }
+              // Update giant_with indices for sets that were after the deleted set
+              if (set.giant_with) {
+                const newGiantWith = set.giant_with
+                  .map(idx => idx > setIndex ? idx - 1 : idx);
+                return {
+                  ...set,
+                  giant_with: newGiantWith
+                };
+              }
+              return set;
+            });
+          }
+
+          // If the deleted set was part of a drop set sequence, update the remaining sets
+          if (setToDelete.is_drop_set) {
+            updatedSets = updatedSets.map(set => {
+              if (set.is_drop_set && set.drop_number > setToDelete.drop_number) {
+                return {
+                  ...set,
+                  drop_number: set.drop_number - 1
+                };
+              }
+              return set;
+            });
+          }
+
+          // If the deleted set was part of a pyramid sequence, update the remaining sets
+          if (setToDelete.is_pyramid) {
+            updatedSets = updatedSets.map(set => {
+              if (set.is_pyramid && set.pyramid_step > setToDelete.pyramid_step) {
+                return {
+                  ...set,
+                  pyramid_step: set.pyramid_step - 1
+                };
+              }
+              return set;
+            });
+          }
+
+          return {
+            ...exercise,
+            sets: updatedSets
+          };
+        }
+        return exercise;
+      })
     );
   };
 
@@ -1158,45 +1324,57 @@ const WorkoutLog = () => {
         return;
       }
 
-    // Validate that reps are filled
-    if (!dropSetReps || dropSetReps.trim() === "") {
-      alert("Please enter the number of reps for the drop sets.");
-      return;
-    }
+      // Validate that reps are filled
+      if (!dropSetReps || dropSetReps.trim() === "") {
+        alert("Please enter the number of reps for the drop sets.");
+        return;
+      }
 
-    const newSets = [];
-    let currentWeight = parseFloat(originalWeight);
+      const newSets = [];
+      let currentWeight = parseFloat(originalWeight);
 
-    // Create all drop sets at once
-    for (let i = 0; i < dropSetCount; i++) {
-      currentWeight = calculateNextWeight(currentWeight, dropSetPercentage);
-      newSets.push({
-        weight: currentWeight,
-        reps: dropSetReps,
-        notes: `Drop Set ${i + 1} (${dropSetPercentage}% reduction)`,
-        is_drop_set: true,
-        is_warmup: false,
-        is_superset: false,
-        is_amrap: false,
-        is_restpause: false,
-        is_pyramid: false,
-        is_giant: false,
-        original_weight: originalWeight,
-        drop_number: i + 1,
+      // Calculate all weights first
+      const weights = [];
+      for (let i = 0; i < dropSetCount; i++) {
+        const reducedWeight = calculateNextWeight(currentWeight, dropSetPercentage * (i + 1));
+        weights.push(reducedWeight);
+      }
+      weights.push(currentWeight); // Add the original (heaviest) weight
+
+      // Sort weights in ascending order (lightest to heaviest)
+      weights.sort((a, b) => parseFloat(a) - parseFloat(b));
+
+      // Create sets in ascending order
+      weights.forEach((weight, index) => {
+        newSets.push({
+          weight: weight,
+          reps: dropSetReps,
+          notes: index < weights.length - 1 ? 
+            `Drop Set #${index + 1} (Build-up)` : 
+            `Drop Set #${index + 1} (Top Set)`,
+          is_drop_set: true,
+          is_warmup: false,
+          is_superset: false,
+          is_amrap: false,
+          is_restpause: false,
+          is_pyramid: false,
+          is_giant: false,
+          original_weight: originalWeight,
+          drop_number: index + 1,
+        });
       });
-    }
 
-    setWorkoutExercises((prev) =>
-      prev.map((ex) => {
+      setWorkoutExercises((prev) =>
+        prev.map((ex) => {
           if (ex === setTypeExercise) {
-          return {
-            ...ex,
-            sets: [...ex.sets, ...newSets],
-          };
-        }
-        return ex;
-      })
-    );
+            return {
+              ...ex,
+              sets: [...ex.sets, ...newSets],
+            };
+          }
+          return ex;
+        })
+      );
     } else if (selectedSetType === "warmup") {
       // Add a warm-up set
       const newSet = setTypeExercise.is_cardio
@@ -1935,6 +2113,75 @@ const WorkoutLog = () => {
       }
     }
   }, [workoutName, startTime, endTime, bodyweight, notes, weightUnit, workoutExercises, isLocalStorageDisabled]);
+
+  const handleExerciseChange = (exerciseIndex, field, value) => {
+    setWorkoutExercises((prev) =>
+      prev.map((exercise, index) => {
+        if (index === exerciseIndex) {
+          // If changing the exercise type, we need to update the sets structure
+          if (field === "is_cardio") {
+            const isCardio = value;
+            const newSets = exercise.sets.map(set => {
+              if (isCardio) {
+                return {
+                  distance: "",
+                  duration: "",
+                  intensity: "",
+                  notes: set.notes || "",
+                  // Preserve set type flags
+                  is_warmup: set.is_warmup || false,
+                  is_drop_set: set.is_drop_set || false,
+                  is_superset: set.is_superset || false,
+                  is_amrap: set.is_amrap || false,
+                  is_restpause: set.is_restpause || false,
+                  is_pyramid: set.is_pyramid || false,
+                  is_giant: set.is_giant || false,
+                  // Preserve additional properties
+                  drop_number: set.drop_number || null,
+                  original_weight: set.original_weight || null,
+                  superset_with: set.superset_with || null,
+                  rest_pauses: set.rest_pauses || null,
+                  pyramid_type: set.pyramid_type || null,
+                  pyramid_step: set.pyramid_step || null,
+                  giant_with: set.giant_with || null
+                };
+              } else {
+                return {
+                  weight: "",
+                  reps: "",
+                  notes: set.notes || "",
+                  // Preserve set type flags
+                  is_warmup: set.is_warmup || false,
+                  is_drop_set: set.is_drop_set || false,
+                  is_superset: set.is_superset || false,
+                  is_amrap: set.is_amrap || false,
+                  is_restpause: set.is_restpause || false,
+                  is_pyramid: set.is_pyramid || false,
+                  is_giant: set.is_giant || false,
+                  // Preserve additional properties
+                  drop_number: set.drop_number || null,
+                  original_weight: set.original_weight || null,
+                  superset_with: set.superset_with || null,
+                  rest_pauses: set.rest_pauses || null,
+                  pyramid_type: set.pyramid_type || null,
+                  pyramid_step: set.pyramid_step || null,
+                  giant_with: set.giant_with || null
+                };
+              }
+            });
+
+            return {
+              ...exercise,
+              [field]: value,
+              sets: newSets
+            };
+          }
+          return { ...exercise, [field]: value };
+        }
+        return exercise;
+      })
+    );
+  };
 
   return (
     <div className="min-h-screen flex flex-col items-center p-6 bg-gray-100 dark:bg-gray-900">

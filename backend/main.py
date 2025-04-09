@@ -225,26 +225,19 @@ def create_workout(
     db: Session = Depends(get_db)
 ):
     try:
-        # Create the workout in a transaction
+        # Create workout
         db_workout = Workout(
             name=workout.name,
-            date=datetime.now(timezone.utc),
+            date=workout.date,
             start_time=workout.start_time,
             end_time=workout.end_time,
             bodyweight=workout.bodyweight,
+            weight_unit=workout.weight_unit,
             notes=workout.notes,
-            user_id=user.id,
-            weight_unit=workout.weight_unit or "kg",
-            is_template=False
+            user_id=user.id
         )
-        
-        # Create all related objects before committing
         db.add(db_workout)
         db.flush()  # Assign ID but don't commit yet
-        
-        # Validate exercises exist
-        if not workout.exercises or len(workout.exercises) == 0:
-            raise ValueError("Workout must contain at least one exercise")
         
         for exercise_data in workout.exercises:
             new_exercise = Exercise(
@@ -261,7 +254,7 @@ def create_workout(
                 raise ValueError(f"Exercise '{exercise_data.name}' must contain at least one set")
             
             # Add sets
-            for set_data in exercise_data.sets:
+            for i, set_data in enumerate(exercise_data.sets):
                 new_set = Set(
                     weight=set_data.weight,
                     reps=set_data.reps,
@@ -270,6 +263,7 @@ def create_workout(
                     intensity=set_data.intensity,
                     notes=set_data.notes,
                     exercise_id=new_exercise.id,
+                    order=getattr(set_data, 'order', i),  # Use provided order or index as default
                     # Add support for set types
                     is_warmup=getattr(set_data, 'is_warmup', False),
                     is_drop_set=getattr(set_data, 'is_drop_set', False),
@@ -284,7 +278,8 @@ def create_workout(
                     superset_with=getattr(set_data, 'superset_with', None),
                     rest_pauses=getattr(set_data, 'rest_pauses', None),
                     pyramid_type=getattr(set_data, 'pyramid_type', None),
-                    pyramid_step=getattr(set_data, 'pyramid_step', None)
+                    pyramid_step=getattr(set_data, 'pyramid_step', None),
+                    giant_with=getattr(set_data, 'giant_with', None)
                 )
                 db.add(new_set)
         
@@ -406,6 +401,53 @@ async def delete_all_workouts(
             detail=f"Error deleting workouts: {str(e)}"
         )
 
+@app.delete("/api/workouts-delete-selected")
+async def delete_selected_workouts(
+    workout_ids: List[int] = Body(...),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if not workout_ids:
+        return {"message": "No workouts selected for deletion"}
+    
+    try:
+        # Verify all workouts belong to this user
+        for workout_id in workout_ids:
+            workout = db.query(Workout).filter(Workout.id == workout_id, Workout.user_id == user.id).first()
+            if not workout:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Workout with id {workout_id} not found or does not belong to you"
+                )
+        
+        # Delete all related sets first
+        db.query(Set).filter(
+            Set.exercise_id.in_(
+                db.query(Exercise.id).filter(
+                    Exercise.workout_id.in_(workout_ids)
+                )
+            )
+        ).delete(synchronize_session=False)
+
+        # Delete all related exercises
+        db.query(Exercise).filter(
+            Exercise.workout_id.in_(workout_ids)
+        ).delete(synchronize_session=False)
+
+        # Finally delete the workouts
+        deleted_count = db.query(Workout).filter(
+            Workout.id.in_(workout_ids), Workout.user_id == user.id
+        ).delete(synchronize_session=False)
+        
+        db.commit()
+        return {"message": f"Successfully deleted {deleted_count} workout(s)"}
+
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error deleting workouts: {str(e)}"
+        )
 
 @app.get("/user-profile")
 def profile(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
@@ -850,39 +892,70 @@ def create_routine(
             db.add(new_exercise)
             db.flush()
 
-            for set_data in exercise_data.sets:
-                new_set = Set(
-                    exercise_id=new_exercise.id,
-                    weight=getattr(set_data, 'weight', None),
-                    reps=getattr(set_data, 'reps', None),
-                    distance=getattr(set_data, 'distance', None),
-                    duration=getattr(set_data, 'duration', None),
-                    intensity=getattr(set_data, 'intensity', None),
-                    notes=getattr(set_data, 'notes', None),
-                    is_warmup=getattr(set_data, 'is_warmup', False),
-                    is_drop_set=getattr(set_data, 'is_drop_set', False),
-                    is_superset=getattr(set_data, 'is_superset', False),
-                    is_amrap=getattr(set_data, 'is_amrap', False),
-                    is_restpause=getattr(set_data, 'is_restpause', False),
-                    is_pyramid=getattr(set_data, 'is_pyramid', False),
-                    is_giant=getattr(set_data, 'is_giant', False),
-                    drop_number=getattr(set_data, 'drop_number', None),
-                    original_weight=getattr(set_data, 'original_weight', None),
-                    superset_with=getattr(set_data, 'superset_with', None),
-                    rest_pauses=getattr(set_data, 'rest_pauses', None),
-                    pyramid_type=getattr(set_data, 'pyramid_type', None),
-                    pyramid_step=getattr(set_data, 'pyramid_step', None),
-                    giant_with=getattr(set_data, 'giant_with', None)
-                )
-                db.add(new_set)
-
-            # Add custom exercise to user's custom exercises
-            new_custom_exercise = CustomExercise(
-                name=exercise_data.name,
-                category=exercise_data.category or "Uncategorized",
-                user_id=user.id
-            )
-            db.add(new_custom_exercise)
+            # Add sets if they exist in the request
+            if hasattr(exercise_data, 'sets') and exercise_data.sets:
+                for i, set_data in enumerate(exercise_data.sets):
+                    new_set = Set(
+                        exercise_id=new_exercise.id,
+                        weight=getattr(set_data, 'weight', None),
+                        reps=getattr(set_data, 'reps', None),
+                        distance=getattr(set_data, 'distance', None),
+                        duration=getattr(set_data, 'duration', None),
+                        intensity=getattr(set_data, 'intensity', None),
+                        notes=getattr(set_data, 'notes', None),
+                        order=getattr(set_data, 'order', i),  # Use provided order or index as default
+                        is_warmup=getattr(set_data, 'is_warmup', False),
+                        is_drop_set=getattr(set_data, 'is_drop_set', False),
+                        is_superset=getattr(set_data, 'is_superset', False),
+                        is_amrap=getattr(set_data, 'is_amrap', False),
+                        is_restpause=getattr(set_data, 'is_restpause', False),
+                        is_pyramid=getattr(set_data, 'is_pyramid', False),
+                        is_giant=getattr(set_data, 'is_giant', False),
+                        drop_number=getattr(set_data, 'drop_number', None),
+                        original_weight=getattr(set_data, 'original_weight', None),
+                        superset_with=getattr(set_data, 'superset_with', None),
+                        rest_pauses=getattr(set_data, 'rest_pauses', None),
+                        pyramid_type=getattr(set_data, 'pyramid_type', None),
+                        pyramid_step=getattr(set_data, 'pyramid_step', None),
+                        giant_with=getattr(set_data, 'giant_with', None)
+                    )
+                    db.add(new_set)
+            # If no sets provided, create empty sets based on initial_sets count
+            else:
+                initial_sets = exercise_data.initial_sets or 1
+                for i in range(initial_sets):
+                    if exercise_data.is_cardio:
+                        new_set = Set(
+                            distance=None,
+                            duration=None,
+                            intensity="",
+                            notes="",
+                            exercise_id=new_exercise.id,
+                            order=i,  # Set order based on index
+                            is_warmup=False,
+                            is_drop_set=False,
+                            is_superset=False,
+                            is_amrap=False,
+                            is_restpause=False,
+                            is_pyramid=False,
+                            is_giant=False
+                        )
+                    else:
+                        new_set = Set(
+                            weight=None,
+                            reps=None,
+                            notes="",
+                            exercise_id=new_exercise.id,
+                            order=i,  # Set order based on index
+                            is_warmup=False,
+                            is_drop_set=False,
+                            is_superset=False,
+                            is_amrap=False,
+                            is_restpause=False,
+                            is_pyramid=False,
+                            is_giant=False
+                        )
+                    db.add(new_set)
 
         db.commit()
         db.refresh(new_routine)
@@ -896,20 +969,35 @@ def create_routine(
 
 
 @app.get("/routines")
-def get_all_routines(
+async def get_routines(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Get all routines for the current user"""
     try:
+        print(f"==== FETCHING ROUTINES START ====")
+        print(f"Fetching routines for user: {user.username} (ID: {user.id})")
+        
+        # First check how many templates are in the system for this user
+        template_workouts = db.query(Workout).filter(
+            Workout.user_id == user.id,
+            Workout.is_template == True
+        ).all()
+        print(f"User has {len(template_workouts)} template workouts in database")
+        for tw in template_workouts:
+            print(f"  - Template workout: {tw.name} (ID: {tw.id}, is_template: {tw.is_template})")
+            
         # Get all routines with their associated workouts and exercises
         routines = db.query(Routine).options(
             joinedload(Routine.workout).options(
-                joinedload(Workout.exercises).joinedload(Exercise.sets)
+                joinedload(Workout.exercises).options(
+                    joinedload(Exercise.sets)
+                )
             )
         ).filter(
             Routine.user_id == user.id
         ).all()
+        
+        print(f"Found {len(routines)} total routines for user")
         
         result = []
         
@@ -937,8 +1025,21 @@ def get_all_routines(
                         "sets": []
                     }
                     
-                    # Add sets for this exercise
-                    for exercise_set in exercise.sets:
+                    # Sort sets based on type priority and order
+                    sorted_sets = sorted(exercise.sets, key=lambda s: (
+                        0 if s.is_warmup else
+                        1 if not any([s.is_drop_set, s.is_superset, s.is_amrap, s.is_restpause, s.is_pyramid, s.is_giant]) else  # Normal sets
+                        2 if s.is_drop_set else
+                        3 if s.is_superset else
+                        4 if s.is_amrap else
+                        5 if s.is_restpause else
+                        6 if s.is_pyramid else
+                        7 if s.is_giant else 8,
+                        s.order if s.order is not None else float('inf')  # Use order as secondary sort key
+                    ))
+                    
+                    # Add sets for this exercise (they are now sorted by type and order)
+                    for exercise_set in sorted_sets:
                         set_dict = {
                             "id": exercise_set.id,
                             "weight": exercise_set.weight,
@@ -947,6 +1048,7 @@ def get_all_routines(
                             "duration": exercise_set.duration,
                             "intensity": exercise_set.intensity,
                             "notes": exercise_set.notes,
+                            "order": exercise_set.order,
                             "is_warmup": exercise_set.is_warmup,
                             "is_drop_set": exercise_set.is_drop_set,
                             "is_superset": exercise_set.is_superset,
@@ -967,6 +1069,9 @@ def get_all_routines(
                     routine_dict["exercises"].append(exercise_dict)
                 
             result.append(routine_dict)
+        
+        print(f"Sending {len(result)} routines back to client")
+        print(f"==== FETCHING ROUTINES COMPLETE ====")
         
         return result
     except Exception as e:
@@ -994,72 +1099,109 @@ def update_routine(
     if not routine:
         raise HTTPException(status_code=404, detail="Routine not found")
 
-    # Update routine details but preserve created_at
+    # Update routine fields
     routine.name = routine_data.name
-    routine.weight_unit = routine_data.weight_unit if hasattr(
-        routine_data, 'weight_unit') else "kg"
-    routine.updated_at = datetime.now(timezone.utc)  # Update the last modified time
-    # Note: We don't update created_at here to preserve the original creation time
+    routine.weight_unit = routine_data.weight_unit
+    routine.folder_id = routine_data.folder_id
+    routine.updated_at = datetime.now(timezone.utc)
 
-    if routine.workout_id:
-        # Delete existing sets first
-        db.query(Set).filter(
-            Set.exercise_id.in_(
-                db.query(Exercise.id).filter(
-                    Exercise.workout_id == routine.workout_id)
-            )
-        ).delete(synchronize_session=False)
+    # If there's no workout associated with this routine, create one
+    if not routine.workout:
+        new_workout = Workout(
+            name=routine_data.name,
+            user_id=user.id,
+            weight_unit=routine_data.weight_unit,
+            is_template=True
+        )
+        db.add(new_workout)
+        db.flush()
+        routine.workout_id = new_workout.id
+    else:
+        # Update existing workout
+        routine.workout.name = routine_data.name
+        routine.workout.weight_unit = routine_data.weight_unit
 
-        # Then delete exercises
-        db.query(Exercise).filter(
-            Exercise.workout_id == routine.workout_id
-        ).delete(synchronize_session=False)
+    # Delete existing exercises and their sets
+    for exercise in routine.workout.exercises:
+        db.query(Set).filter(Set.exercise_id == exercise.id).delete()
+        db.delete(exercise)
 
-        # Create new exercises with sets
-        for exercise_data in routine_data.exercises:
-            new_exercise = Exercise(
-                name=exercise_data.name,
-                category=exercise_data.category or "Uncategorized",
-                is_cardio=exercise_data.is_cardio or False,
-                workout_id=routine.workout_id
-            )
-            db.add(new_exercise)
-            db.commit()
-            db.refresh(new_exercise)
+    # Add new exercises and sets
+    for exercise_data in routine_data.exercises:
+        new_exercise = Exercise(
+            name=exercise_data.name,
+            category=exercise_data.category,
+            is_cardio=exercise_data.is_cardio,
+            workout_id=routine.workout_id
+        )
+        db.add(new_exercise)
+        db.flush()
 
-            # Add sets if they exist in the request
-            if hasattr(exercise_data, 'sets') and exercise_data.sets:
-                for set_data in exercise_data.sets:
+        # Add sets if they exist in the request
+        if hasattr(exercise_data, 'sets') and exercise_data.sets:
+            for set_data in exercise_data.sets:
+                new_set = Set(
+                    weight=set_data.weight,
+                    reps=set_data.reps,
+                    distance=set_data.distance,
+                    duration=set_data.duration,
+                    intensity=set_data.intensity,
+                    notes=set_data.notes,
+                    exercise_id=new_exercise.id,
+                    # Set type flags
+                    is_warmup=getattr(set_data, 'is_warmup', False),
+                    is_drop_set=getattr(set_data, 'is_drop_set', False),
+                    is_superset=getattr(set_data, 'is_superset', False),
+                    is_amrap=getattr(set_data, 'is_amrap', False),
+                    is_restpause=getattr(set_data, 'is_restpause', False),
+                    is_pyramid=getattr(set_data, 'is_pyramid', False),
+                    is_giant=getattr(set_data, 'is_giant', False),
+                    # Additional set properties
+                    drop_number=getattr(set_data, 'drop_number', None),
+                    original_weight=getattr(set_data, 'original_weight', None),
+                    superset_with=getattr(set_data, 'superset_with', None),
+                    rest_pauses=getattr(set_data, 'rest_pauses', None),
+                    pyramid_type=getattr(set_data, 'pyramid_type', None),
+                    pyramid_step=getattr(set_data, 'pyramid_step', None),
+                    giant_with=getattr(set_data, 'giant_with', None)
+                )
+                db.add(new_set)
+        # If no sets provided, create empty sets based on initial_sets count
+        else:
+            initial_sets = exercise_data.initial_sets or 1
+            for _ in range(initial_sets):
+                if exercise_data.is_cardio:
                     new_set = Set(
-                        weight=set_data.weight,
-                        reps=set_data.reps,
-                        distance=set_data.distance,
-                        duration=set_data.duration,
-                        intensity=set_data.intensity,
-                        notes=set_data.notes,
-                        exercise_id=new_exercise.id
+                        distance=None,
+                        duration=None,
+                        intensity="",
+                        notes="",
+                        exercise_id=new_exercise.id,
+                        # Set type flags
+                        is_warmup=False,
+                        is_drop_set=False,
+                        is_superset=False,
+                        is_amrap=False,
+                        is_restpause=False,
+                        is_pyramid=False,
+                        is_giant=False
                     )
-                    db.add(new_set)
-            # If no sets provided, create empty sets based on initial_sets count
-            else:
-                initial_sets = exercise_data.initial_sets or 1
-                for _ in range(initial_sets):
-                    if exercise_data.is_cardio:
-                        new_set = Set(
-                            distance=None,
-                            duration=None,
-                            intensity="",
-                            notes="",
-                            exercise_id=new_exercise.id
-                        )
-                    else:
-                        new_set = Set(
-                            weight=None,
-                            reps=None,
-                            notes="",
-                            exercise_id=new_exercise.id
-                        )
-                    db.add(new_set)
+                else:
+                    new_set = Set(
+                        weight=None,
+                        reps=None,
+                        notes="",
+                        exercise_id=new_exercise.id,
+                        # Set type flags
+                        is_warmup=False,
+                        is_drop_set=False,
+                        is_superset=False,
+                        is_amrap=False,
+                        is_restpause=False,
+                        is_pyramid=False,
+                        is_giant=False
+                    )
+                db.add(new_set)
 
     db.commit()
     db.refresh(routine)
@@ -1142,7 +1284,9 @@ async def get_routines(
         # Get all routines with their associated workouts and exercises
         routines = db.query(Routine).options(
             joinedload(Routine.workout).options(
-                joinedload(Workout.exercises).joinedload(Exercise.sets)
+                joinedload(Workout.exercises).options(
+                    joinedload(Exercise.sets)
+                )
             )
         ).filter(
             Routine.user_id == user.id
@@ -1151,7 +1295,6 @@ async def get_routines(
         print(f"Found {len(routines)} total routines for user")
         
         result = []
-        template_count = 0
         
         for routine in routines:
             # Build dictionary with routine info
@@ -1160,49 +1303,69 @@ async def get_routines(
                 "name": routine.name,
                 "workout_id": routine.workout_id,
                 "weight_unit": routine.weight_unit,
+                "folder_id": routine.folder_id,
                 "created_at": routine.created_at.isoformat() if routine.created_at else None,
                 "exercises": []
             }
             
-            # Check if this is a template routine
-            is_template = False
+            # Check if this routine has a workout
             if routine.workout:
-                is_template = routine.workout.is_template
-                print(f"Routine: {routine.name} (ID: {routine.id}), linked to workout {routine.workout_id}, is_template: {is_template}")
-                
-                if is_template:
-                    template_count += 1
-                    # This is a template - gather exercises
-                    for exercise in routine.workout.exercises:
-                        exercise_dict = {
-                            "id": exercise.id,
-                            "name": exercise.name,
-                            "category": exercise.category,
-                            "is_cardio": exercise.is_cardio,
-                            "sets": []
+                # Gather exercises
+                for exercise in routine.workout.exercises:
+                    exercise_dict = {
+                        "id": exercise.id,
+                        "name": exercise.name,
+                        "category": exercise.category,
+                        "is_cardio": exercise.is_cardio,
+                        "sets": []
+                    }
+                    
+                    # Sort sets based on type priority and order
+                    sorted_sets = sorted(exercise.sets, key=lambda s: (
+                        0 if s.is_warmup else
+                        1 if not any([s.is_drop_set, s.is_superset, s.is_amrap, s.is_restpause, s.is_pyramid, s.is_giant]) else  # Normal sets
+                        2 if s.is_drop_set else
+                        3 if s.is_superset else
+                        4 if s.is_amrap else
+                        5 if s.is_restpause else
+                        6 if s.is_pyramid else
+                        7 if s.is_giant else 8,
+                        s.order if s.order is not None else float('inf')  # Use order as secondary sort key
+                    ))
+                    
+                    # Add sets for this exercise (they are now sorted by type and order)
+                    for exercise_set in sorted_sets:
+                        set_dict = {
+                            "id": exercise_set.id,
+                            "weight": exercise_set.weight,
+                            "reps": exercise_set.reps,
+                            "distance": exercise_set.distance,
+                            "duration": exercise_set.duration,
+                            "intensity": exercise_set.intensity,
+                            "notes": exercise_set.notes,
+                            "order": exercise_set.order,
+                            "is_warmup": exercise_set.is_warmup,
+                            "is_drop_set": exercise_set.is_drop_set,
+                            "is_superset": exercise_set.is_superset,
+                            "is_amrap": exercise_set.is_amrap,
+                            "is_restpause": exercise_set.is_restpause,
+                            "is_pyramid": exercise_set.is_pyramid,
+                            "is_giant": exercise_set.is_giant,
+                            "drop_number": exercise_set.drop_number,
+                            "original_weight": exercise_set.original_weight,
+                            "superset_with": exercise_set.superset_with,
+                            "rest_pauses": exercise_set.rest_pauses,
+                            "pyramid_type": exercise_set.pyramid_type,
+                            "pyramid_step": exercise_set.pyramid_step,
+                            "giant_with": exercise_set.giant_with
                         }
+                        exercise_dict["sets"].append(set_dict)
                         
-                        # Add sets for this exercise
-                        for exercise_set in exercise.sets:
-                            set_dict = {
-                                "id": exercise_set.id,
-                                "weight": exercise_set.weight,
-                                "reps": exercise_set.reps,
-                                "distance": exercise_set.distance,
-                                "duration": exercise_set.duration,
-                                "notes": exercise_set.notes
-                            }
-                            exercise_dict["sets"].append(set_dict)
-                            
-                        routine_dict["exercises"].append(exercise_dict)
-                    
-                    print(f"  - Template has {len(routine_dict['exercises'])} exercises")
-                else:
-                    print(f"  - This is NOT a template routine")
-                    
+                    routine_dict["exercises"].append(exercise_dict)
+                
             result.append(routine_dict)
         
-        print(f"Sending {len(result)} routines back to client, including {template_count} templates")
+        print(f"Sending {len(result)} routines back to client")
         print(f"==== FETCHING ROUTINES COMPLETE ====")
         
         return result
