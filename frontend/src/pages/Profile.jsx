@@ -767,6 +767,7 @@ function Profile() {
       }
     } catch (error) {
       console.error("Error checking achievements:", error);
+      // Just log the error but don't throw it further to prevent app crashes
     }
   };
 
@@ -809,13 +810,24 @@ function Profile() {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
+      
+      // Map frontend field names to backend field names
+      const mappedData = {
+        height: updatedData.height ? parseFloat(updatedData.height) : null,
+        weight: updatedData.weight ? parseFloat(updatedData.weight) : null,
+        age: updatedData.age ? parseInt(updatedData.age) : null,
+        gender: updatedData.gender,
+        fitness_goals: updatedData.fitnessGoals, // Correct field mapping
+        bio: updatedData.bio
+      };
+      
       const response = await fetch(`${backendURL}/user-profile`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(updatedData)
+        body: JSON.stringify(mappedData)
       });
 
       if (!response.ok) {
@@ -834,80 +846,65 @@ function Profile() {
       const originalBio = user?.bio;
       
       let notificationSent = false;
+      let profileChanged = false;
+
+      // Check if any profile fields changed
+      if (mappedData.height !== originalHeight || 
+          mappedData.weight !== originalWeight ||
+          mappedData.age !== originalAge ||
+          mappedData.gender !== originalGender ||
+          mappedData.fitness_goals !== originalFitnessGoals ||
+          mappedData.bio !== originalBio) {
+        profileChanged = true;
+      }
 
       if (allNotificationsEnabled) {
         // Check which fields were updated and send specific notifications
-        if (updatedData.height !== originalHeight && updatedData.height !== null) {
-          await notifyHeightUpdated(updatedData.height);
+        if (mappedData.height !== originalHeight && mappedData.height !== null) {
+          await notifyHeightUpdated(mappedData.height);
           notificationSent = true;
         }
         
-        if (updatedData.weight !== originalWeight && updatedData.weight !== null) {
-          await notifyWeightUpdated(updatedData.weight);
+        if (mappedData.weight !== originalWeight && mappedData.weight !== null) {
+          await notifyWeightUpdated(mappedData.weight);
           notificationSent = true;
         }
         
-        if (updatedData.age !== originalAge && updatedData.age !== null) {
-          await notifyAgeUpdated(updatedData.age);
+        if (mappedData.age !== originalAge && mappedData.age !== null) {
+          await notifyAgeUpdated(mappedData.age);
           notificationSent = true;
         }
         
-        if (updatedData.gender !== originalGender && updatedData.gender) {
+        if (mappedData.gender !== originalGender && mappedData.gender) {
           await notifyGenderUpdated();
           notificationSent = true;
         }
         
-        if (updatedData.fitness_goals !== originalFitnessGoals && updatedData.fitness_goals) {
+        if (mappedData.fitness_goals !== originalFitnessGoals && mappedData.fitness_goals) {
           await notifyFitnessGoalsUpdated();
           notificationSent = true;
         }
         
-        if (updatedData.bio !== originalBio && updatedData.bio) {
+        if (mappedData.bio !== originalBio && mappedData.bio) {
           await notifyBioUpdated();
           notificationSent = true;
         }
         
         // If no specific field notifications were sent but something changed, send generic update
-        if (!notificationSent) {
+        if (!notificationSent && profileChanged) {
           await notifyPersonalInfoUpdated();
         }
       }
 
-      // Check achievements after profile update
-      try {
-        const achievementsResponse = await fetch(`${backendURL}/achievements/check`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-
-        if (achievementsResponse.ok) {
-          const achievementsData = await achievementsResponse.json();
-          if (achievementsData.newly_achieved > 0) {
-            // Fetch updated achievements to show new ones
-            const newAchievementsResponse = await fetch(`${backendURL}/api/achievements/new`, {
-              headers: {
-                'Authorization': `Bearer ${token}`
-              }
-            });
-
-            if (newAchievementsResponse.ok) {
-              const newAchievements = await newAchievementsResponse.json();
-              newAchievements.forEach(achievement => {
-                if (achievementAlertsEnabled) {
-                  notifyAchievementEarned(
-                    achievement.name,
-                    achievement.description,
-                    achievement.icon
-                  );
-                }
-              });
-            }
-          }
+      // Only check achievements if profile fields actually changed
+      if (profileChanged) {
+        try {
+          // Check achievements after profile update
+          await checkAchievementsProgress();
+        } catch (error) {
+          console.warn("Failed to check achievements:", error);
+          // Don't let achievement check failures affect the profile update success
         }
-      } catch (error) {
-        console.warn("Failed to check achievements:", error);
       }
 
       setLoading(false);

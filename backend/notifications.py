@@ -65,10 +65,10 @@ async def create_notification(
         new_notification = Notification(
             user_id=user.id,
             type=notification_data.get("type", "info"),
-            title=notification_data.get("title", ""),
             message=notification_data.get("message", ""),
             icon=notification_data.get("icon", "info"),
-            is_read=False,
+            icon_color=notification_data.get("icon_color", "text-blue-500"),
+            read=notification_data.get("read", False),
             created_at=datetime.now(timezone.utc)
         )
         

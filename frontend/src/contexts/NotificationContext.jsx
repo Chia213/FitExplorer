@@ -188,10 +188,8 @@ export const NotificationProvider = ({ children }) => {
     fetchAchievementAlertsSetting();
     fetchAllNotificationsSetting();
     
-    // Set up periodic refresh every 2 minutes
-    const intervalId = setInterval(fetchNotifications, 2 * 60 * 1000);
-    
-    return () => clearInterval(intervalId);
+    // We fetch once on mount, but don't set up a background timer
+    // that would keep the app running when not in use
   }, []);
 
   // Mark a notification as read

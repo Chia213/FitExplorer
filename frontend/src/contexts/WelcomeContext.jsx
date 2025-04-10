@@ -95,9 +95,14 @@ export const WelcomeProvider = ({ children }) => {
       }
     });
 
-    // Manually check every second for development (helps with debugging)
-    const interval = setInterval(checkLoginStatus, 1000);
-    return () => clearInterval(interval);
+    // Clean up storage event listener
+    return () => {
+      window.removeEventListener("storage", (e) => {
+        if (e.key === "token") {
+          checkLoginStatus();
+        }
+      });
+    };
   }, []);
 
   const closeWelcomeModal = () => {

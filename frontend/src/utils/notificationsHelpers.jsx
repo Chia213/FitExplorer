@@ -61,7 +61,8 @@ export const createNotification = async (message, type, icon = 'bell', iconColor
         message,
         type,
         icon,
-        icon_color: iconColor
+        icon_color: iconColor,
+        read: false
       })
     });
 
