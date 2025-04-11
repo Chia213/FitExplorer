@@ -279,6 +279,9 @@ function Navbar() {
       localStorage.removeItem("token");
       localStorage.removeItem("isAdmin");
       
+      // Clear achievements notification history
+      localStorage.removeItem("notifiedAchievements");
+      
       // Reset theme settings to prevent theme leakage between users
       clearThemeStorage();
       
@@ -308,6 +311,7 @@ function Navbar() {
       // Even if there's an error, make sure we log out on the frontend
       localStorage.removeItem("token");
       localStorage.removeItem("isAdmin");
+      localStorage.removeItem("notifiedAchievements");
       navigate("/login");
     }
   };

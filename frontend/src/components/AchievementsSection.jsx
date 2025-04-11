@@ -18,6 +18,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { useAchievements } from '../hooks/useAchievements.jsx';
 import { debounce } from 'lodash';
+import { toast } from 'react-hot-toast';
 
 const defaultBackendURL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
@@ -136,13 +137,30 @@ const AchievementsSection = ({ backendURL = defaultBackendURL }) => {
       );
       
       // Send notifications for newly achieved achievements
-      newlyAchieved.forEach(achievement => {
-        notifyAchievementEarned(
-          achievement.name,
-          achievement.description,
-          achievement.icon
-        );
-      });
+      if (newlyAchieved.length > 0) {
+        // Get already notified achievements from localStorage to prevent duplicate notifications
+        const notifiedAchievements = JSON.parse(localStorage.getItem('notifiedAchievements') || '[]');
+        const notifiedIds = new Set(notifiedAchievements);
+        
+        // Only notify for achievements that haven't been notified before
+        const uniqueNewAchievements = newlyAchieved.filter(a => !notifiedIds.has(a.id));
+        
+        uniqueNewAchievements.forEach(achievement => {
+          notifyAchievementEarned(
+            achievement.name,
+            achievement.description,
+            achievement.icon
+          );
+          
+          // Add to notified achievements
+          notifiedIds.add(achievement.id);
+        });
+        
+        // Update localStorage with the new list of notified achievements
+        if (uniqueNewAchievements.length > 0) {
+          localStorage.setItem('notifiedAchievements', JSON.stringify([...notifiedIds]));
+        }
+      }
     }
     
     // Update the ref with current achievements
@@ -267,21 +285,36 @@ const AchievementsSection = ({ backendURL = defaultBackendURL }) => {
       
       // Only notify for achievements that have actually been achieved (progress >= requirement)
       const validAchievements = newAchievements.filter(
-        achievement => achievement.is_achieved && achievement.progress >= achievement.requirement
+        achievement => achievement.is_achieved
       );
       
-      // Notify the user about each new valid achievement
-      validAchievements.forEach(achievement => {
-        notifyAchievementEarned(
-          achievement.name,
-          achievement.description,
-          achievement.icon
-        );
-      });
-      
-      // After we've fetched new achievements, update the main achievement list
       if (validAchievements.length > 0) {
-        fetchAchievements();
+        // Get already notified achievements from localStorage to prevent duplicate notifications
+        const notifiedAchievements = JSON.parse(localStorage.getItem('notifiedAchievements') || '[]');
+        const notifiedIds = new Set(notifiedAchievements);
+        
+        // Only notify for achievements that haven't been notified before
+        const uniqueNewAchievements = validAchievements.filter(a => !notifiedIds.has(a.id));
+        
+        // Notify the user about each new valid achievement
+        uniqueNewAchievements.forEach(achievement => {
+          notifyAchievementEarned(
+            achievement.name,
+            achievement.description,
+            achievement.icon
+          );
+          
+          // Add to notified achievements
+          notifiedIds.add(achievement.id);
+        });
+        
+        // Update localStorage with the new list of notified achievements
+        if (uniqueNewAchievements.length > 0) {
+          localStorage.setItem('notifiedAchievements', JSON.stringify([...notifiedIds]));
+          
+          // After we've fetched new achievements, update the main achievement list
+          fetchAchievements();
+        }
       }
     } catch (err) {
       // Silently fail, this is just for notifications
@@ -299,108 +332,19 @@ const AchievementsSection = ({ backendURL = defaultBackendURL }) => {
     }
   }, [hookAchievements, hookLoading]);
   
-  // Create a synchronized checkAchievements function
-  const checkAchievementsProgress = useCallback(async () => {
-    if (isCheckingRef.current) {
-      console.log("Achievement check already in progress...");
-      return;
-    }
-    
-    try {
-      // Set checking flag immediately to prevent duplicate calls
-      isCheckingRef.current = true;
-      
-      // Show loading but only for the button, don't block the entire UI
-      const originalAchievements = [...achievements];
-      
-      // Keep UI responsive by not setting global loading state
-      // setLoading(true);
-      
-      // Track loading state just for the check button
-      const buttonLoadingState = true;
-      
-      // 1. Start the achievement check call
-      const checkPromise = hookCheckAchievements ? 
-        hookCheckAchievements() : 
-        fetch(`${backendURL}/achievements/check`, {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${localStorage.getItem("token")}`,
-            "Content-Type": "application/json"
-          }
-        }).then(res => res.ok ? res.json() : Promise.reject("Failed to check achievements"));
-      
-      // 2. Immediately try to update UI optimistically
-      // Show "checking" state for 300ms minimum to avoid flickering
-      setTimeout(() => {
-        // Update the progress of achievements that are close to completion
-        // This provides immediate visual feedback
-        const updatedAchievements = originalAchievements.map(achievement => {
-          // Only update non-completed achievements that are close to completion
-          if (!achievement.is_achieved && achievement.progress > 0) {
-            // Simulate a small progress increase for better user feedback
-            return {
-              ...achievement,
-              progress: Math.min(achievement.progress + 1, achievement.requirement)
-            };
-          }
-          return achievement;
-        });
-        
-        // Update UI with optimistic values
-        setAchievements(updatedAchievements);
-        
-        // Save optimistic updates to localStorage for immediate persistence
-        localStorage.setItem('cachedAchievements', JSON.stringify(updatedAchievements));
-      }, 300);
-      
-      // 3. Wait for the actual check to complete
-      const checkResult = await checkPromise;
-      
-      // 4. After check completes, fetch the real data
-      const progressResponse = await fetch(`${backendURL}/user/achievements/progress`, {
-        headers: {
-          "Authorization": `Bearer ${localStorage.getItem("token")}`
-        }
-      });
-      
-      // 5. Process the fresh data if successful
-      if (progressResponse.ok) {
-        const freshData = await progressResponse.json();
-        
-        if (Array.isArray(freshData) && freshData.length > 0) {
-          // Update the UI with real data
-          setAchievements(freshData);
-          
-          // Cache the real data for persistence
-          localStorage.setItem('cachedAchievements', JSON.stringify(freshData));
-          localStorage.setItem('achievementsLastUpdated', new Date().toISOString());
-        } else {
-          // Fallback to original data if response is empty
-          setAchievements(originalAchievements);
-        }
-      } else {
-        // If fetch fails, restore original state
-        setAchievements(originalAchievements);
-      }
-    } catch (err) {
-      console.error("Error checking achievements:", err);
-    } finally {
-      // Reset checking flag after a shorter delay - 500ms is enough
-      setTimeout(() => {
-        isCheckingRef.current = false;
-        // setLoading(false);
-      }, 500);
-    }
-  }, [achievements, hookCheckAchievements]);
+  const [lastCheckTimestamp, setLastCheckTimestamp] = useState(null);
   
-  // Create a debounced version to prevent rapid calls
-  const debouncedCheckAchievements = useCallback(
-    debounce(() => {
-      checkAchievementsProgress();
-    }, 500),
-    [checkAchievementsProgress]
-  );
+  // Reset button state after timeout
+  useEffect(() => {
+    if (lastCheckTimestamp) {
+      const timer = setTimeout(() => {
+        // This will force a re-render, changing the button back to "Check Progress"
+        setLastCheckTimestamp(null);
+      }, 10000); // Revert after 10 seconds
+      
+      return () => clearTimeout(timer);
+    }
+  }, [lastCheckTimestamp]);
 
   const categories = ['all', ...new Set(achievements.map(a => a.category))];
 
@@ -468,65 +412,104 @@ const AchievementsSection = ({ backendURL = defaultBackendURL }) => {
 
   const navigate = useNavigate();
 
-  // Function to check achievements after profile updates - exported for use in Profile
-  const checkAndUpdateAchievements = useCallback(async () => {
+  // Create a synchronized checkAchievements function
+  const checkAchievementsProgress = useCallback(async () => {
+    if (isCheckingRef.current) {
+      console.log("Achievement check already in progress...");
+      return;
+    }
+    
     try {
-      const token = localStorage.getItem("token");
-      if (!token) return;
+      // Set checking flag immediately to prevent duplicate calls
+      isCheckingRef.current = true;
       
-      // First, make the check request
-      const checkResponse = await fetch(`${backendURL}/achievements/check`, {
-        method: "POST",
+      // Don't set full loading state - only show button loading
+      // This keeps the UI responsive while checking
+      
+      // Original achievements for fallback
+      const originalAchievements = [...achievements];
+      
+      // Show a toast to indicate that checking has started
+      toast.loading("Checking achievements...", { id: "achievements-checking" });
+      
+      // 1. Start the achievement check call
+      const checkPromise = hookCheckAchievements ? 
+        hookCheckAchievements() : 
+        fetch(`${backendURL}/achievements/check`, {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${localStorage.getItem("token")}`,
+            "Content-Type": "application/json"
+          }
+        }).then(res => res.ok ? res.json() : Promise.reject("Failed to check achievements"));
+      
+      // 2. Wait for the actual check to complete
+      const checkResult = await checkPromise;
+      
+      // 3. After check completes, fetch the real data
+      const progressResponse = await fetch(`${backendURL}/user/achievements/progress`, {
         headers: {
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json"
+          "Authorization": `Bearer ${localStorage.getItem("token")}`
         }
       });
       
-      if (!checkResponse.ok) {
-        throw new Error("Failed to check achievements");
-      }
-      
-      const checkResult = await checkResponse.json();
-      
-      // Then immediately fetch the updated data
-      const updatedResponse = await fetch(`${backendURL}/user/achievements/progress`, {
-        headers: {
-          "Authorization": `Bearer ${token}`
-        }
-      });
-      
-      if (!updatedResponse.ok) {
-        throw new Error("Failed to fetch updated achievements");
-      }
-      
-      const updatedData = await updatedResponse.json();
-      if (updatedData && Array.isArray(updatedData) && updatedData.length > 0) {
-        // Update state with the new data
-        setAchievements(updatedData);
+      // 4. Process the fresh data if successful
+      if (progressResponse.ok) {
+        const freshData = await progressResponse.json();
         
-        // Update cache
-        localStorage.setItem('cachedAchievements', JSON.stringify(updatedData));
-        localStorage.setItem('achievementsLastUpdated', new Date().toISOString());
+        if (Array.isArray(freshData) && freshData.length > 0) {
+          // Update the UI with real data
+          setAchievements(freshData);
+          
+          // Cache the real data for persistence
+          localStorage.setItem('cachedAchievements', JSON.stringify(freshData));
+          localStorage.setItem('achievementsLastUpdated', new Date().toISOString());
+          
+          // Update previousAchievementsRef to prevent duplicate notifications
+          previousAchievementsRef.current = freshData;
+          
+          // Set the last check timestamp for UI feedback
+          setLastCheckTimestamp(new Date());
+          
+          // Show success toast
+          if (checkResult && checkResult.newly_achieved > 0) {
+            toast.success(`You earned ${checkResult.newly_achieved} new achievement${checkResult.newly_achieved > 1 ? 's' : ''}!`, {
+              id: "achievements-checking"
+            });
+          } else {
+            toast.success("Achievement progress updated!", {
+              id: "achievements-checking"
+            });
+          }
+        } else {
+          // Fallback to original data if response is empty
+          setAchievements(originalAchievements);
+          toast.error("No achievement data received", { id: "achievements-checking" });
+        }
+      } else {
+        // If fetch fails, restore original state
+        setAchievements(originalAchievements);
+        toast.error("Failed to update achievements", { id: "achievements-checking" });
       }
       
       return checkResult;
-    } catch (error) {
-      console.error("Error checking achievements:", error);
+    } catch (err) {
+      console.error("Error checking achievements:", err);
+      toast.error("Error checking achievements", { id: "achievements-checking" });
+      return null;
+    } finally {
+      // Reset checking flag immediately
+      isCheckingRef.current = false;
     }
-  }, []);
+  }, [achievements, hookCheckAchievements]);
   
-  // Expose the check function for other components to use
-  useEffect(() => {
-    if (window) {
-      window.checkAndUpdateAchievements = checkAndUpdateAchievements;
-    }
-    return () => {
-      if (window) {
-        delete window.checkAndUpdateAchievements;
-      }
-    };
-  }, [checkAndUpdateAchievements]);
+  // Create a debounced version to prevent rapid calls
+  const debouncedCheckAchievements = useCallback(
+    debounce(() => {
+      checkAchievementsProgress();
+    }, 300), // Reduced to 300ms for faster response
+    [checkAchievementsProgress]
+  );
 
   if (loading) {
     return <div className="text-center py-4">Loading achievements...</div>;
@@ -545,27 +528,44 @@ const AchievementsSection = ({ backendURL = defaultBackendURL }) => {
         </h2>
         
         <div className="flex space-x-2">
-          <button
-            onClick={debouncedCheckAchievements}
-            disabled={loading || isCheckingRef.current}
-            className={`px-3 py-1 rounded text-sm flex items-center ${
-              loading || isCheckingRef.current
-                ? "bg-gray-300 dark:bg-gray-700 cursor-not-allowed"
-                : "bg-blue-500 hover:bg-blue-600 text-white"
-            }`}
-          >
-            {loading || isCheckingRef.current ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
-                Checking...
-              </>
-            ) : (
-              <>
-                <FaChartLine className="mr-1" />
-                Check Progress
-              </>
+          <div className="relative">
+            <button
+              onClick={checkAchievementsProgress}
+              disabled={isCheckingRef.current}
+              className={`px-3 py-1 rounded text-sm flex items-center ${
+                isCheckingRef.current
+                  ? "bg-gray-300 dark:bg-gray-700 cursor-not-allowed"
+                  : lastCheckTimestamp && Date.now() - lastCheckTimestamp < 10000
+                  ? "bg-green-500 hover:bg-green-600 text-white"
+                  : "bg-blue-500 hover:bg-blue-600 text-white"
+              }`}
+            >
+              {isCheckingRef.current ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
+                  Checking...
+                </>
+              ) : lastCheckTimestamp && Date.now() - lastCheckTimestamp < 10000 ? (
+                <>
+                  <svg className="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Updated
+                </>
+              ) : (
+                <>
+                  <FaChartLine className="mr-1" />
+                  Check Progress
+                </>
+              )}
+            </button>
+            
+            {lastCheckTimestamp && Date.now() - lastCheckTimestamp < 10000 && (
+              <div className="absolute -bottom-4 left-0 right-0 text-xs text-green-600 dark:text-green-400 text-center whitespace-nowrap">
+                Last check: {new Date(lastCheckTimestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+              </div>
             )}
-          </button>
+          </div>
           
           <select
             value={selectedCategory}
@@ -621,7 +621,7 @@ const AchievementsSection = ({ backendURL = defaultBackendURL }) => {
           <FaTrophy className="text-gray-300 dark:text-gray-600 text-4xl mx-auto mb-2" />
           <p className="text-gray-500 dark:text-gray-400">No achievements found.</p>
           <button
-            onClick={debouncedCheckAchievements}
+            onClick={checkAchievementsProgress}
             className="mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
           >
             Check Progress

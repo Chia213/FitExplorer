@@ -111,6 +111,7 @@ function Profile() {
   const [successMessage, setSuccessMessage] = useState("");
   const [showColorPicker, setShowColorPicker] = useState(false);
   const fileInputRef = useRef(null);
+  const [lastUpdated, setLastUpdated] = useState(Date.now()); // Track last update time for achievements
 
   const navigate = useNavigate();
   const { theme, premiumTheme, premiumThemes, isAdmin } = useTheme();
@@ -126,7 +127,7 @@ function Profile() {
 
     try {
       setLoading(true);
-      const [profileRes, statsRes, routineRes] = await Promise.all([
+      const [profileRes, statsRes, routineRes, workoutPrefsRes] = await Promise.all([
         fetch(`${backendURL}/user-profile`, {
           headers: { 
             "Authorization": `Bearer ${token}`,
@@ -142,6 +143,13 @@ function Profile() {
           credentials: "include"
         }),
         fetch(`${backendURL}/api/last-saved-routine`, {
+          headers: { 
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json"
+          },
+        }),
+        fetch(`${backendURL}/api/workout-preferences`, {
+          method: "GET",
           headers: { 
             "Authorization": `Bearer ${token}`,
             "Content-Type": "application/json"
@@ -176,29 +184,28 @@ function Profile() {
         bio: userData.bio || ""
       });
 
-      // Variable to track workout frequency goal throughout function
+      // Fetch workout preferences data
       let workoutFrequencyGoal = null;
-
+      let goalWeight = null;
+      
+      if (workoutPrefsRes.ok) {
+        const workoutPrefs = await workoutPrefsRes.json();
+        workoutFrequencyGoal = workoutPrefs.workout_frequency_goal;
+        goalWeight = workoutPrefs.goal_weight;
+      }
+      
       // Set user preferences
       if (userData.preferences) {
-        // First get workout preferences to ensure we have the correct workout frequency goal
-        const workoutPrefsRes = await fetch(`${backendURL}/api/workout-preferences`, {
-          method: "GET",
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        
-        if (workoutPrefsRes.ok) {
-          const workoutPrefs = await workoutPrefsRes.json();
-          workoutFrequencyGoal = workoutPrefs.workout_frequency_goal;
-        } else {
-          // Failed to fetch workout preferences
+        // Check for goal weight in user.preferences (preferred) or from workout prefs
+        if (userData.preferences.goal_weight !== undefined) {
+          goalWeight = userData.preferences.goal_weight;
         }
         
         setPreferences((prev) => ({
           ...prev,
           cardColor: userData.preferences.card_color || prev.cardColor,
-          workoutFrequencyGoal: workoutFrequencyGoal, // Use the value from workout preferences
-          goalWeight: userData.preferences.goal_weight,
+          workoutFrequencyGoal: workoutFrequencyGoal, 
+          goalWeight: goalWeight,
           useCustomCardColor: userData.preferences.use_custom_card_color || false
         }));
         
@@ -584,6 +591,7 @@ function Profile() {
       const oldFrequencyGoal = preferences.workoutFrequencyGoal;
       
       let frequencyUpdateSuccessful = false;
+      let weightUpdateSuccessful = false;
       let errorMessage = null;
       
       // Validate frequency goal before sending
@@ -623,6 +631,11 @@ function Profile() {
               : "Cleared workout frequency goal", 
             { id: updateToastId }
           );
+          
+          // Send notification if enabled
+          if (allNotificationsEnabled && oldFrequencyGoal !== data.workout_frequency_goal) {
+            await notifyWorkoutFrequencyGoalUpdated(data.workout_frequency_goal);
+          }
         } else {
           const errorData = await frequencyResponse.json();
           errorMessage = errorData.detail || "Failed to update workout frequency goal";
@@ -655,6 +668,11 @@ function Profile() {
                 : "Cleared workout frequency goal (via fallback)", 
               { id: updateToastId }
             );
+            
+            // Send notification if enabled via fallback too
+            if (allNotificationsEnabled && oldFrequencyGoal !== frequencyGoal) {
+              await notifyWorkoutFrequencyGoalUpdated(frequencyGoal);
+            }
           } else {
             const errorData = await fallbackResponse.json();
             errorMessage = errorData.detail || "Failed to update workout frequency goal via fallback";
@@ -670,7 +688,7 @@ function Profile() {
         toast.error(errorMessage, { id: updateToastId });
       }
       
-      // Update other user settings
+      // Update other user settings including weight goal
       try {
         const userProfileResponse = await fetch(`${backendURL}/user/settings`, {
           method: "PATCH",
@@ -691,11 +709,73 @@ function Profile() {
           }),
         });
         
-        if (!userProfileResponse.ok) {
+        if (userProfileResponse.ok) {
+          const profileData = await userProfileResponse.json();
+          
+          // Update local state with returned values
+          setPreferences(prev => ({
+            ...prev,
+            goalWeight: profileData.goal_weight,
+            cardColor: profileData.card_color
+          }));
+          
+          // Update user object with the new preferences
+          if (user && user.preferences) {
+            setUser(prev => ({
+              ...prev,
+              preferences: {
+                ...prev.preferences,
+                goal_weight: profileData.goal_weight,
+                card_color: profileData.card_color,
+                use_custom_card_color: preferences.useCustomCardColor
+              }
+            }));
+          }
+          
+          weightUpdateSuccessful = true;
+          
+          // If weight changed, show a success message
+          if (oldGoalWeight !== profileData.goal_weight) {
+            if (profileData.goal_weight) {
+              toast.success(`Weight goal updated to ${profileData.goal_weight} kg`, {
+                id: updateToastId,
+                duration: 4000
+              });
+              
+              // Send notification for weight goal update if enabled
+              if (allNotificationsEnabled) {
+                await notifyWeightGoalUpdated(profileData.goal_weight);
+              }
+            } else {
+              toast.success("Weight goal cleared", {
+                id: updateToastId,
+                duration: 4000
+              });
+            }
+          } else {
+            toast.success("Preferences updated successfully", {
+              id: updateToastId,
+              duration: 4000
+            });
+          }
+        } else {
           console.error("Failed to update other user settings");
+          try {
+            const errorData = await userProfileResponse.json();
+            toast.error(errorData.detail || "Failed to update settings", {
+              id: updateToastId
+            });
+          } catch (e) {
+            toast.error("Failed to update settings", {
+              id: updateToastId
+            });
+          }
         }
       } catch (err) {
         console.error("Error updating other user settings:", err);
+        toast.error("Error updating settings", {
+          id: updateToastId
+        });
       }
       
       // Update local state
@@ -730,6 +810,9 @@ function Profile() {
             id: toastId
           });
         }
+        
+        // Force a refresh of the achievements component
+        setLastUpdated(Date.now());
         return;
       }
 
@@ -744,6 +827,26 @@ function Profile() {
       
       if (response.ok) {
         const result = await response.json();
+        
+        // After successful check, fetch the fresh achievement data
+        const achievementsResponse = await fetch(`${backendURL}/user/achievements/progress`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        
+        if (achievementsResponse.ok) {
+          const data = await achievementsResponse.json();
+          if (data && Array.isArray(data) && data.length > 0) {
+            // Update cache
+            localStorage.setItem('cachedAchievements', JSON.stringify(data));
+            localStorage.setItem('achievementsLastUpdated', new Date().toISOString());
+            
+            // Force a refresh of the achievements component
+            setLastUpdated(Date.now());
+          }
+        }
+        
         // Update toast with success message
         if (result.newly_achieved > 0) {
           toast.success(`You earned ${result.newly_achieved} new achievement${result.newly_achieved > 1 ? 's' : ''}!`, {
@@ -813,6 +916,8 @@ function Profile() {
     } finally {
       localStorage.removeItem("token");
       localStorage.removeItem("isAdmin");
+      // Clear achievements notification history
+      localStorage.removeItem("notifiedAchievements");
       // Dispatch events to notify other components
       window.dispatchEvent(new Event("storage"));
       window.dispatchEvent(new Event("auth-change"));
@@ -1613,7 +1718,10 @@ function Profile() {
         {/* Achievements Section */}
         <div className="mt-8" id="achievements">
           <ErrorBoundary>
-            <AchievementsSection backendURL={backendURL} key={`achievements-${user?.id}`} />
+            <AchievementsSection 
+              backendURL={backendURL} 
+              key={`achievements-${user?.id}-${lastUpdated}`} 
+            />
           </ErrorBoundary>
         </div>
 

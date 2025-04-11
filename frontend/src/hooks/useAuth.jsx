@@ -241,6 +241,9 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('token');
     localStorage.removeItem('isAdmin');
     
+    // Clear achievements notification history
+    localStorage.removeItem('notifiedAchievements');
+    
     // Reset theme settings directly in localStorage to avoid circular dependency with useTheme
     localStorage.setItem("theme", "light");
     localStorage.setItem("premiumTheme", "default");
@@ -264,11 +267,8 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (error) {
       console.error('Error logging out from backend:', error);
-    } finally {
-      // Navigate to login page
-      navigate('/login');
     }
-  }, [navigate]);
+  }, []);
 
   // Initialize auth on mount
   useEffect(() => {

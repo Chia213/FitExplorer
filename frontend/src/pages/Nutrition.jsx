@@ -86,6 +86,16 @@ function Nutrition() {
     adjust_for_workouts: false
   });
   
+  // Chat-related state
+  const [chatMessages, setChatMessages] = useState([
+    { 
+      type: "system", 
+      content: "Hello! I'm your AI Nutrition Guide. Ask me anything about nutrition, diet planning, or how to optimize your meals for your workouts." 
+    }
+  ]);
+  const [chatInput, setChatInput] = useState("");
+  const [isChatLoading, setIsChatLoading] = useState(false);
+  
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -1567,7 +1577,7 @@ function Nutrition() {
       <div className="space-y-6">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
           <h3 className="text-lg font-semibold mb-4 flex items-center">
-            <FaRobot className="mr-2 text-purple-500" /> AI Meal Plan Generator
+            <FaRobot className="mr-2 text-purple-500" /> Meal Plan Generator
           </h3>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
@@ -1895,102 +1905,222 @@ function Nutrition() {
     );
   };
 
-  return (
-    <div className="container mx-auto px-4 py-6 max-w-7xl">
-      <h1 className="text-2xl font-bold mb-6">Nutrition Tracker</h1>
+  const handleChatSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!chatInput.trim()) return;
+    
+    // Add user message to chat
+    const userMessage = { type: "user", content: chatInput };
+    setChatMessages(prev => [...prev, userMessage]);
+    
+    // Clear input
+    setChatInput("");
+    
+    // Set loading state
+    setIsChatLoading(true);
+    
+    try {
+      // Call the nutrition chat API
+      const response = await axios.post('/nutrition/chat', {
+        question: userMessage.content
+      });
       
-      {/* Add API test button */}
-      <div className="text-right mb-2">
-        <button 
-          onClick={checkApiConnection} 
-          className="text-xs px-2 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
-        >
-          Check API
-        </button>
-      </div>
-      
-      {/* Tab Navigation */}
-      <div className="flex border-b border-gray-200 dark:border-gray-700 mb-6 overflow-x-auto">
-        <button
-          className={`px-4 py-2 font-medium whitespace-nowrap ${
-            activeTab === "dashboard"
-              ? "text-blue-500 border-b-2 border-blue-500"
-              : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-          }`}
-          onClick={() => setActiveTab("dashboard")}
-        >
-          <FaChartPie className="inline mr-2" /> Dashboard
-        </button>
-        <button
-          className={`px-4 py-2 font-medium whitespace-nowrap ${
-            activeTab === "meal-log"
-              ? "text-blue-500 border-b-2 border-blue-500"
-              : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-          }`}
-          onClick={() => setActiveTab("meal-log")}
-        >
-          <FaListAlt className="inline mr-2" /> Meal Log
-        </button>
-        <button
-          className={`px-4 py-2 font-medium whitespace-nowrap ${
-            activeTab === "meal-plan"
-              ? "text-blue-500 border-b-2 border-blue-500"
-              : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-          }`}
-          onClick={() => setActiveTab("meal-plan")}
-        >
-          <FaRobot className="inline mr-2" /> Meal Generator
-        </button>
-        <button
-          className={`px-4 py-2 font-medium whitespace-nowrap ${
-            activeTab === "analysis"
-              ? "text-blue-500 border-b-2 border-blue-500"
-              : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-          }`}
-          onClick={() => setActiveTab("analysis")}
-        >
-          <FaChartPie className="inline mr-2" /> Analysis
-        </button>
-        <button
-          className={`px-4 py-2 font-medium whitespace-nowrap ${
-            activeTab === "settings"
-              ? "text-blue-500 border-b-2 border-blue-500"
-              : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-          }`}
-          onClick={() => setActiveTab("settings")}
-        >
-          <FaInfoCircle className="inline mr-2" /> Settings
-        </button>
-      </div>
-      
-      {/* Loading and Error States */}
-      {loading ? (
-        <div className="text-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
-          <p className="mt-4 text-gray-500 dark:text-gray-400">Loading nutrition data...</p>
+      // Add AI response to chat
+      setChatMessages(prev => [
+        ...prev, 
+        { type: "assistant", content: response.data.answer }
+      ]);
+    } catch (err) {
+      console.error("Error getting chat response:", err);
+      setChatMessages(prev => [
+        ...prev, 
+        { 
+          type: "error", 
+          content: "Sorry, I couldn't process your question. Please try again or check if you have workout data available." 
+        }
+      ]);
+    } finally {
+      setIsChatLoading(false);
+    }
+  };
+
+  const renderChatInterface = () => {
+    return (
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 md:p-6">
+        <div className="flex flex-col h-[70vh]">
+          <div className="flex-grow overflow-y-auto mb-4 space-y-4 p-2" id="chat-messages">
+            {chatMessages.map((message, index) => (
+              <div 
+                key={index} 
+                className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
+              >
+                <div 
+                  className={`max-w-[80%] rounded-lg px-4 py-2 ${
+                    message.type === 'user' 
+                      ? 'bg-blue-500 text-white rounded-br-none' 
+                      : message.type === 'system' 
+                        ? 'bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-200' 
+                        : message.type === 'error'
+                          ? 'bg-red-500 text-white'
+                          : 'bg-green-100 dark:bg-green-900 text-gray-800 dark:text-gray-200 rounded-bl-none'
+                  }`}
+                >
+                  {message.content}
+                </div>
+              </div>
+            ))}
+            {isChatLoading && (
+              <div className="flex justify-start">
+                <div className="max-w-[80%] rounded-lg px-4 py-3 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-200">
+                  <div className="flex space-x-2">
+                    <div className="w-2 h-2 rounded-full bg-gray-500 dark:bg-gray-400 animate-bounce" style={{ animationDelay: "0ms" }}></div>
+                    <div className="w-2 h-2 rounded-full bg-gray-500 dark:bg-gray-400 animate-bounce" style={{ animationDelay: "300ms" }}></div>
+                    <div className="w-2 h-2 rounded-full bg-gray-500 dark:bg-gray-400 animate-bounce" style={{ animationDelay: "600ms" }}></div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          <form onSubmit={handleChatSubmit} className="flex gap-2">
+            <input
+              type="text"
+              value={chatInput}
+              onChange={(e) => setChatInput(e.target.value)}
+              placeholder="Ask about nutrition, meal planning, macros..."
+              className="flex-grow rounded-md border border-gray-300 dark:border-gray-600 px-4 py-2 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+              disabled={isChatLoading}
+            />
+            <button
+              type="submit"
+              className="bg-blue-500 hover:bg-blue-600 text-white rounded-md px-4 py-2 transition duration-150 ease-in-out flex items-center"
+              disabled={isChatLoading}
+            >
+              <FaRobot className="mr-2" />
+              {isChatLoading ? "Thinking..." : "Ask"}
+            </button>
+          </form>
+          
+          <div className="mt-4 text-xs text-gray-500 dark:text-gray-400">
+            <p>The AI Nutrition Guide provides personalized advice based on your workout program and nutrition history.</p>
+          </div>
         </div>
-      ) : error ? (
-        <div className="bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-300 p-4 rounded-md">
+      </div>
+    );
+  };
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-2xl md:text-3xl font-bold mb-6 text-gray-800 dark:text-gray-100">Nutrition Tracker</h1>
+      
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 mb-6">
+        <div className="border-b border-gray-200 dark:border-gray-700">
+          <nav className="flex flex-wrap -mb-px">
+            <button
+              className={`mr-4 py-2 px-1 font-medium text-sm leading-5 focus:outline-none ${
+                activeTab === "dashboard"
+                  ? "border-b-2 border-blue-500 text-blue-600 dark:text-blue-400"
+                  : "text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+              }`}
+              onClick={() => setActiveTab("dashboard")}
+            >
+              <div className="flex items-center">
+                <FaChartPie className="mr-2" />
+                Dashboard
+              </div>
+            </button>
+            
+            <button
+              className={`mr-4 py-2 px-1 font-medium text-sm leading-5 focus:outline-none ${
+                activeTab === "mealLog"
+                  ? "border-b-2 border-blue-500 text-blue-600 dark:text-blue-400"
+                  : "text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+              }`}
+              onClick={() => setActiveTab("mealLog")}
+            >
+              <div className="flex items-center">
+                <FaListAlt className="mr-2" />
+                Meal Log
+              </div>
+            </button>
+            
+            <button
+              className={`mr-4 py-2 px-1 font-medium text-sm leading-5 focus:outline-none ${
+                activeTab === "analysis"
+                  ? "border-b-2 border-blue-500 text-blue-600 dark:text-blue-400"
+                  : "text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+              }`}
+              onClick={() => setActiveTab("analysis")}
+            >
+              <div className="flex items-center">
+                <FaHistory className="mr-2" />
+                Analysis
+              </div>
+            </button>
+            
+            <button
+              className={`mr-4 py-2 px-1 font-medium text-sm leading-5 focus:outline-none ${
+                activeTab === "mealPlan"
+                  ? "border-b-2 border-blue-500 text-blue-600 dark:text-blue-400"
+                  : "text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+              }`}
+              onClick={() => setActiveTab("mealPlan")}
+            >
+              <div className="flex items-center">
+                <FaUtensils className="mr-2" />
+                Meal Plan
+              </div>
+            </button>
+            
+            <button
+              className={`mr-4 py-2 px-1 font-medium text-sm leading-5 focus:outline-none ${
+                activeTab === "chat"
+                  ? "border-b-2 border-blue-500 text-blue-600 dark:text-blue-400"
+                  : "text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+              }`}
+              onClick={() => setActiveTab("chat")}
+            >
+              <div className="flex items-center">
+                <FaRobot className="mr-2" />
+                AI Chat
+              </div>
+            </button>
+            
+            <button
+              className={`mr-4 py-2 px-1 font-medium text-sm leading-5 focus:outline-none ${
+                activeTab === "settings"
+                  ? "border-b-2 border-blue-500 text-blue-600 dark:text-blue-400"
+                  : "text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+              }`}
+              onClick={() => setActiveTab("settings")}
+            >
+              <div className="flex items-center">
+                <FaInfoCircle className="mr-2" />
+                Settings
+              </div>
+            </button>
+          </nav>
+        </div>
+      </div>
+
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
           <p>{error}</p>
         </div>
-      ) : (
-        <>
-          {/* Tab Content */}
-          {activeTab === "dashboard" && renderDashboard()}
-          {activeTab === "meal-log" && renderMealLog()}
-          {activeTab === "meal-plan" && renderMealPlanGenerator()}
-          {activeTab === "analysis" && renderAnalysis()}
-          {activeTab === "settings" && renderSettings()}
-          
-          {/* Modals */}
-          {renderFoodSearchModal()}
-          {renderAddMealModal()}
-          {renderAddCustomFoodModal()}
-          
-          {/* API Status */}
-          {renderApiStatus()}
-        </>
       )}
+
+      {activeTab === "dashboard" && renderDashboard()}
+      {activeTab === "mealLog" && renderMealLog()}
+      {activeTab === "analysis" && renderAnalysis()}
+      {activeTab === "mealPlan" && renderMealPlanGenerator()}
+      {activeTab === "settings" && renderSettings()} 
+      {activeTab === "chat" && renderChatInterface()}
+
+      {renderFoodSearchModal()}
+      {renderAddMealModal()}
+      {renderAddCustomFoodModal()}
+      {renderApiStatus()}
     </div>
   );
 }

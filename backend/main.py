@@ -827,6 +827,71 @@ def update_notification_preferences(
     }
 
 
+@app.patch("/user/settings")
+def update_user_settings(
+    settings_data: dict = Body(...),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Update user's settings including goal weight and card color"""
+    try:
+        # Get or create user profile
+        user_profile = db.query(UserProfile).filter(UserProfile.user_id == user.id).first()
+        
+        if not user_profile:
+            user_profile = UserProfile(user_id=user.id)
+            db.add(user_profile)
+        
+        # Update fields from request
+        if "goal_weight" in settings_data:
+            if settings_data["goal_weight"] is not None:
+                try:
+                    user_profile.goal_weight = float(settings_data["goal_weight"])
+                except (ValueError, TypeError):
+                    raise HTTPException(status_code=400, detail="Invalid goal weight format")
+            else:
+                user_profile.goal_weight = None
+                
+        if "email_notifications" in settings_data:
+            user_profile.email_notifications = bool(settings_data["email_notifications"])
+            
+        if "card_color" in settings_data:
+            user_profile.card_color = settings_data["card_color"]
+            
+        if "use_custom_card_color" in settings_data:
+            # This might not exist in older model versions, handle with try-except
+            try:
+                user_profile.use_custom_card_color = bool(settings_data["use_custom_card_color"])
+            except Exception:
+                # Field might not exist in database yet
+                pass
+                
+        if "summary_frequency" in settings_data:
+            user_profile.summary_frequency = settings_data["summary_frequency"]
+            
+        if "summary_day" in settings_data:
+            user_profile.summary_day = settings_data["summary_day"]
+        
+        # Commit changes
+        db.commit()
+        db.refresh(user_profile)
+        
+        # Return updated settings
+        return {
+            "goal_weight": user_profile.goal_weight,
+            "email_notifications": user_profile.email_notifications,
+            "card_color": user_profile.card_color,
+            "summary_frequency": user_profile.summary_frequency,
+            "summary_day": user_profile.summary_day,
+            "message": "Settings updated successfully"
+        }
+    except HTTPException as http_exc:
+        raise http_exc
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error updating settings: {str(e)}")
+
+
 @app.post("/change-password")
 def change_password(
     request: ChangePasswordRequest,

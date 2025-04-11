@@ -11,7 +11,7 @@ from datetime import timedelta, datetime, timezone
 import jwt as pyjwt
 from jwt.exceptions import PyJWTError as JWTError
 from database import get_db, SessionLocal
-from models import User, AdminSettings, Set, Exercise, Workout, WorkoutPreferences
+from models import User, AdminSettings, Set, Exercise, Workout, WorkoutPreferences, NutritionMeal, NutritionFood, NutritionGoal, CommonFood
 from schemas import UserCreate, UserLogin, Token, GoogleTokenVerifyRequest, GoogleAuthResponse, ForgotPasswordRequest, ResetPasswordRequest, TokenVerificationRequest, ConfirmAccountDeletionRequest, ResendVerificationRequest, ChangePasswordRequest
 from config import settings
 from security import generate_verification_token, hash_password, verify_password
@@ -138,6 +138,88 @@ def register(user: UserCreate, background_tasks: BackgroundTasks, db: Session = 
     print(f"User created: {new_user.email}, Auto-verified: {admin_settings.auto_verify_users}")
     print(f"Verification required: {admin_settings.require_email_verification}")
 
+    # Create default nutrition meal for the new user
+    try:
+        today = datetime.now().strftime("%Y-%m-%d")
+        
+        # Create a breakfast meal
+        default_meal = NutritionMeal(
+            name="Breakfast",
+            date=today,
+            time="08:00",
+            user_id=new_user.id
+        )
+        db.add(default_meal)
+        db.flush()  # Get the meal ID without committing
+        
+        # Get some common breakfast foods from the database
+        common_foods = db.query(CommonFood).limit(3).all()
+        
+        # If we have foods in the database, add them to the meal
+        if common_foods:
+            for food in common_foods:
+                meal_food = NutritionFood(
+                    meal_id=default_meal.id,
+                    name=food.name,
+                    calories=food.calories,
+                    protein=food.protein,
+                    carbs=food.carbs,
+                    fat=food.fat,
+                    serving_size=food.serving_size,
+                    quantity=1.0
+                )
+                db.add(meal_food)
+        else:
+            # If no foods in database, add some default ones
+            default_foods = [
+                {
+                    "name": "Oatmeal", 
+                    "calories": 150, 
+                    "protein": 5, 
+                    "carbs": 27, 
+                    "fat": 2.5, 
+                    "serving_size": "1 cup"
+                },
+                {
+                    "name": "Banana", 
+                    "calories": 105, 
+                    "protein": 1.3, 
+                    "carbs": 27, 
+                    "fat": 0.4, 
+                    "serving_size": "1 medium"
+                }
+            ]
+            
+            for food_data in default_foods:
+                meal_food = NutritionFood(
+                    meal_id=default_meal.id,
+                    name=food_data["name"],
+                    calories=food_data["calories"],
+                    protein=food_data["protein"],
+                    carbs=food_data["carbs"],
+                    fat=food_data["fat"],
+                    serving_size=food_data["serving_size"],
+                    quantity=1.0
+                )
+                db.add(meal_food)
+        
+        # Create default nutrition goals
+        default_goals = NutritionGoal(
+            user_id=new_user.id,
+            calories=2000,
+            protein=150,
+            carbs=200,
+            fat=65
+        )
+        db.add(default_goals)
+        
+        db.commit()
+        print(f"Created default meal and nutrition goals for new user: {new_user.email}")
+    except Exception as e:
+        print(f"Error creating default meal for new user: {str(e)}")
+        # Don't fail registration if meal creation fails
+        pass
+
     # Only send verification email if auto-verification is disabled
     if not admin_settings.auto_verify_users:
         verification_url = f"{settings.FRONTEND_URL}/verify-email?token={token}"
@@ -251,6 +333,88 @@ async def google_callback(code: str, background_tasks: BackgroundTasks, db: Sess
             db.commit()
             db.refresh(new_user)
 
+            # Create default nutrition meal for the new user
+            try:
+                today = datetime.now().strftime("%Y-%m-%d")
+                
+                # Create a breakfast meal
+                default_meal = NutritionMeal(
+                    name="Breakfast",
+                    date=today,
+                    time="08:00",
+                    user_id=new_user.id
+                )
+                db.add(default_meal)
+                db.flush()  # Get the meal ID without committing
+                
+                # Get some common breakfast foods from the database
+                common_foods = db.query(CommonFood).limit(3).all()
+                
+                # If we have foods in the database, add them to the meal
+                if common_foods:
+                    for food in common_foods:
+                        meal_food = NutritionFood(
+                            meal_id=default_meal.id,
+                            name=food.name,
+                            calories=food.calories,
+                            protein=food.protein,
+                            carbs=food.carbs,
+                            fat=food.fat,
+                            serving_size=food.serving_size,
+                            quantity=1.0
+                        )
+                        db.add(meal_food)
+                else:
+                    # If no foods in database, add some default ones
+                    default_foods = [
+                        {
+                            "name": "Oatmeal", 
+                            "calories": 150, 
+                            "protein": 5, 
+                            "carbs": 27, 
+                            "fat": 2.5, 
+                            "serving_size": "1 cup"
+                        },
+                        {
+                            "name": "Banana", 
+                            "calories": 105, 
+                            "protein": 1.3, 
+                            "carbs": 27, 
+                            "fat": 0.4, 
+                            "serving_size": "1 medium"
+                        }
+                    ]
+                    
+                    for food_data in default_foods:
+                        meal_food = NutritionFood(
+                            meal_id=default_meal.id,
+                            name=food_data["name"],
+                            calories=food_data["calories"],
+                            protein=food_data["protein"],
+                            carbs=food_data["carbs"],
+                            fat=food_data["fat"],
+                            serving_size=food_data["serving_size"],
+                            quantity=1.0
+                        )
+                        db.add(meal_food)
+                
+                # Create default nutrition goals
+                default_goals = NutritionGoal(
+                    user_id=new_user.id,
+                    calories=2000,
+                    protein=150,
+                    carbs=200,
+                    fat=65
+                )
+                db.add(default_goals)
+                
+                db.commit()
+                print(f"Created default meal and nutrition goals for new Google user: {new_user.email}")
+            except Exception as e:
+                print(f"Error creating default meal for new Google user: {str(e)}")
+                # Don't fail registration if meal creation fails
+                pass
+
             # Notify admin about new Google user registration
             background_tasks.add_task(
                 notify_admin_new_registration,
@@ -337,6 +501,88 @@ async def verify_google_token(
             db.add(user)
             db.commit()
             db.refresh(user)
+
+            # Create default nutrition meal for the new user
+            try:
+                today = datetime.now().strftime("%Y-%m-%d")
+                
+                # Create a breakfast meal
+                default_meal = NutritionMeal(
+                    name="Breakfast",
+                    date=today,
+                    time="08:00",
+                    user_id=user.id
+                )
+                db.add(default_meal)
+                db.flush()  # Get the meal ID without committing
+                
+                # Get some common breakfast foods from the database
+                common_foods = db.query(CommonFood).limit(3).all()
+                
+                # If we have foods in the database, add them to the meal
+                if common_foods:
+                    for food in common_foods:
+                        meal_food = NutritionFood(
+                            meal_id=default_meal.id,
+                            name=food.name,
+                            calories=food.calories,
+                            protein=food.protein,
+                            carbs=food.carbs,
+                            fat=food.fat,
+                            serving_size=food.serving_size,
+                            quantity=1.0
+                        )
+                        db.add(meal_food)
+                else:
+                    # If no foods in database, add some default ones
+                    default_foods = [
+                        {
+                            "name": "Oatmeal", 
+                            "calories": 150, 
+                            "protein": 5, 
+                            "carbs": 27, 
+                            "fat": 2.5, 
+                            "serving_size": "1 cup"
+                        },
+                        {
+                            "name": "Banana", 
+                            "calories": 105, 
+                            "protein": 1.3, 
+                            "carbs": 27, 
+                            "fat": 0.4, 
+                            "serving_size": "1 medium"
+                        }
+                    ]
+                    
+                    for food_data in default_foods:
+                        meal_food = NutritionFood(
+                            meal_id=default_meal.id,
+                            name=food_data["name"],
+                            calories=food_data["calories"],
+                            protein=food_data["protein"],
+                            carbs=food_data["carbs"],
+                            fat=food_data["fat"],
+                            serving_size=food_data["serving_size"],
+                            quantity=1.0
+                        )
+                        db.add(meal_food)
+                
+                # Create default nutrition goals
+                default_goals = NutritionGoal(
+                    user_id=user.id,
+                    calories=2000,
+                    protein=150,
+                    carbs=200,
+                    fat=65
+                )
+                db.add(default_goals)
+                
+                db.commit()
+                print(f"Created default meal and nutrition goals for new Google user: {user.email}")
+            except Exception as e:
+                print(f"Error creating default meal for new Google user: {str(e)}")
+                # Don't fail registration if meal creation fails
+                pass
 
             # Notify admin about new Google user registration
             background_tasks.add_task(

@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Float, Boolean, JSON
 from sqlalchemy.orm import relationship
-from sqlalchemy.dialects.postgresql import JSON
+from sqlalchemy.dialects.postgresql import JSON as PGJSON
 from sqlalchemy.ext.declarative import declarative_base
 from database import Base
 from datetime import datetime, timezone
@@ -74,6 +74,7 @@ class UserProfile(Base):
     summary_frequency = Column(String, nullable=True)
     summary_day = Column(String, nullable=True)
     card_color = Column(String, default="#dbeafe")
+    use_custom_card_color = Column(Boolean, default=False)
     workout_templates_unlocked = Column(Boolean, default=False)
     stats_features_unlocked = Column(Boolean, default=False)
     achievement_alerts = Column(Boolean, default=True)
@@ -88,6 +89,7 @@ class UserProfile(Base):
     current_streak = Column(Integer, default=0)
     best_streak = Column(Integer, default=0)
     last_workout_date = Column(DateTime, nullable=True)
+    frequency_goal = Column(Integer, nullable=True)  # For workout frequency goal
 
     user = relationship("User", back_populates="profile")
 

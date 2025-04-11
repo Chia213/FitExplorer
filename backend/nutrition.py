@@ -4,15 +4,20 @@ from typing import List, Optional
 from datetime import datetime, timedelta, timezone
 from database import get_db
 from dependencies import get_current_user
-from models import User, NutritionMeal, NutritionFood, NutritionGoal, CommonFood, Workout, Exercise
+from models import User, NutritionMeal, NutritionFood, NutritionGoal, CommonFood, Workout, Exercise, SavedWorkoutProgram
 from pydantic import BaseModel
 import requests
 import os
 from dotenv import load_dotenv
 from sqlalchemy import or_, desc, func, String
 import random
+import json
 
 load_dotenv()
+
+# Get Hugging Face API token and model name from environment variables
+HUGGINGFACE_API_TOKEN = os.getenv("HUGGINGFACE_API_TOKEN")
+AI_MODEL = os.getenv("AI_MODEL", "meta-llama/Llama-2-7b-chat-hf")
 
 router = APIRouter(prefix="/nutrition", tags=["nutrition"])
 
@@ -66,6 +71,12 @@ class MealPlanResponse(BaseModel):
     date: str
     totalNutrition: dict
     meals: List[dict]
+
+class NutritionChatRequest(BaseModel):
+    question: str
+
+class NutritionChatResponse(BaseModel):
+    answer: str
 
 # Routes
 @router.get("/meals")
@@ -540,6 +551,72 @@ def generate_meal_plan(
         print(f"\n==== MEAL PLAN GENERATION ====")
         print(f"Generating meal plan for user_id: {current_user.id} with preferences: {preferences.dict()}")
         
+        # Check for active workout programs
+        active_programs = db.query(SavedWorkoutProgram).filter(
+            SavedWorkoutProgram.user_id == current_user.id
+        ).all()
+        
+        # Also check for recent workouts as an alternative
+        recent_workouts = db.query(Workout).filter(
+            Workout.user_id == current_user.id,
+            Workout.is_template == False,
+            func.cast(Workout.date, String) >= (datetime.now(timezone.utc) - timedelta(days=7)).strftime('%Y-%m-%d')
+        ).all()
+        
+        if not active_programs and not recent_workouts:
+            raise HTTPException(
+                status_code=400,
+                detail="No active workout programs or recent workouts found. Please create a workout program or log workouts first to generate a nutrition plan tailored to your needs."
+            )
+        
+        # If we have workout data, proceed with meal plan generation
+        program_type = None
+        workout_focus = []
+        
+        # Analyze workout program to determine nutrition needs
+        if active_programs:
+            for program in active_programs:
+                # Extract program data to determine focus
+                try:
+                    if program.category:
+                        program_type = program.category.lower()
+                    
+                    # Get workout details from program_data if available
+                    if program.program_data:
+                        if isinstance(program.program_data, str):
+                            # Parse if stored as JSON string
+                            try:
+                                program_data = json.loads(program.program_data)
+                            except:
+                                program_data = {}
+                        else:
+                            # Already a dict
+                            program_data = program.program_data
+                        
+                        # Extract workout focus from days
+                        if 'days' in program_data:
+                            for day in program_data['days']:
+                                if 'focus' in day and day['focus']:
+                                    workout_focus.append(day['focus'].lower())
+                except Exception as e:
+                    print(f"Error analyzing program data: {str(e)}")
+        
+        # Analyze recent workouts if we have them
+        if recent_workouts:
+            for workout in recent_workouts:
+                if workout.name:
+                    parts = workout.name.lower().split()
+                    for part in parts:
+                        # Look for common muscle group keywords
+                        for keyword in ["chest", "back", "legs", "arms", "shoulders", "core", "cardio"]:
+                            if keyword in part:
+                                workout_focus.append(keyword)
+        
+        # Remove duplicates from workout focus
+        workout_focus = list(set(workout_focus))
+        
+        print(f"Workout analysis - Program type: {program_type}, Focus areas: {workout_focus}")
+        
         original_calories = preferences.calories
         original_protein = preferences.protein
         
@@ -611,21 +688,39 @@ def generate_meal_plan(
                 if cardio_duration > 0:
                     calorie_adjustment += min(cardio_duration * 5, 300)  # 5 calories per minute of cardio, capped
                 
+                # Further adjust based on program type if available
+                if program_type:
+                    if program_type in ["strength", "hypertrophy", "powerlifting"]:
+                        protein_adjustment += 15  # More protein for strength goals
+                        calorie_adjustment += 100  # More calories for muscle building
+                    elif program_type in ["endurance", "cardio", "hiit"]:
+                        calorie_adjustment += 150  # Higher calories for endurance
+                        # Adjust carb ratio later
+                    elif program_type in ["weight_loss", "fat_loss", "cutting"]:
+                        calorie_adjustment = max(0, calorie_adjustment - 200)  # Lower calories for weight loss
+                
                 preferences.calories = original_calories + int(calorie_adjustment)
                 preferences.protein = original_protein + int(protein_adjustment)
                 
                 print(f"Workout-adjusted nutrition: +{int(calorie_adjustment)} calories, +{int(protein_adjustment)}g protein")
                 print(f"Adjusted targets: {preferences.calories} calories, {preferences.protein}g protein")
                 
-                # Slightly adjust macros distribution for workout recovery
-                if strength_workout_count > cardio_workout_count:
-                    # Prioritize protein and carbs for strength recovery
-                    carb_percent = 0.45  # Higher carbs for glycogen replenishment
+                # Adjust macros distribution based on program type and workout focus
+                carb_percent = 0.40
+                fat_percent = 0.30
+                
+                if program_type in ["strength", "hypertrophy", "powerlifting"] or any(focus in ["chest", "back", "legs", "arms", "shoulders"] for focus in workout_focus):
+                    # Higher protein and carbs for strength/hypertrophy
+                    carb_percent = 0.45
                     fat_percent = 0.25
-                else:
-                    # More balanced for cardio or mixed training
-                    carb_percent = 0.40
-                    fat_percent = 0.30
+                elif program_type in ["endurance", "cardio", "hiit"] or any(focus in ["cardio", "endurance"] for focus in workout_focus):
+                    # Higher carbs for endurance/cardio
+                    carb_percent = 0.50
+                    fat_percent = 0.20
+                elif program_type in ["weight_loss", "fat_loss", "cutting"]:
+                    # Higher protein, moderate fat, lower carb for weight loss
+                    carb_percent = 0.35
+                    fat_percent = 0.35
                 
                 # Recalculate carbs and fat based on the adjusted calories and protein
                 protein_calories = preferences.protein * 4
@@ -1001,4 +1096,225 @@ def generate_meal_plan(
         print(f"Error generating meal plan: {str(e)}")
         import traceback
         print(traceback.format_exc())
-        raise HTTPException(status_code=500, detail=f"Error generating meal plan: {str(e)}") 
+        raise HTTPException(status_code=500, detail=f"Error generating meal plan: {str(e)}")
+
+def generate_nutrition_response_with_huggingface(prompt: str) -> str:
+    """
+    Generate nutrition advice using Hugging Face's API with the specified model.
+    """
+    if not HUGGINGFACE_API_TOKEN:
+        print("ERROR: Hugging Face API token not configured")
+        raise HTTPException(status_code=500, detail="Hugging Face API token not configured")
+    
+    api_url = f"https://api-inference.huggingface.co/models/{AI_MODEL}"
+    
+    headers = {
+        "Authorization": f"Bearer {HUGGINGFACE_API_TOKEN}",
+        "Content-Type": "application/json"
+    }
+    
+    payload = {
+        "inputs": prompt,
+        "parameters": {
+            "max_new_tokens": 1024,
+            "temperature": 0.7,
+            "top_p": 0.9,
+            "do_sample": True
+        }
+    }
+    
+    try:
+        print(f"Calling Hugging Face API for model: {AI_MODEL}")
+        response = requests.post(api_url, headers=headers, json=payload, timeout=30)
+        
+        # Check for specific error conditions
+        if response.status_code == 401:
+            print("ERROR: Unauthorized request to Hugging Face API. Check your API token.")
+            raise HTTPException(status_code=500, detail="Authentication error with Hugging Face API")
+        
+        if response.status_code == 503:
+            print("ERROR: Hugging Face model is currently loading or unavailable")
+            # This is often a temporary condition when the model is warming up
+            raise HTTPException(status_code=500, detail="Model is loading or unavailable. Please try again in a few moments.")
+            
+        # Force the response to raise an HTTPError for bad status codes
+        response.raise_for_status()
+        
+        # Parse response based on the format returned by the model
+        result = response.json()
+        print(f"Received response from Hugging Face API: {result}")
+        
+        if isinstance(result, list) and len(result) > 0:
+            if "generated_text" in result[0]:
+                return result[0]["generated_text"]
+            elif "error" in result[0]:
+                print(f"ERROR: API error from Hugging Face: {result[0]['error']}")
+                raise HTTPException(status_code=500, detail=f"Error from Hugging Face API: {result[0]['error']}")
+            else:
+                return str(result[0])
+        elif isinstance(result, dict):
+            if "generated_text" in result:
+                return result["generated_text"]
+            elif "error" in result:
+                print(f"ERROR: API error from Hugging Face: {result['error']}")
+                raise HTTPException(status_code=500, detail=f"Error from Hugging Face API: {result['error']}")
+            else:
+                return str(result)
+        else:
+            return str(result)
+            
+    except requests.exceptions.Timeout:
+        print("ERROR: Timeout when calling Hugging Face API")
+        raise HTTPException(status_code=500, detail="Request to Hugging Face API timed out. The model may be under heavy load.")
+        
+    except requests.exceptions.ConnectionError:
+        print("ERROR: Connection error when calling Hugging Face API")
+        raise HTTPException(status_code=500, detail="Connection error when calling Hugging Face API. Please check your internet connection.")
+        
+    except requests.exceptions.RequestException as e:
+        print(f"ERROR: Exception when calling Hugging Face API: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error calling Hugging Face API: {str(e)}")
+        
+    except Exception as e:
+        print(f"ERROR: Unexpected exception: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
+
+@router.post("/chat", response_model=NutritionChatResponse)
+async def nutrition_chat(
+    request: NutritionChatRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Chat with AI about nutrition and get personalized advice based on your workouts and nutrition history.
+    """
+    try:
+        print(f"\n==== NUTRITION CHAT REQUEST ====")
+        print(f"User {current_user.id} ({current_user.username}) asked: {request.question}")
+        
+        # Gather context about the user's workouts and nutrition
+        
+        # 1. Get recent meals and nutrition stats
+        today = datetime.now().strftime("%Y-%m-%d")
+        week_ago = (datetime.now() - timedelta(days=7)).strftime("%Y-%m-%d")
+        
+        recent_meals = db.query(NutritionMeal).filter(
+            NutritionMeal.user_id == current_user.id,
+            NutritionMeal.date >= week_ago
+        ).all()
+        
+        nutrition_goal = db.query(NutritionGoal).filter(
+            NutritionGoal.user_id == current_user.id
+        ).first()
+        
+        # 2. Get active workout programs
+        active_programs = db.query(SavedWorkoutProgram).filter(
+            SavedWorkoutProgram.user_id == current_user.id
+        ).all()
+        
+        # 3. Get recent workouts
+        recent_workouts = db.query(Workout).filter(
+            Workout.user_id == current_user.id,
+            Workout.is_template == False,
+            func.cast(Workout.date, String) >= week_ago
+        ).all()
+        
+        # Build context for the AI
+        context = "User profile and fitness data:\n"
+        
+        # Add nutrition goals if available
+        if nutrition_goal:
+            context += f"Nutrition goals: {nutrition_goal.calories} calories, {nutrition_goal.protein}g protein, "
+            context += f"{nutrition_goal.carbs}g carbs, {nutrition_goal.fat}g fat\n"
+        else:
+            context += "No nutrition goals set\n"
+        
+        # Add recent meal summary
+        if recent_meals:
+            total_cals = 0
+            total_protein = 0
+            total_carbs = 0
+            total_fat = 0
+            meal_count = 0
+            
+            for meal in recent_meals:
+                foods = db.query(NutritionFood).filter(NutritionFood.meal_id == meal.id).all()
+                for food in foods:
+                    total_cals += food.calories * (food.quantity or 1)
+                    total_protein += food.protein * (food.quantity or 1)
+                    total_carbs += food.carbs * (food.quantity or 1)
+                    total_fat += food.fat * (food.quantity or 1)
+                meal_count += 1
+            
+            if meal_count > 0:
+                avg_cals = total_cals / meal_count
+                avg_protein = total_protein / meal_count
+                avg_carbs = total_carbs / meal_count
+                avg_fat = total_fat / meal_count
+                
+                context += f"Average daily nutrition (past week): {avg_cals:.0f} calories, "
+                context += f"{avg_protein:.0f}g protein, {avg_carbs:.0f}g carbs, {avg_fat:.0f}g fat\n"
+        else:
+            context += "No recent meal data\n"
+        
+        # Add workout program info
+        program_types = []
+        if active_programs:
+            for program in active_programs:
+                if program.category:
+                    program_types.append(program.category)
+            
+            context += f"Active workout programs: {', '.join(program_types)}\n"
+        else:
+            context += "No active workout programs\n"
+        
+        # Add recent workout info
+        if recent_workouts:
+            workout_names = [w.name for w in recent_workouts if w.name]
+            context += f"Recent workouts: {', '.join(workout_names[:5])}\n"
+            context += f"Workout frequency: {len(recent_workouts)} workouts in the past week\n"
+        else:
+            context += "No recent workouts\n"
+        
+        # Add user profile info if available
+        if current_user.height or current_user.weight:
+            profile_info = "User profile: "
+            if current_user.height:
+                profile_info += f"Height: {current_user.height}cm, "
+            if current_user.weight:
+                profile_info += f"Weight: {current_user.weight}kg, "
+            if current_user.gender:
+                profile_info += f"Gender: {current_user.gender}, "
+            if current_user.age:
+                profile_info += f"Age: {current_user.age}, "
+            
+            context += profile_info.rstrip(", ") + "\n"
+        
+        # Format the complete prompt
+        prompt = f"""You are a professional nutrition coach and dietitian. Answer the user's nutrition question based on their profile and fitness data.
+
+{context}
+
+User question: {request.question}
+
+Provide a helpful, accurate and personalized response based on the user's data and scientific nutritional principles. If the user is asking about specific meal plans, consider their workout goals and current nutrition.
+"""
+        
+        print("Generating nutrition advice with AI...")
+        response_text = generate_nutrition_response_with_huggingface(prompt)
+        
+        # Clean up the response if needed
+        if "User question:" in response_text:
+            # If the model repeats the prompt, extract just the answer
+            response_text = response_text.split("User question:")[1]
+            response_text = response_text.split(request.question)[1].strip()
+        
+        print(f"AI response generated. Length: {len(response_text)}")
+        
+        return {"answer": response_text}
+        
+    except Exception as e:
+        print(f"Error in nutrition chat: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error generating nutrition advice: {str(e)}") 
