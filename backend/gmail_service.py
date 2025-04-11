@@ -187,4 +187,82 @@ async def notify_admin_new_registration(user_id: int, email: str, username: str)
         return True
     except Exception as e:
         print(f"Error sending admin notification email: {str(e)}")
+        return False
+
+async def notify_admin_account_verified(user_id: int, email: str, username: str):
+    """Notify admin when a user verifies their account"""
+    try:
+        service = get_gmail_service()
+        subject = "Account Verified - FitExplorer"
+        message_text = f"""
+        <html>
+          <body>
+            <h1>User Account Verified</h1>
+            <p>A user has verified their email address on FitExplorer:</p>
+            <ul>
+              <li>User ID: {user_id}</li>
+              <li>Username: {username}</li>
+              <li>Email: {email}</li>
+              <li>Verification Time: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}</li>
+            </ul>
+          </body>
+        </html>
+        """
+        message = create_message(settings.GMAIL_FROM_EMAIL, settings.DEFAULT_ADMIN_EMAIL, subject, message_text)
+        service.users().messages().send(userId='me', body=message).execute()
+        return True
+    except Exception as e:
+        print(f"Error sending admin notification email: {str(e)}")
+        return False
+
+async def notify_admin_password_changed(user_id: int, email: str, username: str):
+    """Notify admin when a user changes their password"""
+    try:
+        service = get_gmail_service()
+        subject = "Password Changed - FitExplorer"
+        message_text = f"""
+        <html>
+          <body>
+            <h1>User Password Changed</h1>
+            <p>A user has changed their password on FitExplorer:</p>
+            <ul>
+              <li>User ID: {user_id}</li>
+              <li>Username: {username}</li>
+              <li>Email: {email}</li>
+              <li>Time: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}</li>
+            </ul>
+          </body>
+        </html>
+        """
+        message = create_message(settings.GMAIL_FROM_EMAIL, settings.DEFAULT_ADMIN_EMAIL, subject, message_text)
+        service.users().messages().send(userId='me', body=message).execute()
+        return True
+    except Exception as e:
+        print(f"Error sending admin notification email: {str(e)}")
+        return False
+
+async def notify_admin_account_deletion(user_id: int, email: str, username: str):
+    """Notify admin when a user deletes their account"""
+    try:
+        service = get_gmail_service()
+        subject = "Account Deleted - FitExplorer"
+        message_text = f"""
+        <html>
+          <body>
+            <h1>User Account Deleted</h1>
+            <p>A user has deleted their account from FitExplorer:</p>
+            <ul>
+              <li>User ID: {user_id}</li>
+              <li>Username: {username}</li>
+              <li>Email: {email}</li>
+              <li>Deletion Time: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}</li>
+            </ul>
+          </body>
+        </html>
+        """
+        message = create_message(settings.GMAIL_FROM_EMAIL, settings.DEFAULT_ADMIN_EMAIL, subject, message_text)
+        service.users().messages().send(userId='me', body=message).execute()
+        return True
+    except Exception as e:
+        print(f"Error sending admin notification email: {str(e)}")
         return False 

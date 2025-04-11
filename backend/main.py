@@ -1,5 +1,4 @@
-from security import hash_password, verify_password, generate_verification_token
-from config import settings
+from security import hash_password, verify_password
 from notifications import router as notifications_router
 from security import create_access_token
 from schemas import (
@@ -11,7 +10,6 @@ from schemas import (
     ChangePasswordRequest,
     RoutineCreate,
     RoutineResponse,
-    SavedWorkoutProgramCreate,
     SavedWorkoutProgramResponse,
     RoutineFolderCreate,
     RoutineFolderResponse,
@@ -28,37 +26,44 @@ from schemas import (
     Achievement as AchievementSchema,
     UserAchievementResponse,
     WorkoutTemplateCreate,
-    WorkoutTemplateResponse
+    WorkoutTemplateResponse,
+    BadgeSelectionRequest
 )
 from models import (
-    Workout, User, Exercise, Set, Routine, CustomExercise, SavedWorkoutProgram, RoutineFolder, WorkoutPreferences, 
-    Notification, Achievement, UserAchievement, AdminSettings, NutritionMeal, NutritionGoal, UserProfile, CommonFood,
-    WorkoutTemplate, UserUnlockedTemplates
+    User, UserProfile, Workout, Exercise, Set, 
+    CustomExercise, Routine, RoutineFolder, 
+    SavedWorkoutProgram, Notification, WorkoutPreferences,
+    Achievement, UserAchievement, NutritionMeal, 
+    NutritionFood, NutritionGoal, CommonFood, 
+    WorkoutTemplate, UserUnlockedTemplates, UserReward
 )
 from typing import List, Dict, Any, Optional
 from admin import router as admin_router
 from dependencies import get_current_user, get_admin_user
 from auth import router as auth_router
+print("Auth router initialized with session validation endpoints")
 from datetime import datetime, timezone, timedelta
 from database import engine, Base, get_db, SessionLocal
-from sqlalchemy import func, desc, extract
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import func, desc, extract, asc, text, distinct, or_, and_, inspect
+from sqlalchemy.orm import Session, joinedload, contains_eager, aliased
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import uuid
 import os
 from fastapi import FastAPI, Depends, HTTPException, File, UploadFile, BackgroundTasks, Body, Query, Request, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 from background_task import send_summary_emails
 from email_service import (send_summary_email, send_security_alert, send_verification_email, send_password_reset_email,
-                           send_password_changed_email, send_account_deletion_email, notify_admin_new_registration)
+                           send_password_changed_email, send_account_deletion_email, notify_admin_new_registration,
+                           notify_admin_password_changed)
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 import jwt as pyjwt
 from passlib.context import CryptContext
 from nutrition import router as nutrition_router
 from ai_workout import router as ai_workout_router
-from sqlalchemy.sql import text
+from sqlalchemy.sql import text as sql_text
+from sqlalchemy.exc import IntegrityError
 
 
 Base.metadata.create_all(bind=engine)
@@ -71,15 +76,7 @@ app = FastAPI()
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173", 
-        "http://127.0.0.1:5173",
-        "http://localhost:8000",
-        "http://127.0.0.1:8000",
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "https://accounts.google.com"
-    ],  # Include both localhost variations and Google's domain
+    allow_origins=["*"],  # Allow all origins for development - change to specific domains in production
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
@@ -408,7 +405,6 @@ def delete_workout(
 
         # Finally delete the workout
         db.query(Workout).filter(Workout.id == workout_id).delete()
-
         db.commit()
         return {"message": "Workout deleted successfully"}
 
@@ -449,7 +445,6 @@ async def delete_all_workouts(
 
         # Finally delete all workouts
         db.query(Workout).filter(Workout.user_id == user.id).delete(synchronize_session=False)
-        
         db.commit()
         return {"message": f"All workouts deleted successfully. {workout_count} workout(s) removed."}
 
@@ -497,7 +492,6 @@ async def delete_selected_workouts(
         deleted_count = db.query(Workout).filter(
             Workout.id.in_(workout_ids), Workout.user_id == user.id
         ).delete(synchronize_session=False)
-        
         db.commit()
         return {"message": f"Successfully deleted {deleted_count} workout(s)"}
 
@@ -573,7 +567,6 @@ def update_profile(
         # Update user fields
         for field, value in profile_data.dict(exclude_unset=True).items():
             setattr(user, field, value)
-
         db.commit()
         db.refresh(user)
 
@@ -625,8 +618,7 @@ def update_notification_preferences(
 
     for key, value in updated_prefs.items():
         setattr(user_preferences, key, value)
-
-    db.commit()
+        db.commit()
     db.refresh(user_preferences)
 
     return {
@@ -651,6 +643,14 @@ def change_password(
     db.commit()
 
     background_tasks.add_task(send_security_alert, user.email)
+    
+    # Notify admin about password change
+    background_tasks.add_task(
+        notify_admin_password_changed,
+        user.id,
+        user.email,
+        user.username
+    )
 
     return {"message": "Password changed successfully"}
 
@@ -703,65 +703,77 @@ def get_workout_stats(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    total_workouts = db.query(Workout).filter(
-        Workout.user_id == user.id).count()
+    try:
+        total_workouts = db.query(Workout).filter(
+            Workout.user_id == user.id).count()
 
-    favorite_exercise_query = db.query(Exercise.name, func.count(Exercise.id))\
-        .join(Workout)\
-        .filter(Workout.user_id == user.id)\
-        .group_by(Exercise.name)\
-        .order_by(func.count(Exercise.id).desc())\
-        .first()
+        favorite_exercise_query = db.query(Exercise.name, func.count(Exercise.id))\
+            .join(Workout)\
+            .filter(Workout.user_id == user.id)\
+            .group_by(Exercise.name)\
+            .order_by(func.count(Exercise.id).desc())\
+            .first()
 
-    favorite_exercise = favorite_exercise_query[0] if favorite_exercise_query else None
+        favorite_exercise = favorite_exercise_query[0] if favorite_exercise_query else None
 
-    last_workout = db.query(Workout)\
-        .filter(Workout.user_id == user.id)\
-        .order_by(desc(Workout.date))\
-        .first()
+        last_workout = db.query(Workout)\
+            .filter(Workout.user_id == user.id)\
+            .order_by(desc(Workout.date))\
+            .first()
 
-    # Calculate total duration from cardio exercises
-    cardio_duration = db.query(func.sum(func.coalesce(Set.duration, 0)))\
-        .join(Exercise)\
-        .join(Workout)\
-        .filter(Workout.user_id == user.id, Exercise.is_cardio == True)\
-        .scalar() or 0
+        # Calculate total duration from cardio exercises
+        cardio_duration = db.query(func.sum(func.coalesce(Set.duration, 0)))\
+            .join(Exercise)\
+            .join(Workout)\
+            .filter(Workout.user_id == user.id, Exercise.is_cardio == True)\
+            .scalar() or 0
+            
+        # Convert to float if it's a Decimal
+        cardio_duration = float(cardio_duration) if cardio_duration else 0
 
-    # Calculate total duration from workout start/end times
-    workout_duration = db.query(
-        func.sum(
-            func.extract('epoch', Workout.end_time) - 
-            func.extract('epoch', Workout.start_time)
-        ) / 60  # Convert seconds to minutes
-    ).filter(
-        Workout.user_id == user.id,
-        Workout.start_time.isnot(None),
-        Workout.end_time.isnot(None)
-    ).scalar() or 0
+        # Calculate total duration from workout start/end times
+        workout_duration = db.query(
+            func.sum(
+                func.extract('epoch', Workout.end_time) - 
+                func.extract('epoch', Workout.start_time)
+            ) / 60  # Convert seconds to minutes
+        ).filter(
+            Workout.user_id == user.id,
+            Workout.start_time.isnot(None),
+            Workout.end_time.isnot(None)
+        ).scalar() or 0
+        
+        # Convert to float if it's a Decimal
+        workout_duration = float(workout_duration) if workout_duration else 0
 
-    # Total duration is the sum of both
-    total_duration = cardio_duration + workout_duration
+        # Total duration is the sum of both (now both are floats)
+        total_duration = cardio_duration + workout_duration
 
-    weight_progression = db.query(Workout.date, Workout.bodyweight)\
-        .filter(Workout.user_id == user.id, Workout.bodyweight.isnot(None))\
-        .order_by(desc(Workout.date))\
-        .limit(5)\
-        .all()
+        weight_progression = db.query(Workout.date, Workout.bodyweight)\
+            .filter(Workout.user_id == user.id, Workout.bodyweight.isnot(None))\
+            .order_by(desc(Workout.date))\
+            .limit(5)\
+            .all()
 
-    weight_progression_data = [
-        {
-            "date": Workout.date,
-            "bodyweight": Workout.bodyweight
-        } for Workout in weight_progression
-    ]
+        weight_progression_data = [
+            {
+                "date": workout.date,
+                "bodyweight": float(workout.bodyweight) if workout.bodyweight else None
+            } for workout in weight_progression
+        ]
 
-    return WorkoutStatsResponse(
-        total_workouts=total_workouts,
-        favorite_exercise=favorite_exercise,
-        last_workout=last_workout.date if last_workout else None,
-        total_cardio_duration=round(total_duration, 2),  # Use total_duration instead of just cardio_duration
-        weight_progression=weight_progression_data
-    )
+        return WorkoutStatsResponse(
+            total_workouts=total_workouts,
+            favorite_exercise=favorite_exercise,
+            last_workout=last_workout.date if last_workout else None,
+            total_cardio_duration=round(total_duration, 2),  # Use total_duration instead of just cardio_duration
+            weight_progression=weight_progression_data
+        )
+    except Exception as e:
+        print(f"Error in get_workout_stats: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error fetching workout stats: {str(e)}")
 
 
 @app.get("/progress/strength")
@@ -1050,7 +1062,6 @@ def create_routine(
                             is_giant=False
                         )
                     db.add(new_set)
-
         db.commit()
         db.refresh(new_routine)
 
@@ -1296,8 +1307,7 @@ def update_routine(
                         is_giant=False
                     )
                 db.add(new_set)
-
-    db.commit()
+        db.commit()
     db.refresh(routine)
 
     return routine
@@ -1344,7 +1354,6 @@ def delete_all_routines(
         db.query(Routine).filter(
             Routine.user_id == user.id
         ).delete(synchronize_session=False)
-        
         db.commit()
         
         return {"message": f"Successfully deleted {count} routines"}
@@ -1591,7 +1600,6 @@ async def update_saved_program(
                     print(f"Error parsing program_data string: {e}")
             
             program.program_data = program_data
-        
         db.commit()
         
         return {"message": "Program updated successfully", "id": program.id}
@@ -1751,9 +1759,10 @@ def get_user_achievements(
             
         return result
     except Exception as e:
-        print(f"Error fetching achievements: {str(e)}")
-        import traceback
-        traceback.print_exc()
+        # Only print the traceback for unexpected errors
+        if not isinstance(e, HTTPException):
+            import traceback
+            traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Error fetching achievements: {str(e)}")
 
 
@@ -1789,9 +1798,11 @@ async def check_achievements(
                 user_achievement = UserAchievement(
                     user_id=user.id,
                     achievement_id=achievement.id,
-                    progress=0
+                    progress=0,
+                    achieved_at=None
                 )
                 db.add(user_achievement)
+                db.flush()  # Ensure the object gets an ID
             else:
                 was_achieved = user_achievement.achieved_at is not None
             
@@ -1802,11 +1813,11 @@ async def check_achievements(
                     user.height is not None,
                     user.weight is not None,
                     user.age is not None,
-                    user.gender is not None,
-                    user.fitness_goals is not None,
-                    user.bio is not None
+                    user.gender is not None and user.gender.strip() != "",
+                    user.fitness_goals is not None and user.fitness_goals.strip() != "",
+                    user.bio is not None and user.bio.strip() != ""
                 ]
-                progress = sum(profile_fields)
+                progress = sum(1 for field in profile_fields if field)
                 is_achieved = progress >= achievement.requirement
             
             elif achievement.category == "workout":
@@ -1829,6 +1840,22 @@ async def check_achievements(
                 progress = unique_exercises
                 is_achieved = progress >= achievement.requirement
             
+            elif achievement.category == "streak":
+                # Get the user's current streak from the streak endpoint
+                current_streak = 0
+                try:
+                    streak_data = db.query(UserProfile).filter(
+                        UserProfile.user_id == user.id
+                ).first()
+                    if streak_data and streak_data.current_streak:
+                        current_streak = streak_data.current_streak
+                except Exception:
+                    # Suppress error logging for streak data
+                    pass
+                
+                progress = current_streak
+                is_achieved = progress >= achievement.requirement
+            
             # Update user achievement
             user_achievement.progress = progress
             
@@ -1841,18 +1868,22 @@ async def check_achievements(
                 newly_achieved += 1
                 
                 # Create notification for new achievement
-                notification = Notification(
-                    user_id=user.id,
-                    type="achievement",
-                    title=f"Achievement Unlocked: {achievement.name}",
-                    message=achievement.description,
-                    icon=achievement.icon,
-                    is_read=False
-                )
-                db.add(notification)
+                try:
+                    notification = Notification(
+                        user_id=user.id,
+                        type="achievement",
+                        title=f"Achievement Unlocked: {achievement.name}",
+                        message=achievement.description,
+                        icon=achievement.icon or "trophy",
+                        is_read=False,
+                        created_at=datetime.now(timezone.utc)
+                    )
+                    db.add(notification)
+                except Exception:
+                    # Suppress error logging for notification creation
+                    pass
             
             updated_count += 1
-            
         db.commit()
         
         return {
@@ -1862,205 +1893,383 @@ async def check_achievements(
         }
     except Exception as e:
         db.rollback()
-        print(f"Error checking achievements: {str(e)}")
-        import traceback
-        traceback.print_exc()
+        # Only log unexpected errors
+        if not isinstance(e, HTTPException):
+            import traceback
+            traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Error checking achievements: {str(e)}")
 
 
-@app.post("/achievements/create")
-def create_achievement(
-    achievement_data: AchievementCreate,
-    user: User = Depends(get_current_user), 
-    db: Session = Depends(get_db)
-):
-    """Create a new achievement"""
-    try:
-        # Check if achievement with same name already exists
-        existing = db.query(Achievement).filter(
-            Achievement.name == achievement_data.name
-        ).first()
-        
-        if existing:
-            return {"message": f"Achievement '{achievement_data.name}' already exists", "id": existing.id}
-        
-        # Create new achievement
-        new_achievement = Achievement(
-            name=achievement_data.name,
-            description=achievement_data.description,
-            icon=achievement_data.icon,
-            category=achievement_data.category,
-            requirement=achievement_data.requirement
-        )
-        
-        db.add(new_achievement)
-        db.commit()
-        db.refresh(new_achievement)
-        
-        return {"message": "Achievement created successfully", "id": new_achievement.id}
-    except Exception as e:
-        db.rollback()
-        print(f"Error creating achievement: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Error creating achievement: {str(e)}")
-
-
-@app.post("/achievements/cleanup-duplicates")
-def cleanup_duplicate_achievements(
+@app.get("/user/badges")
+def get_user_badges(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Clean up duplicate achievements"""
+    """Get user's selected badges for profile display"""
     try:
-        # Get all achievements grouped by name
-        achievements = db.query(Achievement).all()
+        # Get user profile
+        profile = db.query(UserProfile).filter(UserProfile.user_id == user.id).first()
         
-        # Group by name
-        achievement_groups = {}
-        for achievement in achievements:
-            if achievement.name not in achievement_groups:
-                achievement_groups[achievement.name] = []
-            achievement_groups[achievement.name].append(achievement)
+        if not profile:
+            # Create default profile if not exists
+            profile = UserProfile(user_id=user.id, selected_badges=[])
+            db.add(profile)
+            db.commit()
+            db.refresh(profile)
         
-        # Find duplicates
-        duplicates_found = 0
-        duplicates_deleted = 0
+        # Return badges (ensure it's a list even if None in database)
+        return {"badges": profile.selected_badges or []}
+    except Exception as e:
+        if not isinstance(e, HTTPException):
+            import traceback
+            traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error fetching user badges: {str(e)}")
+
+
+@app.post("/user/badges")
+def update_user_badges(
+    badge_selection: BadgeSelectionRequest,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Update user's selected badges for profile display"""
+    try:
+        # Validate badges (max 3)
+        if len(badge_selection.badges) > 3:
+            raise HTTPException(status_code=400, detail="Maximum 3 badges can be selected")
         
-        for name, group in achievement_groups.items():
-            if len(group) > 1:
-                duplicates_found += len(group) - 1
-                
-                # Keep the first one, delete the rest
-                # Be careful with foreign key constraints
-                for duplicate in group[1:]:
-                    # Check if there are user achievements referencing this
-                    has_references = db.query(UserAchievement).filter(
-                        UserAchievement.achievement_id == duplicate.id
-                    ).first() is not None
-                    
-                    if not has_references:
-                        db.delete(duplicate)
-                        duplicates_deleted += 1
-                    
+        # Get or create user profile
+        profile = db.query(UserProfile).filter(UserProfile.user_id == user.id).first()
+        
+        if not profile:
+            profile = UserProfile(user_id=user.id, selected_badges=badge_selection.badges)
+            db.add(profile)
+        else:
+            profile.selected_badges = badge_selection.badges
         db.commit()
+        db.refresh(profile)
         
-        if duplicates_deleted == 0 and duplicates_found > 0:
-            return {"message": "No achievements were deleted due to foreign key references. Use force cleanup if needed."}
+        return {"message": "Badges updated successfully", "badges": profile.selected_badges}
+    except HTTPException:
+        raise
+    except Exception as e:
+        if not isinstance(e, HTTPException):
+            import traceback
+            traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error updating user badges: {str(e)}")
+
+
+@app.get("/api/last-saved-routine")
+def get_last_saved_routine(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get user's most recently saved workout routine"""
+    try:
+        # First try to find a routine (which links to a template workout)
+        routine = db.query(Routine).filter(
+            Routine.user_id == user.id
+        ).order_by(Routine.created_at.desc()).first()
         
+        # Check if we found a routine
+        if not routine:
+            return JSONResponse(status_code=404, content={"message": "No saved routines found"})
+            
+        if routine and routine.workout_id:
+            # If we have a routine, get the associated workout template
+            last_workout = db.query(Workout).get(routine.workout_id)
+            
+            # If the workout doesn't exist for some reason
+            if not last_workout:
+                return JSONResponse(status_code=404, content={"message": "Associated workout not found"})
+        else:
+            # No workout ID in routine
+            return JSONResponse(status_code=404, content={"message": "Routine has no associated workout"})
+            
+        # Get exercises for this workout
+        exercises = db.query(Exercise).filter(
+            Exercise.workout_id == last_workout.id
+        ).all() or []  # Ensure exercises is at least an empty list
+        
+        # Format response with safe handling of nested attributes
+        result = {
+            "id": last_workout.id,
+            "name": last_workout.name,
+            "description": getattr(last_workout, "description", None),
+            "created_at": getattr(last_workout, "created_at", 
+                           getattr(last_workout, "date", 
+                           getattr(routine, "created_at", datetime.now(timezone.utc)))),
+            "exercises": []
+        }
+        
+        # Only process exercises if they exist
+        for exercise in exercises:
+            # Create exercise data with empty sets as default
+            ex_data = {
+                "id": exercise.id,
+                "name": exercise.name,
+                "category": exercise.category,
+                "is_cardio": exercise.is_cardio,
+                "sets": []
+            }
+            
+            # Safely get the sets for this exercise
+            try:
+                # Get the sets directly from the database to avoid lazy loading issues
+                sets = db.query(Set).filter(Set.exercise_id == exercise.id).all() or []
+                
+                for s in sets:
+                    ex_data["sets"].append({
+                        "id": s.id,
+                        "weight": s.weight,
+                        "reps": s.reps,
+                        "distance": s.distance,
+                        "duration": s.duration,
+                        "notes": s.notes
+                    })
+            except Exception as set_error:
+                # Log the error but continue processing other exercises
+                print(f"Error processing sets for exercise {exercise.id}: {str(set_error)}")
+                # Don't let set errors break the response
+                continue
+            
+            result["exercises"].append(ex_data)
+        
+        return result
+    except Exception as e:
+        import traceback
+        print(f"Error fetching last saved routine: {str(e)}")
+        traceback.print_exc()
+        # Return a JSON response instead of raising an exception
+        return JSONResponse(
+            status_code=500,
+            content={"message": "Error fetching last saved routine", "detail": str(e)}
+        )
+
+
+@app.get("/api/workout-preferences")
+def get_workout_preferences(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get user's workout preferences"""
+    try:
+        # Get workout preferences from the WorkoutPreferences model
+        preferences = db.query(WorkoutPreferences).filter(
+            WorkoutPreferences.user_id == user.id
+        ).first()
+        
+        # Get user profile for other preferences
+        profile = db.query(UserProfile).filter(
+            UserProfile.user_id == user.id
+        ).first()
+        
+        if not preferences:
+            # Create default preferences
+            preferences = WorkoutPreferences(
+                user_id=user.id,
+                workout_frequency_goal=3  # Default to 3 days per week
+            )
+            db.add(preferences)
+            db.commit()
+            db.refresh(preferences)
+        
+        if not profile:
+            # Create default profile
+            profile = UserProfile(
+                user_id=user.id,
+                goal_weight=None
+            )
+            db.add(profile)
+            db.commit()
+            db.refresh(profile)
+        
+        # Return preferences
         return {
-            "message": f"Found {duplicates_found} duplicates, deleted {duplicates_deleted} achievements.",
-            "duplicates_found": duplicates_found,
-            "duplicates_deleted": duplicates_deleted
+            "workout_frequency_goal": preferences.workout_frequency_goal or 3,
+            "goal_weight": profile.goal_weight
         }
     except Exception as e:
-        db.rollback()
-        print(f"Error cleaning up achievements: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Error cleaning up achievements: {str(e)}")
+        if not isinstance(e, HTTPException):
+            import traceback
+            traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error fetching workout preferences: {str(e)}")
 
 
-# User Theme Management
+@app.get("/workout-streak")
+def get_workout_streak(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get user's current workout streak"""
+    try:
+        # Get user profile
+        profile = db.query(UserProfile).filter(
+            UserProfile.user_id == user.id
+        ).first()
+
+        if not profile:
+            # Create default profile
+            profile = UserProfile(
+                user_id=user.id,
+                current_streak=0,
+                best_streak=0,
+                last_workout_date=None
+            )
+            db.add(profile)
+            db.commit()
+            db.refresh(profile)
+        
+        # Get workout preferences for frequency goal
+        preferences = db.query(WorkoutPreferences).filter(
+            WorkoutPreferences.user_id == user.id
+        ).first()
+        
+        frequency_goal = 3  # Default
+        if preferences and preferences.workout_frequency_goal:
+            frequency_goal = preferences.workout_frequency_goal
+        
+        # Return streak info
+        return {
+            "streak": profile.current_streak or 0,
+            "best_streak": profile.best_streak or 0,
+            "last_workout_date": profile.last_workout_date,
+            "frequency_goal": frequency_goal
+        }
+    except Exception as e:
+        if not isinstance(e, HTTPException):
+            import traceback
+            traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error fetching workout streak: {str(e)}")
+
 
 @app.get("/user/themes")
 def get_user_themes(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Get the user's theme preferences"""
+    """Get user's theme settings"""
     try:
-        # Get or create profile
-        profile = db.query(UserProfile).filter(UserProfile.user_id == user.id).first()
+        # Get user profile
+        profile = db.query(UserProfile).filter(
+            UserProfile.user_id == user.id
+        ).first()
         
         if not profile:
-            profile = UserProfile(user_id=user.id)
+            # Create default profile
+            profile = UserProfile(
+                user_id=user.id,
+                theme_mode="light",
+                premium_theme="default",
+                unlocked_themes=["default"]
+            )
             db.add(profile)
             db.commit()
             db.refresh(profile)
         
+        # Prepare unlocked themes (ensure it's a list)
+        unlocked_themes = profile.unlocked_themes
+        if not unlocked_themes or not isinstance(unlocked_themes, list):
+            unlocked_themes = ["default"]
+        
         # Return theme settings
         return {
-            "theme": profile.theme_mode or "light",  # default to light
-            "premium_theme": profile.premium_theme or "default",  # default to default theme
-            "unlocked_themes": profile.unlocked_themes or ["default"],  # default to only default theme
+            "theme": profile.theme_mode or "light",
+            "premium_theme": profile.premium_theme or "default",
+            "unlocked_themes": unlocked_themes
         }
     except Exception as e:
-        print(f"Error getting user themes: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
+        if not isinstance(e, HTTPException):
+            import traceback
+            traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error fetching user themes: {str(e)}")
+
 
 @app.post("/user/themes/mode")
-def set_theme_mode(
+def update_theme_mode(
     theme_data: dict = Body(...),
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Set the user's theme mode (light/dark)"""
+    """Update user's theme mode (light/dark)"""
     try:
+        # Validate theme mode
         theme_mode = theme_data.get("theme_mode")
         if theme_mode not in ["light", "dark"]:
             raise HTTPException(status_code=400, detail="Invalid theme mode. Must be 'light' or 'dark'")
-            
-        # Get or create profile
-        profile = db.query(UserProfile).filter(UserProfile.user_id == user.id).first()
+        
+        # Get or create user profile
+        profile = db.query(UserProfile).filter(
+            UserProfile.user_id == user.id
+        ).first()
         
         if not profile:
-            profile = UserProfile(user_id=user.id, theme_mode=theme_mode)
+            profile = UserProfile(
+                user_id=user.id,
+                theme_mode=theme_mode
+            )
             db.add(profile)
         else:
             profile.theme_mode = theme_mode
-            
         db.commit()
+        db.refresh(profile)
         
-        return {"message": "Theme mode updated successfully", "theme_mode": theme_mode}
+        return {"message": "Theme mode updated successfully", "theme_mode": profile.theme_mode}
     except HTTPException:
         raise
     except Exception as e:
-        db.rollback()
-        print(f"Error setting theme mode: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
+        if not isinstance(e, HTTPException):
+            import traceback
+            traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error updating theme mode: {str(e)}")
+
 
 @app.post("/user/themes/premium")
-def set_premium_theme(
+def update_premium_theme(
     theme_data: dict = Body(...),
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Set the user's premium theme"""
+    """Update user's premium theme"""
     try:
+        # Get theme key
         theme_key = theme_data.get("theme_key")
+        if not theme_key:
+            raise HTTPException(status_code=400, detail="Theme key is required")
         
-        # Get or create profile
-        profile = db.query(UserProfile).filter(UserProfile.user_id == user.id).first()
+        # Get or create user profile
+        profile = db.query(UserProfile).filter(
+            UserProfile.user_id == user.id
+        ).first()
+        
+        # Check if user has unlocked this theme
+        if profile and profile.unlocked_themes and isinstance(profile.unlocked_themes, list):
+            if theme_key != "default" and theme_key not in profile.unlocked_themes and not user.is_admin:
+                raise HTTPException(status_code=403, detail="You haven't unlocked this theme")
         
         if not profile:
-            profile = UserProfile(user_id=user.id, premium_theme=theme_key)
+            profile = UserProfile(
+                user_id=user.id,
+                premium_theme=theme_key
+            )
             db.add(profile)
         else:
-            # Check if theme is unlocked for the user, or user is admin
-            is_admin = db.query(User.is_admin).filter(User.id == user.id).scalar() or False
-            unlocked_themes = profile.unlocked_themes or ["default"]
-            
-            if theme_key not in unlocked_themes and not is_admin:
-                raise HTTPException(status_code=403, detail="Theme not unlocked for this user")
-                
             profile.premium_theme = theme_key
-            
         db.commit()
+        db.refresh(profile)
         
-        return {"message": "Premium theme updated successfully", "premium_theme": theme_key}
+        return {
+            "message": "Premium theme updated successfully", 
+            "premium_theme": profile.premium_theme
+        }
     except HTTPException:
         raise
     except Exception as e:
-        db.rollback()
-        print(f"Error setting premium theme: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
+        if not isinstance(e, HTTPException):
+            import traceback
+            traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error updating premium theme: {str(e)}")
+
 
 @app.post("/user/themes/unlock")
 def unlock_theme(
@@ -2070,31 +2279,45 @@ def unlock_theme(
 ):
     """Unlock a premium theme for the user"""
     try:
+        # Get theme key
         theme_key = theme_data.get("theme_key")
+        if not theme_key:
+            raise HTTPException(status_code=400, detail="Theme key is required")
         
-        # Get or create profile
-        profile = db.query(UserProfile).filter(UserProfile.user_id == user.id).first()
+        # Get or create user profile
+        profile = db.query(UserProfile).filter(
+            UserProfile.user_id == user.id
+        ).first()
         
         if not profile:
-            profile = UserProfile(user_id=user.id, unlocked_themes=[theme_key])
+            profile = UserProfile(
+                user_id=user.id,
+                unlocked_themes=["default", theme_key]
+            )
             db.add(profile)
         else:
-            # Update unlocked themes
-            unlocked_themes = profile.unlocked_themes or ["default"]
+            # Ensure unlocked_themes is a list
+            if not profile.unlocked_themes or not isinstance(profile.unlocked_themes, list):
+                profile.unlocked_themes = ["default"]
             
-            if theme_key not in unlocked_themes:
-                unlocked_themes.append(theme_key)
-                profile.unlocked_themes = unlocked_themes
-            
+            # Only add if not already unlocked
+            if theme_key not in profile.unlocked_themes:
+                profile.unlocked_themes.append(theme_key)
         db.commit()
+        db.refresh(profile)
         
-        return {"message": f"Theme '{theme_key}' unlocked successfully", "unlocked_themes": profile.unlocked_themes}
+        return {
+            "message": f"Theme '{theme_key}' unlocked successfully", 
+            "unlocked_themes": profile.unlocked_themes
+        }
+    except HTTPException:
+        raise
     except Exception as e:
-        db.rollback()
-        print(f"Error unlocking theme: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
+        if not isinstance(e, HTTPException):
+            import traceback
+            traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error unlocking theme: {str(e)}")
+
 
 @app.post("/user/themes/unlock-all")
 def unlock_all_themes(
@@ -2103,147 +2326,34 @@ def unlock_all_themes(
 ):
     """Unlock all premium themes for the user"""
     try:
-        # Get or create profile
-        profile = db.query(UserProfile).filter(UserProfile.user_id == user.id).first()
+        # Define all available themes
+        all_themes = ["default", "cosmos", "forest", "sunset", "ocean", "royal"]
         
-        if not profile:
-            # Create profile with all themes unlocked
-            # We'd need to know all theme keys here, but we'll use a placeholder
-            all_themes = ["default", "forest", "ocean", "sunset", "cosmos", "royal"]
-            profile = UserProfile(user_id=user.id, unlocked_themes=all_themes)
-            db.add(profile)
-        else:
-            # Add all available themes to the unlocked list
-            all_themes = ["default", "forest", "ocean", "sunset", "cosmos", "royal"]
-            profile.unlocked_themes = all_themes
-            
-        db.commit()
-        
-        return {"message": "All themes unlocked successfully", "unlocked_themes": profile.unlocked_themes}
-    except Exception as e:
-        db.rollback()
-        print(f"Error unlocking all themes: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.get("/admin/database/add-theme-columns", response_model=Dict[str, str])
-async def add_theme_columns(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    """Admin endpoint to manually add theme columns to the user_profiles table"""
-    if not current_user.is_admin:
-        raise HTTPException(
-            status_code=403, detail="Only admin users can perform this action")
-    
-    try:
-        # Execute raw SQL to add the columns if they don't exist
-        # Check if columns exist first to avoid errors if columns already exist
-        db.execute(text("""
-        DO $$
-        BEGIN
-            -- Add theme_mode column if it doesn't exist
-            IF NOT EXISTS (
-                SELECT 1
-                FROM information_schema.columns
-                WHERE table_name = 'user_profiles' AND column_name = 'theme_mode'
-            ) THEN
-                ALTER TABLE user_profiles ADD COLUMN theme_mode VARCHAR DEFAULT 'light';
-            END IF;
-
-            -- Add premium_theme column if it doesn't exist
-            IF NOT EXISTS (
-                SELECT 1
-                FROM information_schema.columns
-                WHERE table_name = 'user_profiles' AND column_name = 'premium_theme'
-            ) THEN
-                ALTER TABLE user_profiles ADD COLUMN premium_theme VARCHAR DEFAULT 'default';
-            END IF;
-
-            -- Add unlocked_themes column if it doesn't exist
-            IF NOT EXISTS (
-                SELECT 1
-                FROM information_schema.columns
-                WHERE table_name = 'user_profiles' AND column_name = 'unlocked_themes'
-            ) THEN
-                ALTER TABLE user_profiles ADD COLUMN unlocked_themes JSONB DEFAULT '["default"]'::jsonb;
-            END IF;
-        END
-        $$;
-        """))
-        
-        db.commit()
-        return {"status": "success", "message": "Theme columns added successfully"}
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(
-            status_code=500, detail=f"Failed to add columns: {str(e)}")
-
-
-@app.get("/workout-streak", response_model=Dict[str, Any])
-def get_workout_streak(
-    user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """Get the user's current workout streak and frequency goal"""
-    try:
-        # Get user's workout preferences to get the frequency goal
-        workout_prefs = db.query(WorkoutPreferences).filter(
-            WorkoutPreferences.user_id == user.id
+        # Get or create user profile
+        profile = db.query(UserProfile).filter(
+            UserProfile.user_id == user.id
         ).first()
         
-        frequency_goal = None
-        if workout_prefs:
-            frequency_goal = workout_prefs.workout_frequency_goal
-        
-        # Get all of the user's workouts, sorted by date
-        workouts = db.query(Workout).filter(
-            Workout.user_id == user.id,
-            Workout.is_template == False  # Exclude templates
-        ).order_by(desc(Workout.date)).all()
-        
-        if not workouts:
-            return {
-                "streak": 0,
-                "frequency_goal": frequency_goal
-            }
-        
-        # Calculate workout streak
-        today = datetime.now(timezone.utc).date()
-        streak = 0
-        last_date = None
-        
-        # Handle first workout separately
-        first_workout = workouts[0]
-        first_date = first_workout.date.date() if first_workout.date else None
-        
-        if first_date and (today - first_date).days <= 1:
-            # The most recent workout is today or yesterday, streak starts at 1
-            streak = 1
-            last_date = first_date
-            
-            # Check the rest of the workouts for consecutive days
-            for workout in workouts[1:]:
-                workout_date = workout.date.date() if workout.date else None
-                if not workout_date:
-                    continue
-                    
-                # If the date difference is 1 day, increment streak
-                if last_date and (last_date - workout_date).days == 1:
-                    streak += 1
-                    last_date = workout_date
-                # If it's the same day, skip (multiple workouts in one day)
-                elif last_date and (last_date - workout_date).days == 0:
-                    last_date = workout_date
-                # If there's a gap, stop counting
-                else:
-                    break
+        if not profile:
+            profile = UserProfile(
+                user_id=user.id,
+                unlocked_themes=all_themes
+            )
+            db.add(profile)
+        else:
+            profile.unlocked_themes = all_themes
+        db.commit()
+        db.refresh(profile)
         
         return {
-            "streak": streak,
-            "frequency_goal": frequency_goal
+            "message": "All themes unlocked successfully", 
+            "unlocked_themes": profile.unlocked_themes
         }
     except Exception as e:
-        print(f"Error calculating workout streak: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error calculating workout streak: {str(e)}")
+        if not isinstance(e, HTTPException):
+            import traceback
+            traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error unlocking all themes: {str(e)}")
 
 
 @app.post("/user/themes/check-access")
@@ -2253,404 +2363,423 @@ def check_theme_access(
     db: Session = Depends(get_db)
 ):
     """Check if user has access to a specific theme"""
-    theme_key = theme_data.get("theme_key")
-    
-    if not theme_key:
-        raise HTTPException(status_code=400, detail="Theme key is required")
-    
-    # Default theme is always accessible
-    if theme_key == "default":
-        return {"has_access": True}
-    
-    # Admin users have access to all themes
-    if user.is_admin:
-        return {"has_access": True}
-    
-    # Check if theme is in user's unlocked themes
-    user_profile = db.query(UserProfile).filter(UserProfile.user_id == user.id).first()
-    
-    if not user_profile:
-        return {"has_access": False}
-    
-    # Get the unlocked themes array
-    unlocked_themes = user_profile.unlocked_themes or []
-    
-    # Check if the requested theme is in the unlocked themes
-    has_access = theme_key in unlocked_themes
-    
-    return {"has_access": has_access}
+    try:
+        # Get theme key
+        theme_key = theme_data.get("theme_key")
+        if not theme_key:
+            raise HTTPException(status_code=400, detail="Theme key is required")
+        
+        # Admin always has access to all themes
+        if user.is_admin:
+            return {"has_access": True}
+        
+        # Default theme is accessible to everyone
+        if theme_key == "default":
+            return {"has_access": True}
+        
+        # Get user profile
+        profile = db.query(UserProfile).filter(
+            UserProfile.user_id == user.id
+        ).first()
+        
+        if not profile or not profile.unlocked_themes:
+            return {"has_access": False}
+        
+        # Check if theme is in unlocked themes
+        has_access = theme_key in profile.unlocked_themes
+        
+        return {"has_access": has_access}
+    except Exception as e:
+        if not isinstance(e, HTTPException):
+            import traceback
+            traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error checking theme access: {str(e)}")
 
+# Add these endpoints after the themes endpoints:
 
-@app.post("/user/workouts/save-templates")
-async def save_workout_templates(
-    request: Request,
-    background_tasks: BackgroundTasks,
+@app.get("/user/rewards/claimed")
+def get_claimed_rewards(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    """Get user's claimed rewards"""
     try:
-        print(f"==== SAVE WORKOUT TEMPLATES START ====")
-        print(f"Request from user: {user.username} (ID: {user.id})")
-        
-        # Define expert workout templates
-        expert_templates = [
-            {
-                "name": "Full Body Strength",
-                "description": "A comprehensive full body workout focusing on strength development",
-                "is_template": True,
-                "exercises": [
-                    {"name": "Barbell Squat", "sets": 4, "reps": 8, "weight": 0, "notes": "Focus on form"},
-                    {"name": "Bench Press", "sets": 4, "reps": 8, "weight": 0, "notes": "Control the descent"},
-                    {"name": "Deadlift", "sets": 3, "reps": 8, "weight": 0, "notes": "Maintain neutral spine"},
-                    {"name": "Pull-ups", "sets": 3, "reps": 8, "weight": 0, "notes": "Full range of motion"},
-                    {"name": "Overhead Press", "sets": 3, "reps": 10, "weight": 0, "notes": "Brace your core"}
-                ]
-            },
-            {
-                "name": "HIIT Cardio",
-                "description": "High intensity interval training for cardiovascular health and fat loss",
-                "is_template": True,
-                "exercises": [
-                    {"name": "Sprints", "sets": 10, "reps": 1, "duration": 30, "rest": 30, "notes": "All out effort"},
-                    {"name": "Burpees", "sets": 5, "reps": 15, "rest": 45, "notes": "Quick transitions"},
-                    {"name": "Mountain Climbers", "sets": 5, "reps": 30, "rest": 45, "notes": "Keep hips low"},
-                    {"name": "Jump Squats", "sets": 5, "reps": 15, "rest": 45, "notes": "Explosive power"}
-                ]
-            },
-            {
-                "name": "Upper Body Focus",
-                "description": "Targeted upper body workout for strength and definition",
-                "is_template": True,
-                "exercises": [
-                    {"name": "Bench Press", "sets": 4, "reps": 8, "weight": 0, "notes": "Control the movement"},
-                    {"name": "Lat Pulldown", "sets": 4, "reps": 10, "weight": 0, "notes": "Engage your lats"},
-                    {"name": "Overhead Press", "sets": 3, "reps": 10, "weight": 0, "notes": "Keep core tight"},
-                    {"name": "Dumbbell Row", "sets": 3, "reps": 10, "weight": 0, "notes": "Pull to hip"},
-                    {"name": "Tricep Pushdown", "sets": 3, "reps": 12, "weight": 0, "notes": "Isolate triceps"},
-                    {"name": "Bicep Curl", "sets": 3, "reps": 12, "weight": 0, "notes": "Control the curl"}
-                ]
-            }
-        ]
-        
-        # First check all workouts with is_template=True
-        all_template_workouts = db.query(Workout).filter(
-            Workout.is_template == True
+        # Get user rewards
+        rewards = db.query(UserReward).filter(
+            UserReward.user_id == user.id
         ).all()
-        print(f"All template workouts in system: {len(all_template_workouts)}")
-        for w in all_template_workouts:
-            print(f"  - ID: {w.id}, Name: {w.name}, User ID: {w.user_id}")
         
-        # Now check user's specific template workouts
-        template_workouts = db.query(Workout).filter(
-            Workout.user_id == user.id,
-            Workout.is_template == True
-        ).all()
-        print(f"User's template workouts found: {len(template_workouts)}")
-        for w in template_workouts:
-            print(f"  - ID: {w.id}, Name: {w.name}, is_template value: {w.is_template}")
+        # Extract reward IDs
+        reward_ids = [reward.reward_id for reward in rewards]
         
-        # First check if user has any routines
-        print(f"Checking existing routines for user {user.username} (ID: {user.id})...")
-        routines = db.query(Routine).filter(Routine.user_id == user.id).all()
-        print(f"Found {len(routines)} existing routines")
+        return reward_ids
+    except Exception as e:
+        if not isinstance(e, HTTPException):
+            import traceback
+            traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error fetching claimed rewards: {str(e)}")
+
+
+@app.post("/user/rewards/claim")
+def claim_reward(
+    reward_data: dict = Body(...),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Claim a reward for the user"""
+    try:
+        # Get reward ID
+        reward_id = reward_data.get("reward_id")
+        if not reward_id:
+            raise HTTPException(status_code=400, detail="Reward ID is required")
         
-        # Get existing template names to avoid duplicates
-        existing_template_names = []
-        template_workout_ids = []
+        # Check if reward is already claimed
+        existing_reward = db.query(UserReward).filter(
+            UserReward.user_id == user.id,
+            UserReward.reward_id == reward_id
+        ).first()
         
-        for r in routines:
-            if r.workout_id is not None:
-                # Load the associated workout explicitly
-                workout = db.query(Workout).filter(Workout.id == r.workout_id).first()
-                if workout and workout.is_template:
-                    existing_template_names.append(r.name)
-                    template_workout_ids.append(r.workout_id)
-                    print(f"Found existing template: {r.name} (Workout ID: {r.workout_id}, is_template: {workout.is_template})")
-                
-        print(f"Existing template names: {existing_template_names}")
-        print(f"Associated workout IDs: {template_workout_ids}")
+        if existing_reward:
+            return {"message": "Reward already claimed", "claimed_at": existing_reward.claimed_at}
         
-        # Add only new templates
-        templates_added = 0
-        for template in expert_templates:
-            if template["name"] not in existing_template_names:
-                print(f"Creating new template: {template['name']}")
-                
-                # Create workout first with is_template=True
-                new_workout = Workout(
-                    name=template["name"],
-                    user_id=user.id,
-                    date=datetime.now(timezone.utc),
-                    weight_unit="kg",
-                    is_template=True
-                )
-                db.add(new_workout)
-                db.commit()
-                db.refresh(new_workout)
-                
-                # CRITICAL: Verify workout was created with is_template=True
-                print(f"Workout created with ID: {new_workout.id}, is_template: {new_workout.is_template}")
-                
-                # Double check the is_template flag is set
-                db_workout = db.query(Workout).filter(Workout.id == new_workout.id).first()
-                if not db_workout.is_template:
-                    print(f"ERROR: Workout {db_workout.id} has is_template=False. Fixing...")
-                    db_workout.is_template = True
-                    db.commit()
-                    db.refresh(db_workout)
-                    print(f"After fix: is_template is now {db_workout.is_template}")
-                
-                # Create routine linked to workout
-                new_routine = Routine(
-                    name=template["name"],
-                    user_id=user.id,
-                    workout_id=new_workout.id,
-                    weight_unit="kg",
-                    created_at=datetime.now(timezone.utc)
-                )
-                db.add(new_routine)
-                db.commit()
-                db.refresh(new_routine)
-                print(f"Routine created with ID: {new_routine.id}, linked to workout ID: {new_routine.workout_id}")
-                
-                # Verify routine was created properly
-                db_routine = db.query(Routine).options(
-                    joinedload(Routine.workout)
-                ).filter(Routine.id == new_routine.id).first()
-                
-                if db_routine and db_routine.workout:
-                    print(f"Routine verification - Name: {db_routine.name}, Workout ID: {db_routine.workout_id}")
-                    print(f"Associated workout is_template: {db_routine.workout.is_template}")
-                else:
-                    print(f"ERROR: Could not verify routine {new_routine.id} properly")
-                
-                # Add exercises to workout
-                for exercise_data in template["exercises"]:
-                    new_exercise = Exercise(
-                        name=exercise_data["name"],
-                        category="Uncategorized",
-                        is_cardio=False,
-                        workout_id=new_workout.id
-                    )
-                    db.add(new_exercise)
-                    db.commit()
-                    db.refresh(new_exercise)
-                    print(f"  - Added exercise: {new_exercise.name} (ID: {new_exercise.id})")
-                    
-                    # Add sets for this exercise
-                    sets_added = 0
-                    for _ in range(exercise_data["sets"]):
-                        new_set = Set(
-                            weight=0,
-                            reps=exercise_data.get("reps", 0),
-                            distance=exercise_data.get("distance", None),
-                            duration=exercise_data.get("duration", None),
-                            notes=exercise_data.get("notes", ""),
-                            exercise_id=new_exercise.id
-                        )
-                        db.add(new_set)
-                        sets_added += 1
-                    
-                    db.commit()
-                    print(f"    - Added {sets_added} sets to exercise")
-                
-                templates_added += 1
+        # Create new reward claim
+        new_reward = UserReward(
+            user_id=user.id,
+            reward_id=reward_id,
+            claimed_at=datetime.now(timezone.utc)
+        )
+        db.add(new_reward)
         
-        # Update user profile to mark workout templates as unlocked
-        user_profile = db.query(UserProfile).filter(UserProfile.user_id == user.id).first()
-        
-        if not user_profile:
-            # Create profile if it doesn't exist
-            print("Creating new user profile...")
-            user_profile = UserProfile(
-                user_id=user.id,
-                unlocked_features=["workouts"]
-            )
-            db.add(user_profile)
-        else:
-            # Ensure unlocked_features exists and add workouts
-            print("Updating existing user profile...")
-            unlocked_features = user_profile.unlocked_features or []
-            if "workouts" not in unlocked_features:
-                unlocked_features.append("workouts")
-                user_profile.unlocked_features = unlocked_features
-                
+        # Check for specific rewards to unlock additional features
+        if reward_id == "reward-1":  # Premium Themes
+            # Get user profile
+            profile = db.query(UserProfile).filter(
+                UserProfile.user_id == user.id
+            ).first()
+            
+            if not profile:
+                profile = UserProfile(user_id=user.id)
+                db.add(profile)
+            
+            # Set unlocked themes
+            profile.unlocked_themes = ["default", "cosmos", "forest", "sunset", "ocean", "royal"]
+            
+        elif reward_id == "reward-2":  # Expert Workout Templates
+            # Unlock workout templates
+            profile = db.query(UserProfile).filter(
+                UserProfile.user_id == user.id
+            ).first()
+            
+            if not profile:
+                profile = UserProfile(user_id=user.id)
+                db.add(profile)
+            
+            profile.workout_templates_unlocked = True
+            
+        elif reward_id == "reward-3":  # Stats Analysis
+            # Unlock advanced stats
+            profile = db.query(UserProfile).filter(
+                UserProfile.user_id == user.id
+            ).first()
+            
+            if not profile:
+                profile = UserProfile(user_id=user.id)
+                db.add(profile)
+            
+            profile.stats_features_unlocked = True
         db.commit()
         
-        # Double check that templates were created correctly
-        print("Final verification of templates...")
-        final_templates = db.query(Routine).join(Workout).filter(
-            Routine.user_id == user.id,
-            Workout.is_template == True
-        ).all()
+        # Create notification for claimed reward
+        try:
+            notification = Notification(
+                user_id=user.id,
+                type="reward",
+                message=f"You claimed a new reward!",
+                icon="gift",
+                read=False,
+                created_at=datetime.now(timezone.utc),
+                title=f"Reward Claimed: {reward_id}"
+            )
+            db.add(notification)
+            db.commit()
+        except Exception:
+            # Don't fail if notification creation fails
+            pass
         
-        print(f"Final templates count: {len(final_templates)}")
-        for template in final_templates:
-            print(f"Template: {template.name}, Workout ID: {template.workout_id}")
-            # Load the workout with exercises
-            workout = db.query(Workout).options(
-                joinedload(Workout.exercises).joinedload(Exercise.sets)
-            ).filter(Workout.id == template.workout_id).first()
-            
-            if workout:
-                print(f"  - Workout found: {workout.name}, is_template: {workout.is_template}")
-                print(f"  - Has {len(workout.exercises) if workout.exercises else 0} exercises")
-            else:
-                print(f"  - ERROR: Workout {template.workout_id} not found")
-                
-        print(f"==== SAVE WORKOUT TEMPLATES COMPLETE ====")
-            
-        return {
-            "success": True,
-            "message": f"Added {templates_added} expert workout templates to your routines",
-            "templates_added": templates_added
-        }
+        return {"message": "Reward claimed successfully", "reward_id": reward_id}
+    except HTTPException:
+        raise
     except Exception as e:
         db.rollback()
-        print(f"Error saving workout templates: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error saving workout templates: {str(e)}"
-        )
+        if not isinstance(e, HTTPException):
+            import traceback
+            traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error claiming reward: {str(e)}")
+
+# Add these endpoints:
+
+@app.post("/achievements/create-defaults")
+def create_default_achievements(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Create default achievements if they don't exist"""
+    try:
+        # Check if user is admin
+        if not user.is_admin:
+            # Check if there are already achievements in the system
+            existing_count = db.query(Achievement).count()
+            if existing_count > 0:
+                # Only allow admins to create defaults if achievements already exist
+                raise HTTPException(status_code=403, detail="Only administrators can create default achievements")
+        
+        # Call the function to initialize achievements
+        created_count = initialize_achievements(db)
+        
+        return {"message": f"Created {created_count} default achievements", "count": created_count}
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        if not isinstance(e, HTTPException):
+            import traceback
+            traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error creating default achievements: {str(e)}")
 
 
-@app.get("/routine-folders", response_model=list[RoutineFolderResponse])
+@app.post("/achievements/cleanup-duplicates")
+def cleanup_duplicate_achievements(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Clean up duplicate user achievements"""
+    try:
+        # Only allow admins or the user themselves
+        if not user.is_admin and user.id != user.id:
+            raise HTTPException(status_code=403, detail="Not authorized to perform this action")
+        
+        # Find duplicate user achievements (same user_id and achievement_id)
+        # This query finds all duplicates
+        duplicates = db.query(
+            UserAchievement.user_id, 
+            UserAchievement.achievement_id, 
+            func.count(UserAchievement.id).label("count")
+        ).group_by(
+            UserAchievement.user_id, 
+            UserAchievement.achievement_id
+        ).having(
+            func.count(UserAchievement.id) > 1
+        ).all()
+        
+        removed_count = 0
+        
+        # Process each set of duplicates
+        for user_id, achievement_id, count in duplicates:
+            # Find all duplicates for this user-achievement pair
+            user_duplicates = db.query(UserAchievement).filter(
+                UserAchievement.user_id == user_id,
+                UserAchievement.achievement_id == achievement_id
+            ).order_by(
+                UserAchievement.achieved_at.asc() if UserAchievement.achieved_at is not None else text("id") 
+            ).all()
+            
+            # Keep the one with the highest progress or earliest achievement date
+            kept = None
+            for duplicate in user_duplicates:
+                if kept is None or (
+                    (duplicate.achieved_at is not None and (kept.achieved_at is None or duplicate.achieved_at < kept.achieved_at)) or
+                    (duplicate.progress > kept.progress)
+                ):
+                    kept = duplicate
+            
+            # Delete all except the one we're keeping
+            for duplicate in user_duplicates:
+                if duplicate.id != kept.id:
+                    db.delete(duplicate)
+                    removed_count += 1
+        db.commit()
+        
+        return {"message": f"Removed {removed_count} duplicate achievements", "removed": removed_count}
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        if not isinstance(e, HTTPException):
+            import traceback
+            traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error cleaning up duplicates: {str(e)}")
+
+
+@app.post("/achievements/force-cleanup-duplicates")
+def force_cleanup_duplicate_achievements(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Force cleanup of all duplicate user achievements (admin only)"""
+    try:
+        # Only allow admins
+        if not user.is_admin:
+            raise HTTPException(status_code=403, detail="Only administrators can force cleanup duplicates")
+        
+        # More aggressive approach - delete all but the most recently created duplicates
+        removed_count = 0
+        
+        # Get all achievements
+        all_achievements = db.query(Achievement).all()
+        
+        for achievement in all_achievements:
+            # For each user that has this achievement
+            users_with_achievement = db.query(UserAchievement.user_id).filter(
+                UserAchievement.achievement_id == achievement.id
+            ).distinct().all()
+            
+            for (user_id,) in users_with_achievement:
+                # Get all user's records for this achievement
+                user_entries = db.query(UserAchievement).filter(
+                    UserAchievement.user_id == user_id,
+                    UserAchievement.achievement_id == achievement.id
+                ).order_by(
+                    # Sort by progress DESC, then by achievement date ASC if achieved
+                    UserAchievement.progress.desc(),
+                    UserAchievement.achieved_at.asc() if UserAchievement.achieved_at is not None else text("id")
+                ).all()
+                
+                # If more than one record exists, delete all except the first (best) one
+                if len(user_entries) > 1:
+                    for entry in user_entries[1:]:
+                        db.delete(entry)
+                        removed_count += 1
+        db.commit()
+        
+        return {"message": f"Force removed {removed_count} duplicate achievements", "removed": removed_count}
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        if not isinstance(e, HTTPException):
+            import traceback
+            traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error force cleaning up duplicates: {str(e)}")
+
+@app.get("/api/achievements/new")
+def get_new_achievements(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get user's new (unread) achievements"""
+    try:
+        # Find user achievements that haven't been read yet
+        new_achievements = db.query(UserAchievement).filter(
+            UserAchievement.user_id == user.id,
+            UserAchievement.is_read == False,
+            UserAchievement.achieved_at.is_not(None)  # Only consider achieved ones
+        ).order_by(
+            UserAchievement.achieved_at.desc()
+        ).all()
+        
+        if not new_achievements:
+            return []
+        
+        # Get the actual achievement data
+        result = []
+        for user_achievement in new_achievements:
+            # Get the achievement data
+            achievement = db.query(Achievement).filter(
+                Achievement.id == user_achievement.achievement_id
+            ).first()
+            
+            if achievement:
+                result.append({
+                    "id": achievement.id,
+                    "name": achievement.name,
+                    "description": achievement.description,
+                    "icon": achievement.icon,
+                    "category": achievement.category,
+                    "achieved_at": user_achievement.achieved_at,
+                    "is_read": user_achievement.is_read
+                })
+                
+                # Mark as read
+                user_achievement.is_read = True
+        
+        # Commit the changes to mark achievements as read
+        db.commit()
+        
+        return result
+    except Exception as e:
+        db.rollback()
+        if not isinstance(e, HTTPException):
+            import traceback
+            traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error fetching new achievements: {str(e)}")
+
+# ================ ROUTINE FOLDERS ENDPOINTS ================
+
+@app.get("/routine-folders", response_model=List[RoutineFolderResponse])
 def get_routine_folders(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Get all routine folders for the user"""
+    """Get all routine folders for the current user"""
     try:
         folders = db.query(RoutineFolder).filter(
             RoutineFolder.user_id == user.id
-        ).all()
+        ).order_by(RoutineFolder.name).all()
         
         return folders
     except Exception as e:
         print(f"Error fetching routine folders: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error fetching routine folders: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error fetching routine folders: {str(e)}"
+        )
 
 
 @app.post("/routine-folders", response_model=RoutineFolderResponse)
 def create_routine_folder(
-    folder: RoutineFolderCreate,
+    folder_data: RoutineFolderCreate,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Create a new routine folder"""
     try:
-        # Check if folder with this name already exists
+        # Check if folder with same name already exists
         existing_folder = db.query(RoutineFolder).filter(
             RoutineFolder.user_id == user.id,
-            RoutineFolder.name == folder.name
+            func.lower(RoutineFolder.name) == func.lower(folder_data.name)
         ).first()
         
         if existing_folder:
-            raise HTTPException(status_code=400, detail=f"Folder with name '{folder.name}' already exists")
+            raise HTTPException(
+                status_code=400,
+                detail="A folder with this name already exists"
+            )
         
         # Create new folder
         new_folder = RoutineFolder(
-            name=folder.name,
+            name=folder_data.name,
             user_id=user.id,
-            color=folder.color
+            color=folder_data.color
         )
-        
         db.add(new_folder)
         db.commit()
         db.refresh(new_folder)
         
         return new_folder
     except HTTPException:
+        db.rollback()
         raise
     except Exception as e:
         db.rollback()
         print(f"Error creating routine folder: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error creating routine folder: {str(e)}")
-
-
-@app.put("/routines/{routine_id}/folder", response_model=dict)
-def assign_routine_to_folder(
-    routine_id: int,
-    folder_data: dict = Body(...),
-    user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """Assign a routine to a folder"""
-    try:
-        # Check if routine exists and belongs to user
-        routine = db.query(Routine).filter(
-            Routine.id == routine_id,
-            Routine.user_id == user.id
-        ).first()
-        
-        if not routine:
-            raise HTTPException(status_code=404, detail="Routine not found")
-        
-        folder_id = folder_data.get("folder_id")
-        
-        # If folder_id is None, remove from current folder
-        if folder_id is None:
-            routine.folder_id = None
-            db.commit()
-            return {"message": "Routine removed from folder"}
-        
-        # Check if folder exists and belongs to user
-        folder = db.query(RoutineFolder).filter(
-            RoutineFolder.id == folder_id,
-            RoutineFolder.user_id == user.id
-        ).first()
-        
-        if not folder:
-            raise HTTPException(status_code=404, detail="Folder not found")
-        
-        # Assign routine to folder
-        routine.folder_id = folder_id
-        db.commit()
-        
-        return {"message": f"Routine assigned to folder '{folder.name}'"}
-    except HTTPException:
-        raise
-    except Exception as e:
-        db.rollback()
-        print(f"Error assigning routine to folder: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error assigning routine to folder: {str(e)}")
-
-
-@app.delete("/routine-folders/{folder_id}")
-def delete_routine_folder(
-    folder_id: int,
-    user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """Delete a routine folder"""
-    try:
-        # Check if folder exists and belongs to user
-        folder = db.query(RoutineFolder).filter(
-            RoutineFolder.id == folder_id,
-            RoutineFolder.user_id == user.id
-        ).first()
-        
-        if not folder:
-            raise HTTPException(status_code=404, detail="Folder not found")
-        
-        # Update routines to remove folder_id reference
-        db.query(Routine).filter(
-            Routine.folder_id == folder_id
-        ).update({"folder_id": None})
-        
-        # Delete the folder
-        db.delete(folder)
-        db.commit()
-        
-        return {"message": f"Folder '{folder.name}' deleted successfully"}
-    except HTTPException:
-        raise
-    except Exception as e:
-        db.rollback()
-        print(f"Error deleting routine folder: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error deleting routine folder: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error creating routine folder: {str(e)}"
+        )
 
 
 @app.put("/routine-folders/{folder_id}", response_model=RoutineFolderResponse)
@@ -2662,7 +2791,6 @@ def update_routine_folder(
 ):
     """Update a routine folder"""
     try:
-        # Check if folder exists and belongs to user
         folder = db.query(RoutineFolder).filter(
             RoutineFolder.id == folder_id,
             RoutineFolder.user_id == user.id
@@ -2671,510 +2799,126 @@ def update_routine_folder(
         if not folder:
             raise HTTPException(status_code=404, detail="Folder not found")
         
-        # Check if another folder with this name exists for this user
+        # Check if another folder with the same name exists
         existing_folder = db.query(RoutineFolder).filter(
             RoutineFolder.user_id == user.id,
-            RoutineFolder.name == folder_data.name,
+            func.lower(RoutineFolder.name) == func.lower(folder_data.name),
             RoutineFolder.id != folder_id
         ).first()
         
         if existing_folder:
-            raise HTTPException(status_code=400, detail=f"Folder with name '{folder_data.name}' already exists")
+            raise HTTPException(
+                status_code=400,
+                detail="Another folder with this name already exists"
+            )
         
-        # Update folder fields
+        # Update folder
         folder.name = folder_data.name
-        folder.color = folder_data.color
+        if folder_data.color is not None:
+            folder.color = folder_data.color
         
         db.commit()
         db.refresh(folder)
         
         return folder
     except HTTPException:
+        db.rollback()
         raise
     except Exception as e:
         db.rollback()
         print(f"Error updating routine folder: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error updating routine folder: {str(e)}")
-
-
-# Workout Templates endpoints
-@app.get("/workout-templates", response_model=List[WorkoutTemplateResponse], tags=["workout-templates"])
-async def get_all_templates(
-    is_premium: Optional[bool] = Query(None),
-    category: Optional[str] = Query(None),
-    level: Optional[str] = Query(None),
-    user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """
-    Get all non-premium workout templates or filter by parameters.
-    Premium templates require separate endpoint.
-    """
-    query = db.query(WorkoutTemplate)
-    
-    # Apply filters if provided
-    if is_premium is not None:
-        query = query.filter(WorkoutTemplate.is_premium == is_premium)
-    if category:
-        query = query.filter(WorkoutTemplate.category == category)
-    if level:
-        query = query.filter(WorkoutTemplate.level == level)
-    
-    # If requesting non-premium templates only
-    if is_premium is False:
-        templates = query.all()
-        return templates
-    
-    # If a filter isn't specifying premium status, only return non-premium by default
-    if is_premium is None:
-        query = query.filter(WorkoutTemplate.is_premium == False)
-        templates = query.all()
-        return templates
-
-    # Otherwise, check for premium access
-    # Get user unlocked templates
-    user_unlocked = db.query(UserUnlockedTemplates).filter(
-        UserUnlockedTemplates.user_id == user.id
-    ).first()
-    
-    if user.is_admin:
-        # Admins have access to all templates
-        templates = query.all()
-        return templates
-    
-    if not user_unlocked:
-        # User hasn't unlocked any premium templates
-        if is_premium:
-            return []  # Return empty list if only premium templates requested
-        templates = query.filter(WorkoutTemplate.is_premium == False).all()
-        return templates
-    
-    # Get templates that user has unlocked
-    unlocked_ids = user_unlocked.template_ids
-    
-    if is_premium:
-        # If specifically requesting premium templates, return only unlocked premium
-        templates = query.filter(WorkoutTemplate.id.in_(unlocked_ids)).all()
-        return templates
-    
-    # Otherwise return non-premium + unlocked premium
-    non_premium = query.filter(WorkoutTemplate.is_premium == False).all()
-    premium = query.filter(
-        WorkoutTemplate.is_premium == True,
-        WorkoutTemplate.id.in_(unlocked_ids)
-    ).all()
-    
-    return non_premium + premium
-
-@app.get("/workout-templates/premium", response_model=List[WorkoutTemplateResponse], tags=["workout-templates"])
-async def get_premium_templates(
-    user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """
-    Get premium workout templates that the user has unlocked.
-    """
-    if user.is_admin:
-        # Admins have access to all premium templates
-        premium_templates = db.query(WorkoutTemplate).filter(
-            WorkoutTemplate.is_premium == True
-        ).all()
-        return premium_templates
-    
-    # For regular users, check unlocked templates
-    user_unlocked = db.query(UserUnlockedTemplates).filter(
-        UserUnlockedTemplates.user_id == user.id
-    ).first()
-    
-    if not user_unlocked:
-        return []  # No unlocked templates
-    
-    unlocked_ids = user_unlocked.template_ids
-    premium_templates = db.query(WorkoutTemplate).filter(
-        WorkoutTemplate.is_premium == True,
-        WorkoutTemplate.id.in_(unlocked_ids)
-    ).all()
-    
-    return premium_templates
-
-@app.get("/workout-templates/available-premium", response_model=List[WorkoutTemplateResponse], tags=["workout-templates"])
-async def get_available_premium_templates(
-    user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """
-    Get premium templates that are available but the user hasn't unlocked yet.
-    """
-    if user.is_admin:
-        # Admins have access to all templates, so there are no "available but not unlocked"
-        return []
-    
-    # For regular users, check unlocked templates
-    user_unlocked = db.query(UserUnlockedTemplates).filter(
-        UserUnlockedTemplates.user_id == user.id
-    ).first()
-    
-    if not user_unlocked:
-        # No unlocked templates, all premium templates are available
-        premium_templates = db.query(WorkoutTemplate).filter(
-            WorkoutTemplate.is_premium == True
-        ).all()
-        return premium_templates
-    
-    unlocked_ids = user_unlocked.template_ids
-    available_templates = db.query(WorkoutTemplate).filter(
-        WorkoutTemplate.is_premium == True,
-        ~WorkoutTemplate.id.in_(unlocked_ids)  # Not in unlocked IDs
-    ).all()
-    
-    return available_templates
-
-@app.get("/workout-templates/{template_id}", response_model=WorkoutTemplateResponse, tags=["workout-templates"])
-async def get_template(
-    template_id: str,
-    user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """
-    Get a specific workout template by ID.
-    """
-    template = db.query(WorkoutTemplate).filter(WorkoutTemplate.id == template_id).first()
-    
-    if not template:
-        raise HTTPException(status_code=404, detail="Template not found")
-    
-    # If template is not premium, return it
-    if not template.is_premium:
-        return template
-    
-    if user.is_admin:
-        # Admins have access to all templates
-        return template
-    
-    # For regular users, check if they've unlocked this template
-    user_unlocked = db.query(UserUnlockedTemplates).filter(
-        UserUnlockedTemplates.user_id == user.id
-    ).first()
-    
-    if not user_unlocked or template_id not in user_unlocked.template_ids:
-        raise HTTPException(
-            status_code=403,
-            detail="You do not have access to this premium template. Unlock it through achievements."
-        )
-    
-    return template
-
-@app.post("/workout-templates/unlock/{template_id}", status_code=status.HTTP_200_OK, tags=["workout-templates"])
-async def unlock_template(
-    template_id: str,
-    user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """
-    Unlock a premium workout template.
-    """
-    # Check if template exists and is premium
-    template = db.query(WorkoutTemplate).filter(WorkoutTemplate.id == template_id).first()
-    
-    if not template:
-        raise HTTPException(status_code=404, detail="Template not found")
-    
-    if not template.is_premium:
-        return {"message": "Template is not premium and doesn't need to be unlocked"}
-    
-    if user.is_admin:
-        return {"message": "As an admin, you already have access to all premium templates"}
-    
-    # Check if user already has unlocked templates
-    user_unlocked = db.query(UserUnlockedTemplates).filter(
-        UserUnlockedTemplates.user_id == user.id
-    ).first()
-    
-    if not user_unlocked:
-        # Create new record for user
-        new_unlocked = UserUnlockedTemplates(
-            user_id=user.id,
-            template_ids=[template_id]
-        )
-        db.add(new_unlocked)
-        db.commit()
-    else:
-        # Update existing record
-        if template_id not in user_unlocked.template_ids:
-            user_unlocked.template_ids.append(template_id)
-            db.commit()
-    
-    return {"message": f"Template {template_id} unlocked successfully"}
-
-@app.post("/workout-templates", response_model=WorkoutTemplateResponse, status_code=status.HTTP_201_CREATED, tags=["workout-templates"])
-async def create_template(
-    template: WorkoutTemplateCreate,
-    user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """
-    Create a new workout template (admin only).
-    """
-    if not user.is_admin:
-        raise HTTPException(
-            status_code=403,
-            detail="Only administrators can create workout templates"
-        )
-    
-    new_template = WorkoutTemplate(
-        id=str(uuid.uuid4()),
-        name=template.name,
-        description=template.description,
-        level=template.level,
-        category=template.category,
-        creator=template.creator,
-        image_url=template.image_url,
-        is_premium=template.is_premium,
-        workouts=[workout.dict() for workout in template.workouts]
-    )
-    
-    db.add(new_template)
-    db.commit()
-    db.refresh(new_template)
-    
-    return new_template
-
-# Workout Preferences Endpoints
-@app.get("/api/workout-preferences", response_model=WorkoutPreferencesResponse)
-def get_workout_preferences(
-    user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """Get the current user's workout preferences"""
-    preferences = db.query(WorkoutPreferences).filter(WorkoutPreferences.user_id == user.id).first()
-    
-    if not preferences:
-        # Create default preferences if they don't exist
-        preferences = WorkoutPreferences(user_id=user.id)
-        db.add(preferences)
-        db.commit()
-        db.refresh(preferences)
-        
-    return preferences
-
-
-@app.put("/api/workout-preferences", response_model=WorkoutPreferencesResponse)
-def update_workout_preferences(
-    preferences: WorkoutPreferencesCreate,
-    user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """Update the current user's workout preferences"""
-    db_preferences = db.query(WorkoutPreferences).filter(WorkoutPreferences.user_id == user.id).first()
-    
-    if not db_preferences:
-        # Create preferences if they don't exist
-        db_preferences = WorkoutPreferences(user_id=user.id)
-        db.add(db_preferences)
-    
-    # Update preferences
-    for key, value in preferences.dict(exclude_unset=True).items():
-        setattr(db_preferences, key, value)
-    
-    db_preferences.updated_at = datetime.now(timezone.utc)
-    db.commit()
-    db.refresh(db_preferences)
-    
-    return db_preferences
-
-# Add user routines endpoint
-@app.get("/user/routines", response_model=List[Dict[str, Any]])
-def get_user_routines(
-    user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """Get the current user's workout routines"""
-    routines = db.query(Workout).filter(
-        Workout.user_id == user.id,
-        Workout.is_template == True
-    ).all()
-    
-    return [
-        {
-            "id": routine.id,
-            "name": routine.name,
-            "description": routine.description,
-            "exercises": routine.exercises
-        }
-        for routine in routines
-    ]
-
-# Add user routines endpoints for creation and updating
-@app.post("/user/routines", response_model=Dict[str, Any])
-def create_user_routine(
-    routine_data: Dict[str, Any],
-    user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """Create a new workout routine for the current user"""
-    # Create a new workout as a template (is_template=True)
-    new_routine = Workout(
-        user_id=user.id,
-        name=routine_data.get("name", "Untitled Routine"),
-        is_template=True,
-        exercises=routine_data.get("exercises", []),
-        date=datetime.now(timezone.utc)
-    )
-    
-    db.add(new_routine)
-    db.commit()
-    db.refresh(new_routine)
-    
-    return {
-        "id": new_routine.id,
-        "name": new_routine.name,
-        "description": new_routine.description,
-        "exercises": new_routine.exercises
-    }
-
-
-@app.put("/user/routines/{routine_id}", response_model=Dict[str, Any])
-def update_user_routine(
-    routine_id: int,
-    routine_data: Dict[str, Any],
-    user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """Update an existing workout routine for the current user"""
-    # Find the routine by ID for the current user
-    routine = db.query(Workout).filter(
-        Workout.id == routine_id,
-        Workout.user_id == user.id,
-        Workout.is_template == True
-    ).first()
-    
-    if not routine:
-        raise HTTPException(status_code=404, detail="Routine not found")
-    
-    # Update the routine
-    routine.name = routine_data.get("name", routine.name)
-    routine.exercises = routine_data.get("exercises", routine.exercises)
-    routine.updated_at = datetime.now(timezone.utc)
-    
-    db.commit()
-    db.refresh(routine)
-    
-    return {
-        "id": routine.id,
-        "name": routine.name,
-        "description": routine.description,
-        "exercises": routine.exercises
-    }
-
-# Add endpoint for getting last saved routine
-@app.get("/api/last-saved-routine", response_model=Dict[str, Any])
-def get_last_saved_routine(
-    user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """Get the last saved routine for the current user"""
-    # Find the most recent workout
-    last_workout = db.query(Workout).filter(
-        Workout.user_id == user.id,
-        Workout.is_template == False  # Only real workouts, not templates
-    ).order_by(Workout.date.desc()).first()
-    
-    if not last_workout:
-        return {
-            "message": "No workouts found",
-            "data": None
-        }
-    
-    # Get the exercises for this workout
-    exercises = db.query(Exercise).filter(
-        Exercise.workout_id == last_workout.id
-    ).all()
-    
-    exercise_data = []
-    for exercise in exercises:
-        # Get sets for this exercise
-        sets = db.query(Set).filter(
-            Set.exercise_id == exercise.id
-        ).all()
-        
-        # Format sets data
-        sets_data = []
-        for set_item in sets:
-            set_dict = {
-                "id": set_item.id,
-                "weight": set_item.weight,
-                "reps": set_item.reps,
-                "distance": set_item.distance,
-                "duration": set_item.duration,
-                "intensity": set_item.intensity,
-                "notes": set_item.notes
-            }
-            sets_data.append(set_dict)
-        
-        # Format exercise data
-        exercise_dict = {
-            "id": exercise.id,
-            "name": exercise.name,
-            "category": exercise.category,
-            "is_cardio": exercise.is_cardio,
-            "sets": sets_data
-        }
-        exercise_data.append(exercise_dict)
-    
-    return {
-        "id": last_workout.id,
-        "name": last_workout.name,
-        "date": last_workout.date.isoformat() if last_workout.date else None,
-        "exercises": exercise_data
-    }
-
-# Add endpoint for getting new achievements
-@app.get("/api/achievements/new", response_model=List[Dict[str, Any]])
-def get_new_achievements(
-    user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """Get new/unread achievements for the current user"""
-    try:
-        # Get user achievements that haven't been read yet
-        user_achievements = db.query(UserAchievement).filter(
-            UserAchievement.user_id == user.id,
-            UserAchievement.is_read == False
-        ).all()
-        
-        result = []
-        for user_achievement in user_achievements:
-            # Get the associated achievement
-            achievement = db.query(Achievement).filter(
-                Achievement.id == user_achievement.achievement_id
-            ).first()
-            
-            if not achievement:
-                continue
-                
-            # Mark as read
-            user_achievement.is_read = True
-            
-            # Use fields from user_achievement if available, otherwise fall back to achievement
-            result.append({
-                "id": user_achievement.id,
-                "type": user_achievement.achievement_type or "achievement",
-                "title": user_achievement.title or achievement.name,
-                "description": user_achievement.description or achievement.description,
-                "earned_at": user_achievement.earned_at.isoformat() if user_achievement.earned_at else 
-                             (user_achievement.achieved_at.isoformat() if user_achievement.achieved_at else None),
-                "icon": user_achievement.icon or achievement.icon or "trophy",
-                "level": user_achievement.level or 1
-            })
-        
-        # Commit changes to mark achievements as read
-        db.commit()
-        
-        return result
-    except Exception as e:
-        db.rollback()
-        print(f"Error fetching new achievements: {str(e)}")
         import traceback
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Error fetching new achievements: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error updating routine folder: {str(e)}"
+        )
 
+
+@app.delete("/routine-folders/{folder_id}")
+def delete_routine_folder(
+    folder_id: int,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Delete a routine folder"""
+    try:
+        folder = db.query(RoutineFolder).filter(
+            RoutineFolder.id == folder_id,
+            RoutineFolder.user_id == user.id
+        ).first()
+        
+        if not folder:
+            raise HTTPException(status_code=404, detail="Folder not found")
+        
+        # Update routines that are in this folder to have no folder
+        db.query(Routine).filter(
+            Routine.folder_id == folder_id
+        ).update({Routine.folder_id: None}, synchronize_session=False)
+        
+        # Delete the folder
+        db.delete(folder)
+        db.commit()
+        
+        return {"message": "Folder deleted successfully"}
+    except HTTPException:
+        db.rollback()
+        raise
+    except Exception as e:
+        db.rollback()
+        print(f"Error deleting routine folder: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error deleting routine folder: {str(e)}"
+        )
+
+
+@app.put("/routines/{routine_id}/move-to-folder")
+def move_routine_to_folder(
+    routine_id: int,
+    folder_data: dict = Body(...),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Move a routine to a folder"""
+    try:
+        routine = db.query(Routine).filter(
+            Routine.id == routine_id,
+            Routine.user_id == user.id
+        ).first()
+        
+        if not routine:
+            raise HTTPException(status_code=404, detail="Routine not found")
+        
+        # Get folder_id from request body
+        folder_id = folder_data.get("folder_id")
+        
+        # If folder_id is not None, verify folder exists and belongs to user
+        if folder_id is not None:
+            folder = db.query(RoutineFolder).filter(
+                RoutineFolder.id == folder_id,
+                RoutineFolder.user_id == user.id
+            ).first()
+            
+            if not folder:
+                raise HTTPException(status_code=404, detail="Folder not found")
+        
+        # Update routine
+        routine.folder_id = folder_id
+        db.commit()
+        
+        return {"message": "Routine moved successfully"}
+    except HTTPException:
+        db.rollback()
+        raise
+    except Exception as e:
+        db.rollback()
+        print(f"Error moving routine to folder: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error moving routine to folder: {str(e)}"
+        )

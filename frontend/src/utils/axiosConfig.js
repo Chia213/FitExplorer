@@ -38,6 +38,11 @@ axiosInstance.interceptors.response.use(
       // Redirect to login or refresh token
       console.log("401 Unauthorized error detected, redirecting to login");
       localStorage.removeItem("token");
+      
+      // Dispatch events to notify all components
+      window.dispatchEvent(new Event("storage"));
+      window.dispatchEvent(new Event("auth-change"));
+      
       window.location.href = "/login";
     }
     return Promise.reject(error);

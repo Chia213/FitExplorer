@@ -2,22 +2,27 @@ from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 from email_validator import validate_email, EmailNotValidError
 import os
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, status, Body
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
+from sqlalchemy import func, inspect, text
 from passlib.context import CryptContext
 from datetime import timedelta, datetime, timezone
 import jwt as pyjwt
+from jwt.exceptions import PyJWTError as JWTError
 from database import get_db, SessionLocal
 from models import User, AdminSettings, Set, Exercise, Workout, WorkoutPreferences
-from schemas import UserCreate, UserLogin, Token, GoogleTokenVerifyRequest, GoogleAuthResponse, ForgotPasswordRequest, ResetPasswordRequest, TokenVerificationRequest, ConfirmAccountDeletionRequest
+from schemas import UserCreate, UserLogin, Token, GoogleTokenVerifyRequest, GoogleAuthResponse, ForgotPasswordRequest, ResetPasswordRequest, TokenVerificationRequest, ConfirmAccountDeletionRequest, ResendVerificationRequest, ChangePasswordRequest
 from config import settings
 from security import generate_verification_token, hash_password, verify_password
-from dependencies import get_current_user
-from email_service import send_verification_email, notify_admin_new_registration, send_password_reset_email, send_password_changed_email, send_account_deletion_email
+from dependencies import get_current_user as original_get_current_user, oauth2_scheme
+from email_service import send_verification_email, notify_admin_new_registration, send_password_reset_email, send_password_changed_email, send_account_deletion_email, notify_admin_account_verified, notify_admin_password_changed, notify_admin_account_deletion
 
 from requests_oauthlib import OAuth2Session
 from dotenv import load_dotenv
+
+import redis
+from redis.exceptions import ConnectionError
 
 load_dotenv()
 
@@ -33,6 +38,39 @@ ALLOWED_EMAIL_DOMAINS = {
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 router = APIRouter(prefix="/auth", tags=["auth"])
 
+# Try to connect to Redis for token blacklisting
+try:
+    redis_client = redis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
+    redis_client.ping()  # Test the connection
+    REDIS_AVAILABLE = True
+except (ConnectionError, redis.exceptions.ConnectionError):
+    print("Warning: Redis not available for token blacklisting")
+    REDIS_AVAILABLE = False
+    # Fallback to in-memory blacklist if Redis is not available
+    token_blacklist = set()
+
+def blacklist_token(token: str, expires_delta: int):
+    """Add a token to the blacklist"""
+    if REDIS_AVAILABLE:
+        try:
+            redis_client.setex(f"blacklist:{token}", expires_delta, "1")
+        except:
+            # Fallback to in-memory if Redis fails
+            token_blacklist.add(token)
+            print("Warning: Redis failed, using in-memory blacklist")
+    else:
+        token_blacklist.add(token)
+
+def is_token_blacklisted(token: str) -> bool:
+    """Check if a token is blacklisted"""
+    if REDIS_AVAILABLE:
+        try:
+            return redis_client.exists(f"blacklist:{token}") == 1
+        except:
+            # Fallback to in-memory if Redis fails
+            return token in token_blacklist
+    else:
+        return token in token_blacklist
 
 def create_access_token(data: dict, expires_delta: timedelta):
     print("Creating access token with data:", data)
@@ -50,9 +88,8 @@ def create_access_token(data: dict, expires_delta: timedelta):
         db.close()
 
     # Direct encoding to avoid any possible name conflicts
-    import jwt
     try:
-        encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm="HS256")
+        encoded_jwt = pyjwt.encode(to_encode, settings.SECRET_KEY, algorithm="HS256")
         print("JWT encoding successful")
         return encoded_jwt
     except Exception as e:
@@ -128,11 +165,11 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
 
     if not db_user:
         print(f"Login failed: User with email {user.email} not found")
-        raise HTTPException(status_code=401, detail="Invalid credentials")
+        raise HTTPException(status_code=401, detail="User does not exist. Please check your email or register a new account.")
         
     if not pwd_context.verify(user.password, db_user.hashed_password):
         print(f"Login failed: Incorrect password for user {user.email}")
-        raise HTTPException(status_code=401, detail="Invalid credentials")
+        raise HTTPException(status_code=401, detail="Incorrect password. Please try again.")
 
     # Check admin settings for email verification requirement
     admin_settings = db.query(AdminSettings).first()
@@ -150,7 +187,7 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
     if admin_settings.require_email_verification and not db_user.is_verified:
         print(f"Login failed: User {db_user.email} is not verified and verification is required")
         raise HTTPException(
-            status_code=401, detail="Account not verified. Please check your email.")
+            status_code=401, detail="Account not verified. Please check your email for verification link.")
 
     # Update last login timestamp
     db_user.last_login = datetime.now(timezone.utc)
@@ -436,6 +473,14 @@ async def reset_password(request: ResetPasswordRequest, background_tasks: Backgr
             user.email
         )
         
+        # Notify admin about password change
+        background_tasks.add_task(
+            notify_admin_password_changed,
+            user.id,
+            user.email,
+            user.username
+        )
+        
         return {"message": "Password has been reset successfully"}
     except HTTPException:
         # Re-raise HTTP exceptions
@@ -449,7 +494,7 @@ async def reset_password(request: ResetPasswordRequest, background_tasks: Backgr
 
 
 @router.post("/verify-email")
-async def verify_email(request: TokenVerificationRequest, db: Session = Depends(get_db)):
+async def verify_email(request: TokenVerificationRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     """Verify a user's email using the verification token"""
     try:
         # Find user with this verification token
@@ -478,7 +523,7 @@ async def verify_email(request: TokenVerificationRequest, db: Session = Depends(
                 user.verification_token_expires_at = None
                 db.commit()
                 
-            return {"message": "Your email is already verified. You can now log in to your account."}
+            return {"message": "Your email is already verified. You can now log in to your account.", "already_verified": True}
             
         # Check if token is expired - make sure both datetimes have timezone info
         now = datetime.now(timezone.utc)
@@ -515,7 +560,23 @@ async def verify_email(request: TokenVerificationRequest, db: Session = Depends(
         db.commit()
         print(f"Verification successful for {user.email}")
         
-        return {"message": "Email verified successfully! You can now log in to your account."}
+        # Notify admin about the email verification
+        if settings.USE_GMAIL:
+            background_tasks.add_task(
+                notify_admin_account_verified,
+                user.id,
+                user.email,
+                user.username
+            )
+        else:
+            background_tasks.add_task(
+                notify_admin_account_verified,
+                user.id,
+                user.email,
+                user.username
+            )
+        
+        return {"message": "Your email is now verified ✅. You can now log in to your account.", "already_verified": False}
     except HTTPException:
         # Re-raise HTTP exceptions
         raise
@@ -530,7 +591,7 @@ async def verify_email(request: TokenVerificationRequest, db: Session = Depends(
 @router.post("/request-account-deletion")
 async def request_account_deletion(
     background_tasks: BackgroundTasks,
-    user: User = Depends(get_current_user),
+    user: User = Depends(original_get_current_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -566,7 +627,12 @@ async def request_account_deletion(
 
 
 @router.post("/confirm-account-deletion")
-async def confirm_account_deletion(request: ConfirmAccountDeletionRequest, db: Session = Depends(get_db)):
+async def confirm_account_deletion(
+    request: ConfirmAccountDeletionRequest, 
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    skip_relationships: bool = False
+):
     """Confirm account deletion using the provided token"""
     try:
         # Find user with this deletion token
@@ -589,23 +655,200 @@ async def confirm_account_deletion(request: ConfirmAccountDeletionRequest, db: S
         if token_expiry < now:
             raise HTTPException(status_code=400, detail="Deletion token has expired")
         
+        print(f"Starting deletion process for user: {user.username} (ID: {user.id})")
+        print(f"Skip relationships: {skip_relationships}")
+        
+        # Get inspector to check tables
+        inspector = inspect(db.bind)
+        existing_tables = inspector.get_table_names()
+        print(f"Tables in database: {existing_tables}")
+        
+        # If skipping relationships, go straight to direct SQL deletion
+        if skip_relationships:
+            try:
+                # Get username, email and id for logging
+                username = user.username
+                email = user.email
+                user_id = user.id
+                
+                # Attempt direct SQL deletion
+                print("Using direct SQL deletion (skipping relationships)...")
+                # First get all related tables and cascade delete
+                tables_with_user_fk = ['workouts', 'workout_preferences', 'user_achievements', 
+                                      'notifications', 'custom_exercises', 'meals', 'nutrition_goals',
+                                      'routines', 'routine_folders', 'saved_workout_programs']
+                
+                # Delete from these tables first to prevent foreign key violations
+                for table in tables_with_user_fk:
+                    if table in existing_tables:
+                        try:
+                            result = db.execute(text(f"DELETE FROM {table} WHERE user_id = :user_id"), 
+                                              {"user_id": user_id})
+                            print(f"Deleted from {table} table")
+                        except Exception as table_error:
+                            print(f"Error deleting from {table}: {str(table_error)}")
+                
+                # Delete user profile if it exists
+                if 'user_profiles' in existing_tables:
+                    try:
+                        result = db.execute(text("DELETE FROM user_profiles WHERE user_id = :user_id"), 
+                                          {"user_id": user_id})
+                        print("Deleted user profile")
+                    except Exception as profile_error:
+                        print(f"Error deleting profile: {str(profile_error)}")
+                
+                # Finally delete the user
+                result = db.execute(text("DELETE FROM users WHERE id = :user_id"), 
+                                   {"user_id": user_id})
+                db.commit()
+                
+                print(f"User {username} (ID: {user_id}, Email: {email}) deleted successfully via direct SQL")
+                
+                # Notify admin about account deletion
+                background_tasks.add_task(
+                    notify_admin_account_deletion,
+                    user_id,
+                    email,
+                    username
+                )
+                
+                return {"message": "Account deleted successfully"}
+            except Exception as sql_error:
+                db.rollback()
+                print(f"Direct SQL deletion failed: {str(sql_error)}")
+                raise HTTPException(status_code=500, detail=f"Database error during direct deletion: {str(sql_error)}")
+        
         # Delete all user related data
         try:
-            # Delete workouts and related data
-            db.query(Set).filter(Set.exercise_id.in_(
-                db.query(Exercise.id).filter(Exercise.workout_id.in_(
-                    db.query(Workout.id).filter(Workout.user_id == user.id)
-                ))
-            )).delete(synchronize_session=False)
-
-            db.query(Exercise).filter(Exercise.workout_id.in_(
-                db.query(Workout.id).filter(Workout.user_id == user.id)
-            )).delete(synchronize_session=False)
-
-            db.query(Workout).filter(Workout.user_id == user.id).delete(synchronize_session=False)
+            # Collect and log information about what we're deleting
+            workouts_count = db.query(Workout).filter(Workout.user_id == user.id).count()
+            print(f"Found {workouts_count} workouts to delete")
             
-            # Delete other user-related data that may exist based on foreign keys
-            db.query(WorkoutPreferences).filter(WorkoutPreferences.user_id == user.id).delete(synchronize_session=False)
+            # First, delete sets and exercises within workouts
+            print("Deleting workout sets...")
+            # Instead of joining and deleting directly, we'll get the IDs first then delete
+            workout_ids = [id for (id,) in db.query(Workout.id).filter(Workout.user_id == user.id).all()]
+            print(f"Found {len(workout_ids)} workout IDs")
+            
+            if workout_ids:
+                exercise_ids = [id for (id,) in db.query(Exercise.id).filter(Exercise.workout_id.in_(workout_ids)).all()]
+                print(f"Found {len(exercise_ids)} exercise IDs")
+                
+                if exercise_ids:
+                    set_count = db.query(Set).filter(Set.exercise_id.in_(exercise_ids)).delete(synchronize_session=False)
+                    print(f"Deleted {set_count} sets")
+                
+                exercise_count = db.query(Exercise).filter(Exercise.workout_id.in_(workout_ids)).delete(synchronize_session=False)
+                print(f"Deleted {exercise_count} exercises")
+            
+            workout_count = db.query(Workout).filter(Workout.user_id == user.id).delete(synchronize_session=False)
+            print(f"Deleted {workout_count} workouts")
+            
+            # Commit this batch to free up locks
+            db.commit()
+            
+            # For tables with direct foreign keys to user, we need to delete them manually
+            # Import all models but only use them if the table exists
+            try:
+                # Import models
+                from models import (
+                    UserProfile, UserAchievement, Notification, Routine, 
+                    SavedWorkoutProgram, NutritionMeal, NutritionGoal,
+                    NutritionFood, UserReward, UserUnlockedTemplates, CustomExercise,
+                    RoutineFolder, AdminSettings
+                )
+                
+                # Handle WorkoutPreferences if table exists
+                if 'workout_preferences' in existing_tables:
+                    print("Deleting workout preferences...")
+                    count = db.query(WorkoutPreferences).filter(WorkoutPreferences.user_id == user.id).delete(synchronize_session=False)
+                    print(f"Deleted {count} workout preferences")
+                
+                # Handle UserAchievement if table exists
+                if 'user_achievements' in existing_tables:
+                    print("Deleting user achievements...")
+                    count = db.query(UserAchievement).filter(UserAchievement.user_id == user.id).delete(synchronize_session=False)
+                    print(f"Deleted {count} user achievements")
+                
+                # Handle Notification if table exists
+                if 'notifications' in existing_tables:
+                    print("Deleting notifications...")
+                    count = db.query(Notification).filter(Notification.user_id == user.id).delete(synchronize_session=False)
+                    print(f"Deleted {count} notifications")
+                
+                # Handle CustomExercise if table exists
+                if 'custom_exercises' in existing_tables:
+                    print("Deleting custom exercises...")
+                    count = db.query(CustomExercise).filter(CustomExercise.user_id == user.id).delete(synchronize_session=False)
+                    print(f"Deleted {count} custom exercises")
+                
+                # Handle NutritionMeal if table exists
+                if 'meals' in existing_tables:
+                    print("Deleting nutrition meals...")
+                    count = db.query(NutritionMeal).filter(NutritionMeal.user_id == user.id).delete(synchronize_session=False)
+                    print(f"Deleted {count} nutrition meals")
+                
+                # Handle NutritionGoal if table exists
+                if 'nutrition_goals' in existing_tables:
+                    print("Deleting nutrition goals...")
+                    count = db.query(NutritionGoal).filter(NutritionGoal.user_id == user.id).delete(synchronize_session=False)
+                    print(f"Deleted {count} nutrition goals")
+                
+                # Handle UserReward if table exists
+                if 'user_rewards' in existing_tables:
+                    print("Deleting user rewards...")
+                    count = db.query(UserReward).filter(UserReward.user_id == user.id).delete(synchronize_session=False)
+                    print(f"Deleted {count} user rewards")
+                else:
+                    print("Skipping user_rewards table - not found in database")
+                
+                # Handle SavedWorkoutProgram if table exists
+                if 'saved_workout_programs' in existing_tables:
+                    print("Deleting saved workout programs...")
+                    count = db.query(SavedWorkoutProgram).filter(SavedWorkoutProgram.user_id == user.id).delete(synchronize_session=False)
+                    print(f"Deleted {count} saved workout programs")
+                
+                # Commit this batch to free up locks
+                db.commit()
+                
+                # Handle AdminSettings references - set updated_by to NULL where it references this user
+                if 'admin_settings' in existing_tables:
+                    print("Updating admin settings references...")
+                    count = db.query(AdminSettings).filter(AdminSettings.updated_by == user.id).update(
+                        {"updated_by": None}, synchronize_session=False
+                    )
+                    print(f"Updated {count} admin settings records")
+                
+                # Commit this batch
+                db.commit()
+                
+                # Handle RoutineFolder if table exists
+                if 'routine_folders' in existing_tables:
+                    print("Deleting routine folders...")
+                    count = db.query(RoutineFolder).filter(RoutineFolder.user_id == user.id).delete(synchronize_session=False)
+                    print(f"Deleted {count} routine folders")
+                    db.commit()
+                
+                # Handle UserUnlockedTemplates if table exists
+                if 'user_unlocked_templates' in existing_tables:
+                    print("Deleting unlocked templates...")
+                    count = db.query(UserUnlockedTemplates).filter(UserUnlockedTemplates.user_id == user.id).delete(synchronize_session=False)
+                    print(f"Deleted {count} unlocked templates")
+                    db.commit()
+                
+                # Check if user has a profile and delete it
+                if 'user_profiles' in existing_tables and hasattr(user, "profile") and user.profile:
+                    print("Deleting user profile...")
+                    db.delete(user.profile)
+                    db.commit()
+                    print("User profile deleted")
+                
+            except Exception as e:
+                print(f"Warning during deletion of related data: {str(e)}")
+                db.rollback()
+                import traceback
+                traceback.print_exc()
+                # Continue with the deletion process
             
             # Delete profile picture if it exists
             if user.profile_picture:
@@ -613,29 +856,261 @@ async def confirm_account_deletion(request: ConfirmAccountDeletionRequest, db: S
                     file_path = os.path.join(".", user.profile_picture.lstrip("/"))
                     if os.path.exists(file_path):
                         os.remove(file_path)
+                        print(f"Deleted profile picture at {file_path}")
                 except Exception as e:
                     print(f"Failed to delete profile picture: {str(e)}")
+            
+            try:
+                # Get username before deleting for logging
+                username = user.username
+                email = user.email
+                user_id = user.id
+                
+                # Try to handle any remaining relationships that might cause issues
+                try:
+                    # Delete the session key fields to further ensure no relationship loading
+                    for attr_name in list(user.__dict__.keys()):
+                        if attr_name.endswith('_id') or (attr_name != 'id' and attr_name not in ['username', 'email']):
+                            setattr(user, attr_name, None)
+                    db.flush()
+                except Exception as attr_error:
+                    print(f"Warning: Error clearing user attributes: {str(attr_error)}")
+                
+                # First try simply deleting the user
+                try:
+                    print("Attempting direct user deletion...")
+                    db.delete(user)
+                    db.commit()
+                    print(f"User {username} (ID: {user_id}) deleted successfully via direct deletion")
                     
-            # Finally delete the user
-            db.delete(user)
-            db.commit()
-            
-            return {"message": "Account deleted successfully"}
-            
+                    # Notify admin about account deletion
+                    background_tasks.add_task(
+                        notify_admin_account_deletion,
+                        user_id,
+                        email,
+                        username
+                    )
+                    
+                    return {"message": "Account deleted successfully"}
+                except Exception as direct_delete_error:
+                    print(f"Direct user deletion failed: {str(direct_delete_error)}")
+                    db.rollback()
+                    
+                    # Fallback to SQL deletion
+                    try:
+                        print("Attempting SQL deletion as fallback...")
+                        # Detach the user from the session to prevent relationship loading
+                        db.expunge(user)
+                        
+                        # Use a direct SQL query to delete the user without loading relationships
+                        result = db.execute(text("DELETE FROM users WHERE id = :user_id"), 
+                                          {"user_id": user_id})
+                        db.commit()
+                        
+                        print(f"User {username} (ID: {user_id}, Email: {email}) deleted successfully via SQL")
+                        
+                        # Notify admin about account deletion
+                        background_tasks.add_task(
+                            notify_admin_account_deletion,
+                            user_id,
+                            email,
+                            username
+                        )
+                        
+                        return {"message": "Account deleted successfully"}
+                    except Exception as sql_error:
+                        db.rollback()
+                        print(f"SQL deletion also failed: {str(sql_error)}")
+                        raise sql_error
+                
+            except Exception as final_e:
+                db.rollback()
+                print(f"Error in final user deletion: {str(final_e)}")
+                import traceback
+                traceback.print_exc()
+                raise HTTPException(status_code=500, detail=f"Database error during final user deletion: {str(final_e)}")
+                
         except Exception as e:
             db.rollback()
             print(f"Error deleting user data: {str(e)}")
             import traceback
             traceback.print_exc()
-            raise HTTPException(status_code=500, detail="An error occurred while deleting your account data")
+            raise HTTPException(status_code=500, detail=f"Database error while deleting account data: {str(e)}")
             
+    except HTTPException as http_ex:
+        # Re-raise HTTP exceptions with the same status code and detail
+        raise http_ex
+    except Exception as e:
+        db.rollback()
+        # Log the error and return a generic message
+        print(f"Unexpected error in confirm_account_deletion: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="An unexpected error occurred while processing your request")
+
+
+@router.get("/verify-session", status_code=200)
+async def verify_session(current_user: User = Depends(original_get_current_user)):
+    """
+    Verify if the current user's session is valid.
+    This endpoint will return 200 if the token is valid, or 401 if it's invalid.
+    """
+    # Additional verification logic beyond the token check
+    # If we got this far, the token is valid, but let's do extra checks
+    
+    # Check if the user is active
+    if not current_user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User account is inactive",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    # If everything is good, return user information
+    return {
+        "valid": True, 
+        "username": current_user.username, 
+        "is_admin": current_user.is_admin,
+        "email": current_user.email,
+        "user_id": current_user.id
+    }
+
+
+@router.post("/logout", status_code=200)
+async def logout(token: str = Depends(oauth2_scheme), current_user: User = Depends(original_get_current_user)):
+    """
+    Logout the current user by invalidating their token
+    """
+    try:
+        # Extract expiry from token to know how long to blacklist it
+        payload = pyjwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"], options={"verify_signature": False})
+        expires_at = datetime.fromtimestamp(payload.get("exp", 0))
+        current_time = datetime.utcnow()
+        
+        # Calculate seconds remaining until token expiry
+        # If token is already expired, we don't need to blacklist it
+        if expires_at > current_time:
+            expires_delta = int((expires_at - current_time).total_seconds())
+            blacklist_token(token, expires_delta)
+        
+        return {"message": "Successfully logged out"}
+    except Exception as e:
+        print(f"Error during logout: {str(e)}")
+        return {"message": "Logout successful"}
+
+# Update the imported get_current_user function to check for blacklisted tokens
+def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    # Check if token is blacklisted first
+    if is_token_blacklisted(token):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token has been revoked",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    # If not blacklisted, use the original function
+    return original_get_current_user(token, db)
+
+@router.post("/resend-verification")
+async def resend_verification(
+    request: ResendVerificationRequest, 
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db)
+):
+    """Resend verification email to a user who hasn't verified their account yet"""
+    try:
+        # Find the user by email
+        user = db.query(User).filter(User.email == request.email).first()
+        
+        # If no user found, return a generic message for security
+        if not user:
+            return {"message": "If a user with this email exists and requires verification, a new verification email has been sent."}
+        
+        # If user is already verified, let them know
+        if user.is_verified:
+            return {"message": "This account is already verified. You can login now."}
+        
+        # Generate a new verification token
+        token = generate_verification_token()
+        expires = datetime.now(timezone.utc) + timedelta(hours=24)
+        
+        # Update the user's verification token
+        user.verification_token = token
+        user.verification_token_expires_at = expires
+        db.commit()
+        
+        # Send the verification email
+        verification_url = f"{settings.FRONTEND_URL}/verify-email?token={token}"
+        print(f"Resending verification email to {user.email}")
+        
+        # Use the appropriate email service
+        if settings.USE_GMAIL:
+            background_tasks.add_task(
+                send_verification_email,
+                user.email,
+                verification_url
+            )
+        else:
+            # Fallback to regular email service
+            background_tasks.add_task(
+                send_verification_email,
+                user.email,
+                verification_url
+            )
+        
+        return {"message": "Verification email has been resent. Please check your inbox."}
+        
+    except Exception as e:
+        print(f"Error in resend_verification: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=500, 
+            detail="An error occurred while sending the verification email. Please try again later."
+        )
+
+@router.post("/change-password")
+async def change_password(
+    request: ChangePasswordRequest,
+    background_tasks: BackgroundTasks,
+    user: User = Depends(original_get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Change user's password with verification of old password"""
+    try:
+        # Validate new password length
+        if not request.new_password or len(request.new_password) < 8:
+            raise HTTPException(status_code=400, detail="New password must be at least 8 characters long")
+        
+        # Verify old password
+        if not pwd_context.verify(request.old_password, user.hashed_password):
+            raise HTTPException(status_code=400, detail="Incorrect old password")
+        
+        # Update password
+        user.hashed_password = pwd_context.hash(request.new_password)
+        db.commit()
+        
+        # Send confirmation email
+        background_tasks.add_task(
+            send_password_changed_email,
+            user.email
+        )
+        
+        # Notify admin about password change
+        background_tasks.add_task(
+            notify_admin_password_changed,
+            user.id,
+            user.email,
+            user.username
+        )
+        
+        return {"message": "Password changed successfully"}
     except HTTPException:
         # Re-raise HTTP exceptions
         raise
     except Exception as e:
-        db.rollback()
         # Log the error and return a generic message
-        print(f"Error in confirm_account_deletion: {str(e)}")
+        print(f"Error in change_password: {str(e)}")
         import traceback
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail="An error occurred while processing your request")
+        raise HTTPException(status_code=500, detail="An error occurred while changing your password")

@@ -88,19 +88,18 @@ export const AuthProvider = ({ children }) => {
     }
     
     if (!token) {
-      console.log('No token found in localStorage, user is not authenticated');
+      // No token found
       setUser(null);
       setIsLoading(false);
       return;
     }
     
     try {
-      console.log('Token found, attempting to parse and validate');
+      // Parse and validate token
       const userData = parseToken(token);
       
       if (!userData || isTokenExpired(userData.expiry)) {
         // Token is invalid or expired
-        console.log('Token is invalid or expired, clearing auth state');
         localStorage.removeItem('access_token');
         localStorage.removeItem('token');
         localStorage.removeItem('isAdmin');
@@ -109,8 +108,27 @@ export const AuthProvider = ({ children }) => {
         return;
       }
       
+      // Verify token with backend
+      try {
+        const verifyResponse = await fetch(`${BACKEND_URL}/auth/verify-session`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        
+        if (!verifyResponse.ok) {
+          // Token verification failed
+          localStorage.removeItem('access_token');
+          localStorage.removeItem('token');
+          localStorage.removeItem('isAdmin');
+          setUser(null);
+          setIsLoading(false);
+          return;
+        }
+      } catch (verifyError) {
+        console.error('Error verifying token with backend:', verifyError);
+        // In case of network error, we'll continue with client-side validation
+      }
+      
       // Fetch additional user data from the backend
-      console.log('Token is valid, fetching user profile');
       const profileData = await fetchUserProfile(token);
       
       setUser({
@@ -121,7 +139,6 @@ export const AuthProvider = ({ children }) => {
       
       // Update admin status in local storage
       localStorage.setItem('isAdmin', userData.isAdmin ? 'true' : 'false');
-      console.log('User authenticated successfully');
     } catch (err) {
       console.error('Authentication error:', err);
       setError('Failed to load user data');
@@ -132,7 +149,7 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setIsLoading(false);
     }
-  }, [fetchUserProfile, isTokenExpired, parseToken]);
+  }, [fetchUserProfile, isTokenExpired, parseToken, BACKEND_URL]);
 
   // Login function
   const login = useCallback(async (email, password) => {
@@ -215,8 +232,11 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   // Logout function
-  const logout = useCallback(() => {
-    // Clear auth tokens
+  const logout = useCallback(async () => {
+    // First update UI state immediately to show logged out
+    setUser(null);
+    
+    // Clear auth tokens from localStorage
     localStorage.removeItem('access_token');
     localStorage.removeItem('token');
     localStorage.removeItem('isAdmin');
@@ -226,15 +246,58 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem("premiumTheme", "default");
     localStorage.setItem("unlockedThemes", JSON.stringify(["default"]));
     
-    // Update UI state
-    setUser(null);
+    // Dispatch events to notify all components about the logout
+    window.dispatchEvent(new Event("storage"));
+    window.dispatchEvent(new Event("auth-change"));
     
-    // Navigate to login page
-    navigate('/login');
+    // Then call backend (after UI is already updated)
+    try {
+      const token = localStorage.getItem('access_token') || localStorage.getItem('token');
+      if (token) {
+        // Call backend logout endpoint
+        await fetch(`${BACKEND_URL}/auth/logout`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Error logging out from backend:', error);
+    } finally {
+      // Navigate to login page
+      navigate('/login');
+    }
   }, [navigate]);
 
-  // Check if the user is authenticated
-  const isAuthenticated = useCallback(() => {
+  // Initialize auth on mount
+  useEffect(() => {
+    initializeAuth();
+
+    // Listen for storage events to sync auth state
+    const handleStorageChange = (e) => {
+      // Silent refresh without logging
+      initializeAuth();
+    };
+
+    // Listen for custom auth-change events
+    const handleAuthChange = () => {
+      // Silent refresh without logging
+      initializeAuth();
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('auth-change', handleAuthChange);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('auth-change', handleAuthChange);
+    };
+  }, [initializeAuth]);
+
+  // Check if the user is authenticated - using a function that returns a value
+  const checkIsAuthenticated = useCallback(() => {
+    // Check if user exists and token is not expired
     return !!user && !isTokenExpired(user.expiry);
   }, [user, isTokenExpired]);
 
@@ -411,20 +474,6 @@ export const AuthProvider = ({ children }) => {
       setIsLoading(false);
     }
   }, [parseToken]);
-  
-  // Initialize auth on mount
-  useEffect(() => {
-    initializeAuth();
-
-    // Listen for storage events to sync auth state
-    const handleStorageChange = () => {
-      console.log('Storage changed, refreshing auth state');
-      initializeAuth();
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, [initializeAuth]);
 
   // Provide the auth context to children
   const value = {
@@ -435,7 +484,7 @@ export const AuthProvider = ({ children }) => {
     login,
     register,
     logout,
-    isAuthenticated: isAuthenticated(),
+    isAuthenticated: checkIsAuthenticated(),
     isAdmin: user?.isAdmin || false,
     verifyEmail,
     requestPasswordReset,

@@ -4,16 +4,20 @@ import { resolveExercisePath } from "../utils/exerciseAssetResolver";
 import { createSavedProgram } from "../api/savedProgramsApi";
 import WorkoutPopup from "../components/WorkoutPopup";
 import {
-  FaDumbbell,
-  FaWeightHanging,
-  FaRunning,
-  FaRegSave,
-  FaPrint,
-  FaUserAlt,
-  FaInfoCircle,
   FaVenusMars,
   FaBirthdayCake,
+  FaInfoCircle,
+  FaDumbbell,
+  FaRunning,
+  FaWeight,
+  FaSignal,
   FaCalendarAlt,
+  FaToolbox,
+  FaCheckCircle,
+  FaRegSave,
+  FaPrint,
+  FaTimes,
+  FaYoutube,
 } from "react-icons/fa";
 
 const allExercises = {
@@ -2044,7 +2048,7 @@ function WorkoutGenerator() {
     fitnessGoal: "",
     fitnessLevel: "",
     workoutsPerWeek: 3,
-    equipment: [],
+    equipment: ["Bodyweight"], // Default to bodyweight
     targetMuscles: [],
   });
   const [workout, setWorkout] = useState(null);
@@ -2060,6 +2064,7 @@ function WorkoutGenerator() {
   const [selectedDayExercises, setSelectedDayExercises] = useState(null);
   const [popupVisible, setPopupVisible] = useState(false);
   const [popupPosition, setPopupPosition] = useState({ x: 0, y: 0 });
+  const [previewExercise, setPreviewExercise] = useState(null);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -2195,6 +2200,11 @@ function WorkoutGenerator() {
       case 6:
         if (preferences.equipment.length === 0) {
           alert("Please select at least one type of equipment");
+          // Auto-select bodyweight as fallback
+          setPreferences({
+            ...preferences,
+            equipment: ["Bodyweight"]
+          });
         }
         break;
       case 7:
@@ -2237,109 +2247,275 @@ function WorkoutGenerator() {
         Fitness Goal: ${fitnessGoal}
         Gender: ${gender}`);
 
-    // If no specific equipment is selected, return all exercises for the muscle
+    // Create an organized structure similar to ExploreMuscleGuide
+    const muscleExercisesByEquipment = {
+      male: {
+        "Chest": {
+          "Barbell": ["Barbell Bench Press", "Incline Bench Press", "Decline Bench Press", "Close Grip Bench Press"],
+          "Dumbbells": ["Dumbbell Bench Press", "Dumbbell Chest Fly", "Incline Dumbbell Press", "Decline Dumbbell Press"],
+          "Machine": ["Machine Chest Press", "Machine Chest Fly", "Pec Deck Machine", "Smith Machine Bench Press"],
+          "Cable": ["Cable Chest Fly", "Cable Crossovers", "Low Cable Crossover", "High Cable Crossover"],
+          "Kettlebell": ["Kettlebell Chest Press", "Kettlebell Fly"],
+          "Bodyweight": ["Push-ups", "Diamond Push-ups", "Decline Push-ups", "Incline Push-ups", "Plyometric Push-ups", "Wide Push-ups", "Archer Push-ups", "Pseudo Planche Push-ups", "One-arm Push-ups"]
+        },
+        "Back": {
+          "Barbell": ["Barbell Row", "Barbell Deadlift", "T-Bar Row", "Rack Pulls"],
+          "Dumbbells": ["Dumbbell Row", "Dumbbell Pullover", "Incline Dumbbell Row"],
+          "Machine": ["Lat Pulldown Machine", "Seated Row Machine", "Smith Machine Row", "Assisted Pull-up Machine"],
+          "Cable": ["Cable Rows", "Cable Pulldowns", "Straight Arm Pulldown", "Face Pull"],
+          "Kettlebell": ["Kettlebell Row", "Kettlebell Deadlift", "Kettlebell Swing"],
+          "Bodyweight": ["Pull-ups", "Chin-ups", "Inverted Rows", "Superman", "Australian Pull-ups", "Scapular Pull-ups", "Commando Pull-ups", "Archer Pull-ups", "Back Extensions"]
+        },
+        "Shoulders": {
+          "Barbell": ["Barbell Shoulder Press", "Push Press", "Upright Row"],
+          "Dumbbells": ["Dumbbell Shoulder Press", "Lateral Raise", "Front Raise", "Rear Delt Fly"],
+          "Machine": ["Machine Shoulder Press", "Reverse Pec Deck", "Smith Machine Shoulder Press"],
+          "Cable": ["Cable Lateral Raise", "Cable Face Pulls", "Cable Front Raise"],
+          "Kettlebell": ["Kettlebell Shoulder Press", "Kettlebell Lateral Raise", "Bottoms Up Press"],
+          "Bodyweight": ["Pike Push-ups", "Handstand Push-ups", "Wall Walks", "Handstand Holds", "Decline Pike Push-ups", "Plank Shoulder Taps", "Wall Slides", "YTWLs", "Arm Circles"]
+        },
+        "Biceps": {
+          "Barbell": ["Barbell Curl", "EZ Bar Curl", "Reverse Grip Barbell Curl"],
+          "Dumbbells": ["Dumbbell Bicep Curl", "Hammer Curl", "Concentration Curl", "Incline Dumbbell Curl"],
+          "Machine": ["Machine Bicep Curl", "Preacher Curl Machine"],
+          "Cable": ["Cable Bicep Curl", "Cable Hammer Curl", "Rope Hammer Curl"],
+          "Kettlebell": ["Kettlebell Bicep Curl", "Kettlebell Hammer Curl"],
+          "Bodyweight": ["Chin-ups", "Bodyweight Curls", "Underhand Inverted Row", "Isometric Chin Hold", "Pelican Curls", "Ring Curls", "Door Curls", "Towel Curls"]
+        },
+        "Triceps": {
+          "Barbell": ["Close Grip Bench Press", "Skull Crushers", "JM Press"],
+          "Dumbbells": ["Dumbbell Tricep Kickback", "Overhead Tricep Extension", "Tricep Dips with Dumbbells"],
+          "Machine": ["Machine Tricep Extension", "V-Bar Tricep Pushdown"],
+          "Cable": ["Cable Tricep Pushdown", "Rope Pushdown", "Cable Overhead Extension"],
+          "Kettlebell": ["Kettlebell Tricep Extension", "Kettlebell Skull Crusher"],
+          "Bodyweight": ["Dips", "Diamond Push-ups", "Bench Dips", "Close Grip Push-ups", "Plank Tricep Extensions", "Tiger Bend Push-ups", "L-Sit Hold", "Korean Dips", "Bodyweight Skull Crushers"]
+        },
+        "Abs": {
+          "Barbell": ["Barbell Rollout", "Barbell Side Bend"],
+          "Dumbbells": ["Dumbbell Russian Twist", "Weighted Crunch", "Side Bend"],
+          "Machine": ["Ab Crunch Machine", "Hanging Leg Raise", "Cable Crunch Machine"],
+          "Cable": ["Cable Crunch", "Cable Woodchopper", "Cable Oblique Twist"],
+          "Kettlebell": ["Kettlebell Russian Twist", "Kettlebell Windmill", "Turkish Get-up"],
+          "Bodyweight": ["Planks", "Crunches", "Leg Raises", "Mountain Climbers", "Russian Twist", "Hollow Body Hold", "V-ups", "Flutter Kicks", "Bicycle Crunches", "L-Sit", "Dragon Flag", "Hanging Leg Raises", "Ab Rollouts"]
+        },
+        "Quads": {
+          "Barbell": ["Barbell Squat", "Barbell Front Squat", "Barbell Lunge", "Barbell Step-up"],
+          "Dumbbells": ["Dumbbell Lunges", "Goblet Squat", "Dumbbell Step-up", "Bulgarian Split Squat"],
+          "Machine": ["Leg Press Machine", "Leg Extension Machine", "Hack Squat Machine"],
+          "Cable": ["Cable Squat", "Cable Lunge"],
+          "Kettlebell": ["Kettlebell Goblet Squat", "Kettlebell Lunge", "Kettlebell Step-up"],
+          "Bodyweight": ["Bodyweight Squats", "Walking Lunges", "Split Squats", "Pistol Squats", "Jump Squats", "Reverse Lunges", "Step-ups", "Wall Sits", "Sissy Squats", "Skater Jumps", "Box Jumps"]
+        },
+        "Hamstrings": {
+          "Barbell": ["Barbell Deadlift", "Romanian Deadlift", "Good Morning", "Stiff Leg Deadlift"],
+          "Dumbbells": ["Dumbbell Deadlift", "Romanian Deadlift", "Single Leg Deadlift"],
+          "Machine": ["Leg Curl Machine", "Glute-Ham Raise"],
+          "Cable": ["Cable Leg Curl", "Cable Pull Through"],
+          "Kettlebell": ["Kettlebell Deadlift", "Kettlebell Swing", "Single Leg Kettlebell Deadlift"],
+          "Bodyweight": ["Nordic Hamstring Curl", "Glute Bridge", "Single Leg Glute Bridge", "Sliding Leg Curls", "Natural Leg Curls", "Single-leg Deadlift", "Good Mornings", "Reverse Hyperextensions"]
+        },
+        "Glutes": {
+          "Barbell": ["Barbell Hip Thrust", "Barbell Glute Bridge", "Barbell Squat", "Barbell Lunge"],
+          "Dumbbells": ["Dumbbell Lunges", "Dumbbell Step-up", "Dumbbell Hip Thrust"],
+          "Machine": ["Cable Kickback", "Hip Abduction Machine"],
+          "Cable": ["Cable Kickback", "Cable Pull Through"],
+          "Kettlebell": ["Kettlebell Swing", "Kettlebell Goblet Squat", "Kettlebell Lunge"],
+          "Bodyweight": ["Glute Bridge", "Fire Hydrant", "Donkey Kick", "Frog Pump", "Bulgarian Split Squat", "Single Leg Glute Bridge", "Hip Thrust", "Clamshells", "Bird Dogs", "Curtsy Lunges", "Glute Marches"]
+        },
+        "Calves": {
+          "Barbell": ["Barbell Calf Raise", "Seated Barbell Calf Raise"],
+          "Dumbbells": ["Dumbbell Calf Raise", "Seated Dumbbell Calf Raise", "Single Leg Calf Raise"],
+          "Machine": ["Seated Calf Raise Machine", "Standing Calf Raise Machine", "Leg Press Calf Raise"],
+          "Cable": ["Cable Standing Calf Raise"],
+          "Kettlebell": ["Kettlebell Calf Raise"],
+          "Bodyweight": ["Standing Calf Raise", "Single Leg Calf Raise", "Jump Rope", "Box Jump Calf Raises", "Donkey Calf Raises", "Seated Calf Raises", "Calf Raises on Stairs", "Jumping Jacks"]
+        }
+      },
+      // Female-specific exercises
+      female: {
+        "Chest": {
+          "Barbell": ["Barbell Bench Press", "Incline Bench Press", "Decline Bench Press"],
+          "Dumbbells": ["Dumbbell Bench Press", "Dumbbell Chest Fly", "Incline Dumbbell Press"],
+          "Machine": ["Machine Chest Press", "Machine Chest Fly", "Pec Deck Machine"],
+          "Cable": ["Cable Chest Fly", "Cable Crossovers", "Low Cable Crossover"],
+          "Kettlebell": ["Kettlebell Chest Press", "Kettlebell Fly"],
+          "Bodyweight": ["Push-ups", "Knee Push-ups", "Incline Push-ups", "Wall Push-ups", "Modified Push-ups", "Box Push-ups", "Wide Push-ups", "Diamond Push-ups", "Decline Push-ups"]
+        },
+        "Back": {
+          "Barbell": ["Barbell Row", "Barbell Deadlift", "T-Bar Row"],
+          "Dumbbells": ["Dumbbell Row", "Dumbbell Pullover", "Single Arm Row"],
+          "Machine": ["Lat Pulldown Machine", "Seated Row Machine", "Assisted Pull-up Machine"],
+          "Cable": ["Cable Rows", "Cable Pulldowns", "Straight Arm Pulldown"],
+          "Kettlebell": ["Kettlebell Row", "Kettlebell Deadlift"],
+          "Bodyweight": ["Assisted Pull-ups", "Inverted Rows", "Modified Pull-ups", "Superman", "Resistance Band Pull-aparts", "Scapular Pull-ups", "Australian Pull-ups", "Cat-Cow Stretch", "Bird Dog", "Dolphin Kicks"]
+        },
+        "Shoulders": {
+          "Barbell": ["Barbell Shoulder Press", "Push Press", "Upright Row"],
+          "Dumbbells": ["Dumbbell Shoulder Press", "Lateral Raise", "Front Raise"],
+          "Machine": ["Machine Shoulder Press", "Reverse Pec Deck"],
+          "Cable": ["Cable Lateral Raise", "Cable Face Pulls", "Cable Front Raise"],
+          "Kettlebell": ["Kettlebell Shoulder Press", "Kettlebell Lateral Raise"],
+          "Bodyweight": ["Pike Push-ups", "Wall Handstand Hold", "Wall Push-ups", "Plank Shoulder Taps", "Wall Slides", "YTWLs", "Arm Circles", "Modified Pike Push-ups", "Scapular Shrugs", "Serratus Punches"]
+        },
+        "Biceps": {
+          "Barbell": ["Barbell Curl", "EZ Bar Curl"],
+          "Dumbbells": ["Dumbbell Bicep Curl", "Hammer Curl", "Concentration Curl"],
+          "Machine": ["Machine Bicep Curl", "Preacher Curl Machine"],
+          "Cable": ["Cable Bicep Curl", "Cable Hammer Curl"],
+          "Kettlebell": ["Kettlebell Bicep Curl", "Kettlebell Hammer Curl"],
+          "Bodyweight": ["Assisted Chin-ups", "Bodyweight Curls", "Isometric Chin Hold", "Door Curls", "Resistance Band Curls", "Towel Curls", "Modified Australian Pull-ups"]
+        },
+        "Triceps": {
+          "Barbell": ["Close Grip Bench Press", "Skull Crushers"],
+          "Dumbbells": ["Dumbbell Tricep Kickback", "Overhead Tricep Extension"],
+          "Machine": ["Machine Tricep Extension", "V-Bar Tricep Pushdown"],
+          "Cable": ["Cable Tricep Pushdown", "Rope Pushdown"],
+          "Kettlebell": ["Kettlebell Tricep Extension"],
+          "Bodyweight": ["Bench Dips", "Diamond Push-ups", "Modified Dips", "Modified Close Grip Push-ups", "Plank Tricep Extensions", "Kick-backs", "Push-up Plank", "Chair Dips", "Resistance Band Push-downs"]
+        },
+        "Abs": {
+          "Barbell": ["Barbell Rollout"],
+          "Dumbbells": ["Dumbbell Russian Twist", "Weighted Crunch", "Side Bend"],
+          "Machine": ["Ab Crunch Machine", "Hanging Leg Raise"],
+          "Cable": ["Cable Crunch", "Cable Woodchopper"],
+          "Kettlebell": ["Kettlebell Russian Twist", "Kettlebell Windmill"],
+          "Bodyweight": ["Planks", "Crunches", "Leg Raises", "Mountain Climbers", "Bicycle Crunch", "Hollow Body Hold", "Modified V-ups", "Flutter Kicks", "Side Planks", "Reverse Crunches", "Dead Bug", "Standing Side Crunch", "Bird Dog Crunch"]
+        },
+        "Quads": {
+          "Barbell": ["Barbell Squat", "Barbell Front Squat", "Barbell Lunge"],
+          "Dumbbells": ["Dumbbell Lunges", "Goblet Squat", "Dumbbell Step-up"],
+          "Machine": ["Leg Press Machine", "Leg Extension Machine"],
+          "Cable": ["Cable Squat", "Cable Lunge"],
+          "Kettlebell": ["Kettlebell Goblet Squat", "Kettlebell Lunge"],
+          "Bodyweight": ["Bodyweight Squats", "Walking Lunges", "Split Squats", "Wall Sits", "Step-ups", "Modified Pistol Squats", "Reverse Lunges", "Box Squats", "Sumo Squats", "Jump Squats", "Lateral Lunges", "Glute Bridge"]
+        },
+        "Hamstrings": {
+          "Barbell": ["Barbell Deadlift", "Romanian Deadlift", "Good Morning"],
+          "Dumbbells": ["Dumbbell Deadlift", "Romanian Deadlift"],
+          "Machine": ["Leg Curl Machine", "Glute-Ham Raise"],
+          "Cable": ["Cable Leg Curl", "Cable Pull Through"],
+          "Kettlebell": ["Kettlebell Deadlift", "Kettlebell Swing"],
+          "Bodyweight": ["Glute Bridge", "Single Leg Glute Bridge", "Modified Nordic Curl", "Good Mornings", "Sliding Leg Curls", "Single-leg Deadlift", "Standing Hamstring Curl", "Reverse Hyperextensions"]
+        },
+        "Glutes": {
+          "Barbell": ["Barbell Hip Thrust", "Barbell Glute Bridge", "Barbell Squat"],
+          "Dumbbells": ["Dumbbell Lunges", "Dumbbell Step-up", "Dumbbell Hip Thrust"],
+          "Machine": ["Cable Kickback", "Hip Abduction Machine"],
+          "Cable": ["Cable Kickback", "Cable Pull Through"],
+          "Kettlebell": ["Kettlebell Swing", "Kettlebell Goblet Squat"],
+          "Bodyweight": ["Glute Bridge", "Fire Hydrant", "Donkey Kick", "Frog Pump", "Clamshells", "Bird Dogs", "Single Leg Glute Bridge", "Curtsy Lunges", "Hip Abductors", "Hip Thrust", "Glute Marches", "Lateral Band Walks"]
+        },
+        "Calves": {
+          "Barbell": ["Barbell Calf Raise", "Seated Barbell Calf Raise"],
+          "Dumbbells": ["Dumbbell Calf Raise", "Seated Dumbbell Calf Raise"],
+          "Machine": ["Seated Calf Raise Machine", "Standing Calf Raise Machine"],
+          "Cable": ["Cable Standing Calf Raise"],
+          "Kettlebell": ["Kettlebell Calf Raise"],
+          "Bodyweight": ["Standing Calf Raise", "Single Leg Calf Raise", "Jump Rope", "Box Jump Calf Raises", "Donkey Calf Raises", "Seated Calf Raises", "Calf Raises on Stairs", "Jumping Jacks", "Heel Raises", "Plie Calf Raises"]
+        }
+      }
+    };
+
+    // Default to male if gender not specified
+    const genderKey = gender.toLowerCase() === "female" ? "female" : "male";
+    
+    // Get exercises for the specific muscle based on gender
+    const muscleExercises = muscleExercisesByEquipment[genderKey][muscle] || {};
+    
+    // If no equipment is selected or "Select all" is included, return exercises from all equipment types
     if (equipmentList.length === 0 || equipmentList.includes("Select all")) {
-      return exercisesByMuscle[muscle] || [];
+      // Combine exercises from all equipment types
+      return Object.values(muscleExercises).flat();
     }
-
-    const muscleExercises = exercisesByMuscle[muscle] || [];
-    console.log(`Initial muscle exercises: ${muscleExercises}`);
-
-    // Filter exercises based on equipment and gender
-    const filteredExercises = muscleExercises.filter((exercise) => {
-      const exerciseInfo = allExercises[exercise];
-
-      if (!exerciseInfo) {
-        console.warn(`No exercise info found for: ${exercise}`);
-        return false;
+    
+    // Get exercises that match the selected equipment
+    let availableExercises = [];
+    
+    // Get exercises for each piece of equipment requested
+    equipmentList.forEach(equipment => {
+      if (muscleExercises[equipment]) {
+        console.log(`Found ${muscleExercises[equipment].length} exercises for ${muscle} using ${equipment}`);
+        availableExercises = [...availableExercises, ...muscleExercises[equipment]];
       }
-
-      // Check if exercise is suitable for the user's gender
-      if (exerciseInfo.gender && exerciseInfo.gender !== gender) {
-        console.log(`Gender mismatch for ${exercise}. 
-                Required: ${gender}
-                Exercise Gender: ${exerciseInfo.gender}`);
-        return false;
-      }
-
-      // Check if exercise matches ALL required equipment
-      const equipmentMatch = equipmentList.every((reqEquipment) => {
-        // If bodyweight is required, check if exercise is bodyweight
-        if (reqEquipment === "Bodyweight") {
-          return exerciseInfo.equipment?.includes("Bodyweight");
-        }
-        // For other equipment, check if exercise requires it
-        return exerciseInfo.equipment?.includes(reqEquipment);
-      });
-
-      if (!equipmentMatch) {
-        console.log(`Equipment mismatch for ${exercise}. 
-                Required: ${equipmentList}
-                Exercise Equipment: ${exerciseInfo.equipment}`);
-        return false;
-      }
-
-      // Check if exercise has variations for the fitness goal
-      const goalVariationExists =
-        exerciseInfo.variations?.[fitnessGoal] !== undefined;
-      if (!goalVariationExists) {
-        console.log(`Goal variation mismatch for ${exercise}. 
-                Required Goal: ${fitnessGoal}
-                Available Variations: ${Object.keys(
-                  exerciseInfo.variations || {}
-                )}`);
-        return false;
-      }
-
-      return true;
     });
-
-    console.log(
-      `Filtered exercises after equipment and goal check: ${filteredExercises}`
-    );
-
-    // If no exercises found, try to find bodyweight alternatives
-    if (
-      filteredExercises.length === 0 &&
-      !equipmentList.includes("Bodyweight")
-    ) {
-      console.warn(
-        `No exercises found for ${muscle} with current equipment. Trying bodyweight alternatives.`
-      );
-      const bodyweightExercises = muscleExercises.filter((exercise) => {
+    
+    // If no exercises are found for the selected equipment, fall back to bodyweight
+    if (availableExercises.length === 0 && !equipmentList.includes("Bodyweight")) {
+      console.log(`No exercises found for ${muscle} with selected equipment. Falling back to bodyweight exercises.`);
+      return muscleExercises["Bodyweight"] || [];
+    }
+    
+    // Adjust exercise selection based on age
+    if (age < 18) {
+      // For younger users, prioritize safer exercises
+      availableExercises = availableExercises
+        .filter(exercise => {
+          const exerciseInfo = allExercises[exercise];
+          // Avoid advanced exercises for younger users
+          return !(exerciseInfo && exerciseInfo.difficulty === "advanced");
+        });
+    } else if (age > 65) {
+      // For older users, prioritize joint-friendly exercises and lower impact
+      availableExercises = availableExercises
+        .filter(exercise => {
+          const exerciseInfo = allExercises[exercise];
+          // Avoid advanced exercises for older users
+          return !(exerciseInfo && exerciseInfo.difficulty === "advanced");
+        });
+    }
+    
+    // Adjust exercise selection based on fitness level
+    let levelAdjustedExercises = [...availableExercises];
+    
+    switch (fitnessLevel) {
+      case "novice":
+        // For novices, prioritize beginner-friendly exercises
+        levelAdjustedExercises = availableExercises.filter(exercise => {
         const exerciseInfo = allExercises[exercise];
-        return (
-          exerciseInfo.equipment?.includes("Bodyweight") &&
-          (!exerciseInfo.gender || exerciseInfo.gender === gender)
-        );
-      });
-
-      if (bodyweightExercises.length > 0) {
-        console.log(`Found bodyweight alternatives for ${muscle}`);
-        return bodyweightExercises;
-      }
+          return exerciseInfo && 
+            (exerciseInfo.difficulty === "beginner" || 
+             exerciseInfo.difficulty?.novice || 
+             !exerciseInfo.difficulty);
+        });
+        break;
+      case "advanced":
+        // For advanced users, include more challenging exercises
+        levelAdjustedExercises = availableExercises.filter(exercise => {
+          const exerciseInfo = allExercises[exercise];
+          return !(exerciseInfo && exerciseInfo.difficulty === "beginner");
+        });
+        break;
     }
-
-    // Age and fitness level-based modifications
-    const ageAdjustedExercises = filteredExercises.map((exercise) => {
-      const exerciseInfo = allExercises[exercise];
-
-      // Age and difficulty modifications
-      if (exerciseInfo.difficulty) {
-        if (age < 18 && exerciseInfo.difficulty.advanced) {
-          return `Modified ${exercise}`;
-        } else if (age > 65 && exerciseInfo.difficulty.advanced) {
-          return `Low-Impact ${exercise}`;
-        }
-      }
-
-      return exercise;
-    });
-
-    console.log(
-      `Final selected exercises after age adjustment: ${ageAdjustedExercises}`
-    );
-    return ageAdjustedExercises;
+    
+    // If level adjustment resulted in no exercises, revert to original list
+    if (levelAdjustedExercises.length === 0) {
+      levelAdjustedExercises = availableExercises;
+    }
+    
+    // Adjust for training frequency
+    // For high training frequency, diversify exercise selection
+    if (preferences.workoutsPerWeek >= 5) {
+      // For high frequency, we want more variety, so just return all available exercises
+      return levelAdjustedExercises;
+    } else if (preferences.workoutsPerWeek <= 2) {
+      // For low frequency, prioritize compound exercises
+      const compoundExercises = [
+        "Bench Press", "Squat", "Deadlift", "Shoulder Press", "Barbell Row",
+        "Pull-ups", "Dips", "Push-ups", "Barbell Bench Press", "Barbell Squat"
+      ];
+      
+      // First add compound exercises that are in our adjusted list
+      const prioritizedExercises = levelAdjustedExercises.filter(exercise => 
+        compoundExercises.some(compound => exercise.includes(compound))
+      );
+      
+      // Then add other exercises to ensure we have enough options
+      return [...prioritizedExercises, ...levelAdjustedExercises.filter(ex => 
+        !prioritizedExercises.includes(ex)
+      )];
+    }
+    
+    return levelAdjustedExercises;
   };
 
   const generateWorkoutPlan = (prefs) => {
@@ -2408,8 +2584,16 @@ function WorkoutGenerator() {
     let totalWorkoutTime = 0; // Initialize total workout time
 
     targetMuscles.forEach((muscle) => {
-      // Get gender-specific exercises
-      let availableExercises = getGenderSpecificExercises(muscle);
+      // Instead of just getting gender-specific exercises
+      // Get exercises filtered by equipment and gender
+      let availableExercises = getExercisesForEquipment(
+        muscle,
+        prefs.equipment,
+        prefs.age,
+        prefs.fitnessLevel,
+        prefs.fitnessGoal,
+        prefs.gender
+      );
 
       // If no specific exercises are found, fall back to bodyweight exercises
       if (availableExercises.length === 0) {
@@ -2557,12 +2741,52 @@ function WorkoutGenerator() {
     const selectedCore = muscleGroups.filter((m) => coreMuscles.includes(m));
 
     const schedule = {};
-
+    
+    // Rest day tips based on fitness goals
+    const restDayTips = {
+      "Weight Loss": [
+        "Light cardio (30 min walk)",
+        "Foam rolling and mobility work",
+        "Yoga or stretching",
+        "Consider calorie deficit and hydration"
+      ],
+      "Muscle Building": [
+        "Proper nutrition with adequate protein intake",
+        "Quality sleep (7-9 hours)",
+        "Light stretching for recovery",
+        "Meal preparation for next training day"
+      ],
+      "Gain Strength": [
+        "Focus on nutrition with adequate protein & carbs",
+        "Active recovery: brisk walking or cycling",
+        "Deep tissue massage or foam rolling",
+        "Contrast therapy (hot/cold)"
+      ],
+      "Endurance": [
+        "Light mobility work",
+        "Proper hydration and electrolyte balance",
+        "Yoga or flexibility training",
+        "Cross-training with low-impact activities"
+      ]
+    };
+    
+    // Default rest tips if no specific goal is selected
+    const defaultRestTips = [
+      "Active recovery with light walking",
+      "Focus on proper nutrition",
+      "Adequate sleep for recovery",
+      "Stretching and mobility work"
+    ];
+    
+    // Get appropriate rest day tips based on fitness goal
+    const selectedRestTips = restDayTips[preferences.fitnessGoal] || defaultRestTips;
+    
+    // First, create workout days based on the selected training frequency
     // Handle different training frequencies with proper splits
-    switch (daysPerWeek) {
+    switch (parseInt(daysPerWeek)) {
       case 1:
         // Full body
-        schedule["Day 1"] = muscleGroups;
+        schedule["Day 1 - Full Body"] = muscleGroups;
         break;
 
       case 2:
@@ -2570,11 +2794,11 @@ function WorkoutGenerator() {
         const upperBody = [...selectedPush, ...selectedPull, ...selectedCore];
         const lowerBody = [...selectedLegs];
 
-        schedule["Day 1"] =
+        schedule["Day 1 - Upper"] =
           upperBody.length > 0
             ? upperBody
             : muscleGroups.slice(0, Math.ceil(muscleGroups.length / 2));
-        schedule["Day 2"] =
+        schedule["Day 4 - Lower"] =
           lowerBody.length > 0
             ? lowerBody
             : muscleGroups.slice(Math.ceil(muscleGroups.length / 2));
@@ -2601,14 +2825,14 @@ function WorkoutGenerator() {
             pushWithCore.length > 0
               ? pushWithCore
               : muscleGroups.slice(0, Math.ceil(muscleGroups.length / 3));
-          schedule["Day 2 - Pull"] =
+          schedule["Day 3 - Pull"] =
             pullWithCore.length > 0
               ? pullWithCore
               : muscleGroups.slice(
                   Math.ceil(muscleGroups.length / 3),
                   Math.ceil((muscleGroups.length * 2) / 3)
                 );
-          schedule["Day 3 - Legs"] =
+          schedule["Day 5 - Legs"] =
             selectedLegs.length > 0
               ? selectedLegs
               : muscleGroups.slice(Math.ceil((muscleGroups.length * 2) / 3));
@@ -2616,8 +2840,8 @@ function WorkoutGenerator() {
           // Fallback to simple division if user selected unusual muscle groups
           const chunkSize = Math.ceil(muscleGroups.length / 3);
           schedule["Day 1"] = muscleGroups.slice(0, chunkSize);
-          schedule["Day 2"] = muscleGroups.slice(chunkSize, chunkSize * 2);
-          schedule["Day 3"] = muscleGroups.slice(chunkSize * 2);
+          schedule["Day 3"] = muscleGroups.slice(chunkSize, chunkSize * 2);
+          schedule["Day 5"] = muscleGroups.slice(chunkSize * 2);
         }
         break;
 
@@ -2639,22 +2863,21 @@ function WorkoutGenerator() {
             selectedLegs.length > 0
               ? selectedLegs
               : muscleGroups.slice(Math.ceil(muscleGroups.length / 2));
-          schedule["Day 3 - Upper"] =
+          schedule["Day 4 - Upper"] =
             upperBody.length > 0
               ? upperBody
               : muscleGroups.slice(0, Math.ceil(muscleGroups.length / 2));
-          schedule["Day 4 - Lower"] =
+          schedule["Day 5 - Lower"] =
             selectedLegs.length > 0
               ? selectedLegs
               : muscleGroups.slice(Math.ceil(muscleGroups.length / 2));
         } else {
           // Fallback if unusual muscle groups
           const chunkSize = Math.ceil(muscleGroups.length / 4);
-          for (let i = 0; i < 4; i++) {
-            schedule[`Day ${i + 1}`] = muscleGroups
-              .slice(i * chunkSize, (i + 1) * chunkSize)
-              .filter(Boolean);
-          }
+          schedule["Day 1"] = muscleGroups.slice(0, chunkSize);
+          schedule["Day 2"] = muscleGroups.slice(chunkSize, chunkSize * 2);
+          schedule["Day 4"] = muscleGroups.slice(chunkSize * 2, chunkSize * 3);
+          schedule["Day 5"] = muscleGroups.slice(chunkSize * 3);
         }
         break;
 
@@ -2668,8 +2891,8 @@ function WorkoutGenerator() {
           schedule["Day 1 - Push"] = selectedPush;
           schedule["Day 2 - Pull"] = [...selectedPull, ...selectedCore];
           schedule["Day 3 - Legs"] = selectedLegs;
-          schedule["Day 4 - Upper"] = [...selectedPush, ...selectedPull];
-          schedule["Day 5 - Lower"] = selectedLegs;
+          schedule["Day 5 - Upper"] = [...selectedPush, ...selectedPull];
+          schedule["Day 6 - Lower"] = selectedLegs;
         } else {
           // Body part split or fallback
           const muscleChunks = [];
@@ -2775,6 +2998,23 @@ function WorkoutGenerator() {
         });
     }
 
+    // Now add rest days with tips to complete the 7-day week
+    // First, determine which days are already workout days
+    const workoutDays = new Set(Object.keys(schedule).map(day => {
+      // Extract just the day number from strings like "Day 1 - Push"
+      const match = day.match(/Day (\d+)/);
+      return match ? parseInt(match[1]) : 0;
+    }));
+    
+    // Add rest days for the remaining days in the week
+    for (let i = 1; i <= 7; i++) {
+      if (!workoutDays.has(i)) {
+        // Select a random rest day tip
+        const randomTip = selectedRestTips[Math.floor(Math.random() * selectedRestTips.length)];
+        schedule[`Day ${i} - Rest`] = [`Rest Day: ${randomTip}`];
+      }
+    }
+
     // Remove any empty days
     Object.keys(schedule).forEach((day) => {
       if (schedule[day].length === 0) {
@@ -2804,10 +3044,18 @@ function WorkoutGenerator() {
         console.error("Missing fitness level");
         return;
       }
-      if (!preferences.equipment || preferences.equipment.length === 0) {
-        console.error("No equipment selected");
-        return;
+      
+      // Ensure at least bodyweight equipment is selected
+      let equipmentList = preferences.equipment;
+      if (!equipmentList || equipmentList.length === 0) {
+        console.log("No equipment selected, defaulting to bodyweight");
+        equipmentList = ["Bodyweight"];
+        setPreferences({
+          ...preferences,
+          equipment: equipmentList
+        });
       }
+      
       if (
         !preferences.targetMuscles ||
         preferences.targetMuscles.length === 0
@@ -2816,47 +3064,89 @@ function WorkoutGenerator() {
         return;
       }
 
+      // Reset workoutVersions when user changes preferences
+      // This ensures that cycling through versions respects latest selections
+      if (workoutVersions.length > 0) {
+        // Check if the saved workout versions have the same target muscles and equipment
+        const lastVersion = workoutVersions[workoutVersions.length - 1];
+        const hasSameMuscles = 
+          JSON.stringify(lastVersion.targetMuscles.sort()) === 
+          JSON.stringify(preferences.targetMuscles.sort());
+        const hasSameEquipment = 
+          JSON.stringify(lastVersion.equipment.sort()) === 
+          JSON.stringify(preferences.equipment.sort());
+        
+        // If user changed muscles or equipment, reset versions
+        if (!hasSameMuscles || !hasSameEquipment) {
+          console.log("Resetting workout versions due to preference changes");
+          setWorkoutVersions([]);
+        }
+      }
+
       if (workoutVersions.length < 3) {
         console.log("Generating new workout plan");
-        const workoutPlan = generateWorkoutPlan(preferences);
-        console.log("Generated workoutPlan:", workoutPlan);
+        // Generate three different workout plans with the same muscle targets
+        // but with different exercise selections
+        const versions = [];
+        
+        for (let i = 0; i < 3 - workoutVersions.length; i++) {
+          // Different random seed for each generation to get variety
+          const seed = Date.now() + i * 1000;
+          console.log(`Generating workout version ${i + 1} with seed ${seed}`);
+          
+          // Create a deep copy of preferences to avoid reference issues
+          const prefsCopy = JSON.parse(JSON.stringify(preferences));
+          
+          // Add a version label to distinguish in the UI
+          const versionLabel = workoutVersions.length + i + 1;
+          
+          // Generate the workout plan with the same muscle targets
+          const workoutPlan = generateWorkoutPlan(prefsCopy);
+          workoutPlan.versionNumber = versionLabel;
+          workoutPlan.title = `${workoutPlan.title} (Version ${versionLabel})`;
+          
+          console.log(`Generated workoutPlan ${versionLabel}:`, workoutPlan);
 
-        const trainingSchedule = generateTrainingSchedule(
-          workoutPlan.targetMuscles,
-          workoutPlan.workoutsPerWeek
-        );
-        console.log("Generated trainingSchedule:", trainingSchedule);
+          // Generate training schedule
+          const trainingSchedule = generateTrainingSchedule(
+            workoutPlan.targetMuscles,
+            workoutPlan.workoutsPerWeek
+          );
+          console.log(`Generated trainingSchedule for version ${versionLabel}:`, trainingSchedule);
 
-        workoutPlan.trainingSchedule = trainingSchedule;
+          workoutPlan.trainingSchedule = trainingSchedule;
 
-        const sixWeekProgram = [];
-        const basePlan = { ...workoutPlan };
+          // Generate a 6-week progression
+          const sixWeekProgram = [];
+          const basePlan = { ...workoutPlan };
 
-        for (let week = 1; week <= 6; week++) {
-          const weeklyPlan = { ...basePlan, week };
+          for (let week = 1; week <= 6; week++) {
+            const weeklyPlan = { ...basePlan, week };
 
-          if (week > 1) {
-            weeklyPlan.exercises = weeklyPlan.exercises.map((ex) => ({
-              ...ex,
-              sets: Math.min(ex.sets + Math.floor((week - 1) / 2), 6),
-              intensity: `${Math.min(
-                parseInt(ex.intensity.split("-")[0] || "70") + (week - 1) * 5,
-                95
-              )}%`,
-            }));
+            if (week > 1) {
+              weeklyPlan.exercises = weeklyPlan.exercises.map((ex) => ({
+                ...ex,
+                sets: Math.min(ex.sets + Math.floor((week - 1) / 2), 6),
+                intensity: `${Math.min(
+                  parseInt(ex.intensity.split("-")[0] || "70") + (week - 1) * 5,
+                  95
+                )}%`,
+              }));
+            }
+
+            sixWeekProgram.push(weeklyPlan);
           }
 
-          sixWeekProgram.push(weeklyPlan);
+          workoutPlan.sixWeekProgram = sixWeekProgram;
+          versions.push(workoutPlan);
         }
 
-        workoutPlan.sixWeekProgram = sixWeekProgram;
-
-        const updatedVersions = [...workoutVersions, workoutPlan];
+        const updatedVersions = [...workoutVersions, ...versions];
         console.log("Updated workout versions:", updatedVersions);
 
         setWorkoutVersions(updatedVersions);
         setCurrentVersionIndex(updatedVersions.length - 1);
-        setWorkout(workoutPlan);
+        setWorkout(updatedVersions[updatedVersions.length - 1]);
       } else {
         console.log("Cycling to next workout version");
         const nextIndex = (currentVersionIndex + 1) % workoutVersions.length;
@@ -2869,7 +3159,7 @@ function WorkoutGenerator() {
         if (workoutResults) {
           workoutResults.scrollIntoView({
             behavior: "smooth",
-            block: "center", // This centers the element vertically in the viewport
+            block: "center",
           });
         }
       }, 100);
@@ -2920,7 +3210,7 @@ function WorkoutGenerator() {
       if (preferences.equipment.includes("Select all")) {
         setPreferences({
           ...preferences,
-          equipment: [],
+          equipment: ["Bodyweight"], // Always include bodyweight as fallback
         });
       } else {
         setPreferences({
@@ -2946,6 +3236,11 @@ function WorkoutGenerator() {
 
     // If the equipment is already selected, remove it
     if (currentEquipment.includes(equipment)) {
+      // Don't remove Bodyweight if it's the only option left
+      if (equipment === "Bodyweight" && currentEquipment.length <= 1) {
+        return;
+      }
+      
       setPreferences({
         ...preferences,
         equipment: currentEquipment.filter((e) => e !== equipment),
@@ -3139,7 +3434,7 @@ function WorkoutGenerator() {
         return (
           <div className="mb-8">
             <h2 className="text-xl font-bold mb-4 flex items-center">
-              <FaUserAlt className="mr-2 text-blue-500" /> Select Your Fitness
+              <FaInfoCircle className="mr-2 text-blue-500" /> Select Your Fitness
               Level
             </h2>
             <div className="grid grid-cols-2 gap-4">
@@ -3320,7 +3615,7 @@ function WorkoutGenerator() {
         return (
           <div className="mb-8">
             <h2 className="text-xl font-bold mb-4 flex items-center">
-              <FaWeightHanging className="mr-2 text-blue-500" /> Select Muscle
+              <FaWeight className="mr-2 text-blue-500" /> Select Muscle
               Groups to Train
             </h2>
             {/* Add this preferences summary section */}
@@ -4108,35 +4403,96 @@ function WorkoutGenerator() {
 
               {activeTab === "workout" ? (
                 <div className="space-y-6">
-                  <h3 className="text-lg font-medium mb-2">Main Workout</h3>
+                  <h3 className="text-lg font-medium mb-2">7-Day Weekly Schedule</h3>
 
                   {workout.trainingSchedule &&
-                    Object.entries(workout.trainingSchedule).map(
-                      ([day, muscles]) => (
+                    // Sort days by day number for consistent display
+                    Object.entries(workout.trainingSchedule)
+                      .sort((a, b) => {
+                        // Extract day numbers from day labels (e.g., "Day 3 - Rest" => 3)
+                        const aMatch = a[0].match(/Day (\d+)/);
+                        const bMatch = b[0].match(/Day (\d+)/);
+                        
+                        const aDay = aMatch ? parseInt(aMatch[1]) : 0;
+                        const bDay = bMatch ? parseInt(bMatch[1]) : 0;
+                        
+                        return aDay - bDay;
+                      })
+                      .map(([day, muscles]) => (
                         <div
                           key={day}
-                          className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-4"
+                          className={`border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-4 ${day.includes('Rest') ? 'bg-gray-50 dark:bg-gray-900/40' : ''}`}
                         >
                           <div className="flex justify-between items-center mb-3">
                             <h4 className="font-medium text-lg bg-gray-100 dark:bg-gray-700 p-2 rounded">
-                              {day} - {muscles.join(", ")}
+                              {day}
                             </h4>
-                            <button
-                              onClick={() =>
-                                setSelectedDayExercises(
-                                  workout.exercises.filter((exercise) =>
-                                    muscles.includes(exercise.muscle)
+                            {day.includes('Rest') ? (
+                              <div className="text-sm text-gray-500">
+                                <FaRunning className="inline-block mr-2" />
+                                Recovery Day
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() =>
+                                  setSelectedDayExercises(
+                                    workout.exercises.filter((exercise) =>
+                                      muscles.includes(exercise.muscle)
+                                    )
                                   )
-                                )
-                              }
-                              className="text-blue-500 hover:text-blue-700 flex items-center"
-                            >
-                              <FaDumbbell className="mr-2" /> View Exercises
-                            </button>
+                                }
+                                className="text-blue-500 hover:text-blue-700 flex items-center"
+                              >
+                                <FaDumbbell className="mr-2" /> View Exercises
+                              </button>
+                            )}
                           </div>
+                          
+                          {day.includes('Rest') && (
+                            <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                              <ul className="list-disc pl-5">
+                                {muscles.map((tip, index) => (
+                                  <li key={index}>{tip}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          {!day.includes('Rest') && (
+                            <div className="mt-2 text-sm text-gray-600 dark:text-gray-400 flex items-center justify-between">
+                              <div>
+                                <span className="font-medium">Focus: </span>
+                                {muscles.map((muscle, idx) => (
+                                  <span 
+                                    key={idx} 
+                                    className="relative cursor-pointer underline decoration-dotted"
+                                    onMouseEnter={(e) => {
+                                      // Get sample exercises for this muscle group
+                                      const muscleExercises = workout.exercises
+                                        .filter(ex => ex.muscle === muscle)
+                                        .slice(0, 3); // Limit to 3 examples
+                                      
+                                      if (muscleExercises.length > 0) {
+                                        setPreviewExercise({
+                                          muscle,
+                                          exercises: muscleExercises,
+                                          position: {
+                                            top: e.currentTarget.getBoundingClientRect().bottom + window.scrollY,
+                                            left: e.currentTarget.getBoundingClientRect().left + window.scrollX
+                                          }
+                                        });
+                                      }
+                                    }}
+                                    onMouseLeave={() => setPreviewExercise(null)}
+                                  >
+                                    {muscle}{idx < muscles.length - 1 ? ', ' : ''}
+                                  </span>
+                                ))}
+                              </div>
+                              {/* Removed redundant "View All" button */}
+                            </div>
+                          )}
                         </div>
-                      )
-                    )}
+                      ))}
                 </div>
               ) : (
                 <div>
@@ -4233,46 +4589,86 @@ function WorkoutGenerator() {
                     </div>
 
                     <div className="space-y-4">
-                      {selectedDayExercises.map((exercise, exIndex) => (
-                        <div
-                          key={exIndex}
-                          className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 transition-shadow hover:shadow-md"
-                        >
-                          <div className="flex justify-between items-center">
-                            <h5 className="font-medium text-lg">
-                              {exIndex + 1}. {exercise.name}
-                            </h5>
-                            <div className="text-sm bg-blue-50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 px-2 py-1 rounded">
-                              {exercise.muscle}
-                            </div>
-                          </div>
-
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-3">
-                            <div className="text-sm bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded">
-                              <span className="font-bold">Sets:</span>{" "}
-                              {exercise.sets}
-                            </div>
-                            <div className="text-sm bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded">
-                              <span className="font-bold">Reps:</span>{" "}
-                              {exercise.reps}
-                            </div>
-                            <div className="text-sm bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded">
-                              <span className="font-bold">Rest:</span>{" "}
-                              {exercise.rest}s
-                            </div>
-                          </div>
-
-                          <button
-                            className="mt-3 text-blue-500 hover:text-blue-700 text-sm flex items-center"
-                            onClick={() => {
-                              setSelectedDayExercises(null);
-                              setViewingExercise(exercise.name);
-                            }}
+                      {selectedDayExercises.length > 0 ? (
+                        selectedDayExercises.map((exercise, exIndex) => (
+                          <div
+                            key={exIndex}
+                            className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 transition-shadow hover:shadow-md"
                           >
-                            <span className="mr-1">View Demonstration</span>
-                          </button>
+                            <div className="flex justify-between items-center">
+                              <h5 className="font-medium text-lg">
+                                {exIndex + 1}. {exercise.name}
+                              </h5>
+                              <div className="text-sm bg-blue-50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 px-2 py-1 rounded">
+                                {exercise.muscle}
+                              </div>
+                            </div>
+
+                            {/* Add this exercise demonstration preview */}
+                            <div className="mt-3 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
+                              {(() => {
+                                const asset = getExerciseAsset(
+                                  exercise.name,
+                                  preferences.fitnessLevel || "beginner"
+                                );
+                                return (
+                                  <div className="flex flex-col md:flex-row items-center">
+                                    <div className="w-full md:w-1/3 h-32 relative">
+                                      <img
+                                        src={asset.src}
+                                        alt={`${exercise.name} demonstration`}
+                                        className="w-full h-full object-contain"
+                                      />
+                                    </div>
+                                    <div className="w-full md:w-2/3 p-3">
+                                      <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-3">
+                                        {asset.description}
+                                      </p>
+                                    </div>
+                                  </div>
+                                );
+                              })()}
+                            </div>
+
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-3">
+                              <div className="text-sm bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded">
+                                <span className="font-bold">Sets:</span>{" "}
+                                {exercise.sets}
+                              </div>
+                              <div className="text-sm bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded">
+                                <span className="font-bold">Reps:</span>{" "}
+                                {exercise.reps}
+                              </div>
+                              <div className="text-sm bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded">
+                                <span className="font-bold">Rest:</span>{" "}
+                                {exercise.rest}s
+                              </div>
+                              <div className="text-sm bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded">
+                                <span className="font-bold">Intensity:</span>{" "}
+                                {exercise.intensity}
+                              </div>
+                            </div>
+
+                            <button
+                              className="mt-3 text-blue-500 hover:text-blue-700 text-sm flex items-center"
+                              onClick={() => {
+                                setSelectedDayExercises(null);
+                                setViewingExercise(exercise.name);
+                              }}
+                            >
+                              <span className="mr-1">View Full Demonstration</span>
+                            </button>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-center py-8">
+                          <FaInfoCircle className="mx-auto text-blue-500 text-3xl mb-3" />
+                          <p className="text-lg text-gray-700 dark:text-gray-300">No exercises found for this day.</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                            This might be a rest day or there may be no exercises assigned to the selected muscles.
+                          </p>
                         </div>
-                      ))}
+                      )}
                     </div>
                   </div>
                 </div>
@@ -4298,7 +4694,7 @@ function WorkoutGenerator() {
                   onClick={cycleWorkoutVersion}
                   className="flex-1 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors flex items-center justify-center"
                 >
-                  Show Different Workout ({currentVersionIndex + 1}/
+                  Show Alternative Workout (V{workout.versionNumber || currentVersionIndex + 1}/
                   {workoutVersions.length})
                 </button>
               )}
@@ -4307,6 +4703,12 @@ function WorkoutGenerator() {
             {showSuccess && (
               <div className="text-center mt-3 text-sm text-green-600 dark:text-green-500">
                 Workout saved successfully to your Account!
+              </div>
+            )}
+
+            {workoutVersions.length > 1 && (
+              <div className="text-center mt-3 text-sm text-gray-600 dark:text-gray-400">
+                <FaInfoCircle className="inline-block mr-1" /> Alternative workouts target the same muscles but offer different exercise selections.
               </div>
             )}
           </div>
@@ -4320,7 +4722,7 @@ function WorkoutGenerator() {
 
       {viewingExercise && (
         <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-lg w-full">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-xl w-full">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-bold">{viewingExercise}</h3>
               <button
@@ -4348,30 +4750,119 @@ function WorkoutGenerator() {
                   </div>
 
                   <div className="mb-4">
-                    <div className="flex gap-2 mb-4">
+                    <div className="flex flex-wrap gap-2 mb-4">
                       <span className="text-sm bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 px-2 py-1 rounded">
                         {asset.muscleWorked}
                       </span>
                       <span className="text-sm bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 px-2 py-1 rounded">
-                        {asset.difficulty}
+                        Difficulty: {asset.difficulty}
                       </span>
+                      {asset.equipment && asset.equipment.map((eq, index) => (
+                        <span key={index} className="text-sm bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 px-2 py-1 rounded">
+                          {eq}
+                        </span>
+                      ))}
                     </div>
 
                     <h4 className="font-bold mb-2">How to perform:</h4>
-                    <p className="text-gray-700 dark:text-gray-300">
+                    <p className="text-gray-700 dark:text-gray-300 mb-4">
                       {asset.description}
                     </p>
+                    
+                    {/* Add exercise variations based on fitness goal */}
+                    {asset.variations && (
+                      <div className="mt-4 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
+                        <h4 className="font-bold mb-2">Recommended Sets & Reps:</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                          {Object.entries(asset.variations).map(([goal, details], index) => (
+                            <div 
+                              key={index} 
+                              className={`p-2 rounded ${preferences.fitnessGoal === goal ? 'bg-blue-100 dark:bg-blue-800/40 border border-blue-300 dark:border-blue-700' : ''}`}
+                            >
+                              <div className="font-medium">{goal}:</div>
+                              <div className="text-sm">
+                                {details.sets} sets × {details.reps} reps
+                                {details.intensity && <span> @ {details.intensity} intensity</span>}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Add age-specific modifications if available */}
+                    {asset.ageModifications && (
+                      <div className="mt-4 bg-amber-50 dark:bg-amber-900/20 p-3 rounded-lg">
+                        <h4 className="font-bold mb-2">Age-Specific Recommendations:</h4>
+                        <div className="space-y-2">
+                          {Object.entries(asset.ageModifications).map(([ageRange, details], index) => (
+                            <div key={index} className="text-sm">
+                              <span className="font-medium">{ageRange}:</span> {details.notes}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </>
               );
             })()}
 
-            <button
-              onClick={() => setViewingExercise(null)}
-              className="mt-6 w-full py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
-            >
-              Close
-            </button>
+            <div className="flex gap-2 mt-6">
+              <button
+                onClick={() => setViewingExercise(null)}
+                className="flex-1 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
+              >
+                Close
+              </button>
+              <button
+                onClick={() => window.open(`https://www.youtube.com/results?search_query=${viewingExercise}+exercise+tutorial`, '_blank')}
+                className="flex-1 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors flex items-center justify-center"
+              >
+                <FaYoutube className="mr-2" /> Find Tutorial
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {previewExercise && (
+        <div 
+          className="absolute bg-white dark:bg-gray-800 shadow-xl rounded-lg p-4 z-50 border border-gray-200 dark:border-gray-700 max-w-sm"
+          style={{ 
+            top: `${previewExercise.position.top}px`, 
+            left: `${previewExercise.position.left}px` 
+          }}
+        >
+          <h5 className="font-bold text-sm mb-2">{previewExercise.muscle} Exercises:</h5>
+          <div className="space-y-3 max-h-80 overflow-y-auto">
+            {previewExercise.exercises.map((exercise, idx) => {
+              const asset = getExerciseAsset(
+                exercise.name,
+                preferences.fitnessLevel || "beginner"
+              );
+              
+              return (
+                <div key={idx} className="flex gap-2 p-2 rounded-lg border border-gray-200 dark:border-gray-700">
+                  <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded flex-shrink-0">
+                    <img 
+                      src={asset.src} 
+                      alt={exercise.name} 
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <h6 className="text-xs font-bold">{exercise.name}</h6>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">{asset.description}</p>
+                    <div className="text-xs mt-1">
+                      {exercise.sets} × {exercise.reps}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div className="text-xs text-center mt-2 text-blue-500">
+            Hover to preview • Click "View Exercises" for complete list
           </div>
         </div>
       )}

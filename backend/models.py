@@ -61,6 +61,7 @@ class User(Base):
     achievements = relationship("UserAchievement", back_populates="user", cascade="all, delete-orphan")
     nutrition_meals = relationship("NutritionMeal", back_populates="user", cascade="all, delete-orphan")
     nutrition_goal = relationship("NutritionGoal", back_populates="user", uselist=False, cascade="all, delete-orphan")
+    rewards = relationship("UserReward", back_populates="user", cascade="all, delete-orphan", lazy="noload", overlaps="rewards")
 
 
 class UserProfile(Base):
@@ -81,9 +82,14 @@ class UserProfile(Base):
     theme_mode = Column(String, default="light")  # light or dark
     premium_theme = Column(String, default="default")  # theme key/name
     unlocked_themes = Column(JSON, default=lambda: ["default"])  # list of unlocked theme keys
+    selected_badges = Column(JSON, default=lambda: [])  # IDs of selected achievement badges for profile display
+    
+    # Add these missing fields
+    current_streak = Column(Integer, default=0)
+    best_streak = Column(Integer, default=0)
+    last_workout_date = Column(DateTime, nullable=True)
 
     user = relationship("User", back_populates="profile")
-
 
 class Workout(Base):
     __tablename__ = "workouts"
@@ -396,3 +402,14 @@ class UserUnlockedTemplates(Base):
     last_updated = Column(DateTime, default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
     
     user = relationship("User", backref="unlocked_templates")
+
+
+class UserReward(Base):
+    __tablename__ = "user_rewards"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    reward_id = Column(String, nullable=False)
+    claimed_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))
+
+    user = relationship("User", back_populates="rewards")

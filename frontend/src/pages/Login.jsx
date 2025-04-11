@@ -25,6 +25,18 @@ function Login() {
   // Get welcome modal trigger function from context
   const { triggerWelcomeModal } = useWelcome();
 
+  // Clear any existing auth tokens when the login page loads
+  useEffect(() => {
+    // Clear all authentication tokens to prevent state inconsistencies
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("token");
+    localStorage.removeItem("isAdmin");
+    
+    // Dispatch events to notify all components
+    window.dispatchEvent(new Event("storage"));
+    window.dispatchEvent(new Event("auth-change"));
+  }, []);
+
   // Check for success message from location state (e.g., after registration)
   useEffect(() => {
     if (location.state?.message) {
@@ -73,23 +85,43 @@ function Login() {
         // Force auth state refresh before navigation
         window.dispatchEvent(new Event('storage'));
 
-        // Navigate to home
-        navigate("/");
+        // Check if the user was redirected from a protected route and redirect back
+        const from = location.state?.from?.pathname || "/";
+        navigate(from);
       } else {
         setError("Invalid credentials");
       }
     } catch (err) {
-      // Check if it's a verification issue
-      if (err.message && err.message.includes("not verified")) {
-        setError(
-          "Account not verified. Please check your email for verification link."
-        );
-
-        // Add resend verification link
-        setShowResendVerification(true);
-        setResendEmail(formData.email);
+      console.error("Login error:", err);
+      
+      // Display the specific error message from the backend
+      if (err.message) {
+        // Check for verification issue
+        if (err.message.includes("not verified")) {
+          setError(err.message);
+          // Add resend verification link
+          setShowResendVerification(true);
+          setResendEmail(formData.email);
+        } 
+        // Check for user doesn't exist
+        else if (err.message.includes("User does not exist")) {
+          setError(err.message);
+        }
+        // Check for incorrect password
+        else if (err.message.includes("Incorrect password")) {
+          setError(err.message);
+        }
+        // Any other error message from the backend
+        else if (err.message.includes("Login failed")) {
+          // For generic login failures, assume user doesn't exist if that's the most likely cause
+          setError(`User with email "${formData.email}" does not exist. Please check your email or register a new account.`);
+        }
+        else {
+          setError(err.message);
+        }
       } else {
-        setError("Invalid credentials or server error. Try again.");
+        // Fallback generic error message if we can't get a specific error
+        setError("An error occurred during login. Please try again.");
       }
     }
   };
@@ -169,8 +201,9 @@ function Login() {
           localStorage.setItem("hasLoggedInBefore", "true");
         }
 
-        // Navigate to home
-        navigate("/");
+        // Navigate to home or previous route
+        const from = location.state?.from?.pathname || "/";
+        navigate(from);
       } else {
         console.error(`Google login failed: Status ${response.status}`, responseText);
         setError(`Google login failed: ${response.status} - ${responseText}`);
@@ -345,14 +378,98 @@ function Login() {
               locale="en"
               useOneTap={false}
               cookiePolicy={'single_host_origin'}
+              width="400"
+              ux_mode="popup"
             />
           </div>
           
           {/* Custom English Google sign-in button */}
           <button
             onClick={() => {
-              // Trigger the GoogleLogin click programmatically
-              document.querySelector('[aria-labelledby="button-label"]')?.click();
+              // Calculate window size and position for centered popup
+              const width = 450;
+              const height = 630;
+              const left = Math.max(0, (window.innerWidth - width) / 2 + window.screenX);
+              const top = Math.max(0, (window.innerHeight - height) / 2 + window.screenY);
+              
+              // Create a custom popup window first with our exact specifications
+              const popup = window.open(
+                'about:blank',
+                'Google OAuth2 Login',
+                `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=yes`
+              );
+              
+              // If popup was blocked, fall back to default behavior
+              if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+                console.log("Popup was blocked, using default behavior");
+                document.querySelector('[aria-labelledby="button-label"]')?.click();
+                return;
+              }
+              
+              // Set some styles to show a loading indicator in the popup
+              popup.document.write(`
+                <html>
+                <head>
+                  <title>Google Sign In</title>
+                  <style>
+                    body {
+                      font-family: 'Roboto', Arial, sans-serif;
+                      display: flex;
+                      justify-content: center;
+                      align-items: center;
+                      height: 100vh;
+                      margin: 0;
+                      background-color: #f5f5f5;
+                      flex-direction: column;
+                    }
+                    .spinner {
+                      border: 4px solid rgba(0, 0, 0, 0.1);
+                      width: 36px;
+                      height: 36px;
+                      border-radius: 50%;
+                      border-left-color: #4285F4;
+                      animation: spin 1s linear infinite;
+                      margin-bottom: 16px;
+                    }
+                    @keyframes spin {
+                      0% { transform: rotate(0deg); }
+                      100% { transform: rotate(360deg); }
+                    }
+                    p {
+                      color: #5f6368;
+                    }
+                  </style>
+                </head>
+                <body>
+                  <div class="spinner"></div>
+                  <p>Connecting to Google...</p>
+                </body>
+                </html>
+              `);
+              
+              // Save the original window.open function
+              const originalOpen = window.open;
+              
+              // Override window.open to redirect Google's popup to our existing window
+              window.open = function(url, name, features) {
+                if (name === 'Google OAuth2 Login' || url.includes('accounts.google.com')) {
+                  // Instead of opening a new window, redirect our existing popup
+                  popup.location.href = url;
+                  return popup;
+                }
+                // For any other window.open calls, use the original behavior
+                return originalOpen.apply(this, arguments);
+              };
+              
+              // Trigger the GoogleLogin click
+              setTimeout(() => {
+                document.querySelector('[aria-labelledby="button-label"]')?.click();
+                
+                // Restore original window.open after a short delay
+                setTimeout(() => {
+                  window.open = originalOpen;
+                }, 2000);
+              }, 100);
             }}
             className="flex items-center justify-center gap-2 bg-white text-gray-700 border border-gray-300 rounded-full px-6 py-2 font-medium hover:bg-gray-50 transition-colors"
           >

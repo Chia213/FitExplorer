@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "../hooks/useTheme";
 import {
@@ -20,6 +20,13 @@ import {
   FaSort,
   FaSearch,
   FaExclamationTriangle,
+  FaTrophy,
+  FaMedal,
+  FaCrown,
+  FaCalendarAlt,
+  FaChartLine,
+  FaDumbbell,
+  FaRunning,
 } from "react-icons/fa";
 import AddExercise from "./AddExercise";
 import FolderModal from "./FolderModal";
@@ -60,49 +67,60 @@ function Routines() {
   });
   const [showDeleteAllModal, setShowDeleteAllModal] = useState(false);
   const [deletingAll, setDeletingAll] = useState(false);
+  const [showPersonalRecordsModal, setShowPersonalRecordsModal] = useState(false);
+  const [personalRecords, setPersonalRecords] = useState([]);
+  const [loadingRecords, setLoadingRecords] = useState(false);
+  const [recordsFilter, setRecordsFilter] = useState({
+    category: "all",
+    search: "",
+    sortBy: "recent",
+    recordAge: "all"
+  });
+  const [showRecordHistory, setShowRecordHistory] = useState(null);
 
   const navigate = useNavigate();
   const { theme } = useTheme();
 
-  useEffect(() => {
-    const fetchRoutines = async () => {
-      setLoading(true);
-      try {
-        // Get token from both possible locations
-        const token = localStorage.getItem("access_token") || localStorage.getItem("token");
-    if (!token) {
-      navigate("/login");
-      return;
-    }
+  // Extract the fetchRoutines function from the useEffect
+  const fetchRoutines = async () => {
+    setLoading(true);
+    try {
+      // Get token from both possible locations
+      const token = localStorage.getItem("token");
+      if (!token) {
+        navigate("/login");
+        return;
+      }
 
-        // Fetch routines using the /routines endpoint instead of /user/routines
-        const response = await fetch(`${backendURL}/routines`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json"
-          },
-        });
+      // Fetch routines using the /routines endpoint instead of /user/routines
+      const response = await fetch(`${backendURL}/routines`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+      });
 
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error(`Failed to fetch routines: ${response.status} ${response.statusText}`, errorText);
-          throw new Error("Failed to fetch routines");
-        }
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`Failed to fetch routines: ${response.status} ${response.statusText}`, errorText);
+        throw new Error("Failed to fetch routines");
+      }
 
       const data = await response.json();
-        console.log(`Successfully fetched ${data.length} routines`);
-        setRoutines(data);
-        
-        // Also fetch folders after successful routines fetch
-        fetchFolders(token);
-      } catch (error) {
-        console.error("Error fetching routines:", error);
-        setError("Failed to load routines. Please try again later.");
-      } finally {
-        setLoading(false);
-      }
-    };
+      console.log(`Successfully fetched ${data.length} routines`);
+      setRoutines(data);
+      
+      // Also fetch folders after successful routines fetch
+      fetchFolders(token);
+    } catch (error) {
+      console.error("Error fetching routines:", error);
+      setError("Failed to load routines. Please try again later.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchRoutines();
   }, [navigate]);
 
@@ -123,6 +141,52 @@ function Routines() {
       const data = await response.json();
       setFolders(data);
     } catch (err) {}
+  };
+
+  const refreshFolders = async () => {
+    try {
+      const token = localStorage.getItem("access_token") || localStorage.getItem("token");
+      if (!token) {
+        console.error("No authentication token found");
+        return;
+      }
+      
+      // First fetch updated folders
+      const folderResponse = await fetch(`${backendURL}/routine-folders`, {
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+      });
+
+      if (!folderResponse.ok) {
+        throw new Error(`Failed to fetch folders: ${folderResponse.status}`);
+      }
+
+      const folderData = await folderResponse.json();
+      setFolders(folderData);
+      
+      // Then fetch updated routines to ensure everything is in sync
+      const routineResponse = await fetch(`${backendURL}/routines`, {
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+      });
+      
+      if (!routineResponse.ok) {
+        throw new Error(`Failed to fetch routines: ${routineResponse.status}`);
+      }
+      
+      const routineData = await routineResponse.json();
+      setRoutines(routineData);
+      
+    } catch (err) {
+      console.error("Error refreshing folder data:", err);
+      setError(`Failed to refresh folders: ${err.message}`);
+      // Auto-clear error after 3 seconds
+      setTimeout(() => setError(null), 3000);
+    }
   };
 
   const toggleFolderExpand = (folderId) => {
@@ -249,7 +313,7 @@ function Routines() {
                         rest_pauses: set.is_restpause ? set.rest_pauses : null,
                         pyramid_type: set.is_pyramid ? set.pyramid_type : null,
                         pyramid_step: set.is_pyramid ? set.pyramid_step : null,
-                        giant_with: set.is_giant ? set.giant_with : null
+                        giant_with: set.giant_with ? set.giant_with.map(item => String(item)) : null
                       };
                     } else {
                       return {
@@ -271,7 +335,7 @@ function Routines() {
                         rest_pauses: set.is_restpause ? set.rest_pauses : null,
                         pyramid_type: set.is_pyramid ? set.pyramid_type : null,
                         pyramid_step: set.is_pyramid ? set.pyramid_step : null,
-                        giant_with: set.is_giant ? set.giant_with : null
+                        giant_with: set.giant_with ? set.giant_with.map(item => String(item)) : null
                       };
                     }
                   })
@@ -422,6 +486,11 @@ function Routines() {
     setShowFolderModal(true);
   };
 
+  const handleCreateNewFolder = () => {
+    setSelectedRoutineForFolder(null);
+    setShowFolderModal(true);
+  };
+
   useEffect(() => {
     if (successMessage) {
       const timer = setTimeout(() => {
@@ -433,7 +502,7 @@ function Routines() {
 
   const handleAssignToFolder = async (routineId, folderId) => {
     try {
-      const token = localStorage.getItem("access_token") || localStorage.getItem("token");
+      const token = localStorage.getItem("token");
       if (!token) {
         navigate("/login");
         return;
@@ -444,8 +513,11 @@ function Routines() {
         folder_id: folderId === null ? null : Number(folderId),
       };
 
+      console.log(`Assigning routine ${routineId} to folder ${folderId}`);
+      
+      setLoading(true);
       const response = await fetch(
-        `${backendURL}/routines/${routineId}/folder`,
+        `${backendURL}/routines/${routineId}/move-to-folder`,
         {
           method: "PUT",
           headers: {
@@ -458,34 +530,36 @@ function Routines() {
 
       if (!response.ok) {
         const errorData = await response.text();
+        console.error("Error response:", errorData);
         throw new Error(`Failed to assign routine to folder: ${errorData}`);
       }
 
-      const updatedRoutine = await response.json();
-
-      // Set success message
-      const folderName = updatedRoutine.message || "Unknown action";
-      setSuccessMessage(`${folderName}`);
+      const result = await response.json();
       
-      // Refresh the routines data to ensure UI is up to date
-      const refreshResponse = await fetch(`${backendURL}/routines`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json"
-        },
-      });
-      
-      if (refreshResponse.ok) {
-        const refreshedData = await refreshResponse.json();
-        setRoutines(refreshedData);
+      // Set appropriate success message based on folder action
+      let successMsg;
+      if (folderId === null) {
+        successMsg = "Routine removed from folder";
+      } else {
+        const folderName = folders.find(f => f.id === folderId)?.name || "folder";
+        successMsg = `Routine moved to ${folderName}`;
       }
       
-      // Close the folder modal
+      setSuccessMessage(successMsg);
+      
+      // Refresh the routines data to ensure UI is up to date
+      await fetchRoutines();
+      
+      // Close the folder modal after a short delay
       setTimeout(() => {
         setShowFolderModal(false);
       }, 500);
     } catch (error) {
-      alert(`Error assigning routine to folder: ${error.message}`);
+      console.error("Error in handleAssignToFolder:", error);
+      setError(error.message);
+      setTimeout(() => setError(null), 3000);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -578,7 +652,7 @@ function Routines() {
                   rest_pauses: set.rest_pauses || null,
                   pyramid_type: set.pyramid_type || null,
                   pyramid_step: set.pyramid_step || null,
-                  giant_with: set.giant_with || null
+                  giant_with: set.giant_with ? set.giant_with.map(item => String(item)) : null
                 };
               } else {
                 return {
@@ -597,7 +671,7 @@ function Routines() {
                   rest_pauses: set.rest_pauses || null,
                   pyramid_type: set.pyramid_type || null,
                   pyramid_step: set.pyramid_step || null,
-                  giant_with: set.giant_with || null
+                  giant_with: set.giant_with ? set.giant_with.map(item => String(item)) : null
                 };
               }
             }) || [],
@@ -622,7 +696,19 @@ function Routines() {
       const newRoutine = await response.json();
       setRoutines((prev) => [newRoutine, ...prev]);
       setShowSaveRoutineModal(false);
-      await notifyRoutineCreated(routineName);
+      
+      // Send notification for new routine creation
+      try {
+        console.log("Creating notification for new routine:", routineName);
+        const notificationResult = await notifyRoutineCreated(routineName);
+        if (notificationResult) {
+          console.log("Notification created successfully:", notificationResult);
+        } else {
+          console.warn("Notification creation returned null result");
+        }
+      } catch (notificationError) {
+        console.error("Error creating notification:", notificationError);
+      }
     } catch (error) {
       alert(`Error saving routine: ${error.message}. Please try again.`);
     } finally {
@@ -741,6 +827,20 @@ function Routines() {
             />
           </div>
         </div>
+
+        {/* Create New Folder Button */}
+        <button
+          onClick={handleCreateNewFolder}
+          className={`px-3 py-2 rounded-lg border flex items-center gap-2 ${
+            theme === "dark"
+              ? "bg-gray-700 text-white border-gray-600 hover:bg-gray-600"
+              : "bg-gray-100 text-gray-900 border-gray-300 hover:bg-gray-200"
+          }`}
+          title="Create New Folder"
+        >
+          <FaFolderPlus />
+          <span className="hidden sm:inline">New Folder</span>
+        </button>
 
         {/* Last Updated Filter */}
         <select
@@ -1200,6 +1300,331 @@ function Routines() {
     );
   };
 
+  const fetchPersonalRecords = async () => {
+    setLoadingRecords(true);
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        throw new Error("Authentication required");
+      }
+
+      // Fetch workouts data from the correct endpoint
+      const response = await fetch(`${backendURL}/workouts`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch workout data: ${response.status}`);
+      }
+
+      const workoutData = await response.json();
+      
+      // Process workout data to extract personal records
+      const processedWorkouts = workoutData.map((workout) => {
+        if (!workout.exercises) {
+          workout.exercises = [];
+          return workout;
+        }
+
+        if (typeof workout.exercises === "string") {
+          try {
+            workout.exercises = JSON.parse(workout.exercises);
+          } catch (e) {
+            console.error("Error parsing exercises JSON:", e);
+            workout.exercises = [];
+          }
+        }
+
+        if (!Array.isArray(workout.exercises)) {
+          workout.exercises = [];
+        }
+
+        workout.exercises = workout.exercises.map((exercise) => {
+          if (exercise.category === "Cardio") {
+            exercise.is_cardio = true;
+          }
+          return exercise;
+        });
+
+        return workout;
+      });
+
+      // Calculate personal records from processed workout data
+      const records = {};
+      
+      processedWorkouts.forEach((workout) => {
+        workout.exercises?.forEach((exercise) => {
+          if (exercise.is_cardio) {
+            // For cardio, track fastest pace or longest distance
+            const totalDistance =
+              exercise.sets?.reduce(
+                (sum, set) => sum + (parseFloat(set.distance) || 0),
+                0
+              ) || 0;
+            const totalDuration =
+              exercise.sets?.reduce(
+                (sum, set) => sum + (parseFloat(set.duration) || 0),
+                0
+              ) || 0;
+            
+            if (totalDistance > 0 && totalDuration > 0) {
+              const pace = totalDuration / totalDistance; // min/km
+              
+              const recordKey = `${exercise.name}_pace`;
+              if (
+                !records[recordKey] ||
+                pace < records[recordKey].pace
+              ) {
+                records[recordKey] = {
+                  exercise_name: exercise.name,
+                  category: exercise.category || "Cardio",
+                  is_cardio: true,
+                  record_type: "Pace",
+                  distance: totalDistance,
+                  duration: totalDuration,
+                  pace: pace,
+                  achieved_at: workout.date || workout.start_time,
+                  notes: `${pace.toFixed(2)} min/km`,
+                };
+              }
+            }
+
+            if (totalDistance > 0) {
+              const recordKey = `${exercise.name}_distance`;
+              if (
+                !records[recordKey] ||
+                totalDistance > records[recordKey].distance
+              ) {
+                records[recordKey] = {
+                  exercise_name: exercise.name,
+                  category: exercise.category || "Cardio",
+                  is_cardio: true,
+                  record_type: "Distance",
+                  distance: totalDistance,
+                  duration: totalDuration,
+                  achieved_at: workout.date || workout.start_time,
+                  notes: totalDuration > 0 ? `at ${(totalDuration / totalDistance).toFixed(2)} min/km pace` : null,
+                };
+              }
+            }
+
+            if (totalDuration > 0) {
+              const recordKey = `${exercise.name}_duration`;
+              if (
+                !records[recordKey] ||
+                totalDuration > records[recordKey].duration
+              ) {
+                records[recordKey] = {
+                  exercise_name: exercise.name,
+                  category: exercise.category || "Cardio",
+                  is_cardio: true,
+                  record_type: "Duration",
+                  distance: totalDistance,
+                  duration: totalDuration,
+                  achieved_at: workout.date || workout.start_time,
+                  notes: null,
+                };
+              }
+            }
+          } else {
+            // For strength, track max weight for different rep ranges
+            exercise.sets?.forEach((set) => {
+              if (set.weight && set.reps) {
+                const key = `${exercise.name}_${set.reps}reps`;
+                if (
+                  !records[key] ||
+                  parseFloat(set.weight) > records[key].weight
+                ) {
+                  records[key] = {
+                    exercise_name: exercise.name,
+                    category: exercise.category || "Strength",
+                    is_cardio: false,
+                    record_type: `${set.reps} Rep Max`,
+                    weight: parseFloat(set.weight),
+                    reps: parseInt(set.reps),
+                    weight_unit: workout.weight_unit || weightUnit,
+                    achieved_at: workout.date || workout.start_time,
+                    notes: set.notes || null,
+                  };
+                }
+              }
+            });
+          }
+        });
+      });
+      
+      // Convert records object to array
+      const personalRecords = Object.values(records);
+      
+      setPersonalRecords(personalRecords);
+    } catch (err) {
+      console.error("Error fetching personal records:", err);
+      setError("Failed to load personal records. Please try again.");
+    } finally {
+      setLoadingRecords(false);
+    }
+  };
+
+  // Filter and sort personal records based on filter settings
+  const filteredRecords = useMemo(() => {
+    if (!personalRecords || personalRecords.length === 0) return [];
+    
+    return personalRecords
+      .filter(record => {
+        // Category filter
+        if (recordsFilter.category !== "all") {
+          if (recordsFilter.category === "strength" && record.is_cardio) return false;
+          if (recordsFilter.category === "cardio" && !record.is_cardio) return false;
+        }
+        
+        // Search filter
+        if (recordsFilter.search && !record.exercise_name.toLowerCase().includes(recordsFilter.search.toLowerCase())) {
+          return false;
+        }
+        
+        // Record age filter
+        if (recordsFilter.recordAge !== "all") {
+          const recordDate = new Date(record.achieved_at);
+          const now = new Date();
+          
+          switch (recordsFilter.recordAge) {
+            case "week":
+              if (now - recordDate > 7 * 24 * 60 * 60 * 1000) return false;
+              break;
+            case "month":
+              if (now - recordDate > 30 * 24 * 60 * 60 * 1000) return false;
+              break;
+            case "quarter":
+              if (now - recordDate > 90 * 24 * 60 * 60 * 1000) return false;
+              break;
+          }
+        }
+        
+        return true;
+      })
+      .sort((a, b) => {
+        switch (recordsFilter.sortBy) {
+          case "recent":
+            return new Date(b.achieved_at) - new Date(a.achieved_at);
+          case "oldest":
+            return new Date(a.achieved_at) - new Date(b.achieved_at);
+          case "exercise":
+            return a.exercise_name.localeCompare(b.exercise_name);
+          default:
+            return 0;
+        }
+      });
+  }, [personalRecords, recordsFilter]);
+
+  // Group records by exercise for comparison
+  const recordsByExercise = useMemo(() => {
+    const grouped = {};
+    
+    if (personalRecords) {
+      personalRecords.forEach(record => {
+        const baseName = record.exercise_name;
+        if (!grouped[baseName]) {
+          grouped[baseName] = [];
+        }
+        grouped[baseName].push(record);
+      });
+    }
+    
+    return grouped;
+  }, [personalRecords]);
+
+  // Calculate record age in days, weeks, or months
+  const getRecordAge = (dateString) => {
+    const recordDate = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now - recordDate);
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays < 1) return "Today";
+    if (diffDays === 1) return "Yesterday";
+    if (diffDays < 7) return `${diffDays} days ago`;
+    if (diffDays < 30) return `${Math.floor(diffDays / 7)} week${Math.floor(diffDays / 7) === 1 ? '' : 's'} ago`;
+    if (diffDays < 365) return `${Math.floor(diffDays / 30)} month${Math.floor(diffDays / 30) === 1 ? '' : 's'} ago`;
+    return `${Math.floor(diffDays / 365)} year${Math.floor(diffDays / 365) === 1 ? '' : 's'} ago`;
+  };
+
+  // Get record age color based on recency
+  const getRecordAgeColor = (dateString, isDarkTheme) => {
+    const recordDate = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now - recordDate);
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays < 7) return isDarkTheme ? "text-green-400" : "text-green-600";
+    if (diffDays < 30) return isDarkTheme ? "text-blue-400" : "text-blue-600";
+    if (diffDays < 90) return isDarkTheme ? "text-yellow-400" : "text-yellow-600";
+    if (diffDays < 180) return isDarkTheme ? "text-orange-400" : "text-orange-600";
+    return isDarkTheme ? "text-red-400" : "text-red-600";
+  };
+
+  // Get the top N records for an exercise (for history view)
+  const getRecordHistory = (exerciseName, isCardio, limit = 5) => {
+    if (!personalRecords) return [];
+    
+    let records = personalRecords.filter(record => 
+      record.exercise_name === exerciseName && record.is_cardio === isCardio
+    );
+    
+    if (isCardio) {
+      // Group by record type for cardio exercises
+      const groupedByType = {};
+      records.forEach(record => {
+        if (!groupedByType[record.record_type]) groupedByType[record.record_type] = [];
+        groupedByType[record.record_type].push(record);
+      });
+      
+      // Sort each group
+      Object.keys(groupedByType).forEach(type => {
+        if (type === "Pace") {
+          // Sort pace by lowest (fastest) time
+          groupedByType[type].sort((a, b) => a.pace - b.pace);
+        } else {
+          // Sort distance and duration by highest
+          groupedByType[type].sort((a, b) => {
+            if (type === "Distance") return b.distance - a.distance;
+            return b.duration - a.duration;
+          });
+        }
+      });
+      
+      // Take top entries from each group
+      let result = [];
+      Object.values(groupedByType).forEach(group => {
+        result = [...result, ...group.slice(0, limit)];
+      });
+      
+      return result;
+    } else {
+      // Group by rep range for strength exercises
+      const groupedByReps = {};
+      records.forEach(record => {
+        const reps = record.reps || 0;
+        if (!groupedByReps[reps]) groupedByReps[reps] = [];
+        groupedByReps[reps].push(record);
+      });
+      
+      // Sort each group by weight (highest first)
+      Object.keys(groupedByReps).forEach(reps => {
+        groupedByReps[reps].sort((a, b) => b.weight - a.weight);
+      });
+      
+      // Take top entries from each rep group
+      let result = [];
+      Object.values(groupedByReps).forEach(group => {
+        result = [...result, ...group.slice(0, limit)];
+      });
+      
+      return result;
+    }
+  };
+
   if (loading) {
     return (
       <div
@@ -1290,6 +1715,19 @@ function Routines() {
               >
                 <FaTrash className="mr-2" />
                 Delete All
+              </button>
+            )}
+            {routines.length > 0 && (
+              <button
+                onClick={() => {
+                  setShowPersonalRecordsModal(true);
+                  fetchPersonalRecords();
+                }}
+                className="bg-green-500 hover:bg-green-600 px-4 py-2 text-white rounded flex items-center"
+                title="View personal records"
+              >
+                <FaTrophy className="mr-2" />
+                Personal Records
               </button>
             )}
           </div>
@@ -1712,7 +2150,7 @@ function Routines() {
                               </tr>
                             </thead>
                             <tbody>
-                              {exercise.sets.map((set, setIndex) => (
+                              {exercise.sets?.map((set, setIndex) => (
                                 <tr
                                   key={setIndex}
                                   className={`border-b ${
@@ -1865,12 +2303,16 @@ function Routines() {
                                         >
                                           <option value="normal">Normal Set</option>
                                           <option value="warmup">Warm-up</option>
-                                          <option value="drop">Drop Set</option>
-                                          <option value="superset">Superset</option>
-                                          <option value="amrap">AMRAP</option>
-                                          <option value="restpause">Rest-Pause</option>
-                                          <option value="pyramid">Pyramid</option>
-                                          <option value="giant">Giant Set</option>
+                                          {!exercise.is_cardio && (
+                                            <>
+                                              <option value="drop">Drop Set</option>
+                                              <option value="superset">Superset</option>
+                                              <option value="amrap">AMRAP</option>
+                                              <option value="restpause">Rest-Pause</option>
+                                              <option value="pyramid">Pyramid</option>
+                                              <option value="giant">Giant Set</option>
+                                            </>
+                                          )}
                                         </select>
                                         
                                         {/* Additional fields for special set types */}
@@ -2146,12 +2588,16 @@ function Routines() {
                                         >
                                           <option value="normal">Normal Set</option>
                                           <option value="warmup">Warm-up</option>
-                                          <option value="drop">Drop Set</option>
-                                          <option value="superset">Superset</option>
-                                          <option value="amrap">AMRAP</option>
-                                          <option value="restpause">Rest-Pause</option>
-                                          <option value="pyramid">Pyramid</option>
-                                          <option value="giant">Giant Set</option>
+                                          {!exercise.is_cardio && (
+                                            <>
+                                              <option value="drop">Drop Set</option>
+                                              <option value="superset">Superset</option>
+                                              <option value="amrap">AMRAP</option>
+                                              <option value="restpause">Rest-Pause</option>
+                                              <option value="pyramid">Pyramid</option>
+                                              <option value="giant">Giant Set</option>
+                                            </>
+                                          )}
                                         </select>
                                         
                                         {/* Additional fields for special set types */}
@@ -2395,6 +2841,7 @@ function Routines() {
           onClose={() => setShowFolderModal(false)}
           onSelectFolder={handleAssignToFolder}
           selectedRoutineId={selectedRoutineForFolder}
+          onFoldersChanged={refreshFolders}
         />
       )}
 
@@ -2438,6 +2885,313 @@ function Routines() {
                     Delete All
                   </>
                 )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Personal Records Modal */}
+      {showPersonalRecordsModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className={`${theme === "dark" ? "bg-gray-800" : "bg-white"} rounded-lg p-6 max-w-4xl w-full max-h-[85vh] overflow-y-auto mx-4 shadow-xl`}>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold flex items-center">
+                <FaTrophy className="text-yellow-500 mr-2" />
+                Personal Records
+              </h2>
+              <button
+                onClick={() => setShowPersonalRecordsModal(false)}
+                className={`${theme === "dark" ? "text-gray-400 hover:text-gray-300" : "text-gray-600 hover:text-gray-800"}`}
+              >
+                <FaTimes className="text-xl" />
+              </button>
+            </div>
+
+            {/* Filter and sort controls */}
+            <div className={`p-3 mb-4 rounded-lg flex flex-wrap gap-3 ${theme === "dark" ? "bg-gray-700" : "bg-gray-100"}`}>
+              <div className="flex items-center">
+                <FaFilter className="mr-2 text-gray-500" />
+                <select
+                  value={recordsFilter.category}
+                  onChange={(e) => setRecordsFilter({...recordsFilter, category: e.target.value})}
+                  className={`rounded py-1 px-2 ${
+                    theme === "dark" 
+                      ? "bg-gray-800 text-white border-gray-600" 
+                      : "bg-white text-gray-800 border-gray-300"
+                  } border`}
+                >
+                  <option value="all">All Types</option>
+                  <option value="strength">Strength</option>
+                  <option value="cardio">Cardio</option>
+                </select>
+              </div>
+
+              <div className="flex items-center">
+                <FaCalendarAlt className="mr-2 text-gray-500" />
+                <select
+                  value={recordsFilter.recordAge}
+                  onChange={(e) => setRecordsFilter({...recordsFilter, recordAge: e.target.value})}
+                  className={`rounded py-1 px-2 ${
+                    theme === "dark" 
+                      ? "bg-gray-800 text-white border-gray-600" 
+                      : "bg-white text-gray-800 border-gray-300"
+                  } border`}
+                >
+                  <option value="all">Any Time</option>
+                  <option value="week">Last 7 Days</option>
+                  <option value="month">Last 30 Days</option>
+                  <option value="quarter">Last 90 Days</option>
+                </select>
+              </div>
+
+              <div className="flex items-center">
+                <FaSort className="mr-2 text-gray-500" />
+                <select
+                  value={recordsFilter.sortBy}
+                  onChange={(e) => setRecordsFilter({...recordsFilter, sortBy: e.target.value})}
+                  className={`rounded py-1 px-2 ${
+                    theme === "dark" 
+                      ? "bg-gray-800 text-white border-gray-600" 
+                      : "bg-white text-gray-800 border-gray-300"
+                  } border`}
+                >
+                  <option value="recent">Most Recent</option>
+                  <option value="oldest">Oldest First</option>
+                  <option value="exercise">Exercise Name</option>
+                </select>
+              </div>
+              
+              <div className="flex items-center flex-grow">
+                <div className="relative w-full">
+                  <FaSearch className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500" />
+                  <input
+                    type="text"
+                    placeholder="Search exercises..."
+                    value={recordsFilter.search}
+                    onChange={(e) => setRecordsFilter({...recordsFilter, search: e.target.value})}
+                    className={`pl-8 pr-2 py-1 rounded w-full ${
+                      theme === "dark" 
+                        ? "bg-gray-800 text-white border-gray-600" 
+                        : "bg-white text-gray-800 border-gray-300"
+                    } border`}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {loadingRecords ? (
+              <div className="flex justify-center items-center p-8">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
+              </div>
+            ) : !filteredRecords.length ? (
+              <div className="text-center py-8">
+                <FaMedal className="text-gray-400 text-5xl mx-auto mb-4" />
+                <p className={`text-lg ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
+                  {personalRecords.length > 0 
+                    ? "No records match your current filters" 
+                    : "No personal records yet"
+                  }
+                </p>
+                <p className={`${theme === "dark" ? "text-gray-500" : "text-gray-500"}`}>
+                  {personalRecords.length > 0 
+                    ? "Try adjusting your search criteria" 
+                    : "Complete workouts to start tracking your achievements!"
+                  }
+                </p>
+              </div>
+            ) : (
+              <div>
+                {showRecordHistory ? (
+                  <div>
+                    <div className="mb-4 flex items-center">
+                      <button 
+                        onClick={() => setShowRecordHistory(null)}
+                        className={`mr-2 ${theme === "dark" ? "text-blue-400" : "text-blue-600"}`}
+                      >
+                        ← Back to records
+                      </button>
+                      <h3 className="text-lg font-semibold">{showRecordHistory} History</h3>
+                    </div>
+                    <div className="space-y-4">
+                      {getRecordHistory(
+                        showRecordHistory,
+                        filteredRecords.find(r => r.exercise_name === showRecordHistory)?.is_cardio || false,
+                        10
+                      ).map((record, idx) => (
+                        <div 
+                          key={idx}
+                          className={`p-4 rounded-lg ${
+                            theme === "dark" 
+                              ? idx === 0 ? "bg-green-900/30" : "bg-gray-700" 
+                              : idx === 0 ? "bg-green-100" : "bg-gray-100"
+                          } ${idx === 0 ? "border-2 border-green-500" : ""}`}
+                        >
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <div className="flex items-center">
+                                {idx === 0 && <FaCrown className="text-yellow-500 mr-2" />}
+                                <h4 className="font-medium">{record.record_type}</h4>
+                              </div>
+                              <p className="text-sm mt-1">
+                                {new Date(record.achieved_at).toLocaleDateString()}
+                              </p>
+                            </div>
+                            <span className={`${getRecordAgeColor(record.achieved_at, theme === "dark")}`}>
+                              {getRecordAge(record.achieved_at)}
+                            </span>
+                          </div>
+                          <div className="mt-3">
+                            {record.is_cardio ? (
+                              <div>
+                                {record.record_type === "Pace" && (
+                                  <p className="font-bold text-lg">{(record.pace).toFixed(2)} min/km</p>
+                                )}
+                                {record.record_type === "Distance" && (
+                                  <p className="font-bold text-lg">{record.distance.toFixed(2)} km</p>
+                                )}
+                                {record.record_type === "Duration" && (
+                                  <p className="font-bold text-lg">{record.duration} min</p>
+                                )}
+                              </div>
+                            ) : (
+                              <p className="font-bold text-lg">
+                                {record.weight} {record.weight_unit} × {record.reps}
+                              </p>
+                            )}
+                          </div>
+                          <p className="mt-2 text-sm italic">
+                            {record.notes || "No additional notes"}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    {/* Strength PRs */}
+                    {filteredRecords.some(r => !r.is_cardio) && (
+                      <div>
+                        <h3 className="text-lg font-semibold mb-3 border-b border-gray-600 pb-2 flex items-center">
+                          <FaDumbbell className="mr-2" /> Strength Records
+                        </h3>
+                        <div className="grid gap-4 md:grid-cols-2">
+                          {filteredRecords
+                            .filter(record => !record.is_cardio)
+                            .map((record, index) => (
+                              <div
+                                key={index}
+                                className={`p-4 rounded-lg relative ${theme === "dark" ? "bg-gray-700" : "bg-gray-100"} hover:shadow-md transition-shadow cursor-pointer`}
+                                onClick={() => setShowRecordHistory(record.exercise_name)}
+                              >
+                                <div className="absolute top-0 right-0 mt-1 mr-1">
+                                  <FaChartLine className="text-gray-400 text-sm" />
+                                </div>
+                                <div className="flex justify-between items-start">
+                                  <div>
+                                    <h4 className="font-medium">{record.exercise_name}</h4>
+                                    <p className="text-sm text-gray-500 mt-1">{record.category || "Uncategorized"}</p>
+                                  </div>
+                                  <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                                    theme === "dark" ? "bg-green-800 text-green-200" : "bg-green-100 text-green-800"
+                                  }`}>
+                                    {record.record_type || "Weight"}
+                                  </span>
+                                </div>
+                                <div className="mt-3 grid grid-cols-2 gap-2">
+                                  <div className={`p-2 rounded ${theme === "dark" ? "bg-gray-800" : "bg-white"}`}>
+                                    <p className="text-xs text-gray-500">Record</p>
+                                    <p className="font-bold text-lg">
+                                      {record.weight} {record.weight_unit} × {record.reps}
+                                    </p>
+                                  </div>
+                                  <div className={`p-2 rounded ${theme === "dark" ? "bg-gray-800" : "bg-white"}`}>
+                                    <p className="text-xs text-gray-500">Date</p>
+                                    <p className={`${getRecordAgeColor(record.achieved_at, theme === "dark")}`}>
+                                      {getRecordAge(record.achieved_at)}
+                                    </p>
+                                  </div>
+                                </div>
+                                <p className="mt-2 text-sm italic">
+                                  {record.notes || "No additional notes"}
+                                </p>
+                              </div>
+                            ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Cardio PRs */}
+                    {filteredRecords.some(r => r.is_cardio) && (
+                      <div>
+                        <h3 className="text-lg font-semibold mb-3 border-b border-gray-600 pb-2 flex items-center">
+                          <FaRunning className="mr-2" /> Cardio Records
+                        </h3>
+                        <div className="grid gap-4 md:grid-cols-2">
+                          {filteredRecords
+                            .filter(record => record.is_cardio)
+                            .map((record, index) => (
+                              <div
+                                key={index}
+                                className={`p-4 rounded-lg relative ${theme === "dark" ? "bg-gray-700" : "bg-gray-100"} hover:shadow-md transition-shadow cursor-pointer`}
+                                onClick={() => setShowRecordHistory(record.exercise_name)}
+                              >
+                                <div className="absolute top-0 right-0 mt-1 mr-1">
+                                  <FaChartLine className="text-gray-400 text-sm" />
+                                </div>
+                                <div className="flex justify-between items-start">
+                                  <div>
+                                    <h4 className="font-medium">{record.exercise_name}</h4>
+                                    <p className="text-sm text-gray-500 mt-1">{record.category || "Cardio"}</p>
+                                  </div>
+                                  <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                                    theme === "dark" ? "bg-blue-800 text-blue-200" : "bg-blue-100 text-blue-800"
+                                  }`}>
+                                    {record.record_type || "Distance"}
+                                  </span>
+                                </div>
+                                <div className="mt-3 grid grid-cols-2 gap-2">
+                                  <div className={`p-2 rounded ${theme === "dark" ? "bg-gray-800" : "bg-white"}`}>
+                                    <p className="text-xs text-gray-500">Record</p>
+                                    <p className="font-bold text-lg">
+                                      {record.record_type === "Pace" ? 
+                                        `${record.pace.toFixed(2)} min/km` : 
+                                        record.record_type === "Distance" ? 
+                                          `${record.distance.toFixed(2)} km` :
+                                          `${record.duration} min`
+                                      }
+                                    </p>
+                                  </div>
+                                  <div className={`p-2 rounded ${theme === "dark" ? "bg-gray-800" : "bg-white"}`}>
+                                    <p className="text-xs text-gray-500">Date</p>
+                                    <p className={`${getRecordAgeColor(record.achieved_at, theme === "dark")}`}>
+                                      {getRecordAge(record.achieved_at)}
+                                    </p>
+                                  </div>
+                                </div>
+                                <p className="mt-2 text-sm italic">
+                                  {record.notes || "No additional notes"}
+                                </p>
+                              </div>
+                            ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="mt-6 flex justify-end">
+              <button
+                onClick={() => setShowPersonalRecordsModal(false)}
+                className={`px-4 py-2 rounded ${
+                  theme === "dark" 
+                    ? "bg-gray-700 hover:bg-gray-600 text-white" 
+                    : "bg-gray-200 hover:bg-gray-300 text-gray-800"
+                }`}
+              >
+                Close
               </button>
             </div>
           </div>

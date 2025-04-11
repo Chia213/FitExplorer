@@ -28,7 +28,9 @@ function ConfirmDeletion() {
 
     try {
       const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
-      const response = await fetch(`${API_URL}/auth/confirm-account-deletion`, {
+      
+      // First try with a special query parameter to handle user_rewards issue
+      const response = await fetch(`${API_URL}/auth/confirm-account-deletion?skip_relationships=true`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -36,22 +38,53 @@ function ConfirmDeletion() {
         body: JSON.stringify({ token }), // Make sure token is being sent in the body
       });
 
+      // Try to get a JSON response, but don't fail if it's not JSON
+      let errorDetail = "Unknown error";
+      let responseData = {};
+      try {
+        responseData = await response.json();
+        errorDetail = responseData.detail || "Failed to delete account. Please try again.";
+      } catch (parseError) {
+        // If we can't parse JSON, use text content if available
+        try {
+          errorDetail = await response.text();
+        } catch (textError) {
+          errorDetail = `Error status: ${response.status}`;
+        }
+      }
+
       if (response.ok) {
+        // Clear auth data immediately
+        localStorage.removeItem("token");
+        localStorage.removeItem("access_token");
+        localStorage.removeItem("isAdmin");
+        
+        // No need to dispatch events which would trigger session verification
+        // Just set the UI state directly
         setStatus("success");
         setMessage("Your account has been deleted successfully.");
-        localStorage.removeItem("token");
-        setTimeout(() => navigate("/"), 3000);
       } else {
-        const error = await response.json();
         setStatus("error");
-        setMessage(
-          error.detail || "Failed to delete account. The link may be expired."
-        );
+        
+        if (response.status === 500) {
+          // Check for specific database errors
+          if (errorDetail.includes("user_rewards") || errorDetail.includes("UndefinedTable")) {
+            console.error("Server error with user_rewards table:", errorDetail);
+            setMessage("We encountered an issue with your account. Please contact support with error code: DB-REL-001");
+          } else {
+            console.error("Server error during deletion:", errorDetail);
+            setMessage("Internal server error while deleting your account. Our team has been notified.");
+          }
+        } else if (response.status === 400) {
+          setMessage(errorDetail || "The deletion link is invalid or has expired.");
+        } else {
+          setMessage(errorDetail || "Failed to delete account. Please try again later.");
+        }
       }
     } catch (error) {
       console.error("Deletion error:", error);
       setStatus("error");
-      setMessage("An error occurred during deletion. Please try again.");
+      setMessage("Connection error. Please check your internet connection and try again.");
     }
   };
 

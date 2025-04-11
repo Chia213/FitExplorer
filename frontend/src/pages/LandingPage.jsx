@@ -162,9 +162,9 @@ const LandingPage = () => {
 
   const stats = [
     { value: "500+", label: "Exercises" },
-    { value: "50,000+", label: "Active Users" },
-    { value: "98%", label: "Satisfaction Rate" },
-    { value: "10M+", label: "Workouts Completed" }
+    { value: "New", label: "AI Workout Generator" },
+    { value: "Free", label: "14-Day Trial" },
+    { value: "24/7", label: "Progress Tracking" }
   ];
 
   return (
@@ -188,27 +188,37 @@ const LandingPage = () => {
                 variants={fadeIn}
                 transition={{ delay: 0.2 }}
               >
-                Your Complete Fitness Journey
+                Your Fitness Journey, <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500">Reimagined</span>
               </motion.h1>
               <motion.p 
                 className="text-xl mb-8 text-blue-100"
                 variants={fadeIn}
                 transition={{ delay: 0.4 }}
               >
-                Personalized AI workouts, nutrition tracking, and progress monitoring — all in one powerful platform designed to transform your fitness experience.
+                Achieve your fitness goals faster with AI-powered workouts, smart tracking, and personalized nutrition plans designed specifically for your body.
               </motion.p>
               <motion.div 
                 className="flex flex-col sm:flex-row justify-center md:justify-start gap-4"
                 variants={fadeIn}
                 transition={{ delay: 0.6 }}
               >
-                <Link to="/signup" className="btn-gradient text-white font-bold py-3 px-8 rounded-lg shadow-lg transform transition hover:scale-105 hover:-translate-y-1">
-                  Start Your Journey
+                <Link to="/signup" className="btn-gradient text-white font-bold py-4 px-10 rounded-lg shadow-lg transform transition hover:scale-105 hover:-translate-y-1 flex items-center justify-center">
+                  Start Your Journey Today!
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
                 </Link>
-                <Link to="/login" className="glass-effect text-white font-semibold py-3 px-8 rounded-lg shadow-lg transform transition hover:scale-105 hover:-translate-y-1">
+                <Link to="/login" className="glass-effect text-white font-semibold py-4 px-10 rounded-lg shadow-lg transform transition hover:scale-105 hover:-translate-y-1">
                   Sign In
                 </Link>
               </motion.div>
+              <motion.p
+                className="text-blue-200 mt-4 text-sm"
+                variants={fadeIn}
+                transition={{ delay: 0.8 }}
+              >
+
+              </motion.p>
             </div>
             <motion.div 
               className="md:w-1/2 relative"
@@ -484,8 +494,8 @@ const LandingPage = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <span className="text-blue-600 dark:text-blue-400 font-semibold tracking-wide uppercase text-sm">How It Works</span>
-            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4 mt-2">Simple Steps to Fitness Success</h2>
-            <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">Getting started is quick and easy - you're just a few clicks away from your personalized fitness experience.</p>
+            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4 mt-2">Start Your Fitness Journey in Seconds</h2>
+            <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">Just one sign-up away from all the tools you need to transform your body and health.</p>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -497,8 +507,8 @@ const LandingPage = () => {
               transition={{ delay: 0.1 }}
             >
               <div className="absolute -top-3 -left-3 w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-lg">1</div>
-              <h3 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">Create Your Profile</h3>
-              <p className="text-gray-600 dark:text-gray-300">Set up your profile with your fitness goals, experience level, available equipment, and preferences.</p>
+              <h3 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">Create Your Account</h3>
+              <p className="text-gray-600 dark:text-gray-300">Sign up in 30 seconds - no credit card needed. Get instant access to AI workouts, meal tracking, and progress tools.</p>
             </motion.div>
             
             <motion.div 
@@ -509,8 +519,8 @@ const LandingPage = () => {
               transition={{ delay: 0.3 }}
             >
               <div className="absolute -top-3 -left-3 w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-lg">2</div>
-              <h3 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">Get Personalized Plans</h3>
-              <p className="text-gray-600 dark:text-gray-300">Receive AI-generated workout routines and nutrition recommendations tailored specifically to you.</p>
+              <h3 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">Explore Amazing Features</h3>
+              <p className="text-gray-600 dark:text-gray-300">Discover AI workout generation, nutrition tracking, exercise library, and fitness calculators all in one powerful app.</p>
             </motion.div>
             
             <motion.div 
@@ -521,58 +531,23 @@ const LandingPage = () => {
               transition={{ delay: 0.5 }}
             >
               <div className="absolute -top-3 -left-3 w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-lg">3</div>
-              <h3 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">Track & Improve</h3>
-              <p className="text-gray-600 dark:text-gray-300">Log your workouts, monitor progress, and watch as the AI adapts your plans based on your results.</p>
+              <h3 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">Transform Your Body</h3>
+              <p className="text-gray-600 dark:text-gray-300">Experience real results with our data-driven approach. Our adaptive AI system learns what works for your unique body to optimize your fitness journey.</p>
             </motion.div>
+          </div>
+          
+          <div className="flex justify-center mt-12">
           </div>
         </div>
       </motion.section>
 
-      {/* Testimonials */}
-      <section className="py-20 bg-white dark:bg-gray-900">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <span className="text-blue-600 dark:text-blue-400 font-semibold tracking-wide uppercase text-sm">Testimonials</span>
-            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4 mt-2">Success Stories From Our Community</h2>
-            <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">Join thousands of satisfied users who have transformed their fitness journey with our app.</p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {testimonials.map((testimonial, index) => (
-              <motion.div
-                key={testimonial.id}
-                className="bg-gray-50 dark:bg-gray-800 p-8 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 testimonial-card"
-                initial={{ opacity: 0, y: 50 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: index * 0.2 }}
-              >
-                <div className="flex items-center mb-6">
-                  <img 
-                    src={testimonial.avatar} 
-                    alt={testimonial.name} 
-                    className="w-14 h-14 rounded-full mr-4 border-2 border-blue-500"
-                  />
-                  <div>
-                    <h4 className="text-lg font-bold text-gray-900 dark:text-white">{testimonial.name}</h4>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{testimonial.title}</p>
-                  </div>
-                </div>
-                <div className="mb-4">
-                  {[...Array(5)].map((_, i) => (
-                    <span key={i} className="text-yellow-400">★</span>
-                  ))}
-                </div>
-                <p className="text-gray-600 dark:text-gray-300 italic">"{testimonial.quote}"</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      <section className="py-20 bg-gradient-to-r from-blue-600 to-indigo-700 text-white relative overflow-hidden">
+        <div className="absolute inset-0 bg-pattern opacity-10"></div>
+        <div className="absolute -top-24 -right-24 w-96 h-96 bg-blue-500 rounded-full filter blur-3xl opacity-20 pulse-animation"></div>
+        <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-indigo-600 rounded-full filter blur-3xl opacity-20 pulse-animation" style={{ animationDelay: '1.5s' }}></div>
+        
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 50 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -580,17 +555,21 @@ const LandingPage = () => {
             transition={{ duration: 0.5 }}
             className="max-w-3xl mx-auto"
           >
-            <h2 className="text-3xl md:text-4xl font-bold mb-6">Ready to Transform Your Fitness Journey?</h2>
-            <p className="text-xl mb-8 text-blue-100">Join today and get full access to all premium features to help you reach your fitness goals faster.</p>
+            <h2 className="text-3xl md:text-4xl font-bold mb-6">Ready to start your fitness journey?</h2>
+            <p className="text-xl mb-8 text-blue-100">Join our community of fitness enthusiasts today!</p>
+            
             <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <Link to="/signup" className="bg-white text-indigo-700 font-bold py-4 px-10 rounded-lg shadow-xl transform transition hover:scale-105 hover:-translate-y-1">
-                Start Free Trial
+              <Link to="/signup" className="bg-white text-indigo-700 font-bold py-4 px-10 rounded-lg shadow-xl transform transition hover:scale-105 hover:-translate-y-1 flex items-center justify-center">
+                Join FitExplorer
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
               </Link>
               <Link to="/about" className="glass-effect border-2 border-white text-white font-semibold py-4 px-10 rounded-lg shadow-lg transform transition hover:scale-105 hover:-translate-y-1">
-                Learn More
+                Explore Features
               </Link>
             </div>
-            <p className="text-blue-200 mt-6 text-sm">No credit card required. Free 14-day trial.</p>
+            <p className="text-blue-200 mt-6">Let's build your fitness journey together!</p>
           </motion.div>
         </div>
       </section>

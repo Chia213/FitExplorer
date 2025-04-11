@@ -1,6 +1,7 @@
-from pydantic import BaseModel, EmailStr, Field
-from datetime import datetime
 from typing import Optional, List, Dict, Any
+from pydantic import BaseModel, Field, EmailStr
+from datetime import datetime, timedelta, date
+import json
 
 
 class UserBase(BaseModel):
@@ -411,6 +412,12 @@ class UserProfileUpdateRequest(BaseModel):
     gender: Optional[str] = None
     fitness_goals: Optional[str] = None
     bio: Optional[str] = None
+    goals: Optional[str] = None
+    interests: Optional[str] = None
+    target_weight: Optional[float] = None
+    date_of_birth: Optional[date] = None
+    activity_level: Optional[str] = None
+    fitness_level: Optional[str] = None
 
 
 class AchievementBase(BaseModel):
@@ -503,6 +510,13 @@ class WorkoutTemplateResponse(BaseModel):
     workouts: List[WorkoutTemplateWorkout]
     created_at: datetime
     updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class BadgeSelectionRequest(BaseModel):
+    badges: List[int]
 
     class Config:
         from_attributes = True

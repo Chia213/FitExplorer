@@ -130,11 +130,33 @@ function Navbar() {
 
   // Check authentication status when location changes
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    
-    if (token) {
+    const checkAuth = () => {
+      const token = localStorage.getItem("token") || localStorage.getItem("access_token");
+      
+      if (!token) {
+        setIsAuthenticated(false);
+        setUsername(null);
+        setIsAdmin(false);
+        return;
+      }
+      
       try {
         const decodedToken = JSON.parse(atob(token.split(".")[1]));
+        // Check if token is expired
+        const expiry = new Date(decodedToken.exp * 1000);
+        const isExpired = expiry < new Date();
+        
+        if (isExpired) {
+          // Token is expired
+          setIsAuthenticated(false);
+          setUsername(null);
+          setIsAdmin(false);
+          localStorage.removeItem("token");
+          localStorage.removeItem("access_token");
+          localStorage.removeItem("isAdmin");
+          return;
+        }
+        
         setUsername(decodedToken.sub);
         setIsAuthenticated(true);
         
@@ -146,13 +168,39 @@ function Navbar() {
         // Handle token parsing errors
         console.error("Error parsing token:", error);
         setIsAdmin(false);
+        setIsAuthenticated(false);
+        setUsername(null);
+        localStorage.removeItem("token");
+        localStorage.removeItem("access_token");
         localStorage.setItem("isAdmin", "false");
       }
-    } else {
-      setIsAuthenticated(false);
-      setIsAdmin(false);
-      localStorage.setItem("isAdmin", "false");
-    }
+    };
+    
+    // Check auth on mount and location change
+    checkAuth();
+    
+    // Add storage event listener to detect token changes from other tabs/components
+    const handleStorageChange = (e) => {
+      if (e.key === "token" || e.key === "access_token" || e.key === null) {
+        // If token was changed or removed, or localStorage was cleared
+        checkAuth();
+      }
+    };
+    
+    window.addEventListener("storage", handleStorageChange);
+    
+    // Listen for auth-change events
+    const handleAuthChange = () => {
+      checkAuth();
+    };
+    
+    window.addEventListener("auth-change", handleAuthChange);
+    
+    // Clean up the event listeners
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("auth-change", handleAuthChange);
+    };
   }, [location]);
 
   // Close mobile menu when route changes
@@ -164,7 +212,16 @@ function Navbar() {
   const toggleWorkoutDropdown = () => setWorkoutDropdownOpen(!workoutDropdownOpen);
   const toggleToolsDropdown = () => setToolsDropdownOpen(!toolsDropdownOpen);
   const toggleHelpDropdown = () => setHelpDropdownOpen(!helpDropdownOpen);
-  const toggleAuthDropdown = () => setAuthDropdownOpen(!authDropdownOpen);
+  const toggleAuthDropdown = () => {
+    // Verify authentication state before showing dropdown
+    const token = localStorage.getItem("token") || localStorage.getItem("access_token");
+    if (!token) {
+      setIsAuthenticated(false);
+      setUsername(null);
+      setIsAdmin(false);
+    }
+    setAuthDropdownOpen(!authDropdownOpen);
+  };
   
   // Centralized function to close all dropdowns
   const closeAllDropdowns = () => {
@@ -208,21 +265,51 @@ function Navbar() {
   }, []);
 
   // Handle logout
-  const handleLogout = () => {
-    // Clear authentication data
-    localStorage.removeItem("token");
-    localStorage.removeItem("isAdmin");
-    
-    // Reset theme settings to prevent theme leakage between users
-    clearThemeStorage();
-    
-    // Update state
-    setIsAuthenticated(false);
-    setUsername(null);
-    setIsAdmin(false);
-    
-    // Navigate to login page
-    navigate("/login");
+  const handleLogout = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      
+      // First, update UI state immediately to show logged out state
+      setIsAuthenticated(false);
+      setUsername(null);
+      setIsAdmin(false);
+      setAuthDropdownOpen(false);
+      
+      // Clear authentication data from storage
+      localStorage.removeItem("token");
+      localStorage.removeItem("isAdmin");
+      
+      // Reset theme settings to prevent theme leakage between users
+      clearThemeStorage();
+      
+      // Dispatch events to notify other components about the logout
+      window.dispatchEvent(new Event("storage"));
+      window.dispatchEvent(new Event("auth-change"));
+      
+      // Call backend logout endpoint after UI is updated
+      if (token) {
+        try {
+          await fetch("http://localhost:8000/auth/logout", {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${token}`
+            }
+          });
+        } catch (error) {
+          console.error("Error calling logout endpoint:", error);
+        }
+      }
+      
+      // Navigate to login page
+      navigate("/login");
+    } catch (error) {
+      console.error("Error during logout:", error);
+      
+      // Even if there's an error, make sure we log out on the frontend
+      localStorage.removeItem("token");
+      localStorage.removeItem("isAdmin");
+      navigate("/login");
+    }
   };
 
   // Handle search

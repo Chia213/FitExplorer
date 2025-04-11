@@ -531,17 +531,10 @@ function PrivacyPolicy() {
                       href="mailto:privacy@fitexplorer.com"
                       className="text-blue-600 dark:text-blue-400 hover:underline"
                     >
-                      chiaranchber@gmail.com
+                      fitexplorer.fitnessapp@gmail.com
                     </a>
                   </p>
                   <p className="text-gray-800 dark:text-gray-200 mt-1">
-                    Alternative Contact:{" "}
-                    <a
-                      href="mailto:chiranchber@gmail.com"
-                      className="text-blue-600 dark:text-blue-400 hover:underline"
-                    >
-                      chiranchber@gmail.com
-                    </a>
                   </p>
                 </div>
                 <p className="mt-4 text-gray-700 dark:text-gray-300">

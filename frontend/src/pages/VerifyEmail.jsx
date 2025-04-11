@@ -31,8 +31,17 @@ function VerifyEmail() {
 
         if (response.ok) {
           const data = await response.json();
-          setStatus("success");
-          setMessage(data.message || "Email verified successfully! You can now log in.");
+          console.log("Verification response:", data);
+          
+          // Check if the user was already verified
+          if (data.already_verified) {
+            setStatus("already_verified");
+            setMessage(data.message || "Your email is already verified. You can now log in to your account.");
+          } else {
+            setStatus("success");
+            setMessage(data.message || "Your email is now verified ✅. You can now log in to your account.");
+          }
+          
           setTimeout(() => navigate("/login"), 3000);
         } else {
           const error = await response.json();
@@ -43,7 +52,7 @@ function VerifyEmail() {
             error.detail.includes("Invalid verification token")
           )) {
             setStatus("already_verified");
-            setMessage("Your account may already be verified. Please try logging in.");
+            setMessage("Your email may already be verified. Please try logging in to your account.");
           } else {
             setStatus("error");
             setMessage(error.detail || "Failed to verify email. The link may be expired.");
@@ -73,30 +82,30 @@ function VerifyEmail() {
 
         {status === "success" && (
           <div className="flex flex-col items-center">
-            <FaCheckCircle className="text-green-500 text-6xl mb-4" />
+            <FaCheckCircle className="text-green-600 text-6xl mb-4" />
             <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-4">
-              Email Verified!
+              Email Now Verified! ✅
             </h1>
             <p className="text-gray-600 dark:text-gray-300 mb-6">{message}</p>
             <button
               onClick={() => navigate("/login")}
-              className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-lg"
+              className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg"
             >
-              Log In
+              Go to Login
             </button>
           </div>
         )}
         
         {status === "already_verified" && (
           <div className="flex flex-col items-center">
-            <FaInfoCircle className="text-blue-500 text-6xl mb-4" />
+            <FaInfoCircle className="text-blue-600 text-6xl mb-4" />
             <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-4">
-              Already Verified
+              Account Already Verified
             </h1>
             <p className="text-gray-600 dark:text-gray-300 mb-6">{message}</p>
             <button
               onClick={() => navigate("/login")}
-              className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-lg"
+              className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg"
             >
               Go to Login
             </button>

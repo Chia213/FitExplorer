@@ -14,7 +14,8 @@ import {
   notifyAgeUpdated,
   notifyGenderUpdated,
   notifyFitnessGoalsUpdated,
-  notifyBioUpdated
+  notifyBioUpdated,
+  notifyWorkoutGoalUpdated
 } from '../utils/notificationsHelpers';
 import { useNotifications } from "../contexts/NotificationContext";
 import AchievementsSection from '../components/AchievementsSection';
@@ -54,6 +55,29 @@ const ALLOWED_EMAIL_DOMAINS = new Set([
   "live.se",
   "hotmail.se",
 ]);
+
+function ErrorBoundary({ children, fallback }) {
+  const [hasError, setHasError] = useState(false);
+  
+  useEffect(() => {
+    const errorHandler = (error) => {
+      console.error("Caught error:", error);
+      setHasError(true);
+    };
+    
+    window.addEventListener('error', errorHandler);
+    
+    return () => {
+      window.removeEventListener('error', errorHandler);
+    };
+  }, []);
+  
+  if (hasError) {
+    return fallback || <div className="text-red-500 p-4 rounded bg-red-50 my-4">Something went wrong loading this component.</div>;
+  }
+  
+  return children;
+}
 
 function Profile() {
   const [user, setUser] = useState(null);
@@ -101,7 +125,6 @@ function Profile() {
     }
 
     try {
-      console.log("Fetching user data...");
       setLoading(true);
       const [profileRes, statsRes, routineRes] = await Promise.all([
         fetch(`${backendURL}/user-profile`, {
@@ -111,10 +134,12 @@ function Profile() {
           },
         }),
         fetch(`${backendURL}/workout-stats`, {
+          method: "GET",
           headers: { 
             "Authorization": `Bearer ${token}`,
             "Content-Type": "application/json"
           },
+          credentials: "include"
         }),
         fetch(`${backendURL}/api/last-saved-routine`, {
           headers: { 
@@ -136,7 +161,6 @@ function Profile() {
       }
 
       const userData = await profileRes.json();
-      console.log("User data received:", userData);
       
       // Set user and username state directly from server data
       setUser(userData);
@@ -157,8 +181,6 @@ function Profile() {
 
       // Set user preferences
       if (userData.preferences) {
-        console.log("Setting preferences from backend data:", userData.preferences);
-        
         // First get workout preferences to ensure we have the correct workout frequency goal
         const workoutPrefsRes = await fetch(`${backendURL}/api/workout-preferences`, {
           method: "GET",
@@ -168,9 +190,8 @@ function Profile() {
         if (workoutPrefsRes.ok) {
           const workoutPrefs = await workoutPrefsRes.json();
           workoutFrequencyGoal = workoutPrefs.workout_frequency_goal;
-          console.log("Loaded workout frequency goal from preferences:", workoutFrequencyGoal);
         } else {
-          console.warn("Failed to fetch workout preferences:", workoutPrefsRes.status);
+          // Failed to fetch workout preferences
         }
         
         setPreferences((prev) => ({
@@ -184,19 +205,14 @@ function Profile() {
         // Set card color from backend preferences
         if (userData.preferences.use_custom_card_color) {
           // If using custom color, set the color directly from backend
-          console.log("Using custom color from backend:", userData.preferences.card_color);
           setCardColor(userData.preferences.card_color || "#f0f4ff");
         } else if (premiumTheme && premiumThemes[premiumTheme]) {
           // If using theme, set from premium theme
-          console.log("Using premium theme color:", premiumThemes[premiumTheme].primary);
           setCardColor(premiumThemes[premiumTheme].primary);
         } else {
           // Otherwise use backend card color
-          console.log("Using card color from backend:", userData.preferences.card_color);
           setCardColor(userData.preferences.card_color || "#f0f4ff");
         }
-      } else {
-        console.log("No preferences found in backend data, using defaults");
       }
 
       // Set profile picture with cache busting
@@ -239,41 +255,59 @@ function Profile() {
           currentStreak: currentStreak,
           frequencyGoal: workoutFrequencyGoal
         });
-      } else if (statsRes.status !== 404) {
-        console.error("Failed to fetch workout stats:", statsRes.status);
+      } else {
+        const statsErrorText = await statsRes.text().catch(() => "Unknown error");
       }
 
-      // Handle last saved routine
-      if (routineRes.ok) {
-        const routineData = await routineRes.json();
-        if (routineData.message !== "No saved routines found") {
-          setLastSavedRoutine(routineData);
+      // Handle last saved routine with better error handling and proper debugging
+      try {
+        if (routineRes.ok) {
+          const routineData = await routineRes.json();
+          // Check for valid data - must have name and exercises that is an array
+          if (routineData && typeof routineData === 'object' && 
+              routineData.name && 
+              Array.isArray(routineData.exercises)) {
+            console.log("Successfully loaded routine:", routineData.name);
+            setLastSavedRoutine(routineData);
+          } else if (routineData && routineData.message) {
+            console.log("No routine data found:", routineData.message);
+          } else {
+            console.warn("Got routine data but missing required fields:", routineData);
+          }
+        } else if (routineRes.status === 404) {
+          console.log("No saved routines found (404)");
+        } else {
+          // Log the error details for debugging
+          try {
+            const errorData = await routineRes.json();
+            console.error("Error fetching last saved routine:", errorData);
+          } catch (parseError) {
+            console.error("Error parsing error response:", parseError);
+            console.error("Server error when fetching last saved routine:", routineRes.status);
+          }
         }
-      } else if (routineRes.status !== 404) {
-        console.error("Failed to fetch last saved routine:", routineRes.status);
+      } catch (routineErr) {
+        console.error("Exception while processing last saved routine:", routineErr);
       }
     } catch (err) {
-      console.error("Error fetching user data:", err);
       setError(err.message || "Failed to load user data. Please try again.");
     } finally {
       setLoading(false);
     }
-  }, [navigate]);
+  }, [navigate, premiumTheme, premiumThemes]);
 
   // Initial data loading
   useEffect(() => {
-    console.log("Profile component mounted");
     fetchUserData();
     
     // Add listener for before page unload/refresh
     const handleBeforeUnload = () => {
-      console.log("Page about to refresh/unload. Current username state:", user?.username);
+      // Handle before unload
     };
     
     window.addEventListener('beforeunload', handleBeforeUnload);
     
     return () => {
-      console.log("Profile component unmounting");
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
   }, [fetchUserData]);
@@ -282,8 +316,6 @@ function Profile() {
   useEffect(() => {
     // This effect should only run once on component mount
     const initialRun = async () => {
-      console.log("Initial setup effect running");
-      
       // Wait for user preferences to be loaded
       if (!user || !user.preferences) {
         return;
@@ -291,9 +323,7 @@ function Profile() {
       
       // Check if we should use custom card color based on saved preference
       if (user.preferences.use_custom_card_color) {
-        console.log("Initial setup: User has custom color preference enabled");
         const savedColor = user.preferences.card_color || "#f0f4ff";
-        console.log("Initial setup: Using saved custom color:", savedColor);
         // Use the custom color
         setCardColor(savedColor);
         // Make sure preferences are in sync
@@ -304,12 +334,10 @@ function Profile() {
         }));
       } else if (premiumTheme && premiumThemes[premiumTheme]) {
         // Custom color not enabled, but premium theme is active
-        console.log("Initial setup: Using premium theme color:", premiumThemes[premiumTheme].primary);
         setCardColor(premiumThemes[premiumTheme].primary);
       } else {
         // No premium theme, use default color
         const savedColor = "#f0f4ff";
-        console.log("Initial setup: Using default saved color:", savedColor);
         setCardColor(savedColor);
       }
     };
@@ -320,17 +348,13 @@ function Profile() {
   // Effect to sync card color with premium theme only when useCustomCardColor is false
   useEffect(() => {
     if (!preferences.useCustomCardColor && premiumTheme && premiumThemes[premiumTheme]) {
-      console.log("Theme effect: Using premium theme color because custom color is disabled");
       const themeColor = premiumThemes[premiumTheme].primary;
       updateCardColor(themeColor);
-    } else if (preferences.useCustomCardColor) {
-      console.log("Theme effect: Skipping theme update because custom color is enabled");
     }
   }, [premiumTheme, premiumThemes, preferences.useCustomCardColor]);
 
   // Function to update card color in both state and preferences
   const updateCardColor = (newColor) => {
-    console.log("Updating card color to:", newColor);
     // Update the state directly
     setCardColor(newColor);
     // Update in preferences object
@@ -339,7 +363,6 @@ function Profile() {
         ...prev,
         cardColor: newColor
       };
-      console.log("Updated preferences:", updated);
       return updated;
     });
     setPreferencesChanged(true);
@@ -413,11 +436,9 @@ function Profile() {
         }
 
         const data = await response.json();
-        console.log("Server response after update:", data);
 
         // Check if we received a new access token (happens when username changes)
         if (data.access_token) {
-            console.log("Received new access token after username update");
             localStorage.setItem("token", data.access_token);
             localStorage.setItem("access_token", data.access_token);
         }
@@ -436,7 +457,6 @@ function Profile() {
             try {
                 await notifyUsernameChanged(updatedData.username);
             } catch (notificationError) {
-                console.error("Error creating notification:", notificationError);
                 // Don't fail the whole update if notification fails
             }
         }
@@ -445,7 +465,6 @@ function Profile() {
         await fetchUserData();
 
     } catch (err) {
-        console.error("Error updating profile:", err);
         setError(err.message);
         toast.error("Failed to update profile");
     } finally {
@@ -542,8 +561,6 @@ function Profile() {
         ? null 
         : parseInt(newPrefs.workoutFrequencyGoal);
       
-      console.log(`Dropdown changed: workout frequency goal from "${oldValue}" to "${newPrefs.workoutFrequencyGoal}"`);
-      console.log(`Converting workout frequency goal from "${newPrefs.workoutFrequencyGoal}" to ${frequencyGoal}`);
       newPrefs.workoutFrequencyGoal = frequencyGoal;
     }
     
@@ -605,18 +622,15 @@ function Profile() {
     
         if (workoutPrefsResponse.ok) {
           updatedWorkoutPrefs = await workoutPrefsResponse.json();
-          console.log("Workout preferences response:", updatedWorkoutPrefs);
         } else {
           const errorData = await workoutPrefsResponse.json();
-          console.error("Error updating workout preferences:", errorData);
         }
       } catch (err) {
-        console.error("Exception during workout preferences update:", err);
+        // Exception during workout preferences update
       }
 
       if (userProfileResponse.ok) {
         const updatedPreferences = await userProfileResponse.json();
-        console.log("Server response:", updatedPreferences);
         
         // Update the state with server response format
         setPreferences((prev) => {
@@ -630,22 +644,18 @@ function Profile() {
               ? updatedPreferences.use_custom_card_color  // Use server value if provided
               : prev.useCustomCardColor  // Otherwise keep our current setting
           };
-          console.log("New preferences state from backend:", newPrefs);
           return newPrefs;
         });
         
         // Set the card color based on preferences
         if (preferences.useCustomCardColor) {
           // If using custom color, maintain it
-          console.log("After save: Using custom color:", preferences.cardColor);
           setCardColor(preferences.cardColor);
         } else if (premiumTheme && premiumThemes[premiumTheme]) {
           // Otherwise use the theme color if applicable
-          console.log("After save: Using theme color:", premiumThemes[premiumTheme].primary);
           setCardColor(premiumThemes[premiumTheme].primary);
         } else {
           // Fall back to the saved color
-          console.log("After save: Using saved color:", updatedPreferences.card_color || preferences.cardColor);
           setCardColor(updatedPreferences.card_color || preferences.cardColor);
         }
         
@@ -673,32 +683,14 @@ function Profile() {
         
         // Send a notification if notifications are enabled
         if (allNotificationsEnabled) {
-          console.log("All notifications are enabled, checking for changes to notify about");
-          
           // Check if workout frequency goal was updated
           if (updatedWorkoutPrefs && 
-              oldFrequencyGoal !== updatedWorkoutPrefs.workout_frequency_goal) {
-            // Log values to help debug
-            console.log("Workout frequency goal change detected:");
-            console.log(`Old value: ${oldFrequencyGoal} (${typeof oldFrequencyGoal})`);
-            console.log(`New value: ${updatedWorkoutPrefs.workout_frequency_goal} (${typeof updatedWorkoutPrefs.workout_frequency_goal})`);
-            
-            // Format goals for display in logs
-            const oldGoalDisplay = oldFrequencyGoal === null ? "daily workouts" : 
-              `${oldFrequencyGoal} ${parseInt(oldFrequencyGoal) === 1 ? 'workout' : 'workouts'} per week`;
-            
-            const newGoalDisplay = updatedWorkoutPrefs.workout_frequency_goal === null ? "daily workouts" : 
-              `${updatedWorkoutPrefs.workout_frequency_goal} ${parseInt(updatedWorkoutPrefs.workout_frequency_goal) === 1 ? 'workout' : 'workouts'} per week`;
-            
-            console.log(`Changing from "${oldGoalDisplay}" to "${newGoalDisplay}"`);
-              
+              oldFrequencyGoal !== updatedWorkoutPrefs.workout_frequency_goal) {  
             // Send workout frequency goal notification
             await notifyWorkoutFrequencyGoalUpdated(updatedWorkoutPrefs.workout_frequency_goal);
             frequencyGoalNotificationSent = true;
-            console.log("Notification sent for workout frequency goal update");
             
             // Check achievements after updating preferences
-            console.log("Checking achievements after workout frequency goal update");
             await checkAchievementsProgress();
           }
           // Check if weight goal was updated
@@ -716,30 +708,24 @@ function Profile() {
           // Check achievements after updating preferences
           await checkAchievementsProgress();
         } else {
-          console.log("Notifications are disabled. Force sending workout frequency notification anyway for testing.");
           if (updatedWorkoutPrefs && oldFrequencyGoal !== updatedWorkoutPrefs.workout_frequency_goal) {
             // Force notification for debugging
             await notifyWorkoutFrequencyGoalUpdated(updatedWorkoutPrefs.workout_frequency_goal);
-            console.log("Forced notification sent for workout frequency goal update (for testing)");
             
             // Still check achievements even if notifications are disabled
-            console.log("Checking achievements even though notifications are disabled");
             await checkAchievementsProgress();
           }
         }
       } else {
-        console.error("Error response:", userProfileResponse.status);
         let errorData;
         
         if (!userProfileResponse.ok) {
           errorData = await userProfileResponse.json();
         }
         
-        console.error("Error data:", errorData);
         setError("Failed to update preferences");
       }
     } catch (err) {
-      console.error("Error updating preferences:", err);
       setError("An error occurred while updating preferences");
     } finally {
       setIsSaving(false);
@@ -749,7 +735,6 @@ function Profile() {
   // Function to check achievements after profile updates
   const checkAchievementsProgress = async () => {
     try {
-      console.log("Starting achievement check process");
       const token = localStorage.getItem("token");
       const response = await fetch(`${backendURL}/achievements/check`, {
         method: "POST",
@@ -760,13 +745,10 @@ function Profile() {
       
       if (response.ok) {
         const result = await response.json();
-        console.log("Achievement check completed:", result);
-        console.log(`Updated ${result.updated_count} achievements, ${result.newly_achieved} newly achieved!`);
       } else {
-        console.error("Failed to check achievements:", response.status);
+        // Failed to check achievements
       }
     } catch (error) {
-      console.error("Error checking achievements:", error);
       // Just log the error but don't throw it further to prevent app crashes
     }
   };
@@ -800,10 +782,28 @@ function Profile() {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("isAdmin");
-    navigate("/login");
+  const handleLogout = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      
+      // Call backend logout endpoint
+      await fetch("http://localhost:8000/auth/logout", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
+      
+    } catch (error) {
+      console.error("Error during logout:", error);
+    } finally {
+      localStorage.removeItem("token");
+      localStorage.removeItem("isAdmin");
+      // Dispatch events to notify other components
+      window.dispatchEvent(new Event("storage"));
+      window.dispatchEvent(new Event("auth-change"));
+      navigate("/login");
+    }
   };
 
   const handlePersonalInfoUpdate = async (updatedData) => {
@@ -881,7 +881,8 @@ function Profile() {
         }
         
         if (mappedData.fitness_goals !== originalFitnessGoals && mappedData.fitness_goals) {
-          await notifyFitnessGoalsUpdated();
+          // Use the new specific notification for workout goals
+          await notifyWorkoutGoalUpdated(mappedData.fitness_goals);
           notificationSent = true;
         }
         
@@ -902,7 +903,6 @@ function Profile() {
           // Check achievements after profile update
           await checkAchievementsProgress();
         } catch (error) {
-          console.warn("Failed to check achievements:", error);
           // Don't let achievement check failures affect the profile update success
         }
       }
@@ -912,7 +912,6 @@ function Profile() {
     } catch (error) {
       setLoading(false);
       toast.error('Failed to update profile');
-      console.error('Error updating profile:', error);
     }
   };
 
@@ -926,17 +925,13 @@ function Profile() {
 
   // Function to toggle custom color mode
   const toggleCustomColorMode = (checked) => {
-    console.log("Toggling useCustomCardColor to:", checked);
-    
     if (checked) {
       // Enabling custom color
-      console.log("Setting to custom color:", preferences.cardColor);
       setCardColor(preferences.cardColor);
     } else {
       // Disabling custom color, switch to theme color if available
       if (premiumTheme && premiumThemes[premiumTheme]) {
         const themeColor = premiumThemes[premiumTheme].primary;
-        console.log("Setting to theme color:", themeColor);
         setCardColor(themeColor);
       }
     }
@@ -952,7 +947,7 @@ function Profile() {
   };
 
   useEffect(() => {
-    console.log("Current preferences state:", preferences);
+    // Existing code
   }, [preferences]);
 
   if (loading) {
@@ -990,24 +985,18 @@ function Profile() {
       <div className="max-w-7xl mx-auto">
         {/* Profile Header */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8" style={{ 
-          // If useCustomCardColor is true, always use the custom color regardless of premium theme
           backgroundColor: preferences.useCustomCardColor 
             ? preferences.cardColor 
             : (premiumTheme && premiumTheme !== "default" && premiumThemes && premiumThemes[premiumTheme])
               ? premiumThemes[premiumTheme].primary
               : preferences.cardColor,
-          // Same logic for background gradient
           background: preferences.useCustomCardColor 
             ? preferences.cardColor 
             : (premiumTheme && premiumTheme !== "default" && premiumThemes && premiumThemes[premiumTheme])
               ? `linear-gradient(135deg, ${premiumThemes[premiumTheme].primary}dd, ${premiumThemes[premiumTheme].secondary}aa)`
               : preferences.cardColor,
-          color: theme === "dark" ? "white" : "#334155" // text color that works on gradient
+          color: theme === "dark" ? "white" : "#334155"
         }}>
-          {console.log("Rendering card with:", 
-            preferences.useCustomCardColor ? "custom color" : "theme color", 
-            preferences.useCustomCardColor ? preferences.cardColor : (premiumTheme && premiumThemes && premiumThemes[premiumTheme] ? premiumThemes[premiumTheme].primary : "default")
-          )}
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-6">
               <div className="relative">
@@ -1550,7 +1539,7 @@ function Profile() {
                 </div>
 
                 {/* Last Saved Routine */}
-                {lastSavedRoutine && lastSavedRoutine.name && (
+                {lastSavedRoutine && lastSavedRoutine.name && lastSavedRoutine.exercises && lastSavedRoutine.exercises.length > 0 && (
                   <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2">
@@ -1571,9 +1560,10 @@ function Profile() {
                           <p className="text-xs text-gray-500 dark:text-gray-400">
                             {lastSavedRoutine.created_at ? 
                               new Date(lastSavedRoutine.created_at).toLocaleDateString('en-GB') : 
-                              (lastSavedRoutine.date ? 
-                                new Date(lastSavedRoutine.date).toLocaleDateString('en-GB') : 
-                                "No date")}
+                              "No date available"}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            {lastSavedRoutine.exercises.length} exercise{lastSavedRoutine.exercises.length !== 1 ? 's' : ''}
                           </p>
                         </div>
                       </div>
@@ -1608,7 +1598,9 @@ function Profile() {
 
         {/* Achievements Section */}
         <div className="mt-8" id="achievements">
-          <AchievementsSection backendURL={backendURL} />
+          <ErrorBoundary>
+            <AchievementsSection backendURL={backendURL} />
+          </ErrorBoundary>
         </div>
 
         {/* Account Actions */}

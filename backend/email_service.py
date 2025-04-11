@@ -188,3 +188,87 @@ async def send_account_deletion_email(email: str, deletion_url: str):
 
     fm = FastMail(conf)
     await fm.send_message(message)
+
+
+async def notify_admin_account_verified(user_id: int, email: str, username: str):
+    """Notify admin when a user verifies their account"""
+    admin_emails = get_admin_emails()
+
+    message = MessageSchema(
+        subject="Account Verified - FitExplorer",
+        recipients=admin_emails,
+        body=f"""
+        <html>
+          <body>
+            <h1>User Account Verified</h1>
+            <p>A user has verified their email address on FitExplorer:</p>
+            <ul>
+              <li>User ID: {user_id}</li>
+              <li>Username: {username}</li>
+              <li>Email: {email}</li>
+              <li>Verification Time: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}</li>
+            </ul>
+          </body>
+        </html>
+        """,
+        subtype="html"
+    )
+
+    fm = FastMail(conf)
+    await fm.send_message(message)
+
+
+async def notify_admin_password_changed(user_id: int, email: str, username: str):
+    """Notify admin when a user changes their password"""
+    admin_emails = get_admin_emails()
+
+    message = MessageSchema(
+        subject="Password Changed - FitExplorer",
+        recipients=admin_emails,
+        body=f"""
+        <html>
+          <body>
+            <h1>User Password Changed</h1>
+            <p>A user has changed their password on FitExplorer:</p>
+            <ul>
+              <li>User ID: {user_id}</li>
+              <li>Username: {username}</li>
+              <li>Email: {email}</li>
+              <li>Time: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}</li>
+            </ul>
+          </body>
+        </html>
+        """,
+        subtype="html"
+    )
+
+    fm = FastMail(conf)
+    await fm.send_message(message)
+
+
+async def notify_admin_account_deletion(user_id: int, email: str, username: str):
+    """Notify admin when a user deletes their account"""
+    admin_emails = get_admin_emails()
+
+    message = MessageSchema(
+        subject="Account Deleted - FitExplorer",
+        recipients=admin_emails,
+        body=f"""
+        <html>
+          <body>
+            <h1>User Account Deleted</h1>
+            <p>A user has deleted their account from FitExplorer:</p>
+            <ul>
+              <li>User ID: {user_id}</li>
+              <li>Username: {username}</li>
+              <li>Email: {email}</li>
+              <li>Deletion Time: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}</li>
+            </ul>
+          </body>
+        </html>
+        """,
+        subtype="html"
+    )
+
+    fm = FastMail(conf)
+    await fm.send_message(message)

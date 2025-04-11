@@ -19,6 +19,7 @@ import {
   FaCheckSquare,
 } from "react-icons/fa";
 import { Line } from "react-chartjs-2";
+import { notifyRoutineCreated } from '../utils/notificationsHelpers';
 
 const API_BASE_URL = "http://localhost:8000";
 
@@ -240,7 +241,7 @@ function WorkoutHistory() {
             rest_pauses: set.rest_pauses || null,
             pyramid_type: set.pyramid_type || null,
             pyramid_step: set.pyramid_step || null,
-            giant_with: Array.isArray(set.giant_with) ? set.giant_with : null
+            giant_with: Array.isArray(set.giant_with) ? set.giant_with.map(item => String(item)) : null
           };
 
           if (exercise.is_cardio) {
@@ -319,6 +320,16 @@ function WorkoutHistory() {
       const result = await saveWorkoutAsRoutine(workoutToSave, token);
       if (result && result.success) {
         alert(result.updated ? "Routine updated successfully!" : "Workout saved as routine successfully!");
+        
+        // Send notification for new routine or skip if it was just an update
+        if (!result.updated) {
+          try {
+            console.log("Creating notification for new routine:", routineName);
+            await notifyRoutineCreated(routineName);
+          } catch (notificationError) {
+            console.error("Error creating notification:", notificationError);
+          }
+        }
       }
     } catch (error) {
       console.error("Error saving routine:", error);
@@ -351,6 +362,16 @@ function WorkoutHistory() {
       if (result && result.success) {
         alert(result.updated ? "Routine updated successfully!" : "Routine saved successfully!");
         setShowSaveRoutineModal(false);
+        
+        // Send notification for new routine or skip if it was just an update
+        if (!result.updated) {
+          try {
+            console.log("Creating notification for new routine:", routineName);
+            await notifyRoutineCreated(routineName);
+          } catch (notificationError) {
+            console.error("Error creating notification:", notificationError);
+          }
+        }
       }
     } catch (error) {
       console.error("Error saving routine:", error);
@@ -968,6 +989,14 @@ function WorkoutHistory() {
               >
                 <FaTrash className="mr-1" />
                 Delete All
+              </button>
+              
+              <button
+                onClick={() => navigate('/personal-records')}
+                className="flex items-center text-sm bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded ml-2"
+              >
+                <FaTrophy className="mr-1" />
+                Personal Records
               </button>
             </div>
             

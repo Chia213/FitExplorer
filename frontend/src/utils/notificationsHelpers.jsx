@@ -28,29 +28,23 @@ const areAchievementAlertsEnabled = () => {
  * @returns {Promise} - The fetch promise
  */
 export const createNotification = async (message, type, icon = 'bell', iconColor = 'text-blue-500') => {
-  // Add detailed logging to debug notification creation
-  console.log(`Creating notification: "${message}" of type: ${type}`);
-  
   // Check if all notifications are disabled
   if (!areNotificationsEnabled()) {
-    console.log('Notifications are disabled. Skipping notification:', message);
     return null;
   }
   
   // For achievement notifications, check the achievement-specific setting
   if (type === 'achievement_earned' && !areAchievementAlertsEnabled()) {
-    console.log('Achievement alerts are disabled. Skipping achievement notification:', message);
     return null;
   }
 
-  const token = localStorage.getItem('token');
+  // Check both token storage locations
+  const token = localStorage.getItem('access_token') || localStorage.getItem('token');
   if (!token) {
-    console.log('No auth token found. Skipping notification:', message);
     return null;
   }
 
   try {
-    console.log(`Sending notification to API: ${message}`);
     const response = await fetch(`${apiUrl}/notifications`, {
       method: 'POST',
       headers: {
@@ -68,15 +62,12 @@ export const createNotification = async (message, type, icon = 'bell', iconColor
 
     if (!response.ok) {
       const errorData = await response.json();
-      console.error('Notification API error:', errorData);
       throw new Error('Failed to create notification');
     }
 
     const result = await response.json();
-    console.log('Notification created successfully:', result);
     return result;
   } catch (error) {
-    console.error('Error creating notification:', error);
     return null;
   }
 };
@@ -191,27 +182,31 @@ export const notifyWeightGoalUpdated = (goalWeight) => {
 };
 
 export const notifyWorkoutFrequencyGoalUpdated = (frequencyGoal) => {
-  console.log(`Creating workout frequency notification with value: ${frequencyGoal} (${typeof frequencyGoal})`);
-  
   // Handle different data types more explicitly
   let frequencyText;
   if (frequencyGoal === null || frequencyGoal === undefined || frequencyGoal === '') {
     frequencyText = 'daily workouts';
-    console.log("Detected null/empty frequency goal, using 'daily workouts'");
   } else {
     const goalNumber = parseInt(frequencyGoal);
     frequencyText = `${goalNumber} ${goalNumber === 1 ? 'workout' : 'workouts'} per week`;
-    console.log(`Formatting frequency goal as: ${frequencyText}`);
   }
   
   const message = `Your workout frequency goal was updated to ${frequencyText}.`;
-  console.log(`Notification message: ${message}`);
   
   return createNotification(
     message,
     'workout_frequency_updated',
     'calendar-check',
     'text-green-500'
+  );
+};
+
+export const notifyWorkoutGoalUpdated = (goal) => {
+  return createNotification(
+    `Your workout goal has been updated to "${goal}".`,
+    'workout_goal_updated',
+    'bullseye',
+    'text-teal-500'
   );
 };
 
@@ -308,13 +303,11 @@ export const notifyProgressMilestone = (metric, value) => {
 export const notifyAchievementEarned = async (achievementName, description, icon) => {
   // Check if notifications are enabled
   if (!areNotificationsEnabled()) {
-    console.log('Notifications are disabled, skipping achievement notification');
     return null;
   }
 
   // Check if achievement alerts specifically are enabled
   if (!areAchievementAlertsEnabled()) {
-    console.log('Achievement alerts are disabled, skipping achievement notification');
     return null;
   }
 
@@ -344,7 +337,6 @@ export const notifyAchievementEarned = async (achievementName, description, icon
 
     return notification;
   } catch (error) {
-    console.error('Error creating achievement notification:', error);
     return null;
   }
 };

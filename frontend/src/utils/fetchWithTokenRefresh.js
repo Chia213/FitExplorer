@@ -63,6 +63,11 @@ export const fetchWithTokenRefresh = async (endpoint, options = {}) => {
           localStorage.removeItem("token");
           localStorage.removeItem("refreshToken");
           localStorage.removeItem("isAdmin");
+          
+          // Dispatch events to notify all components
+          window.dispatchEvent(new Event("storage"));
+          window.dispatchEvent(new Event("auth-change"));
+          
           window.location.href = "/login";
           throw new Error("Session expired. Please log in again.");
         }
@@ -71,6 +76,11 @@ export const fetchWithTokenRefresh = async (endpoint, options = {}) => {
         localStorage.removeItem("token");
         localStorage.removeItem("refreshToken");
         localStorage.removeItem("isAdmin");
+        
+        // Dispatch events to notify all components
+        window.dispatchEvent(new Event("storage"));
+        window.dispatchEvent(new Event("auth-change"));
+        
         window.location.href = "/login";
         throw new Error("Session expired. Please log in again.");
       }

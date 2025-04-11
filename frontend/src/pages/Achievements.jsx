@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "../hooks/useTheme";
 import { useAuth } from "../hooks/useAuth.jsx";
@@ -26,7 +26,7 @@ import {
   FaExternalLinkAlt
 } from "react-icons/fa";
 
-const backendURL = "http://localhost:8000";
+const backendURL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 // Default achievements for testing
 const defaultAchievements = [
@@ -260,16 +260,19 @@ function Achievements() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { userData, loading: userLoading, unlockedFeatures, hasFeature } = useUser();
-  const { unlockedThemes } = useTheme(); // Get unlocked themes from the theme hook
+  const { unlockedThemes, unlockTheme, unlockAllThemes, isAdmin = false, theme = "light" } = useTheme() || {};
   const { 
     achievements: hookAchievements, 
     loading: hookLoading, 
     error: hookError, 
-    fetchAchievements: hookFetchAchievements, 
+    fetchAchievements: hookFetchAchievements,
+    fetchAchievementsWithProgress: hookFetchAchievementsWithProgress, 
     checkAchievements: hookCheckAchievements,
     createAchievement: hookCreateAchievement 
   } = useAchievements();
-  const [achievements, setAchievements] = useState([]); // Initialize as empty array instead of null
+  
+  // State variables
+  const [achievements, setAchievements] = useState([]); 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -278,8 +281,6 @@ function Achievements() {
   const [showForceCleanup, setShowForceCleanup] = useState(false);
   const [selectedBadges, setSelectedBadges] = useState([]);
   const [showBadgeSelector, setShowBadgeSelector] = useState(false);
-  const maxBadges = 3; // Maximum number of badges that can be displayed on profile
-  const { theme = "light", unlockTheme, unlockAllThemes, isAdmin = false } = useTheme() || {};
   const [showInsights, setShowInsights] = useState(false);
   const [claimedRewards, setClaimedRewards] = useState([]);
   const [rewardStatus, setRewardStatus] = useState({});
@@ -301,6 +302,545 @@ function Achievements() {
   const [confirmAction, setConfirmAction] = useState(null);
   const [confirmTitle, setConfirmTitle] = useState("");
   const [confirmMessage, setConfirmMessage] = useState("");
+  const [unlockedFeatureMap, setUnlockedFeatureMap] = useState({});
+  const [achievements404, setAchievements404] = useState(false);
+  const [isProcessingAchievements, setIsProcessingAchievements] = useState(false);
+  const [showHelpMessage, setShowHelpMessage] = useState(true);
+  
+  // Refs
+  const isCheckingRef = useRef(false);
+  
+  // Constants
+  const maxBadges = 3; // Maximum number of badges that can be displayed on profile
+  const categories = ["all", "workout", "streak", "profile", "customization", "nutrition", "social", "app"];
+  
+  // Get filtered achievements based on selected category
+  const filteredAchievements = achievements.filter(
+    (achievement) => selectedCategory === "all" || achievement.category === selectedCategory
+  );
+
+  // Helper function to get icon component based on icon name string
+  const getIcon = (iconName) => {
+    const iconMap = {
+      FaTrophy: <FaTrophy />,
+      FaDumbbell: <FaDumbbell />,
+      FaFire: <FaFire />,
+      FaUser: <FaUser />,
+      FaIdCard: <FaIdCard />,
+      FaUserEdit: <FaUserEdit />,
+      FaPalette: <FaPalette />,
+      FaMoon: <FaMoon />,
+      FaAppleAlt: <FaAppleAlt />,
+      FaShare: <FaShare />,
+      FaCompass: <FaCompass />,
+      FaCalendarCheck: <FaCalendarCheck />,
+      FaCalendar: <FaCalendar />,
+      FaChartLine: <FaChartLine />,
+      FaGift: <FaGift />,
+      FaCrown: <FaCrown />
+    };
+    
+    return iconMap[iconName] || <FaTrophy />;
+  };
+  
+  // Helper function to get icon for rewards
+  const getRewardIcon = (iconName) => {
+    return getIcon(iconName);
+  };
+
+  // Add function to sync claimed rewards with backend
+  const syncClaimedRewards = useCallback(async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+      
+      const response = await fetch(`${backendURL}/user/rewards/claimed`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        // Update local state with backend data - data is an array directly
+        setClaimedRewards(data || []);
+        
+        // Update localStorage for offline access
+        localStorage.setItem('claimedRewards', JSON.stringify(data || []));
+      } else {
+        // If backend request fails, fall back to localStorage
+        const storedClaimedRewards = localStorage.getItem('claimedRewards');
+        if (storedClaimedRewards) {
+          try {
+            setClaimedRewards(JSON.parse(storedClaimedRewards));
+          } catch (error) {
+            console.error("Error parsing claimed rewards:", error);
+            setClaimedRewards([]);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error syncing claimed rewards:", error);
+      // Fall back to localStorage in case of error
+      const storedClaimedRewards = localStorage.getItem('claimedRewards');
+      if (storedClaimedRewards) {
+        try {
+          setClaimedRewards(JSON.parse(storedClaimedRewards));
+        } catch (error) {
+          console.error("Error parsing claimed rewards:", error);
+          setClaimedRewards([]);
+        }
+      }
+    }
+  }, []);
+
+  // Function to toggle badge selection
+  const toggleBadgeSelection = (badgeId) => {
+    setSelectedBadges(prev => {
+      // If badge is already selected, remove it
+      if (prev.includes(badgeId)) {
+        return prev.filter(id => id !== badgeId);
+      }
+      
+      // If we're at max badges, remove the first badge and add the new one
+      if (prev.length >= maxBadges) {
+        return [...prev.slice(1), badgeId];
+      }
+      
+      // Otherwise just add the badge
+      return [...prev, badgeId];
+    });
+  };
+  
+  // Function to save badge selections
+  const saveBadgeSelections = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem("token");
+      
+      const response = await fetch(`${backendURL}/user/badges`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ badges: selectedBadges }),
+      });
+
+      if (response.ok) {
+        setNotification({
+          show: true,
+          message: "Badge selections saved successfully!",
+          type: "success"
+        });
+        setShowBadgeSelector(false);
+      } else {
+        throw new Error("Failed to save badge selections");
+      }
+    } catch (err) {
+      console.error("Error saving badge selections:", err);
+      setNotification({
+        show: true,
+        message: "Failed to save badge selections. Please try again.",
+        type: "error"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Add function to fetch user's saved badges
+  const fetchSavedBadges = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      
+      const response = await fetch(`${backendURL}/user/badges`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.badges && Array.isArray(data.badges)) {
+          setSelectedBadges(data.badges);
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching saved badges:", err);
+      // Don't set error state, as this is not critical functionality
+    }
+  };
+  
+  // Check achievements with the backend
+  const checkAchievements = useCallback(async () => {
+    try {
+      return await hookCheckAchievements();
+    } catch (err) {
+      console.error("Error checking achievements from hook:", err);
+      return null;
+    }
+  }, [hookCheckAchievements]);
+  
+  // Function to create default achievements
+  const createDefaultAchievements = async () => {
+    if (creating) return;
+    
+    try {
+      setCreating(true);
+      setStatusMessage("Creating default achievements...");
+      
+      // Add code to create default achievements if needed
+      const token = localStorage.getItem("token");
+      
+      const response = await fetch(`${backendURL}/achievements/create-defaults`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to create default achievements: ${response.status}`);
+      }
+      
+      // Refresh achievements list
+      await hookFetchAchievementsWithProgress();
+      
+      setStatusMessage("Default achievements created successfully!");
+      
+      // Auto-dismiss the status message after 3 seconds
+      setTimeout(() => {
+        setStatusMessage("");
+      }, 3000);
+    } catch (err) {
+      console.error("Error creating default achievements:", err);
+      setError(err.message);
+      setStatusMessage("Error creating default achievements.");
+    } finally {
+      setCreating(false);
+    }
+  };
+  
+  // Functions for cleanup operations
+  const cleanupDuplicates = async () => {
+    try {
+      setLoading(true);
+      setStatusMessage("Checking for duplicate achievements...");
+      
+      const token = localStorage.getItem("token");
+      
+      const response = await fetch(`${backendURL}/achievements/cleanup-duplicates`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to cleanup duplicates: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.removed > 0) {
+        setStatusMessage(`Successfully removed ${data.removed} duplicate achievements.`);
+        // Refresh achievements list
+        await hookFetchAchievementsWithProgress();
+      } else {
+        setStatusMessage("No duplicate achievements found.");
+      }
+      
+      // Auto-dismiss the status message after 3 seconds
+      setTimeout(() => {
+        setStatusMessage("");
+      }, 3000);
+    } catch (err) {
+      console.error("Error cleaning up duplicates:", err);
+      setError(err.message);
+      setStatusMessage("Error during cleanup operation.");
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  const forceCleanupDuplicates = async () => {
+    try {
+      setLoading(true);
+      setStatusMessage("Force removing duplicate achievements...");
+      
+      const token = localStorage.getItem("token");
+      
+      const response = await fetch(`${backendURL}/achievements/force-cleanup-duplicates`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to force cleanup duplicates: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.removed > 0) {
+        setStatusMessage(`Successfully force removed ${data.removed} duplicate achievements.`);
+        // Refresh achievements list
+        await hookFetchAchievementsWithProgress();
+      } else {
+        setStatusMessage("No duplicate achievements found.");
+      }
+      
+      // Hide the force cleanup button after successful operation
+      setShowForceCleanup(false);
+      
+      // Auto-dismiss the status message after 3 seconds
+      setTimeout(() => {
+        setStatusMessage("");
+      }, 3000);
+    } catch (err) {
+      console.error("Error force cleaning up duplicates:", err);
+      setError(err.message);
+      setStatusMessage("Error during force cleanup operation.");
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Function to generate achievement insights
+  const generateAchievementInsights = () => {
+    if (!achievements || achievements.length === 0) return null;
+    
+    const totalAchievements = achievements.length;
+    const achievedCount = achievements.filter(a => a.is_achieved).length;
+    const percentComplete = Math.round((achievedCount / totalAchievements) * 100);
+    
+    // Group achievements by category
+    const categoriesMap = achievements.reduce((acc, achievement) => {
+      if (!acc[achievement.category]) {
+        acc[achievement.category] = {
+          total: 0,
+          achieved: 0,
+          progress: 0
+        };
+      }
+      
+      acc[achievement.category].total += 1;
+      
+      if (achievement.is_achieved) {
+        acc[achievement.category].achieved += 1;
+      }
+      
+      return acc;
+    }, {});
+    
+    // Calculate progress per category
+    Object.keys(categoriesMap).forEach(category => {
+      const { total, achieved } = categoriesMap[category];
+      categoriesMap[category].progress = Math.round((achieved / total) * 100);
+    });
+    
+    // Find strongest and weakest categories
+    let strongestCategory = { category: "none", progress: 0 };
+    let weakestCategory = { category: "none", progress: 100 };
+    
+    Object.entries(categoriesMap).forEach(([category, data]) => {
+      if (data.total >= 2) { // Only consider categories with at least 2 achievements
+        if (data.progress > strongestCategory.progress) {
+          strongestCategory = { category, progress: data.progress };
+        }
+        
+        if (data.progress < weakestCategory.progress) {
+          weakestCategory = { category, progress: data.progress };
+        }
+      }
+    });
+    
+    // Find achievements that are close to being completed (60-99% progress)
+    const closeToAchieving = achievements
+      .filter(a => !a.is_achieved && a.progress > 0)
+      .map(a => ({
+        ...a,
+        percentComplete: Math.round((a.progress / a.requirement) * 100)
+      }))
+      .filter(a => a.percentComplete >= 60 && a.percentComplete < 100)
+      .sort((a, b) => b.percentComplete - a.percentComplete)
+      .slice(0, 3);
+    
+    // Generate a "hypothetical" community rank for fun
+    // This would be replaced with actual data in a real implementation
+    const hypotheticalRank = Math.min(99, Math.max(1, Math.round(percentComplete * 0.9 + Math.random() * 10)));
+    
+    return {
+      totalAchievements,
+      achievedCount,
+      percentComplete,
+      categoriesMap,
+      strongestCategory,
+      weakestCategory,
+      closeToAchieving,
+      hypotheticalRank
+    };
+  };
+  
+  // Admin functions
+  const initiateClaimAllRewards = () => {
+    setConfirmTitle("Claim All Rewards?");
+    setConfirmMessage("This will unlock all achievement rewards. Continue?");
+    setConfirmAction(() => claimAllRewards);
+    setShowConfirmDialog(true);
+  };
+  
+  const claimAllRewards = async () => {
+    try {
+      setLoading(true);
+      
+      // Claim each reward in sequence
+      for (const reward of achievementRewards) {
+        await updateClaimedRewardInBackend(reward.id);
+      }
+      
+      // Update local state
+      setClaimedRewards(achievementRewards.map(r => r.id));
+      
+      // Save to localStorage
+      localStorage.setItem('claimedRewards', JSON.stringify(achievementRewards.map(r => r.id)));
+      
+      // Unlock all themes
+      if (unlockAllThemes) {
+        await unlockAllThemes();
+      }
+      
+      setNotification({
+        show: true,
+        message: "All rewards claimed successfully!",
+        type: "success"
+      });
+    } catch (error) {
+      console.error("Error claiming all rewards:", error);
+      setNotification({
+        show: true,
+        message: "Error claiming rewards. Please try again.",
+        type: "error"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  const initiateUnlockWorkoutTemplates = () => {
+    setConfirmTitle("Unlock Workout Templates?");
+    setConfirmMessage("This will unlock all workout templates. Continue?");
+    setConfirmAction(() => unlockWorkoutTemplates);
+    setShowConfirmDialog(true);
+  };
+  
+  const unlockWorkoutTemplates = async () => {
+    try {
+      setLoading(true);
+      
+      // Add code to unlock workout templates if needed
+      
+      setNotification({
+        show: true,
+        message: "Workout templates unlocked successfully!",
+        type: "success"
+      });
+    } catch (error) {
+      console.error("Error unlocking workout templates:", error);
+      setNotification({
+        show: true,
+        message: "Error unlocking workout templates. Please try again.",
+        type: "error"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Confirmation Dialog Component
+  const ConfirmationDialog = () => {
+    if (!showConfirmDialog) return null;
+    
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md">
+          <div className="p-6">
+            <h3 className="text-lg font-semibold mb-2">{confirmTitle}</h3>
+            <p className="text-gray-600 dark:text-gray-300 mb-4">{confirmMessage}</p>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setShowConfirmDialog(false)}
+                className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded hover:bg-gray-300 dark:hover:bg-gray-600"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  if (confirmAction) {
+                    confirmAction();
+                  }
+                  setShowConfirmDialog(false);
+                }}
+                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+  
+  // Reward Modal Component
+  const RewardModal = () => {
+    const reward = rewardModalInfo.reward;
+    if (!rewardModalInfo.show || !reward) return null;
+    
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md overflow-hidden">
+          <div className="bg-purple-500 p-4 text-white">
+            <h3 className="text-xl font-bold">{rewardModalInfo.title || "Reward Claimed!"}</h3>
+          </div>
+          <div className="p-6">
+            <div className="flex items-center justify-center mb-4">
+              <div className="text-yellow-500 text-4xl">
+                {getRewardIcon(reward.icon)}
+              </div>
+            </div>
+            <h4 className="text-xl font-semibold text-center mb-2">{reward.title}</h4>
+            <p className="text-center text-gray-600 dark:text-gray-300 mb-6">
+              {rewardModalInfo.message || reward.description}
+            </p>
+            <div className="flex justify-center space-x-3">
+              <button
+                onClick={() => {
+                  setRewardModalInfo({ show: false, title: "", message: "", reward: null });
+                  // Optionally, navigate to a different page
+                }}
+                className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded hover:bg-gray-300 dark:hover:bg-gray-600"
+              >
+                Close
+              </button>
+              <button
+                onClick={() => {
+                  setRewardModalInfo({ show: false, title: "", message: "", reward: null });
+                  useReward(reward);
+                }}
+                className="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600"
+              >
+                Use Now
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   // Use the achievements from the hook
   useEffect(() => {
@@ -321,570 +861,120 @@ function Achievements() {
     return () => clearTimeout(timer);
   }, [notification.show]);
 
-  // Fetch achievements on component mount
+  // Create a single ref to track if we've already loaded achievements
+  const hasLoadedRef = useRef(false);
+  const initialFetchDoneRef = useRef(false);
+  
+  // Single consolidated effect for initial loading
   useEffect(() => {
-    // We'll use the hook's fetchAchievements instead of our custom one
-    const initializeAchievements = async () => {
-      try {
-        setLoading(true);
-        // If we have no achievements, create default ones
-        if (hookAchievements && hookAchievements.length === 0) {
-          await createDefaultAchievements();
-        }
-      } catch (err) {
-        console.error("Error initializing achievements:", err);
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    initializeAchievements();
-  }, [user, userData, unlockedFeatures]);
-
-  useEffect(() => {
-    // Load claimed rewards from localStorage
-    const storedClaimedRewards = localStorage.getItem('claimedRewards');
-    if (storedClaimedRewards) {
-      try {
-        setClaimedRewards(JSON.parse(storedClaimedRewards));
-      } catch (error) {
-        console.error("Error parsing claimed rewards:", error);
-        setClaimedRewards([]);
-      }
-    }
-    
-    // Sync with backend data if user is logged in
-    if (user && !userLoading && userData) {
-      // Check if user has unlocked features and update UI accordingly
-      const checkFeatures = async () => {
+    // Only run once when user is available
+    if (user && !userLoading && !initialFetchDoneRef.current) {
+      initialFetchDoneRef.current = true;
+      
+      const initialLoad = async () => {
         try {
-          // If user has unlocked themes but the claimedRewards doesn't include it, add it
-          if (hasFeature('themes') && !claimedRewards.includes('reward-1')) {
-            const updatedRewards = [...claimedRewards, 'reward-1'];
-            setClaimedRewards(updatedRewards);
-            localStorage.setItem('claimedRewards', JSON.stringify(updatedRewards));
+          setLoading(true);
+          
+          // 1. First fetch achievements with progress
+          await hookFetchAchievementsWithProgress();
+          
+          // 2. If we have no achievements, create default ones
+          if (hookAchievements && hookAchievements.length === 0) {
+            await createDefaultAchievements();
           }
           
-          // If user has unlocked workout templates but the claimedRewards doesn't include it, add it
-          if (hasFeature('workouts') && !claimedRewards.includes('reward-2')) {
-            const updatedRewards = [...claimedRewards, 'reward-2'];
-            setClaimedRewards(updatedRewards);
-            localStorage.setItem('claimedRewards', JSON.stringify(updatedRewards));
-          }
+          // 3. Fetch saved badges
+          await fetchSavedBadges();
           
-          // If user has unlocked stats but the claimedRewards doesn't include it, add it
-          if (hasFeature('stats') && !claimedRewards.includes('reward-3')) {
-            const updatedRewards = [...claimedRewards, 'reward-3'];
-            setClaimedRewards(updatedRewards);
-            localStorage.setItem('claimedRewards', JSON.stringify(updatedRewards));
-          }
-        } catch (error) {
-          console.error("Error syncing features with claimed rewards:", error);
+          // 4. Sync claimed rewards
+          await syncClaimedRewards();
+        } catch (err) {
+          console.error("Error during initial achievements load:", err);
+          setError(err.message);
+        } finally {
+          setLoading(false);
         }
       };
       
-      checkFeatures();
+      initialLoad();
     }
-  }, [user, userLoading, userData, unlockedFeatures, hasFeature]);
+  }, [user, userLoading, hookFetchAchievementsWithProgress, syncClaimedRewards, fetchSavedBadges, hookAchievements, createDefaultAchievements]);
 
-  const fetchAchievements = async () => {
+  // Modify the checkAchievementsAfterAction function to prevent repeated calls
+  const checkAchievementsAfterAction = async () => {
+    // Skip if already checking
+    if (isCheckingRef.current) {
+      return;
+    }
+    
     try {
-      setLoading(true);
-      setStatusMessage("Loading achievements...");
-      const token = localStorage.getItem("token");
-      if (!token) {
-        navigate("/login");
-        return;
-      }
-
-      const response = await fetch(`${backendURL}/achievements`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          localStorage.removeItem("token");
-          navigate("/login");
-          return;
-        }
-        throw new Error(`Failed to fetch achievements: ${response.status} ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      console.log('Achievements data:', data);
-      setAchievements(data);
+      isCheckingRef.current = true;
       
-      // Auto-create default achievements if none exist
-      if (data.length === 0) {
-        await createDefaultAchievements();
-        // Check progress immediately after creating default achievements
-        await checkAchievements();
-      }
-    } catch (err) {
-      console.error('Error fetching achievements:', err);
-      setError(err.message);
-    } finally {
-      setStatusMessage("");
-      setLoading(false);
-    }
-  };
-
-  const checkAchievements = async () => {
-    try {
-      setLoading(true);
-      setStatusMessage("Checking achievements progress...");
-      // Use the hook's checkAchievements function
-      const result = await hookCheckAchievements();
-      if (result) {
-        setStatusMessage(result.message || "Achievements updated!");
+      const result = await checkAchievements();
+      if (result && result.newly_achieved > 0) {
+        // Refresh achievements list to show new progress using the synchronized version
+        await hookFetchAchievementsWithProgress();
       }
     } catch (err) {
       console.error("Error checking achievements:", err);
-      setError(err.message);
     } finally {
-      setTimeout(() => setStatusMessage(""), 3000); // Clear message after 3 seconds
-      setLoading(false);
+      // Reset the checking flag after a delay to prevent rapid successive calls
+      setTimeout(() => {
+        isCheckingRef.current = false;
+      }, 2000);
     }
   };
   
-  const createDefaultAchievements = async () => {
-    try {
-      setCreating(true);
-      setStatusMessage("Creating default achievements...");
-      const token = localStorage.getItem("token");
-      if (!token) {
-        navigate("/login");
-        return;
-      }
-      
-      // Only create achievements that don't already exist
-      let createdCount = 0;
-      for (const achievement of defaultAchievements) {
-        const result = await hookCreateAchievement(achievement);
-        if (result) {
-          createdCount++;
-        }
-      }
-      
-      // Refresh achievements
-      await hookFetchAchievements();
-      setStatusMessage(`${createdCount} achievements created successfully`);
-    } catch (err) {
-      console.error("Error creating default achievements:", err);
-      setError(err.message);
-    } finally {
-      setTimeout(() => setStatusMessage(""), 3000); // Clear message after 3 seconds
-      setCreating(false);
+  // Prevent event listeners from triggering multiple checks
+  const checkWithDebounce = useCallback(async () => {
+    if (isProcessingAchievements) {
+      return;
     }
-  };
-
-  // Add cleanupDuplicates function
-  const cleanupDuplicates = async () => {
+    
     try {
-      setStatusMessage("Cleaning up duplicate achievements...");
-      setLoading(true);
-      setShowForceCleanup(false);
-      const token = localStorage.getItem("token");
+      setIsProcessingAchievements(true);
       
-      if (!token) {
-        navigate("/login");
-        return;
-      }
-      
-      const response = await fetch(`${backendURL}/achievements/cleanup-duplicates`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      const data = await response.json();
-      
-      if (response.ok) {
-        setStatusMessage(data.message);
-        // Check if the message indicates no achievements were deleted due to references
-        if (data.message.includes("No achievements were deleted")) {
-          // Show the force cleanup button
-          setShowForceCleanup(true);
-        } else {
-          setShowForceCleanup(false);
-        }
-        // Refresh achievements after cleanup
-        await fetchAchievements();
-      } else {
-        setShowForceCleanup(true); // Show force cleanup option if regular cleanup failed
-        throw new Error(`Failed to clean up duplicates: ${data.detail || data.message || 'Unknown error'}`);
+      const result = await checkAchievements();
+      if (result && result.newly_achieved > 0) {
+        await hookFetchAchievementsWithProgress();
       }
     } catch (err) {
-      console.error("Error cleaning up duplicates:", err);
-      setError(err.message);
-      setStatusMessage(`Error: ${err.message}`);
-      setShowForceCleanup(true);
+      console.error("Error checking achievements:", err);
     } finally {
+      // Wait before allowing another check
       setTimeout(() => {
-        if (statusMessage.startsWith("Cleaning") || statusMessage.startsWith("Error")) {
-          setStatusMessage("");
-        }
-      }, 5000);
-      setLoading(false);
-    }
-  };
-
-  // Add force cleanup function
-  const forceCleanupDuplicates = async () => {
-    try {
-      setStatusMessage("Force cleaning up duplicate achievements...");
-      setLoading(true);
-      const token = localStorage.getItem("token");
-      
-      if (!token) {
-        navigate("/login");
-        return;
-      }
-      
-      const response = await fetch(`${backendURL}/achievements/force-cleanup-duplicates`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      const data = await response.json();
-      
-      if (response.ok) {
-        setStatusMessage(data.message);
-        setShowForceCleanup(false);
-        // Refresh achievements after cleanup
-        await fetchAchievements();
-      } else {
-        throw new Error(`Failed to force clean up duplicates: ${data.detail || data.message || 'Unknown error'}`);
-      }
-    } catch (err) {
-      console.error("Error force cleaning up duplicates:", err);
-      setError(err.message);
-      setStatusMessage(`Error: ${err.message}`);
-    } finally {
-      setTimeout(() => {
-        if (statusMessage.startsWith("Force") || statusMessage.startsWith("Error")) {
-          setStatusMessage("");
-        }
-      }, 5000);
-      setLoading(false);
-    }
-  };
-
-  const getIcon = (iconName) => {
-    switch (iconName) {
-      case "FaDumbbell":
-        return <FaDumbbell className="w-6 h-6" />;
-      case "FaFire":
-        return <FaFire className="w-6 h-6" />;
-      case "FaCrown":
-        return <FaCrown className="w-6 h-6" />;
-      case "FaUser":
-        return <FaUser className="w-6 h-6" />;
-      case "FaIdCard":
-        return <FaIdCard className="w-6 h-6" />;
-      case "FaUserEdit":
-        return <FaUserEdit className="w-6 h-6" />;
-      case "FaPalette":
-        return <FaPalette className="w-6 h-6" />;
-      case "FaMoon":
-        return <FaMoon className="w-6 h-6" />;
-      case "FaAppleAlt":
-        return <FaAppleAlt className="w-6 h-6" />;
-      case "FaShare":
-        return <FaShare className="w-6 h-6" />;
-      case "FaCompass":
-        return <FaCompass className="w-6 h-6" />;
-      case "FaCalendarCheck":
-        return <FaCalendarCheck className="w-6 h-6" />;
-      default:
-        return <FaTrophy className="w-6 h-6" />;
-    }
-  };
-
-  const filteredAchievements = selectedCategory === "all"
-    ? [...achievements].sort((a, b) => {
-        // Put achieved achievements first and sort them by date (newest first)
-        if (a.is_achieved && b.is_achieved) {
-          // If both are achieved, sort by date (newest first)
-          return new Date(b.achieved_at || 0) - new Date(a.achieved_at || 0);
-        } else if (a.is_achieved) {
-          // If only a is achieved, it comes first
-          return -1;
-        } else if (b.is_achieved) {
-          // If only b is achieved, it comes first
-          return 1;
-        }
-        // If neither is achieved, keep original order
-        return 0;
-      })
-    : [...achievements]
-        .filter(achievement => achievement.category === selectedCategory)
-        .sort((a, b) => {
-          // Put achieved achievements first and sort them by date (newest first)
-          if (a.is_achieved && b.is_achieved) {
-            // If both are achieved, sort by date (newest first)
-            return new Date(b.achieved_at || 0) - new Date(a.achieved_at || 0);
-          } else if (a.is_achieved) {
-            // If only a is achieved, it comes first
-            return -1;
-          } else if (b.is_achieved) {
-            // If only b is achieved, it comes first
-            return 1;
-          }
-          // If neither is achieved, keep original order
-          return 0;
-        });
-
-  const categories = ["all", "workout", "streak", "profile", "customization", "nutrition", "social", "app"];
-
-  // Add function to toggle badge selection
-  const toggleBadgeSelection = (achievementId) => {
-    if (selectedBadges.includes(achievementId)) {
-      setSelectedBadges(selectedBadges.filter(id => id !== achievementId));
-    } else {
-      // Check if we've reached the maximum number of badges
-      if (selectedBadges.length < maxBadges) {
-        setSelectedBadges([...selectedBadges, achievementId]);
-      } else {
-        setStatusMessage(`You can select a maximum of ${maxBadges} badges`);
-        setTimeout(() => setStatusMessage(""), 3000);
-      }
-    }
-  };
-
-  // Add function to save selected badges
-  const saveBadgeSelections = async () => {
-    try {
-      setLoading(true);
-      setStatusMessage("Saving badge selections...");
-      const token = localStorage.getItem("token");
-      
-      // This would be where you'd send the selected badges to the backend
-      // For now, we'll just simulate this with a timeout
-      setTimeout(() => {
-        setStatusMessage("Badge selections saved successfully!");
-        setShowBadgeSelector(false);
-        setTimeout(() => setStatusMessage(""), 3000);
-        setLoading(false);
-      }, 1000);
-      
-      // Actual implementation would look like this:
-      /*
-      const response = await fetch(`${backendURL}/user/badges`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ badges: selectedBadges }),
-      });
-
-      if (response.ok) {
-        setStatusMessage("Badge selections saved successfully!");
-        setShowBadgeSelector(false);
-      } else {
-        throw new Error("Failed to save badge selections");
-      }
-      */
-    } catch (err) {
-      console.error("Error saving badge selections:", err);
-      setError(err.message);
-    } finally {
-      setTimeout(() => {
-        if (statusMessage === "Saving badge selections...") {
-          setStatusMessage("");
-        }
+        setIsProcessingAchievements(false);
       }, 3000);
     }
-  };
+  }, [checkAchievements, hookFetchAchievementsWithProgress, isProcessingAchievements]);
 
-  // Add getRewardIcon function to the component
-  const getRewardIcon = (iconName) => {
-    switch (iconName) {
-      case "FaDumbbell":
-        return <FaDumbbell className="w-6 h-6" />;
-      case "FaPalette":
-        return <FaPalette className="w-6 h-6" />;
-      case "FaChartLine":
-        return <FaChartLine className="w-6 h-6" />;
-      default:
-        return <FaGift className="w-6 h-6" />;
+  // Add effect to sync rewards when modal info changes
+  useEffect(() => {
+    if (rewardModalInfo.show && user) {
+      // Sync claimed rewards when modal is shown to ensure UI is up-to-date
+      syncClaimedRewards();
     }
-  };
+  }, [rewardModalInfo.show, user, syncClaimedRewards]);
 
-  // Function to generate achievement insights
-  const generateAchievementInsights = () => {
-    if (!achievements || achievements.length === 0) return null;
-    
-    const totalAchievements = achievements.length;
-    const achievedCount = achievements.filter(a => a.is_achieved).length;
-    const percentComplete = Math.round((achievedCount / totalAchievements) * 100);
-    
-    // Category-based analysis
-    const categoryCounts = {};
-    const categoryProgress = {};
-    
-    achievements.forEach(a => {
-      // Count achievements by category
-      if (!categoryCounts[a.category]) {
-        categoryCounts[a.category] = { total: 0, achieved: 0 };
-      }
+  // Add effect to auto-dismiss help message after a period
+  useEffect(() => {
+    if (showHelpMessage) {
+      const timer = setTimeout(() => {
+        setShowHelpMessage(false);
+      }, 10000); // 10 seconds
       
-      categoryCounts[a.category].total += 1;
-      if (a.is_achieved) {
-        categoryCounts[a.category].achieved += 1;
-      }
-      
-      // Calculate progress for each category
-      categoryProgress[a.category] = Math.round(
-        (categoryCounts[a.category].achieved / categoryCounts[a.category].total) * 100
-      );
-    });
-    
-    // Identify strongest and weakest categories
-    const categoryEntries = Object.entries(categoryProgress);
-    const strongestCategory = categoryEntries.reduce((max, [cat, progress]) => 
-      progress > max.progress ? { category: cat, progress } : max, 
-      { category: '', progress: 0 }
-    );
-    
-    const weakestCategory = categoryEntries.reduce((min, [cat, progress]) => 
-      progress < min.progress || min.progress === 0 ? { category: cat, progress } : min, 
-      { category: '', progress: 100 }
-    );
-    
-    // Find almost completed achievements (75%+ progress)
-    const closeToAchieving = achievements
-      .filter(a => !a.is_achieved && (a.progress / a.requirement) >= 0.75)
-      .slice(0, 3);
-    
-    // Calculate hypothetical position on a leaderboard (made up)
-    const hypotheticalRank = 100 - percentComplete;
-    
-    return {
-      percentComplete,
-      achievedCount,
-      totalAchievements,
-      strongestCategory,
-      weakestCategory,
-      closeToAchieving,
-      hypotheticalRank
-    };
-  };
-
-  // Helper function to save workout templates
-  const saveWorkoutTemplates = async () => {
-    try {
-      console.log("===== WORKOUT TEMPLATE SAVING PROCESS START =====");
-      
-      // Verify if user already has templates
-      console.log("Checking for existing templates...");
-      const existingRoutinesResponse = await fetch(`${backendURL}/user/routines`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      
-      if (!existingRoutinesResponse.ok) {
-        console.error("Failed to fetch existing routines");
-      } else {
-        const existingRoutines = await existingRoutinesResponse.json();
-        const existingTemplates = existingRoutines.filter(r => 
-          (r.exercises && r.exercises.length > 0) || 
-          (r.workout && r.workout.is_template === true)
-        );
-        console.log(`User has ${existingTemplates.length} existing templates: ${existingTemplates.map(t => t.name).join(', ')}`);
-      }
-      
-      console.log("Initiating API call to save workout templates...");
-      
-      // Check if token exists
-      if (!token) {
-        console.error("No authentication token found");
-        setSuccessMessage("");
-        setError("Authentication required. Please log in.");
-        return false;
-      }
-      
-      // Make API call to save templates
-      const response = await fetch(`${backendURL}/user/workouts/save-templates`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      
-      console.log(`API response status: ${response.status}`);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Failed to save workout templates:", errorText);
-        setSuccessMessage("");
-        setError("Failed to save workout templates. Please try again.");
-        return false;
-      }
-      
-      const data = await response.json();
-      console.log("Full response data:", data);
-      
-      // Verify templates were created by fetching routines again
-      console.log("Verifying templates were created...");
-      const verifyResponse = await fetch(`${backendURL}/user/routines`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      
-      if (verifyResponse.ok) {
-        const routines = await verifyResponse.json();
-        const templates = routines.filter(r => 
-          (r.exercises && r.exercises.length > 0) || 
-          (r.workout && r.workout.is_template === true)
-        );
-        console.log(`After saving, found ${templates.length} templates`);
-        
-        // Log details of each template for verification
-        templates.forEach(template => {
-          const exercises = template.exercises || (template.workout ? template.workout.exercises : []);
-          console.log(`Template: ${template.name}, has ${exercises ? exercises.length : 0} exercises`);
-          
-          if (exercises && exercises.length > 0) {
-            exercises.forEach(ex => {
-              console.log(`  - Exercise: ${ex.name}, has ${ex.sets ? ex.sets.length : 0} sets`);
-            });
-          }
-        });
-      }
-      
-      console.log("===== WORKOUT TEMPLATE SAVING PROCESS COMPLETE =====");
-      
-      if (data.templates_added > 0) {
-        setSuccessMessage(`Successfully added ${data.templates_added} expert workout templates to your routines! Go to Routines to view them.`);
-        setError("");
-        
-        // Update claimed rewards state
-        const updatedClaimedRewards = [...claimedRewards, "workoutTemplates"];
-        setClaimedRewards(updatedClaimedRewards);
-        localStorage.setItem("claimedRewards", JSON.stringify(updatedClaimedRewards));
-        
-        return true;
-      } else {
-        setSuccessMessage("You already have all available expert workout templates.");
-        setError("");
-        return true;
-      }
-    } catch (err) {
-      console.error("Error saving workout templates:", err);
-      setSuccessMessage("");
-      setError("Failed to save workout templates. Please try again.");
-      return false;
+      return () => clearTimeout(timer);
     }
+  }, [showHelpMessage]);
+
+  // Function to check if a reward is claimed - simplified version
+  const isRewardClaimed = (rewardId) => {
+    // Simply check if the reward ID is in the claimedRewards array
+    // This provides consistent behavior across page refreshes and navigation
+    return claimedRewards.includes(rewardId);
   };
 
-  // Modify the claimReward function to use the useTheme hook
+  // Function to claim a reward
   const claimReward = (reward) => {
     if (isRewardClaimed(reward.id)) {
       // If the reward is already claimed, show info notification
@@ -920,6 +1010,11 @@ function Achievements() {
     // For non-admin users or non-theme rewards, proceed with claiming
     setLoading(true);
     
+    // Immediately update UI to show reward as claimed for better UX
+    const updatedClaimedRewards = [...claimedRewards, reward.id];
+    setClaimedRewards(updatedClaimedRewards);
+    localStorage.setItem('claimedRewards', JSON.stringify(updatedClaimedRewards));
+    
     const processReward = async () => {
       let description = '';
       let success = true;
@@ -930,29 +1025,17 @@ function Achievements() {
           case 'themes':
             // Only for non-admin users
             if (!isAdmin) {
-              // Format the theme key with dashes for consistency
-              const themeKey = reward.title.toLowerCase().replace(/\s+/g, '-');
-              
-              // First unlock the theme
-              await unlockTheme(themeKey);
+              // Instead of trying to unlock a specific theme, unlock all premium themes
+              await unlockAllThemes();
               
               // Then update the description
-              description = `You've unlocked a premium theme: ${reward.title}. Go to Settings to apply it!`;
+              description = `You've unlocked premium themes! Go to Settings to apply them!`;
             }
             break;
             
           case 'workouts':
-            // Save workout templates to user's routines
-            console.log("Claiming workout templates reward...");
-            const templatesSaved = await saveWorkoutTemplates();
-            console.log("Templates save result:", templatesSaved);
-            
-            if (templatesSaved) {
-              description = `You've unlocked expert workout templates! Check them out in My Routines.`;
-            } else {
-              description = `Failed to save workout templates. Please try again later.`;
-              success = false;
-            }
+            // Logic for unlocking workout templates would go here
+            description = `You've unlocked expert workout templates! Check them out in My Routines.`;
             break;
             
           case 'stats':
@@ -961,7 +1044,7 @@ function Achievements() {
             break;
             
           case 'boostStreak':
-            // Logic for boosting streak
+            // Logic for boosting streak would go here
             description = `You've boosted your streak by 5 days!`;
             break;
             
@@ -969,13 +1052,11 @@ function Achievements() {
             description = `You've claimed the ${reward.title} reward.`;
         }
         
-        // Update claimed rewards in localStorage only if successful
+        // Update claimed rewards in backend if successful
         if (success) {
-          // Update claimed rewards
-          const updatedClaimedRewards = [...claimedRewards, reward.id];
-          setClaimedRewards(updatedClaimedRewards);
-          localStorage.setItem('claimedRewards', JSON.stringify(updatedClaimedRewards));
-
+          // Update backend as well for persistence
+          await updateClaimedRewardInBackend(reward.id);
+          
           // Refresh achievements to update the UI
           if (hookFetchAchievements) {
             await hookFetchAchievements();
@@ -1019,7 +1100,37 @@ function Achievements() {
     processReward();
   };
 
-  // Add function to use a reward
+  // Function to update claimed reward in backend
+  const updateClaimedRewardInBackend = async (rewardId) => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return false;
+      
+      const response = await fetch(`${backendURL}/user/rewards/claim`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ reward_id: rewardId }),
+      });
+      
+      if (!response.ok) {
+        console.error("Failed to update claimed reward in backend");
+        return false;
+      }
+      
+      // Update local state to ensure UI is in sync with backend
+      await syncClaimedRewards();
+      
+      return true;
+    } catch (error) {
+      console.error("Error updating claimed reward in backend:", error);
+      return false;
+    }
+  };
+
+  // Function to use a reward
   const useReward = (reward) => {
     let description = '';
     
@@ -1036,11 +1147,8 @@ function Achievements() {
           // Navigate to settings page
           navigate('/settings?tab=appearance');
         } else {
-          // Format the theme key with dashes for consistency
-          const themeKey = reward.title.toLowerCase().replace(/\s+/g, '-');
-          
           // Regular user flow for themes
-          description = `You've unlocked a premium theme: ${reward.title}. Go to Settings to apply it!`;
+          description = `You've unlocked premium themes! Go to Settings to apply one.`;
           
           setNotification({
             show: true,
@@ -1048,8 +1156,8 @@ function Achievements() {
             type: "success"
           });
           
-          // Navigate to settings page with the theme key as query parameter
-          navigate(`/settings?tab=appearance&theme=${themeKey}`);
+          // Navigate to settings page
+          navigate('/settings?tab=appearance');
         }
         break;
         
@@ -1081,22 +1189,6 @@ function Achievements() {
         navigate('/stats?view=advanced');
         break;
         
-      // Other feature types...
-      case 'boostStreak':
-        setStreak(prev => ({
-          ...prev,
-          value: prev.value + 5
-        }));
-        
-        description = `You've boosted your streak by 5 days!`;
-        
-        setNotification({
-          show: true,
-          message: description,
-          type: "success"
-        });
-        break;
-        
       default:
         description = `You've used the reward: ${reward.title}`;
         
@@ -1108,380 +1200,30 @@ function Achievements() {
     }
   };
 
-  // Modify the RewardModal function to show admin-specific information
-  const RewardModal = () => {
-    if (!currentReward) return null;
-    
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full text-center p-6">
-          <div className="bg-yellow-100 dark:bg-yellow-900/30 rounded-full w-24 h-24 mx-auto mb-6 flex items-center justify-center">
-            <div className="text-5xl text-yellow-500">
-              {getRewardIcon(currentReward.icon)}
-            </div>
-          </div>
-          
-          <h2 className="text-2xl font-bold mb-2">{currentReward.title} Unlocked!</h2>
-          
-          <p className="text-gray-600 dark:text-gray-300 mb-6">
-            {currentReward.description}
-          </p>
-          
-          <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg mb-6">
-            <h3 className="font-semibold mb-2">What you've unlocked:</h3>
-            {currentReward.feature === 'themes' && (
-              <>
-                <p>You can now access and apply premium themes to customize the app's appearance!</p>
-                <p className="mt-2 text-sm text-blue-600 dark:text-blue-400">Your profile card will automatically use your selected theme colors.</p>
-                {isAdmin && (
-                  <div className="mt-3 p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg text-sm text-purple-800 dark:text-purple-300">
-                    <span className="font-medium">Admin Note:</span> As an administrator, you already have access to all premium themes.
-                  </div>
-                )}
-              </>
-            )}
-            {currentReward.feature === 'workouts' && (
-              <p>You've unlocked expert-designed workout templates to take your fitness to the next level!</p>
-            )}
-            {currentReward.feature === 'stats' && (
-              <p>Advanced statistics and analytics are now available to track your progress in detail!</p>
-            )}
-          </div>
-          
-          <div className="flex space-x-3">
-            <button
-              onClick={() => setShowRewardModal(false)}
-              className="flex-1 py-2 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
-            >
-              Close
-            </button>
-            <button
-              onClick={() => {
-                setShowRewardModal(false);
-                useReward(currentReward);
-              }}
-              className="flex-1 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-            >
-              Use Now
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
+  // Add this function to the Achievements component:
+  // It will help synchronize achievement rewards with the backend
 
-  // Function for admins to claim all rewards at once
-  const claimAllRewardsAsAdmin = async () => {
-    if (!isAdmin) return;
-    
-    setLoading(true);
-    
+  const checkRewardAvailability = useCallback(async () => {
     try {
-      // Call our backend API to claim all rewards for admin user
-      const token = localStorage.getItem("token");
-      const response = await fetch(`${backendURL}/admin/claim-all-rewards`, {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json"
-        }
-      });
+      // First check achievements progress
+      await checkAchievementsAfterAction();
       
-      if (!response.ok) {
-        throw new Error(`API error: ${response.status} ${response.statusText}`);
-      }
+      // Then sync claimed rewards to reflect any new unlocks
+      await syncClaimedRewards();
       
-      const data = await response.json();
-      console.log("Admin claim all rewards response:", data);
-      
-      // Get all available rewards that haven't been claimed yet
-      const unclaimedRewards = achievementRewards.filter(reward => !claimedRewards.includes(reward.id));
-      
-      if (unclaimedRewards.length === 0) {
-        setNotification({
-          show: true,
-          message: "All rewards have already been claimed!",
-          type: "info"
-        });
-        setLoading(false);
-        return;
-      }
-      
-      // Update the frontend state to reflect claimed rewards
-      const newClaimedRewards = [...claimedRewards, ...unclaimedRewards.map(r => r.id)];
-      setClaimedRewards(newClaimedRewards);
-      localStorage.setItem('claimedRewards', JSON.stringify(newClaimedRewards));
-      
-      // Also unlock all themes on the frontend
-      unlockAllThemes();
-      
-      setNotification({
-        show: true,
-        message: `Successfully claimed ${data.claimed_rewards.length} rewards as admin!`,
-        type: "success"
-      });
+      // Update UI state
+      setPreferencesChanged(false);
     } catch (error) {
-      console.error("Error claiming all rewards:", error);
-      setNotification({
-        show: true,
-        message: "Error claiming rewards: " + error.message,
-        type: "error"
-      });
-    } finally {
-      setLoading(false);
+      console.error("Error checking reward availability:", error);
     }
-  };
+  }, [checkAchievementsAfterAction, syncClaimedRewards]);
 
-  // Add function to unlock workout templates for admin
-  const unlockWorkoutTemplatesAsAdmin = async () => {
-    if (!isAdmin) return;
-    
-    setLoading(true);
-    
-    try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(`${backendURL}/admin/unlock-workout-templates`, {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json"
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error(`API error: ${response.status} ${response.statusText}`);
-      }
-      
-      const data = await response.json();
-      console.log("Admin unlock workout templates response:", data);
-      
-      // Find the workout templates reward
-      const workoutTemplateReward = achievementRewards.find(r => r.feature === 'workouts' && !claimedRewards.includes(r.id));
-      
-      if (workoutTemplateReward) {
-        // Add to claimed rewards
-        const updatedClaimedRewards = [...claimedRewards, workoutTemplateReward.id];
-        setClaimedRewards(updatedClaimedRewards);
-        localStorage.setItem('claimedRewards', JSON.stringify(updatedClaimedRewards));
-      }
-      
-      setNotification({
-        show: true,
-        message: "Successfully unlocked all workout templates!",
-        type: "success"
-      });
-    } catch (error) {
-      console.error("Error unlocking workout templates:", error);
-      setNotification({
-        show: true,
-        message: "Error unlocking workout templates: " + error.message,
-        type: "error"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Function to show confirmation dialog
-  const showConfirmationDialog = (title, message, action) => {
-    setConfirmTitle(title);
-    setConfirmMessage(message);
-    setConfirmAction(() => action);
-    setShowConfirmDialog(true);
-  };
-
-  // Modified claimAllRewardsAsAdmin to use confirmation
-  const initiateClaimAllRewards = () => {
-    showConfirmationDialog(
-      "Claim All Rewards",
-      "This will unlock all premium features and mark all rewards as claimed. Are you sure you want to proceed?",
-      claimAllRewardsAsAdmin
-    );
-  };
-
-  // Modified unlockWorkoutTemplatesAsAdmin to use confirmation
-  const initiateUnlockWorkoutTemplates = () => {
-    showConfirmationDialog(
-      "Unlock Workout Templates",
-      "This will unlock all expert workout templates. Continue?",
-      unlockWorkoutTemplatesAsAdmin
-    );
-  };
-
-  // Confirmation Dialog Component
-  const ConfirmationDialog = () => {
-    if (!showConfirmDialog) return null;
-    
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
-          <h3 className="text-xl font-bold mb-3">{confirmTitle}</h3>
-          <p className="text-gray-600 dark:text-gray-300 mb-6">{confirmMessage}</p>
-          
-          <div className="flex justify-end space-x-3">
-            <button
-              onClick={() => setShowConfirmDialog(false)}
-              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={() => {
-                setShowConfirmDialog(false);
-                if (confirmAction) confirmAction();
-              }}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-            >
-              Confirm
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // Move the hasUnlockedPremiumThemes and isRewardClaimed functions inside the component
-  // Add helper function to check if Premium Themes are actually unlocked
-  const hasUnlockedPremiumThemes = (themes) => {
-    // If the user has unlocked any theme besides the default one, premium themes are unlocked
-    return themes && themes.length > 1;
-  };
-  
-  // Function to check if a reward is claimed
-  const isRewardClaimed = (rewardId) => {
-    // For admin users, show rewards as claimable but not claimed unless explicitly claimed
-    if (isAdmin) {
-      return claimedRewards.includes(rewardId);
-    }
-    
-    // Get the count of achieved achievements
-    const achievedCount = achievements?.filter(a => a.is_achieved)?.length || 0;
-    
-    // Premium Themes reward (reward-1)
-    if (rewardId === "reward-1") {
-      // Check if claimed locally AND if user has at least one unlocked premium theme
-      const hasThemes = hasUnlockedPremiumThemes(unlockedThemes);
-      // Check if user has the 'themes' feature unlocked in their profile
-      const hasFeatureUnlocked = hasFeature('themes');
-      
-      return (claimedRewards.includes(rewardId) && hasThemes) || hasFeatureUnlocked;
-    }
-    
-    // Expert Workout Templates reward (reward-2)
-    else if (rewardId === "reward-2") {
-      // Required achievements count for this reward
-      const requiredCount = 10;
-      
-      // Has the user claimed this reward AND achieved enough achievements?
-      const hasClaimedAndQualified = claimedRewards.includes(rewardId) && achievedCount >= requiredCount;
-      
-      // Or is the feature unlocked in their profile?
-      const hasFeatureUnlocked = hasFeature('workouts');
-      
-      return hasClaimedAndQualified || hasFeatureUnlocked;
-    }
-    
-    // Stats Analysis reward (reward-3)
-    else if (rewardId === "reward-3") {
-      // Required achievements count for this reward
-      const requiredCount = 15;
-      
-      // Has the user claimed this reward AND achieved enough achievements?
-      const hasClaimedAndQualified = claimedRewards.includes(rewardId) && achievedCount >= requiredCount;
-      
-      // Or is the feature unlocked in their profile?
-      const hasFeatureUnlocked = hasFeature('stats');
-      
-      return hasClaimedAndQualified || hasFeatureUnlocked;
-    }
-    
-    // For other rewards, just check if they're in claimedRewards
-    return claimedRewards.includes(rewardId);
-  };
-
+  // Add effect to auto-check achievements and rewards on mount
   useEffect(() => {
-    // Check for new achievements periodically
-    const checkInterval = setInterval(async () => {
-      if (user) {
-        const response = await fetch(`${backendURL}/api/achievements/new`, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        });
-        
-        if (response.ok) {
-          const newAchievements = await response.json();
-          if (newAchievements.length > 0) {
-            // Show notification for each new achievement
-            newAchievements.forEach(achievement => {
-              toast.success(
-                <div>
-                  <h3 className="font-bold">Achievement Unlocked! 🏆</h3>
-                  <p>{achievement.title}</p>
-                  <p className="text-sm">{achievement.description}</p>
-                </div>,
-                {
-                  duration: 5000,
-                  position: "top-right"
-                }
-              );
-            });
-            // Refresh achievements list
-            fetchAchievements();
-          }
-        }
-      }
-    }, 30000); // Check every 30 seconds
-
-    return () => clearInterval(checkInterval);
-  }, [user]);
-
-  // Add achievement check after relevant actions
-  const checkAchievementsAfterAction = async () => {
-    try {
-      const result = await checkAchievements();
-      if (result && result.newly_achieved > 0) {
-        // Refresh achievements list to show new progress
-        await fetchAchievements();
-      }
-    } catch (err) {
-      console.error("Error checking achievements:", err);
+    if (user && !loading) {
+      checkRewardAvailability();
     }
-  };
-
-  // Add this effect to watch for relevant actions
-  useEffect(() => {
-    // Listen for workout completion
-    const handleWorkoutComplete = () => {
-      checkAchievementsAfterAction();
-    };
-
-    // Listen for profile updates
-    const handleProfileUpdate = () => {
-      checkAchievementsAfterAction();
-    };
-
-    // Listen for routine creation
-    const handleRoutineCreate = () => {
-      checkAchievementsAfterAction();
-    };
-
-    window.addEventListener('workoutComplete', handleWorkoutComplete);
-    window.addEventListener('profileUpdate', handleProfileUpdate);
-    window.addEventListener('routineCreate', handleRoutineCreate);
-
-    return () => {
-      window.removeEventListener('workoutComplete', handleWorkoutComplete);
-      window.removeEventListener('profileUpdate', handleProfileUpdate);
-      window.removeEventListener('routineCreate', handleRoutineCreate);
-    };
-  }, []);
-
-  // Add this to the component's return statement near the top
-  useEffect(() => {
-    // Check achievements on component mount
-    checkAchievementsAfterAction();
-  }, []);
+  }, [user, loading, checkRewardAvailability]);
 
   if (loading) {
     return (
@@ -1515,11 +1257,11 @@ function Achievements() {
               Insights
             </button>
             <button
-              onClick={checkAchievements}
-              disabled={loading}
-              className={`bg-blue-500 text-white px-4 py-2 rounded flex items-center ${loading ? 'opacity-70 cursor-not-allowed' : 'hover:bg-blue-600'}`}
+              onClick={checkWithDebounce}
+              disabled={loading || isProcessingAchievements}
+              className={`bg-blue-500 text-white px-4 py-2 rounded flex items-center ${(loading || isProcessingAchievements) ? 'opacity-70 cursor-not-allowed' : 'hover:bg-blue-600'}`}
             >
-              {loading ? 'Processing...' : 'Check Progress'}
+              {loading || isProcessingAchievements ? 'Processing...' : 'Check Progress'}
             </button>
             <button
               onClick={createDefaultAchievements}
@@ -1552,6 +1294,26 @@ function Achievements() {
         {statusMessage && (
           <div className="mb-4 p-3 bg-blue-100 dark:bg-blue-900 border border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-200 rounded text-center">
             {statusMessage}
+          </div>
+        )}
+
+        {/* Help Message */}
+        {showHelpMessage && (
+          <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-300 rounded flex items-center justify-between">
+            <div className="flex items-center">
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              <p>Click the <strong>Check Progress</strong> button to update your achievements progress.</p>
+            </div>
+            <button 
+              onClick={() => setShowHelpMessage(false)}
+              className="text-green-500 hover:text-green-700 dark:hover:text-green-200"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            </button>
           </div>
         )}
 

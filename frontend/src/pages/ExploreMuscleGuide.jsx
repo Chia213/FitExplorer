@@ -618,12 +618,6 @@ const maleFrontMuscles = [
       { top: "19%", left: "16%" },
       { top: "19%", left: "35%" },
     ],
-    exercises: [
-      "Seated Barbell Shoulder Press",
-      "Dumbbell Lateral Raise",
-      "Dumbbell Front Raise",
-      "Dumbbell Shrug",
-    ],
   },
   {
     name: "Chest",
@@ -631,7 +625,6 @@ const maleFrontMuscles = [
       { top: "23%", left: "22%" },
       { top: "23%", left: "29%" },
     ],
-    exercises: ["Bench Press", "Push-ups", "Chest Fly", "Dumbbell Press"],
   },
   {
     name: "Biceps",
@@ -639,7 +632,6 @@ const maleFrontMuscles = [
       { top: "29%", left: "14%" },
       { top: "29%", left: "37%" },
     ],
-    exercises: ["Bicep Curl", "Hammer Curl", "Chin-ups", "Preacher Curl"],
   },
   {
     name: "Abs",
@@ -647,7 +639,6 @@ const maleFrontMuscles = [
       { top: "35.5%", left: "27.5%" },
       { top: "35.5%", left: "23.5%" },
     ],
-    exercises: ["Crunches", "Planks", "Leg Raises", "Russian Twists"],
   },
   {
     name: "Quads",
@@ -655,7 +646,6 @@ const maleFrontMuscles = [
       { top: "58%", left: "20%" },
       { top: "58%", left: "31%" },
     ],
-    exercises: ["Squats", "Lunges", "Leg Press", "Leg Extensions"],
   },
   {
     name: "Calves",
@@ -663,7 +653,6 @@ const maleFrontMuscles = [
       { top: "78%", left: "67%" },
       { top: "78%", left: "75%" },
     ],
-    exercises: ["Calf Raises", "Seated Calf Press", "Jump Rope"],
   },
 ];
 
@@ -674,19 +663,12 @@ const maleBackMuscles = [
       { top: "15%", left: "67.5%" },
       { top: "15%", left: "74%" },
     ],
-    exercises: ["Pull-ups", "Lat Pulldowns", "Rows", "Face Pulls"],
   },
   {
     name: "Triceps",
     positions: [
       { top: "26%", left: "60%" },
       { top: "26%", left: "81.5%" },
-    ],
-    exercises: [
-      "Dips",
-      "Tricep Extensions",
-      "Close-Grip Bench Press",
-      "Skull Crushers",
     ],
   },
   {
@@ -695,7 +677,6 @@ const maleBackMuscles = [
       { top: "31%", left: "66.5%" },
       { top: "31%", left: "75%" },
     ],
-    exercises: ["Deadlifts", "Back Extensions", "Good Mornings", "Superman"],
   },
   {
     name: "Glutes",
@@ -703,24 +684,12 @@ const maleBackMuscles = [
       { top: "47%", left: "67%" },
       { top: "47%", left: "74%" },
     ],
-    exercises: [
-      "Hip Thrusts",
-      "Glute Bridges",
-      "Kickbacks",
-      "Bulgarian Split Squats",
-    ],
   },
   {
     name: "Hamstrings",
     positions: [
       { top: "62%", left: "65.5%" },
       { top: "62%", left: "75.5%" },
-    ],
-    exercises: [
-      "Romanian Deadlifts",
-      "Leg Curls",
-      "Good Mornings",
-      "Glute-Ham Raises",
     ],
   },
 ];
@@ -732,12 +701,6 @@ const femaleFrontMuscles = [
       { top: "19%", left: "21%" },
       { top: "19%", left: "37%" },
     ],
-    exercises: [
-      "Seated Barbell Shoulder Press",
-      "Dumbbell Lateral Raise",
-      "Dumbbell Front Raise",
-      "Dumbbell Shrug",
-    ],
   },
   {
     name: "Chest",
@@ -745,7 +708,6 @@ const femaleFrontMuscles = [
       { top: "23%", left: "25%" },
       { top: "23%", left: "32%" },
     ],
-    exercises: ["Bench Press", "Push-ups", "Chest Fly", "Dumbbell Press"],
   },
   {
     name: "Biceps",
@@ -753,7 +715,6 @@ const femaleFrontMuscles = [
       { top: "27%", left: "20%" },
       { top: "27%", left: "37.5%" },
     ],
-    exercises: ["Bicep Curl", "Hammer Curl", "Chin-ups", "Preacher Curl"],
   },
   {
     name: "Abs",
@@ -761,7 +722,6 @@ const femaleFrontMuscles = [
       { top: "31.5%", left: "30.5%" },
       { top: "31.5%", left: "27.3%" },
     ],
-    exercises: ["Crunches", "Planks", "Leg Raises", "Russian Twists"],
   },
   {
     name: "Quads",
@@ -769,7 +729,6 @@ const femaleFrontMuscles = [
       { top: "53%", left: "23.5%" },
       { top: "53%", left: "33.5%" },
     ],
-    exercises: ["Squats", "Lunges", "Leg Press", "Leg Extensions"],
   },
   {
     name: "Calves",
@@ -777,7 +736,6 @@ const femaleFrontMuscles = [
       { top: "75%", left: "60.5%" },
       { top: "75%", left: "73.5%" },
     ],
-    exercises: ["Calf Raises", "Seated Calf Press", "Jump Rope"],
   },
 ];
 
@@ -788,19 +746,12 @@ const femaleBackMuscles = [
       { top: "16%", left: "65.5%" },
       { top: "16%", left: "70%" },
     ],
-    exercises: ["Pull-ups", "Lat Pulldowns", "Rows", "Face Pulls"],
   },
   {
     name: "Triceps",
     positions: [
       { top: "26%", left: "58.5%" },
       { top: "26%", left: "76.5%" },
-    ],
-    exercises: [
-      "Dips",
-      "Tricep Extensions",
-      "Close-Grip Bench Press",
-      "Skull Crushers",
     ],
   },
   {
@@ -809,19 +760,12 @@ const femaleBackMuscles = [
       { top: "30%", left: "64%" },
       { top: "30%", left: "70.9%" },
     ],
-    exercises: ["Deadlifts", "Back Extensions", "Good Mornings", "Superman"],
   },
   {
     name: "Glutes",
     positions: [
       { top: "45%", left: "64%" },
       { top: "45%", left: "71%" },
-    ],
-    exercises: [
-      "Hip Thrusts",
-      "Glute Bridges",
-      "Kickbacks",
-      "Bulgarian Split Squats",
     ],
   },
   {
@@ -830,14 +774,178 @@ const femaleBackMuscles = [
       { top: "59%", left: "62%" },
       { top: "59%", left: "72%" },
     ],
-    exercises: [
-      "Romanian Deadlifts",
-      "Leg Curls",
-      "Good Mornings",
-      "Glute-Ham Raises",
-    ],
   },
 ];
+
+// Define available equipment types for filtering
+const equipmentTypes = [
+  "All Equipment",
+  "Dumbbells",
+  "Barbell",
+  "Machine",
+  "Cable",
+  "Kettlebell",
+  "Plate",
+  "Smith Machine",
+  "Bodyweight",
+  "Cardio"
+];
+
+// Enhanced exercise data organized by equipment type - separated by gender
+const muscleExercisesByEquipment = {
+  male: {
+    // Male exercises (existing data)
+    "Shoulders": {
+      "Dumbbells": ["Dumbbell Shoulder Press", "Dumbbell Lateral Raise", "Dumbbell Front Raise", "Arnold Press"],
+      "Barbell": ["Barbell Overhead Press", "Barbell Upright Row", "Push Press"],
+      "Machine": ["Shoulder Press Machine", "Lateral Raise Machine", "Reverse Pec Deck"],
+      "Cable": ["Cable Lateral Raise", "Cable Front Raise", "Face Pull"],
+      "Kettlebell": ["Kettlebell Overhead Press", "Kettlebell Push Press"],
+      "Plate": ["Plate Front Raise", "Plate Lateral Raise"],
+      "Smith Machine": ["Smith Machine Overhead Press", "Smith Machine Upright Row"],
+      "Bodyweight": ["Pike Push-ups", "Handstand Push-ups", "Wall Walks"],
+      "Cardio": []
+    },
+    // ...existing male muscle groups...
+  },
+  female: {
+    // Female exercises - optimized for female training needs
+    "Shoulders": {
+      "Dumbbells": ["Dumbbell Shoulder Press", "Dumbbell Lateral Raise", "Front Raise with Control", "Seated Arnold Press"],
+      "Barbell": ["Lighter Barbell Overhead Press", "Controlled Upright Row", "Push Press with Proper Form"],
+      "Machine": ["Shoulder Press Machine", "Lateral Raise Machine", "Reverse Pec Deck"],
+      "Cable": ["Cable Lateral Raise", "Cable Front Raise", "Face Pull with External Rotation"],
+      "Kettlebell": ["Kettlebell Single Arm Press", "Kettlebell Push Press"],
+      "Plate": ["Light Plate Front Raise", "Plate Lateral Raise"],
+      "Smith Machine": ["Smith Machine Overhead Press", "Smith Machine Upright Row"],
+      "Bodyweight": ["Incline Pike Push-ups", "Wall Handstand Hold", "Wall Push-ups"],
+      "Cardio": []
+    },
+    "Chest": {
+      "Dumbbells": ["Dumbbell Bench Press", "Dumbbell Flyes", "Incline Dumbbell Press", "Single Arm Dumbbell Press"],
+      "Barbell": ["Barbell Bench Press", "Incline Bench Press", "Close Grip Bench Press"],
+      "Machine": ["Chest Press Machine", "Pec Deck Machine", "Cable Crossover"],
+      "Cable": ["Cable Flyes", "Cable Crossover", "Low Cable Crossover"],
+      "Kettlebell": ["Kettlebell Floor Press", "Kettlebell Flyes"],
+      "Plate": ["Plate Press", "Svend Press"],
+      "Smith Machine": ["Smith Machine Bench Press", "Smith Machine Incline Press"],
+      "Bodyweight": ["Push-ups", "Incline Push-ups", "Knee Push-ups", "Wall Push-ups"],
+      "Cardio": []
+    },
+    "Biceps": {
+      "Dumbbells": ["Dumbbell Bicep Curl", "Hammer Curl", "Concentration Curl", "Alternating Bicep Curl"],
+      "Barbell": ["Lighter Barbell Curl", "EZ Bar Curl", "Reverse Grip Barbell Curl"],
+      "Machine": ["Machine Bicep Curl", "Cable Bicep Curl"],
+      "Cable": ["Cable Bicep Curl", "Cable Hammer Curl", "Rope Hammer Curl"],
+      "Kettlebell": ["Kettlebell Bicep Curl", "Kettlebell Hammer Curl"],
+      "Plate": ["Plate Curl"],
+      "Smith Machine": [],
+      "Bodyweight": ["Underhand Grip Inverted Row", "Assisted Chin-ups"],
+      "Cardio": []
+    },
+    "Abs": {
+      "Dumbbells": ["Dumbbell Russian Twist", "Light Weighted Crunch", "Side Bend"],
+      "Barbell": [],
+      "Machine": ["Ab Crunch Machine", "Hanging Leg Raise", "Roman Chair"],
+      "Cable": ["Cable Crunch", "Cable Woodchopper", "Cable Oblique Twist"],
+      "Kettlebell": ["Kettlebell Russian Twist", "Kettlebell Windmill"],
+      "Plate": ["Plate Russian Twist", "Weighted Plank with Plate"],
+      "Smith Machine": [],
+      "Bodyweight": ["Crunches", "Leg Raises", "Plank", "Russian Twist", "Mountain Climbers", "Bicycle Crunch", "Reverse Crunch"],
+      "Cardio": ["Mountain Climbers", "Plank Jacks"]
+    },
+    "Quads": {
+      "Dumbbells": ["Dumbbell Squat", "Dumbbell Lunge", "Dumbbell Step-up", "Goblet Squat"],
+      "Barbell": ["Barbell Squat", "Front Squat", "Split Squat", "Barbell Lunge"],
+      "Machine": ["Leg Press", "Leg Extension", "Hack Squat Machine"],
+      "Cable": ["Cable Squat"],
+      "Kettlebell": ["Kettlebell Goblet Squat", "Kettlebell Lunge", "Kettlebell Step-up"],
+      "Plate": ["Plate Squat"],
+      "Smith Machine": ["Smith Machine Squat", "Smith Machine Split Squat"],
+      "Bodyweight": ["Bodyweight Squat", "Walking Lunge", "Split Squat", "Jump Squat", "Box Step-up"],
+      "Cardio": ["Stair Climber", "Cycling", "Jump Rope", "Box Jumps"]
+    },
+    "Calves": {
+      "Dumbbells": ["Dumbbell Calf Raise", "Seated Dumbbell Calf Raise"],
+      "Barbell": ["Standing Calf Raise", "Seated Calf Raise"],
+      "Machine": ["Standing Calf Raise Machine", "Seated Calf Raise Machine", "Leg Press Calf Raise"],
+      "Cable": [],
+      "Kettlebell": ["Kettlebell Calf Raise"],
+      "Plate": ["Single Leg Plate Calf Raise"],
+      "Smith Machine": ["Smith Machine Calf Raise"],
+      "Bodyweight": ["Standing Bodyweight Calf Raise", "Single Leg Calf Raise", "Seated Calf Raise"],
+      "Cardio": ["Jump Rope", "Box Jumps"]
+    },
+    "Upper Back": {
+      "Dumbbells": ["Dumbbell Row", "Dumbbell Reverse Fly", "Single Arm Row"],
+      "Barbell": ["Barbell Row", "T-Bar Row", "Underhand Grip Barbell Row"],
+      "Machine": ["Lat Pulldown", "Seated Row Machine", "Assisted Pull-up Machine"],
+      "Cable": ["Cable Row", "Lat Pulldown", "Face Pull", "Straight Arm Pulldown"],
+      "Kettlebell": ["Kettlebell Row", "Kettlebell High Pull"],
+      "Plate": ["Plate Pullover"],
+      "Smith Machine": ["Smith Machine Row"],
+      "Bodyweight": ["Assisted Pull-ups", "Inverted Row", "TRX Row"],
+      "Cardio": ["Swimming (Butterfly, Freestyle)"]
+    },
+    "Triceps": {
+      "Dumbbells": ["Dumbbell Tricep Extension", "Kickback", "Overhead Extension"],
+      "Barbell": ["Close Grip Bench Press", "Skull Crushers", "Overhead Tricep Extension"],
+      "Machine": ["Tricep Pushdown Machine", "Assisted Dip Machine"],
+      "Cable": ["Tricep Pushdown", "Rope Pushdown", "Cable Overhead Extension"],
+      "Kettlebell": ["Kettlebell Tricep Extension"],
+      "Plate": ["Plate Tricep Extension"],
+      "Smith Machine": ["Smith Machine Close Grip Bench Press"],
+      "Bodyweight": ["Bench Dips", "Incline Push-ups", "Diamond Push-ups"],
+      "Cardio": []
+    },
+    "Lower Back": {
+      "Dumbbells": ["Dumbbell Romanian Deadlift", "Dumbbell Good Morning"],
+      "Barbell": ["Romanian Deadlift", "Good Morning", "Hyperextension"],
+      "Machine": ["Back Extension Machine", "45-Degree Back Extension"],
+      "Cable": ["Cable Pull Through"],
+      "Kettlebell": ["Kettlebell Swing", "Kettlebell Deadlift"],
+      "Plate": ["Weighted Back Extension"],
+      "Smith Machine": ["Smith Machine Romanian Deadlift"],
+      "Bodyweight": ["Superman", "Bird Dog", "Back Extension"],
+      "Cardio": ["Swimming (Backstroke)"]
+    },
+    "Glutes": {
+      "Dumbbells": ["Dumbbell Hip Thrust", "Dumbbell Bulgarian Split Squat", "Dumbbell Step-up"],
+      "Barbell": ["Hip Thrust", "Glute Bridge", "Barbell Romanian Deadlift"],
+      "Machine": ["Glute Kickback Machine", "Abduction Machine", "Cable Kickback"],
+      "Cable": ["Cable Kickback", "Cable Pull Through"],
+      "Kettlebell": ["Kettlebell Swing", "Kettlebell Deadlift", "Kettlebell Lunge"],
+      "Plate": ["Weighted Glute Bridge", "Weighted Hip Thrust"],
+      "Smith Machine": ["Smith Machine Hip Thrust", "Smith Machine Glute Bridge"],
+      "Bodyweight": ["Glute Bridge", "Single Leg Glute Bridge", "Fire Hydrant", "Donkey Kick", "Frog Pump"],
+      "Cardio": ["Stair Climber", "Incline Walking", "Hip Thrust Pulses"]
+    },
+    "Hamstrings": {
+      "Dumbbells": ["Dumbbell Romanian Deadlift", "Dumbbell Stiff Leg Deadlift"],
+      "Barbell": ["Romanian Deadlift", "Good Morning", "Stiff Leg Deadlift"],
+      "Machine": ["Leg Curl Machine", "Seated Leg Curl", "Glute-Ham Raise"],
+      "Cable": ["Cable Pull Through", "Cable Leg Curl"],
+      "Kettlebell": ["Kettlebell Romanian Deadlift", "Kettlebell Swing"],
+      "Plate": ["Plate Good Morning"],
+      "Smith Machine": ["Smith Machine Romanian Deadlift"],
+      "Bodyweight": ["Glute-Ham Raise", "Nordic Curl", "Stability Ball Leg Curl"],
+      "Cardio": ["Cycling", "Uphill Walking"]
+    }
+  }
+};
+
+// Add new function to filter exercises by equipment type, using the enhanced data
+const filterExercisesByEquipment = (muscleName, equipmentType, bodyType) => {
+  if (!muscleName) return [];
+  
+  if (!equipmentType || equipmentType === "All Equipment") {
+    // Return all exercises for this muscle group
+    return Object.values(muscleExercisesByEquipment[bodyType][muscleName] || {}).flat();
+  }
+  
+  // Return exercises for this muscle group and equipment type
+  return muscleExercisesByEquipment[bodyType][muscleName]?.[equipmentType] || [];
+};
 
 function ExploreMuscleGuide() {
   const { theme } = useTheme();
@@ -853,7 +961,9 @@ function ExploreMuscleGuide() {
     bodyType: "male",
     scrolled: false,
     navigationHistory: [],
-    isLoading: false
+    isLoading: false,
+    selectedEquipment: "All Equipment",
+    muscleExerciseFilter: "All Equipment" // New state for muscle-specific equipment filter
   });
 
   const exerciseModalContentRef = useRef(null);
@@ -1093,7 +1203,12 @@ function ExploreMuscleGuide() {
   const toggleBodyType = () => {
     setState(prev => ({
       ...prev,
-      bodyType: prev.bodyType === "male" ? "female" : "male"
+      bodyType: prev.bodyType === "male" ? "female" : "male",
+      muscleExerciseFilter: "All Equipment", // Reset muscle filter when changing body type
+      selectedEquipment: "All Equipment", // Reset equipment filter when changing body type
+      activeMuscleIndex: null,
+      selectedMuscle: null,
+      hoveredMuscle: null
     }));
     handleResetView();
   };
@@ -1123,40 +1238,194 @@ function ExploreMuscleGuide() {
     };
   };
 
+  // Filter exercises based on selected equipment
+  const getFilteredExercises = useCallback((muscleGroup) => {
+    if (!muscleGroup || !muscleGroup.name) return [];
+    return filterExercisesByEquipment(muscleGroup.name, state.selectedEquipment, state.bodyType);
+  }, [state.selectedEquipment, state.bodyType]);
+
+  // Handle equipment filter change
+  const handleEquipmentChange = (equipment) => {
+    setState(prev => ({
+      ...prev,
+      selectedEquipment: equipment,
+      // Reset active muscle when changing equipment
+      activeMuscleIndex: null,
+      selectedMuscle: null,
+      hoveredMuscle: null
+    }));
+  };
+
+  // Check if a muscle group has exercises for the selected equipment
+  const hasMuscleExercisesForEquipment = useCallback((muscleName) => {
+    if (state.selectedEquipment === "All Equipment") {
+      return true;
+    }
+    
+    const exercises = muscleExercisesByEquipment[state.bodyType][muscleName]?.[state.selectedEquipment];
+    return exercises && exercises.length > 0;
+  }, [state.selectedEquipment, state.bodyType]);
+
+  // Get equipment type for display in exercise detail
+  const getExerciseEquipment = useCallback((exerciseName) => {
+    for (const equipment of equipmentTypes) {
+      if (equipment === "All Equipment") continue;
+      
+      for (const muscleGroup in muscleExercisesByEquipment[state.bodyType]) {
+        const exercisesForEquipment = muscleExercisesByEquipment[state.bodyType][muscleGroup][equipment] || [];
+        if (exercisesForEquipment.includes(exerciseName)) {
+          return equipment;
+        }
+      }
+    }
+    return "Bodyweight"; // Default fallback
+  }, [state.bodyType]);
+
+  // Get alternative exercises for the selected exercise
+  const getAlternativeExercises = useCallback((exerciseName, limit = 3) => {
+    const equipment = getExerciseEquipment(exerciseName);
+    const alternatives = [];
+    
+    // Find the muscle group this exercise belongs to
+    let exerciseMuscleGroup = null;
+    for (const muscleGroup in muscleExercisesByEquipment[state.bodyType]) {
+      const exercisesForEquipment = muscleExercisesByEquipment[state.bodyType][muscleGroup][equipment] || [];
+      if (exercisesForEquipment.includes(exerciseName)) {
+        exerciseMuscleGroup = muscleGroup;
+        break;
+      }
+    }
+    
+    if (!exerciseMuscleGroup) return [];
+    
+    // Get exercises from different equipment types for the same muscle
+    for (const altEquipment of equipmentTypes) {
+      if (altEquipment === "All Equipment" || altEquipment === equipment) continue;
+      
+      const altExercises = muscleExercisesByEquipment[state.bodyType][exerciseMuscleGroup][altEquipment] || [];
+      if (altExercises.length > 0) {
+        alternatives.push(altExercises[0]); // Add the first exercise of each equipment type
+      }
+      
+      if (alternatives.length >= limit) break;
+    }
+    
+    return alternatives;
+  }, [state.bodyType, getExerciseEquipment]);
+
+  // This replaces the getExerciseAsset function for the exercise modal
+  const getExerciseDetails = useCallback((exerciseName) => {
+    const equipment = getExerciseEquipment(exerciseName);
+    const exerciseData = exerciseAssets[exerciseName] || {};
+    const bodyTypeData = exerciseData[state.bodyType] || {};
+    
+    return {
+      src: bodyTypeData.src || "/src/assets/placeholder-exercise.png",
+      description: bodyTypeData.description || "Demonstration for this exercise will be added soon.",
+      equipment: equipment,
+      difficulty: exerciseData.difficulty || "Intermediate",
+      alternatives: getAlternativeExercises(exerciseName, 3)
+    };
+  }, [state.bodyType, getExerciseEquipment, getAlternativeExercises]);
+
+  // Handle muscle-specific equipment filter change
+  const handleMuscleExerciseFilterChange = (equipment) => {
+    setState(prev => ({
+      ...prev,
+      muscleExerciseFilter: equipment
+    }));
+  };
+
+  // Get filtered exercises for a specific muscle group with secondary filter
+  const getFilteredExercisesWithSecondaryFilter = useCallback((muscleGroup) => {
+    if (!muscleGroup || !muscleGroup.name) return [];
+    
+    // Primary filter (main equipment filter)
+    let exercises = [];
+    if (state.selectedEquipment === "All Equipment") {
+      // If All Equipment is selected, use all exercises but apply secondary filter
+      if (state.muscleExerciseFilter === "All Equipment") {
+        // Return all exercises for this muscle based on body type
+        exercises = Object.values(muscleExercisesByEquipment[state.bodyType][muscleGroup.name] || {}).flat();
+      } else {
+        // Return only exercises for the secondary filter
+        exercises = muscleExercisesByEquipment[state.bodyType][muscleGroup.name]?.[state.muscleExerciseFilter] || [];
+      }
+    } else {
+      // If specific equipment is selected, just use that
+      exercises = muscleExercisesByEquipment[state.bodyType][muscleGroup.name]?.[state.selectedEquipment] || [];
+    }
+    
+    return exercises;
+  }, [state.selectedEquipment, state.muscleExerciseFilter, state.bodyType]);
+
+  // Get available equipment types for a muscle group (for secondary filter)
+  const getAvailableEquipmentForMuscle = useCallback((muscleName) => {
+    if (!muscleName) return [];
+    
+    const availableEquipment = ["All Equipment"];
+    
+    // Add only equipment types that have exercises for this muscle and body type
+    for (const equipment of equipmentTypes) {
+      if (equipment === "All Equipment") continue;
+      
+      const exercises = muscleExercisesByEquipment[state.bodyType][muscleName]?.[equipment] || [];
+      if (exercises.length > 0) {
+        availableEquipment.push(equipment);
+      }
+    }
+    
+    return availableEquipment;
+  }, [state.bodyType]);
+
   return (
-    <div className="min-h-screen py-4 px-4" role="main" aria-label="Interactive Muscle Guide">
-      <h1 className="text-2xl md:text-3xl font-bold mb-4 text-center">
+    <div className="min-h-screen py-4 px-4 max-w-6xl mx-auto" role="main" aria-label="Interactive Muscle Guide">
+      <h1 className="text-2xl md:text-3xl font-bold mb-6 text-center">
         Interactive Muscle Guide
       </h1>
 
+      <p className="text-center mb-5">
+        Hover over or click on any muscle area to explore exercises
+      </p>
+
+      <div className="flex flex-col md:flex-row gap-6">
+        {/* Left sidebar with filters */}
+        <div className="md:w-1/4 flex flex-col gap-4">
       {/* Body Type Toggle */}
-      <div className="flex justify-center mb-4">
+          <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg shadow-sm">
+            <h3 className="text-lg font-semibold mb-3">Body Type</h3>
+            <div className="flex justify-center">
         <BodyTypeToggle 
           bodyType={state.bodyType} 
           onToggle={toggleBodyType} 
         />
+            </div>
       </div>
 
-      {/* Current muscle status */}
-      <div className="bg-transparent dark:bg-transparent px-4 py-2 rounded-lg w-full max-w-4xl mx-auto text-center">
-        {state.activeMuscleIndex !== null ? (
-          <p className="font-medium">
-            Currently Exploring:{" "}
-            <span className="text-red-600 font-bold">
-              {getCurrentMuscleName()}
-            </span>
-          </p>
-        ) : (
-          <p className="text-black dark:text-gray-300 opacity-80">
-            Hover over or click on any muscle area to explore exercises
-          </p>
-        )}
+          {/* Equipment Filter */}
+          <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg shadow-sm">
+            <h3 className="text-lg font-semibold mb-3">Equipment</h3>
+            <div className="flex flex-col gap-1">
+              {equipmentTypes.map(equipment => (
+                <button
+                  key={equipment}
+                  onClick={() => handleEquipmentChange(equipment)}
+                  className={`px-3 py-2 text-sm rounded transition-colors text-left ${
+                    state.selectedEquipment === equipment
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-white dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  {equipment}
+                </button>
+              ))}
+            </div>
+          </div>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-6 max-w-5xl mx-auto">
-        {/* Muscle Image Section */}
-        <div className="md:w-3/5 relative">
-          <div className="relative max-h-[500px] overflow-hidden mx-auto">
+        {/* Middle section with body image - add a fixed height container */}
+        <div className="md:w-2/5 relative">
+          <div className="relative mx-auto h-[500px] flex items-center justify-center">
             {imageLoading && (
               <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-800">
                 <LoadingSpinner />
@@ -1176,7 +1445,7 @@ function ExploreMuscleGuide() {
               key={state.bodyType}
               src={bodyImages[state.bodyType]}
               alt={`${state.bodyType.charAt(0).toUpperCase() + state.bodyType.slice(1)} Muscle Anatomy`}
-              className={`w-full max-h-[500px] object-contain transition-opacity duration-300 ${imageLoading ? 'opacity-0' : 'opacity-100'}`}
+              className={`max-h-[500px] object-contain transition-opacity duration-300 ${imageLoading ? 'opacity-0' : 'opacity-100'}`}
               onLoad={handleImageLoad}
               loading="lazy"
             />
@@ -1268,62 +1537,162 @@ function ExploreMuscleGuide() {
           </div>
         </div>
 
-        {/* Exercise Details Panel - visible when not scrolling */}
-        <div className={`md:w-2/5 ${state.scrolled ? "md:hidden" : ""}`}>
+        {/* Right section with muscle group selection or exercise details - add min-height */}
+        <div className={`md:w-1/3 ${state.scrolled ? "md:hidden" : ""}`}>
           {state.activeMuscleIndex !== null ? (
-            <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg">
-              <h2 className="text-xl font-bold mb-4">
+            <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg shadow-sm min-h-[500px] overflow-auto">
+              <h2 className="text-xl font-bold mb-2">
                 {allMuscles[state.activeMuscleIndex].name} Exercises
+                {state.selectedEquipment !== "All Equipment" && (
+                  <span className="text-sm font-normal ml-2 text-blue-600">
+                    ({state.selectedEquipment})
+                  </span>
+                )}
               </h2>
-              <ul className="divide-y divide-gray-200 dark:divide-gray-700">
-                {allMuscles[state.activeMuscleIndex].exercises.map(
-                  (exercise, idx) => (
-                    <li key={idx} className="py-3">
+              
+              {/* Secondary filter - only show when All Equipment is selected */}
+              {state.selectedEquipment === "All Equipment" && (
+                <div className="mb-4">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Filter by equipment:</p>
+                  <div className="flex flex-wrap gap-1 max-h-32 overflow-y-auto pb-1">
+                    {getAvailableEquipmentForMuscle(getCurrentMuscleName()).map(equipment => (
+                      <button
+                        key={equipment}
+                        onClick={() => handleMuscleExerciseFilterChange(equipment)}
+                        className={`px-2 py-1 text-xs rounded transition-colors ${
+                          state.muscleExerciseFilter === equipment
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-white dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'
+                        }`}
+                      >
+                        {equipment}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {/* Use the enhanced filtering function */}
+              {(() => {
+                const filteredExercises = getFilteredExercisesWithSecondaryFilter(allMuscles[state.activeMuscleIndex]);
+                
+                if (filteredExercises.length === 0) {
+                  return (
+                    <div className="py-6 text-center text-gray-500 dark:text-gray-400">
+                      <p>No {state.muscleExerciseFilter} exercises found for {allMuscles[state.activeMuscleIndex].name}.</p>
+                      <button 
+                        onClick={() => setState(prev => ({ 
+                          ...prev, 
+                          muscleExerciseFilter: "All Equipment",
+                          selectedEquipment: "All Equipment" 
+                        }))}
+                        className="mt-2 text-blue-500 hover:underline"
+                      >
+                        View all equipment types
+                      </button>
+                    </div>
+                  );
+                }
+                
+                // Group exercises by equipment type for better organization
+                const exercisesByEquipment = {};
+                
+                // Only group when showing all equipment
+                if (state.selectedEquipment === "All Equipment" && state.muscleExerciseFilter === "All Equipment") {
+                  filteredExercises.forEach(exercise => {
+                    const equipment = getExerciseEquipment(exercise);
+                    if (!exercisesByEquipment[equipment]) {
+                      exercisesByEquipment[equipment] = [];
+                    }
+                    exercisesByEquipment[equipment].push(exercise);
+                  });
+                  
+                  return (
+                    <div className="space-y-4 h-[400px] overflow-y-auto pr-2">
+                      {Object.entries(exercisesByEquipment).map(([equipment, exercises]) => (
+                        <div key={equipment} className="bg-white dark:bg-gray-700 p-3 rounded-md shadow-sm">
+                          <h3 className="font-medium text-sm uppercase text-gray-600 dark:text-gray-300 border-b pb-1 mb-2">
+                            {equipment}
+                          </h3>
+                          <ul className="space-y-1">
+                            {exercises.map((exercise, idx) => (
+                              <li key={idx} className="py-1">
                       <button
                         onClick={() => handleViewExercise(exercise)}
-                        className="flex items-center w-full text-left hover:text-blue-500"
+                                  className="flex items-center w-full text-left hover:text-blue-500 text-sm"
                       >
                         <span className="font-medium">{exercise}</span>
                       </button>
                     </li>
-                  )
-                )}
+                            ))}
               </ul>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                } else {
+                  // Simple list for filtered equipment
+                  return (
+                    <div className="h-[400px] overflow-y-auto pr-2">
+                      <div className="bg-white dark:bg-gray-700 p-3 rounded-md shadow-sm">
+                        <h3 className="font-medium text-sm uppercase text-gray-600 dark:text-gray-300 border-b pb-1 mb-2">
+                          {state.muscleExerciseFilter}
+                        </h3>
+                        <ul className="space-y-1">
+                          {filteredExercises.map((exercise, idx) => (
+                            <li key={idx} className="py-1">
+                              <button
+                                onClick={() => handleViewExercise(exercise)}
+                                className="flex items-center w-full text-left hover:text-blue-500 text-sm"
+                              >
+                                <span className="font-medium">{exercise}</span>
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  );
+                }
+              })()}
+              
+              <div className="flex space-x-2 mt-4">
               <button
                 onClick={handleResetView}
-                className="mt-4 w-full px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                  className="w-full px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-700 transition-colors"
               >
                 Reset View
               </button>
-            </div>
-          ) : (
-            <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg">
-              <h2 className="text-xl font-bold mb-4">Select a Muscle Group</h2>
-
-              {/* Fixed height container for hover text */}
-              <div className="h-16 mb-4">
-                {state.hoveredMuscle && (
-                  <p className="text-gray-600 dark:text-gray-400">
-                    <span className="font-semibold">Hovering over: </span>
-                    <span className="text-red-600">{state.hoveredMuscle}</span>
-                    <br />
-                    <span className="text-sm">
-                      Click to select this muscle group
-                    </span>
-                  </p>
+                {state.muscleExerciseFilter !== "All Equipment" && (
+                  <button
+                    onClick={() => setState(prev => ({ ...prev, muscleExerciseFilter: "All Equipment" }))}
+                    className="w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Show All
+                  </button>
                 )}
               </div>
+            </div>
+          ) : (
+            <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded-lg shadow-sm min-h-[500px]">
+              <h2 className="text-lg font-semibold mb-2">Select a Muscle Group</h2>
 
-              <div className="grid grid-cols-2 gap-2">
-                {allMuscles.map((muscle, idx) => (
+              <div className="grid grid-cols-1 gap-1">
+                {allMuscles.map((muscle, idx) => {
+                  // Check if this muscle has exercises for the selected equipment
+                  const hasExercisesForEquipment = hasMuscleExercisesForEquipment(muscle.name);
+                  
+                  return (
                   <button
                     key={idx}
                     onClick={() => {
+                        if (hasExercisesForEquipment) {
                       setState(prev => ({
                         ...prev,
                         activeMuscleIndex: idx,
                         hoveredMuscle: muscle.name
                       }));
+                        }
                     }}
                     onMouseEnter={() => {
                       if (state.activeMuscleIndex === null) {
@@ -1342,18 +1711,29 @@ function ExploreMuscleGuide() {
                         }));
                       }
                     }}
-                    className="text-left p-2 bg-white dark:bg-gray-700 rounded-md hover:bg-blue-50 dark:hover:bg-gray-600"
+                      className={`text-left py-1.5 px-2 text-sm bg-white dark:bg-gray-700 rounded-md 
+                        ${hasExercisesForEquipment 
+                          ? 'hover:bg-blue-50 dark:hover:bg-gray-600' 
+                          : 'opacity-50 cursor-not-allowed'
+                        }`}
+                      disabled={!hasExercisesForEquipment}
                   >
                     {muscle.name}
+                      {state.selectedEquipment !== "All Equipment" && !hasExercisesForEquipment && (
+                        <span className="ml-1 text-xs text-red-500">
+                          (no exercises)
+                        </span>
+                      )}
                   </button>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
         </div>
       </div>
 
-      {/* Floating Exercise Window when scrolled */}
+      {/* Floating Exercise Window when scrolled - update to show filtered exercises */}
       {state.activeMuscleIndex !== null && state.scrolled && (
         <div 
           className="fixed bottom-4 right-4 z-50 w-72 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden"
@@ -1364,6 +1744,11 @@ function ExploreMuscleGuide() {
             <div className="flex justify-between items-center">
               <h3 className="font-bold text-gray-800 dark:text-white">
                 {allMuscles[state.activeMuscleIndex].name}
+                {state.selectedEquipment !== "All Equipment" && (
+                  <span className="text-xs font-normal ml-2 text-blue-600">
+                    ({state.selectedEquipment})
+                  </span>
+                )}
               </h3>
               <button
                 onClick={handleResetView}
@@ -1375,8 +1760,26 @@ function ExploreMuscleGuide() {
           </div>
 
           <div className="max-h-72 overflow-y-auto p-2">
+            {(() => {
+              const filteredExercises = getFilteredExercises(allMuscles[state.activeMuscleIndex]);
+              
+              if (filteredExercises.length === 0) {
+                return (
+                  <div className="py-4 text-center text-gray-500 dark:text-gray-400 text-sm">
+                    <p>No {state.selectedEquipment} exercises available.</p>
+                    <button 
+                      onClick={() => setState(prev => ({ ...prev, selectedEquipment: "All Equipment" }))}
+                      className="mt-2 text-xs text-blue-500 hover:underline"
+                    >
+                      Show all equipment
+                    </button>
+                  </div>
+                );
+              }
+              
+              return (
             <ul className="divide-y divide-gray-200 dark:divide-gray-700">
-              {allMuscles[state.activeMuscleIndex].exercises.map((exercise, idx) => (
+                  {filteredExercises.map((exercise, idx) => (
                 <li key={idx} className="py-2">
                   <button
                     onClick={() => handleViewExercise(exercise)}
@@ -1387,6 +1790,8 @@ function ExploreMuscleGuide() {
                 </li>
               ))}
             </ul>
+              );
+            })()}
           </div>
         </div>
       )}
@@ -1583,13 +1988,10 @@ function ExploreMuscleGuide() {
 
             <div className="mb-3 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
               {(() => {
-                const exerciseAsset = getExerciseAsset(
-                  state.viewingExercise,
-                  state.bodyType
-                );
+                const exerciseDetails = getExerciseDetails(state.viewingExercise);
                 return (
                   <img
-                    src={exerciseAsset.src}
+                    src={exerciseDetails.src}
                     alt={`${state.viewingExercise} demonstration`}
                     className="w-full object-contain max-h-60"
                   />
@@ -1599,22 +2001,22 @@ function ExploreMuscleGuide() {
 
             <div className="text-gray-700 dark:text-gray-300">
               <h4 className="font-bold mb-1">How to perform:</h4>
-              <p>{getExerciseAsset(state.viewingExercise, state.bodyType).description}</p>
+              <p>{getExerciseDetails(state.viewingExercise).description}</p>
 
               <div className="mt-3 flex flex-wrap gap-2">
-                {getExerciseAsset(state.viewingExercise, state.bodyType).equipment && (
+                {getExerciseDetails(state.viewingExercise).equipment && (
                   <div className="inline-flex items-center rounded-full bg-blue-100 dark:bg-blue-900 px-3 py-1">
                     <span className="text-xs font-medium text-blue-800 dark:text-blue-200">
                       Equipment:{" "}
-                      {getExerciseAsset(state.viewingExercise, state.bodyType).equipment}
+                      {getExerciseDetails(state.viewingExercise).equipment}
                     </span>
                   </div>
                 )}
-                {getExerciseAsset(state.viewingExercise, state.bodyType).difficulty && (
+                {getExerciseDetails(state.viewingExercise).difficulty && (
                   <div className="inline-flex items-center rounded-full bg-purple-100 dark:bg-purple-900 px-3 py-1">
                     <span className="text-xs font-medium text-purple-800 dark:text-purple-200">
                       Difficulty:{" "}
-                      {getExerciseAsset(state.viewingExercise, state.bodyType).difficulty}
+                      {getExerciseDetails(state.viewingExercise).difficulty}
                     </span>
                   </div>
                 )}
@@ -1625,7 +2027,7 @@ function ExploreMuscleGuide() {
             <div className="mt-4">
               <h4 className="font-bold mb-2">Alternative Exercises:</h4>
               <div className="flex flex-wrap gap-2">
-                {getExerciseAsset(state.viewingExercise, state.bodyType).alternatives.map(
+                {getExerciseDetails(state.viewingExercise).alternatives.map(
                   (alt, index) => (
                     <span
                       key={index}

@@ -3,6 +3,7 @@ import Navbar from "./components/Navbar";
 import Layout from "./components/Layout";
 import PageTransition from "./components/PageTransition";
 import AdminRoute from "./components/AdminRoute";
+import AuthRoute from "./components/AuthRoute";
 import ScrollToTop from "./components/ScrollToTop";
 import { NotificationProvider } from "./contexts/NotificationContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
@@ -11,6 +12,7 @@ import { LanguageProvider } from "./contexts/LanguageContext";
 import ExploreMuscleGuide from "./pages/ExploreMuscleGuide";
 import About from "./pages/About";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
 import ProgressTracker from "./pages/ProgressTracker";
 import WorkoutLog from "./pages/WorkoutLog";
 import WorkoutHistory from "./pages/WorkoutHistory";
@@ -91,35 +93,39 @@ function App() {
                 <ScrollToTop />
                 <PageTransition>
                   <Routes>
+                    {/* Public Routes */}
                     <Route path="/" element={<LandingPage />} />
-                    <Route path="/workout-generator" element={<WorkoutGenerator />} />
-                    <Route path="/workout-log" element={<WorkoutLog />} />
-                    <Route path="/workout-history" element={<WorkoutHistory />} />
-                    <Route path="/ai-workout-generator" element={<AIWorkoutGenerator />} />
-                    <Route path="/routines" element={<Routines />} />
-                    <Route path="/explore-muscle-guide" element={<ExploreMuscleGuide />} />
-                    <Route path="/progress-tracker" element={<ProgressTracker />} />
-                    <Route path="/add-exercise" element={<AddExercise />} />
                     <Route path="/login" element={<Login />} />
-                    <Route path="/verify-email" element={<VerifyEmail />} />
-                    <Route path="/reset-password" element={<ResetPassword />} />
-                    <Route path="/confirm-deletion" element={<ConfirmDeletion />} />
                     <Route path="/signup" element={<Signup />} />
-                    <Route path="/profile" element={<Profile />} />
-                    <Route path="/saved-programs" element={<SavedPrograms />} />
-                    <Route path="/program-tracker" element={<ProgramTracker />} />
-                    <Route path="/change-password" element={<ChangePassword />} />
-                    <Route path="/notifications" element={<Notifications />} />
-                    <Route path="/faq" element={<FAQ />} />
-                    <Route path="/fitness-calculator" element={<FitnessCalculator />} />
-                    <Route path="/settings" element={<Settings />} />
-                    <Route path="/achievements" element={<Achievements />} />
                     <Route path="/about" element={<About />} />
                     <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-                    <Route path="/personal-records" element={<PersonalRecords />} />
-                    <Route path="/nutrition" element={<Nutrition />} />
-                    <Route path="/test-search" element={<TestSearch />} />
-                    <Route path="/meal-test" element={<MealTest />} />
+                    <Route path="/terms" element={<TermsOfService />} />
+                    <Route path="/verify-email" element={<VerifyEmail />} />
+                    <Route path="/reset-password" element={<ResetPassword />} />
+                    <Route path="/faq" element={<FAQ />} />
+
+                    {/* Protected Routes (require authentication) */}
+                    <Route path="/workout-generator" element={<AuthRoute><WorkoutGenerator /></AuthRoute>} />
+                    <Route path="/workout-log" element={<AuthRoute><WorkoutLog /></AuthRoute>} />
+                    <Route path="/workout-history" element={<AuthRoute><WorkoutHistory /></AuthRoute>} />
+                    <Route path="/ai-workout-generator" element={<AuthRoute><AIWorkoutGenerator /></AuthRoute>} />
+                    <Route path="/routines" element={<AuthRoute><Routines /></AuthRoute>} />
+                    <Route path="/explore-muscle-guide" element={<AuthRoute><ExploreMuscleGuide /></AuthRoute>} />
+                    <Route path="/progress-tracker" element={<AuthRoute><ProgressTracker /></AuthRoute>} />
+                    <Route path="/add-exercise" element={<AuthRoute><AddExercise /></AuthRoute>} />
+                    <Route path="/confirm-deletion" element={<AuthRoute><ConfirmDeletion /></AuthRoute>} />
+                    <Route path="/profile" element={<AuthRoute><Profile /></AuthRoute>} />
+                    <Route path="/saved-programs" element={<AuthRoute><SavedPrograms /></AuthRoute>} />
+                    <Route path="/program-tracker" element={<AuthRoute><ProgramTracker /></AuthRoute>} />
+                    <Route path="/change-password" element={<AuthRoute><ChangePassword /></AuthRoute>} />
+                    <Route path="/notifications" element={<AuthRoute><Notifications /></AuthRoute>} />
+                    <Route path="/fitness-calculator" element={<AuthRoute><FitnessCalculator /></AuthRoute>} />
+                    <Route path="/settings" element={<AuthRoute><Settings /></AuthRoute>} />
+                    <Route path="/achievements" element={<AuthRoute><Achievements /></AuthRoute>} />
+                    <Route path="/personal-records" element={<AuthRoute><PersonalRecords /></AuthRoute>} />
+                    <Route path="/nutrition" element={<AuthRoute><Nutrition /></AuthRoute>} />
+                    <Route path="/test-search" element={<AuthRoute><TestSearch /></AuthRoute>} />
+                    <Route path="/meal-test" element={<AuthRoute><MealTest /></AuthRoute>} />
                     
                     {/* Admin routes */}
                     <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />

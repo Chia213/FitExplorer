@@ -371,7 +371,7 @@ const WorkoutLog = () => {
                 rest_pauses: set.rest_pauses || null,
                 pyramid_type: set.pyramid_type || null,
                 pyramid_step: set.pyramid_step || null,
-                giant_with: Array.isArray(set.giant_with) ? set.giant_with : null
+                giant_with: Array.isArray(set.giant_with) ? set.giant_with.map(item => String(item)) : null
               };
             } else {
               return {
@@ -393,7 +393,7 @@ const WorkoutLog = () => {
                 rest_pauses: set.rest_pauses || null,
                 pyramid_type: set.pyramid_type || null,
                 pyramid_step: set.pyramid_step || null,
-                giant_with: Array.isArray(set.giant_with) ? set.giant_with : null
+                giant_with: Array.isArray(set.giant_with) ? set.giant_with.map(item => String(item)) : null
               };
             }
           }),
@@ -685,7 +685,7 @@ const WorkoutLog = () => {
               rest_pauses: set.rest_pauses || null,
               pyramid_type: set.pyramid_type || null,
               pyramid_step: set.pyramid_step || null,
-              giant_with: Array.isArray(set.giant_with) ? set.giant_with : null
+              giant_with: Array.isArray(set.giant_with) ? set.giant_with.map(item => String(item)) : null
             };
             return baseSet;
           })
@@ -780,10 +780,9 @@ const WorkoutLog = () => {
       // Properly format the exercises for saving as a routine
       const formattedExercises = workoutExercises.map(exercise => ({
         name: exercise.name,
-        category: exercise.category || "Uncategorized",
-        is_cardio: Boolean(exercise.is_cardio),
-        initial_sets: exercise.sets?.length || 1,
-        sets: exercise.sets?.map((set, index) => {
+        category: exercise.category || null,
+        is_cardio: !!exercise.is_cardio,
+        sets: exercise.sets.map((set, index) => {
           if (exercise.is_cardio) {
             return {
               distance: set.distance || null,
@@ -806,7 +805,9 @@ const WorkoutLog = () => {
               rest_pauses: set.is_restpause ? set.rest_pauses : null,
               pyramid_type: set.is_pyramid ? set.pyramid_type : null,
               pyramid_step: set.is_pyramid ? set.pyramid_step : null,
-              giant_with: set.is_giant ? set.giant_with : null
+              // Convert giant_with values to strings if they exist
+              giant_with: set.is_giant && set.giant_with ? 
+                set.giant_with.map(item => String(item)) : null
             };
           } else {
             return {
@@ -829,7 +830,7 @@ const WorkoutLog = () => {
               rest_pauses: set.is_restpause ? set.rest_pauses : null,
               pyramid_type: set.is_pyramid ? set.pyramid_type : null,
               pyramid_step: set.is_pyramid ? set.pyramid_step : null,
-              giant_with: set.is_giant ? set.giant_with : null
+              giant_with: set.is_giant ? (set.giant_with ? set.giant_with.map(item => String(item)) : null) : null
             };
           }
         }) || []
@@ -1128,10 +1129,10 @@ const WorkoutLog = () => {
           // If the deleted set was part of a giant set, update the related sets
           if (setToDelete.is_giant && setToDelete.giant_with) {
             updatedSets = updatedSets.map(set => {
-              if (set.giant_with && set.giant_with.includes(setIndex)) {
+              if (set.giant_with && set.giant_with.includes(String(setIndex))) {
                 const newGiantWith = set.giant_with
-                  .filter(idx => idx !== setIndex)
-                  .map(idx => idx > setIndex ? idx - 1 : idx);
+                  .filter(idx => idx !== String(setIndex))
+                  .map(idx => parseInt(idx) > setIndex ? String(parseInt(idx) - 1) : idx);
                 
                 return {
                   ...set,
@@ -1142,7 +1143,7 @@ const WorkoutLog = () => {
               // Update giant_with indices for sets that were after the deleted set
               if (set.giant_with) {
                 const newGiantWith = set.giant_with
-                  .map(idx => idx > setIndex ? idx - 1 : idx);
+                  .map(idx => parseInt(idx) > setIndex ? String(parseInt(idx) - 1) : idx);
                 return {
                   ...set,
                   giant_with: newGiantWith
@@ -1748,7 +1749,7 @@ const WorkoutLog = () => {
         is_restpause: false,
         is_pyramid: false,
         is_giant: true,
-        giant_with: [parseInt(supersetExerciseId)]
+        giant_with: [String(parseInt(supersetExerciseId))]
       };
       
       updatedExercises[primaryExerciseIndex].sets.push(primarySet);
@@ -1765,10 +1766,11 @@ const WorkoutLog = () => {
         is_restpause: false,
         is_pyramid: false,
         is_giant: true,
-        giant_with: [primaryExerciseIndex]
+        giant_with: [String(primaryExerciseIndex)]
       };
       
       updatedExercises[parseInt(supersetExerciseId)].sets.push(secondSet);
+      
       
       setWorkoutExercises(updatedExercises);
     }
@@ -1834,7 +1836,7 @@ const WorkoutLog = () => {
             rest_pauses: set.rest_pauses || null,
             pyramid_type: set.pyramid_type || null,
             pyramid_step: set.pyramid_step || null,
-            giant_with: Array.isArray(set.giant_with) ? set.giant_with : null
+            giant_with: Array.isArray(set.giant_with) ? set.giant_with.map(item => String(item)) : null
           };
 
           // Add type-specific properties

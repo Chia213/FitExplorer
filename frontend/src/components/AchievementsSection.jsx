@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   FaTrophy,
   FaDumbbell,
@@ -10,9 +10,16 @@ import {
   FaStopwatch,
   FaCalendarCheck,
   FaChartLine,
+  FaChevronRight,
 } from 'react-icons/fa';
 import { notifyAchievementEarned } from '../utils/notificationsHelpers';
 import { useNotifications } from '../contexts/NotificationContext';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth.jsx';
+import { useAchievements } from '../hooks/useAchievements.jsx';
+import { debounce } from 'lodash';
+
+const defaultBackendURL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 const iconMap = {
   FaTrophy,
@@ -27,7 +34,7 @@ const iconMap = {
   FaChartLine
 };
 
-const AchievementsSection = ({ backendURL }) => {
+const AchievementsSection = ({ backendURL = defaultBackendURL }) => {
   const [achievements, setAchievements] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -35,16 +42,31 @@ const AchievementsSection = ({ backendURL }) => {
   const previousAchievementsRef = useRef([]);
   const initialLoadRef = useRef(true);
   const { achievementAlertsEnabled, allNotificationsEnabled } = useNotifications();
+  const { 
+    achievements: hookAchievements, 
+    loading: hookLoading, 
+    checkAchievements: hookCheckAchievements
+  } = useAchievements();
 
+  // Create a ref to track if we've already executed the initial fetch
+  const hasExecutedInitialFetchRef = useRef(false);
+  
   useEffect(() => {
-    fetchAchievements();
-    // Only fetch new achievements when component mounts, not on first render
-    if (!initialLoadRef.current) {
-      fetchNewAchievements();
-    } else {
-      initialLoadRef.current = false;
+    // Only run once when the component mounts
+    if (!hasExecutedInitialFetchRef.current) {
+      hasExecutedInitialFetchRef.current = true;
+      
+      const initialLoad = async () => {
+        await fetchAchievements();
+        
+        // Set initialLoadRef.current to false after the first fetch
+        // so that we can fetch new achievements on subsequent renders
+        initialLoadRef.current = false;
+      };
+      
+      initialLoad();
     }
-  }, []);
+  }, []); // Empty dependency means it runs only on mount
 
   // Check for newly achieved achievements and send notifications
   useEffect(() => {
@@ -76,9 +98,14 @@ const AchievementsSection = ({ backendURL }) => {
     previousAchievementsRef.current = achievements;
   }, [achievements, achievementAlertsEnabled, allNotificationsEnabled]);
 
-  const fetchAchievements = async () => {
+  const fetchAchievements = async (retryCount = 0) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+      if (!token) {
+        setError('Authentication token not found');
+        return;
+      }
+
       const response = await fetch(`${backendURL}/achievements`, {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -86,23 +113,66 @@ const AchievementsSection = ({ backendURL }) => {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to fetch achievements');
+        throw new Error(`Failed to fetch achievements: ${response.status}`);
       }
 
       const data = await response.json();
       setAchievements(data);
+      setError(null);
     } catch (err) {
-      setError(err.message);
+      if (retryCount < 2) {
+        // Wait a second before retrying
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        return fetchAchievements(retryCount + 1);
+      } else {
+        setError(err.message || 'Failed to load achievements');
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchNewAchievements = async () => {
+  // Function to fetch achievements with progress
+  const fetchAchievementsWithProgress = async (retryCount = 0) => {
+    try {
+      const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+      if (!token) {
+        setError('Authentication token not found');
+        return;
+      }
+
+      const response = await fetch(`${backendURL}/user/achievements/progress`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch achievements with progress: ${response.status}`);
+      }
+
+      const data = await response.json();
+      setAchievements(data);
+      setError(null);
+    } catch (err) {
+      if (retryCount < 2) {
+        // Wait a second before retrying
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        return fetchAchievementsWithProgress(retryCount + 1);
+      } else {
+        // Fallback to regular fetch
+        await fetchAchievements();
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchNewAchievements = async (retryCount = 0) => {
     if (!allNotificationsEnabled || !achievementAlertsEnabled) return;
     
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('token') || localStorage.getItem('access_token');
       if (!token) return;
       
       const response = await fetch(`${backendURL}/api/achievements/new`, {
@@ -113,7 +183,12 @@ const AchievementsSection = ({ backendURL }) => {
       });
 
       if (!response.ok) {
-        return; // Silently fail, this is just for notifications
+        if (retryCount < 2) {
+          // Wait a second before retrying
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          return fetchNewAchievements(retryCount + 1);
+        }
+        return; // Silently fail after retries, this is just for notifications
       }
 
       const newAchievements = await response.json();
@@ -137,38 +212,76 @@ const AchievementsSection = ({ backendURL }) => {
         fetchAchievements();
       }
     } catch (err) {
-      console.error("Error fetching new achievements:", err);
+      // Silently fail, this is just for notifications
     }
   };
 
-  const checkAchievements = async () => {
+  // Create a ref to prevent duplicate checking
+  const isCheckingRef = useRef(false);
+  
+  // Update useEffect to use the achievements hook data when available
+  useEffect(() => {
+    if (hookAchievements && hookAchievements.length > 0) {
+      setAchievements(hookAchievements);
+      setLoading(hookLoading);
+    }
+  }, [hookAchievements, hookLoading]);
+  
+  // Create a synchronized checkAchievements function
+  const checkAchievementsProgress = useCallback(async () => {
+    if (isCheckingRef.current) {
+      console.log("Achievement check already in progress...");
+      return;
+    }
+    
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(`${backendURL}/achievements/check`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        // Store current achievements before updating
-        previousAchievementsRef.current = [...achievements];
+      isCheckingRef.current = true;
+      
+      if (hookCheckAchievements) {
+        const result = await hookCheckAchievements();
         
-        // Fetch updated achievements
-        fetchAchievements();
+        if (result && result.newly_achieved > 0) {
+          // New achievements earned, refresh the list
+          await fetchAchievementsWithProgress();
+        }
+      } else {
+        // Fallback to original implementation
+        const token = localStorage.getItem("token");
+        if (!token) return;
         
-        // Check for new achievements after updating progress
-        setTimeout(() => {
-          if (allNotificationsEnabled && achievementAlertsEnabled) {
-            fetchNewAchievements();
+        const response = await fetch(`${backendURL}/achievements/check`, {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json"
           }
-        }, 1000); // Small delay to ensure backend has processed achievement updates
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          
+          if (data.newly_achieved > 0) {
+            fetchAchievements();
+          }
+        }
       }
     } catch (err) {
       console.error("Error checking achievements:", err);
+    } finally {
+      // Reset checking flag after delay
+      setTimeout(() => {
+        isCheckingRef.current = false;
+      }, 2000);
     }
-  };
+  }, [hookCheckAchievements]);
+  
+  // Create a debounced version to prevent rapid calls
+  const debouncedCheckAchievements = useCallback(
+    debounce(() => {
+      checkAchievementsProgress();
+    }, 1000),
+    [checkAchievementsProgress]
+  );
 
   const categories = ['all', ...new Set(achievements.map(a => a.category))];
 
@@ -242,7 +355,7 @@ const AchievementsSection = ({ backendURL }) => {
           Achievements
         </h2>
         <button
-          onClick={checkAchievements}
+          onClick={debouncedCheckAchievements}
           className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
         >
           Check Progress

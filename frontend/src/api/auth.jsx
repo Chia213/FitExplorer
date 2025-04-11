@@ -48,8 +48,23 @@ export const loginUser = async (email, password) => {
   });
 
   if (!response.ok) {
-    const errorData = await response.text();
-    throw new Error(errorData || `HTTP error! status: ${response.status}`);
+    // Clone the response before reading it
+    const responseClone = response.clone();
+    
+    // Try to parse error as JSON for the detailed message
+    try {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || `Login failed (${response.status})`);
+    } catch (jsonError) {
+      // If the response is not JSON, use the text from the cloned response
+      try {
+        const errorText = await responseClone.text();
+        throw new Error(errorText || `Login failed (${response.status})`);
+      } catch (textError) {
+        // If all else fails, throw a generic error with the status code
+        throw new Error(`Login failed (${response.status})`);
+      }
+    }
   }
 
   const data = await response.json();
