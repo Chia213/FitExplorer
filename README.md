@@ -4,63 +4,66 @@
 
 ## Overview
 
-FitExplorer is a comprehensive fitness tracking and workout management application designed to help users achieve their fitness goals through interactive tools, personalized workout generation, and progress tracking.
+FitExplorer is a comprehensive fitness tracking and workout management application designed to help users achieve their fitness goals through AI-powered tools, personalized recommendations, and interactive progress tracking.
 
 ## 🌟 Key Features
 
-### 1. Workout Generation
-- Generate custom workout routines based on:
-  - Fitness level
+### 1. AI-Powered Workout Generation
+- Generate personalized workout routines based on:
+  - Fitness goals (strength, hypertrophy, endurance, weight loss)
+  - Experience level
   - Available equipment
   - Time constraints
-  - Personal goals
+  - Target muscle groups
 
-### 2. Workout Tracking
-- Log and record workouts with detailed exercise information
-- Track sets, reps, weights, and personal notes
-- Maintain a comprehensive workout history
+### 2. Comprehensive Workout Tracking
+- Log exercises with detailed sets, reps, and weights
+- Save routines for quick access
+- Track workout history with visual progress charts
+- Rest timer with customizable intervals
+- Support for specialized set types (drop sets, supersets, pyramids)
 
-### 3. Muscle Guide
-- Interactive anatomy exploration
-- Detailed exercise instructions
-- Targeted muscle group information
+### 3. Nutrition Management
+- Food tracking with detailed macronutrient analysis
+- AI-generated meal plans based on goals and preferences
+- Nutrition history visualization with charts
+- Meal plan adjustments based on workout activity
+- AI nutrition guide with chat support
 
 ### 4. Progress Monitoring
-- Visualize fitness progress
-- Track strength gains
-- Monitor workout frequency and performance
+- Visual performance tracking across exercises
+- Personal records tracking
+- Workout frequency monitoring
+- Body measurement tracking
 
-### 5. User Authentication
-- Email/Password Registration
-- Google OAuth Login
-- Secure token-based authentication
-
-### 6. Responsive Design
-- Dark and Light mode
-- Mobile and desktop friendly
-- Tailwind CSS styling
+### 5. User Experience
+- Dark/Light mode support
+- Mobile-responsive design
+- Interactive UI with animations (Framer Motion)
+- Secure authentication with email/password and Google OAuth
 
 ## 🛠 Tech Stack
 
 ### Frontend
-- React 19
-- React Router
+- React 18
+- React Router v6
 - Tailwind CSS
 - Vite
+- Framer Motion
+- Recharts for data visualization
 - React Icons
-- Google OAuth
+- Google OAuth integration
 
 ### Backend
 - FastAPI
-- SQLAlchemy
 - PostgreSQL
-- Alembic
 - JWT Authentication
+- SQLAlchemy
 
 ## 🚀 Getting Started
 
 ### Prerequisites
-- Node.js (v18+)
+- Node.js (v16+)
 - Python (v3.9+)
 - PostgreSQL
 
@@ -69,7 +72,7 @@ FitExplorer is a comprehensive fitness tracking and workout management applicati
 1. Clone the repository
 ```bash
 git clone https://github.com/yourusername/fitexplorer.git
-cd fitexplorer
+cd fitexplorer/frontend
 ```
 
 2. Install dependencies
@@ -77,8 +80,10 @@ cd fitexplorer
 npm install
 ```
 
-3. Create a `.env` file in the frontend directory
+3. Configure environment variables
 ```bash
+# Create a .env file with:
+VITE_API_URL=http://localhost:8000
 VITE_GOOGLE_CLIENT_ID=your_google_client_id
 ```
 
@@ -91,7 +96,7 @@ npm run dev
 
 1. Navigate to backend directory
 ```bash
-cd backend
+cd ../backend
 ```
 
 2. Create a virtual environment
@@ -105,9 +110,10 @@ source venv/bin/activate  # On Windows, use `venv\Scripts\activate`
 pip install -r requirements.txt
 ```
 
-4. Create a `.env` file
+4. Configure environment variables
 ```bash
-DB_URL=postgresql://username:password@localhost:5432/fitdemo
+# Create a .env file with:
+DATABASE_URL=postgresql://username:password@localhost:5432/fitexplorer
 SECRET_KEY=your_secret_key
 GOOGLE_CLIENT_ID=your_google_client_id
 GOOGLE_CLIENT_SECRET=your_google_client_secret
@@ -120,27 +126,8 @@ alembic upgrade head
 
 6. Start the backend server
 ```bash
-uvicorn main:app --reload
+uvicorn app.main:app --reload
 ```
-
-## 🔐 Environment Variables
-
-### Frontend
-- `VITE_GOOGLE_CLIENT_ID`: Google OAuth Client ID
-
-### Backend
-- `DB_URL`: PostgreSQL database connection string
-- `SECRET_KEY`: JWT secret key
-- `GOOGLE_CLIENT_ID`: Google OAuth Client ID
-- `GOOGLE_CLIENT_SECRET`: Google OAuth Client Secret
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
 
 ## 📝 License
 
@@ -148,7 +135,7 @@ Distributed under the MIT License. See `LICENSE` for more information.
 
 ## 📧 Contact
 
-- Chia Ranchber: chiranchber@gmail.com
+- Chia Ranchber: fitexplorer.fitnessapp@gmail.com
 - Ivan Lee: ivan98lee@gmail.com
 
 ---
