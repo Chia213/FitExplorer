@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "../hooks/useTheme";
 import { useAuth } from "../hooks/useAuth.jsx";
@@ -23,7 +23,11 @@ import {
   FaCalendar,
   FaChartLine,
   FaGift,
-  FaExternalLinkAlt
+  FaExternalLinkAlt,
+  FaRunning,
+  FaSun,
+  FaHeart,
+  FaWeight
 } from "react-icons/fa";
 
 const backendURL = import.meta.env.VITE_API_URL || "http://localhost:8000";
@@ -286,6 +290,7 @@ function Achievements() {
   const [rewardStatus, setRewardStatus] = useState({});
   const [showRewardModal, setShowRewardModal] = useState(false);
   const [currentReward, setCurrentReward] = useState(null);
+  const [preferencesChanged, setPreferencesChanged] = useState(false);
   const [rewardModalInfo, setRewardModalInfo] = useState({
     show: false,
     title: "",
@@ -315,9 +320,35 @@ function Achievements() {
   const categories = ["all", "workout", "streak", "profile", "customization", "nutrition", "social", "app"];
   
   // Get filtered achievements based on selected category
-  const filteredAchievements = achievements.filter(
-    (achievement) => selectedCategory === "all" || achievement.category === selectedCategory
-  );
+  const filteredAchievements = useMemo(() => {
+    // First filter by category
+    const categoryFiltered = achievements.filter(
+      (achievement) => selectedCategory === "all" || achievement.category === selectedCategory
+    );
+    
+    // Then ensure achieved ones are first (the backend should already do this, but just to be sure)
+    return categoryFiltered.sort((a, b) => {
+      // First sort by achieved status (achieved first)
+      if (a.is_achieved !== b.is_achieved) {
+        return a.is_achieved ? -1 : 1;
+      }
+      
+      // Then sort by completion percentage for unachieved
+      if (!a.is_achieved && !b.is_achieved) {
+        const aPercent = a.progress / a.requirement;
+        const bPercent = b.progress / b.requirement;
+        return bPercent - aPercent; // Higher percentage first
+      }
+      
+      // For achieved ones, sort by achievement date if available
+      if (a.achieved_at && b.achieved_at) {
+        return new Date(b.achieved_at) - new Date(a.achieved_at); // Most recent first
+      }
+      
+      // Fallback to sorting by ID
+      return a.id - b.id;
+    });
+  }, [achievements, selectedCategory]);
 
   // Helper function to get icon component based on icon name string
   const getIcon = (iconName) => {
@@ -337,7 +368,11 @@ function Achievements() {
       FaCalendar: <FaCalendar />,
       FaChartLine: <FaChartLine />,
       FaGift: <FaGift />,
-      FaCrown: <FaCrown />
+      FaCrown: <FaCrown />,
+      FaRunning: <FaRunning />,
+      FaSun: <FaSun />,
+      FaHeart: <FaHeart />,
+      FaWeight: <FaWeight />
     };
     
     return iconMap[iconName] || <FaTrophy />;
@@ -500,6 +535,23 @@ function Achievements() {
           Authorization: `Bearer ${token}`
         }
       });
+      
+      const data = await response.json();
+      
+      // If we got a response but it wasn't successful, show a message but don't throw an error
+      if (response.status === 403 || (data && data.success === false)) {
+        setStatusMessage(data.message || "Default achievements already exist.");
+        
+        // Refresh achievements list anyway
+        await hookFetchAchievementsWithProgress();
+        
+        // Auto-dismiss the status message after 3 seconds
+        setTimeout(() => {
+          setStatusMessage("");
+        }, 3000);
+        
+        return;
+      }
       
       if (!response.ok) {
         throw new Error(`Failed to create default achievements: ${response.status}`);
@@ -876,11 +928,20 @@ function Achievements() {
           setLoading(true);
           
           // 1. First fetch achievements with progress
-          await hookFetchAchievementsWithProgress();
+          let achievementsData = await hookFetchAchievementsWithProgress();
           
-          // 2. If we have no achievements, create default ones
-          if (hookAchievements && hookAchievements.length === 0) {
-            await createDefaultAchievements();
+          // 2. If we have no achievements, try to create default ones
+          if (!achievementsData || (Array.isArray(achievementsData) && achievementsData.length === 0)) {
+            try {
+              await createDefaultAchievements();
+              // Refetch achievements after creating defaults
+              await hookFetchAchievementsWithProgress();
+            } catch (error) {
+              console.log("Could not create default achievements:", error);
+              // Don't bubble up this error since it's non-critical
+              // Try one more time to fetch achievements in case they exist but initial fetch failed
+              await hookFetchAchievementsWithProgress();
+            }
           }
           
           // 3. Fetch saved badges
@@ -1202,9 +1263,21 @@ function Achievements() {
 
   // Add this function to the Achievements component:
   // It will help synchronize achievement rewards with the backend
+  
+  // Add a ref to track if reward availability is being checked
+  const isCheckingRewardRef = useRef(false);
 
   const checkRewardAvailability = useCallback(async () => {
+    // Prevent recursive calls
+    if (isCheckingRewardRef.current) {
+      console.log("Reward availability check already in progress...");
+      return;
+    }
+    
     try {
+      // Set flag to prevent recursive calls
+      isCheckingRewardRef.current = true;
+      
       // First check achievements progress
       await checkAchievementsAfterAction();
       
@@ -1215,6 +1288,11 @@ function Achievements() {
       setPreferencesChanged(false);
     } catch (error) {
       console.error("Error checking reward availability:", error);
+    } finally {
+      // Reset flag with a delay to prevent rapid subsequent calls
+      setTimeout(() => {
+        isCheckingRewardRef.current = false;
+      }, 2000);
     }
   }, [checkAchievementsAfterAction, syncClaimedRewards]);
 

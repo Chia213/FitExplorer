@@ -574,159 +574,138 @@ function Profile() {
     
     try {
       setIsSaving(true);
+      // Show loading toast
+      const updateToastId = toast.loading("Updating preferences...");
+      
       const token = localStorage.getItem("token");
       
       // Store old values for comparison
       const oldGoalWeight = user?.preferences?.goal_weight;
       const oldFrequencyGoal = preferences.workoutFrequencyGoal;
       
-      // Create variables to track if notifications have been sent
-      let weightGoalNotificationSent = false;
-      let frequencyGoalNotificationSent = false;
+      let frequencyUpdateSuccessful = false;
+      let errorMessage = null;
       
-      // First, update user profile settings
-      const userProfileResponse = await fetch(`${backendURL}/user/settings/notifications`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          email_notifications: true, // Keep existing notification settings
-          workout_reminders: true,
-          progress_reports: true,
-          language: "en", // Default language
-          card_color: preferences.cardColor,
-          goal_weight: preferences.goalWeight,
-          use_custom_card_color: preferences.useCustomCardColor,
-          summary_frequency: "weekly", // Default values
-          summary_day: "monday"
-        }),
-      });
-
-      // Next, update workout preferences to include the workout frequency goal
-      let updatedWorkoutPrefs = null;
+      // Validate frequency goal before sending
+      const frequencyGoal = preferences.workoutFrequencyGoal ? parseInt(preferences.workoutFrequencyGoal) : null;
+      if (frequencyGoal !== null && (frequencyGoal < 1 || frequencyGoal > 7)) {
+        errorMessage = "Workout frequency goal must be between 1 and 7";
+        toast.error(errorMessage, { id: updateToastId });
+        return;
+      }
+      
+      // Try the dedicated workout frequency endpoint first
       try {
-        const workoutPrefsResponse = await fetch(`${backendURL}/api/workout-preferences`, {
-          method: "PUT",
+        const frequencyResponse = await fetch(`${backendURL}/user/workout-frequency`, {
+          method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
-            last_bodyweight: preferences.weight ? parseFloat(preferences.weight) : null,
-            last_weight_unit: preferences.weightUnit,
-            workout_frequency_goal: preferences.workoutFrequencyGoal ? parseInt(preferences.workoutFrequencyGoal) : null
+            frequency_goal: frequencyGoal
           }),
         });
-    
-        if (workoutPrefsResponse.ok) {
-          updatedWorkoutPrefs = await workoutPrefsResponse.json();
+        
+        if (frequencyResponse.ok) {
+          frequencyUpdateSuccessful = true;
+          const data = await frequencyResponse.json();
+          // Update local state with the new frequency goal
+          setPreferences(prev => ({
+            ...prev,
+            workoutFrequencyGoal: data.workout_frequency_goal
+          }));
+          
+          // Show success message
+          toast.success(
+            data.workout_frequency_goal 
+              ? `Updated workout goal to ${data.workout_frequency_goal} times per week`
+              : "Cleared workout frequency goal", 
+            { id: updateToastId }
+          );
         } else {
-          const errorData = await workoutPrefsResponse.json();
+          const errorData = await frequencyResponse.json();
+          errorMessage = errorData.detail || "Failed to update workout frequency goal";
         }
       } catch (err) {
-        // Exception during workout preferences update
+        console.error("Error updating workout frequency:", err);
+        errorMessage = "Error connecting to server";
       }
-
-      if (userProfileResponse.ok) {
-        const updatedPreferences = await userProfileResponse.json();
-        
-        // Update the state with server response format
-        setPreferences((prev) => {
-          const newPrefs = {
-            ...prev,
-            cardColor: updatedPreferences.card_color || prev.cardColor,
-            // Use the workout frequency goal from the workout preferences response if available
-            workoutFrequencyGoal: updatedWorkoutPrefs?.workout_frequency_goal ?? prev.workoutFrequencyGoal,
-            goalWeight: updatedPreferences.goal_weight,
-            useCustomCardColor: updatedPreferences.use_custom_card_color !== undefined 
-              ? updatedPreferences.use_custom_card_color  // Use server value if provided
-              : prev.useCustomCardColor  // Otherwise keep our current setting
-          };
-          return newPrefs;
-        });
-        
-        // Set the card color based on preferences
-        if (preferences.useCustomCardColor) {
-          // If using custom color, maintain it
-          setCardColor(preferences.cardColor);
-        } else if (premiumTheme && premiumThemes[premiumTheme]) {
-          // Otherwise use the theme color if applicable
-          setCardColor(premiumThemes[premiumTheme].primary);
-        } else {
-          // Fall back to the saved color
-          setCardColor(updatedPreferences.card_color || preferences.cardColor);
-        }
-        
-        // Fetch updated workout stats to reflect the new frequency goal
-        const statsResponse = await fetch(`${backendURL}/workout-stats`, {
-          headers: { 
-            "Authorization": `Bearer ${token}`,
-            "Content-Type": "application/json"
-          },
-        });
-        
-        if (statsResponse.ok) {
-          const statsData = await statsResponse.json();
-          setWorkoutStats(prev => ({
-            ...prev,
-            ...statsData,
-            // Use the frequency goal from the workout preferences response
-            frequencyGoal: updatedWorkoutPrefs?.workout_frequency_goal
-          }));
-        }
-        
-        setPreferencesChanged(false);
-        setSuccessMessage("Preferences updated successfully");
-        setTimeout(() => setSuccessMessage(""), 3000);
-        
-        // Send a notification if notifications are enabled
-        if (allNotificationsEnabled) {
-          // Check if workout frequency goal was updated
-          if (updatedWorkoutPrefs && 
-              oldFrequencyGoal !== updatedWorkoutPrefs.workout_frequency_goal) {  
-            // Send workout frequency goal notification
-            await notifyWorkoutFrequencyGoalUpdated(updatedWorkoutPrefs.workout_frequency_goal);
-            frequencyGoalNotificationSent = true;
-            
-            // Check achievements after updating preferences
-            await checkAchievementsProgress();
-          }
-          // Check if weight goal was updated
-          else if (preferences.goalWeight !== oldGoalWeight && preferences.goalWeight !== null && !weightGoalNotificationSent) {
-            // Send weight goal notification
-            await notifyWeightGoalUpdated(preferences.goalWeight);
-            weightGoalNotificationSent = true;
-          } 
-          // Check if card color was likely the main change
-          else if (preferences.useCustomCardColor || (updatedPreferences.card_color !== user?.preferences?.card_color)) {
-            // Send card color notification 
-            await notifyCardColorUpdated();
-          }
+      
+      // If frequency update failed, try the notifications endpoint as fallback
+      if (!frequencyUpdateSuccessful) {
+        try {
+          const fallbackResponse = await fetch(`${backendURL}/user/settings/notifications`, {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              workout_frequency_goal: frequencyGoal
+            }),
+          });
           
-          // Check achievements after updating preferences
-          await checkAchievementsProgress();
-        } else {
-          if (updatedWorkoutPrefs && oldFrequencyGoal !== updatedWorkoutPrefs.workout_frequency_goal) {
-            // Force notification for debugging
-            await notifyWorkoutFrequencyGoalUpdated(updatedWorkoutPrefs.workout_frequency_goal);
-            
-            // Still check achievements even if notifications are disabled
-            await checkAchievementsProgress();
+          if (fallbackResponse.ok) {
+            frequencyUpdateSuccessful = true;
+            // Show success message for fallback
+            toast.success(
+              frequencyGoal 
+                ? `Updated workout goal to ${frequencyGoal} times per week (via fallback)`
+                : "Cleared workout frequency goal (via fallback)", 
+              { id: updateToastId }
+            );
+          } else {
+            const errorData = await fallbackResponse.json();
+            errorMessage = errorData.detail || "Failed to update workout frequency goal via fallback";
           }
+        } catch (fallbackErr) {
+          console.error("Error during fallback frequency update:", fallbackErr);
+          errorMessage = "Error connecting to server during fallback";
         }
-      } else {
-        let errorData;
+      }
+      
+      // Show error message if both attempts failed
+      if (!frequencyUpdateSuccessful && errorMessage) {
+        toast.error(errorMessage, { id: updateToastId });
+      }
+      
+      // Update other user settings
+      try {
+        const userProfileResponse = await fetch(`${backendURL}/user/settings`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            email_notifications: true,
+            workout_reminders: true,
+            progress_reports: true,
+            language: "en",
+            card_color: preferences.cardColor,
+            goal_weight: preferences.goalWeight,
+            use_custom_card_color: preferences.useCustomCardColor,
+            summary_frequency: "weekly",
+            summary_day: "monday"
+          }),
+        });
         
         if (!userProfileResponse.ok) {
-          errorData = await userProfileResponse.json();
+          console.error("Failed to update other user settings");
         }
-        
-        setError("Failed to update preferences");
+      } catch (err) {
+        console.error("Error updating other user settings:", err);
       }
-    } catch (err) {
-      setError("An error occurred while updating preferences");
+      
+      // Update local state
+      setPreferencesChanged(false);
+      setSuccessMessage("Preferences updated successfully");
+      setTimeout(() => setSuccessMessage(""), 3000);
+      
+    } catch (error) {
+      console.error("Error updating preferences:", error);
+      toast.error("Error updating preferences");
     } finally {
       setIsSaving(false);
     }
@@ -735,6 +714,26 @@ function Profile() {
   // Function to check achievements after profile updates
   const checkAchievementsProgress = async () => {
     try {
+      // Show a toast to indicate achievements are being checked
+      const toastId = toast.loading("Checking achievements...");
+      
+      // Use the exposed function if available, for better state synchronization
+      if (window.checkAndUpdateAchievements) {
+        const result = await window.checkAndUpdateAchievements();
+        
+        if (result && result.newly_achieved > 0) {
+          toast.success(`You earned ${result.newly_achieved} new achievement${result.newly_achieved > 1 ? 's' : ''}!`, {
+            id: toastId
+          });
+        } else {
+          toast.success("Achievement progress updated!", {
+            id: toastId
+          });
+        }
+        return;
+      }
+
+      // Fallback to direct API call if exposed function not available
       const token = localStorage.getItem("token");
       const response = await fetch(`${backendURL}/achievements/check`, {
         method: "POST",
@@ -745,11 +744,26 @@ function Profile() {
       
       if (response.ok) {
         const result = await response.json();
+        // Update toast with success message
+        if (result.newly_achieved > 0) {
+          toast.success(`You earned ${result.newly_achieved} new achievement${result.newly_achieved > 1 ? 's' : ''}!`, {
+            id: toastId
+          });
+        } else {
+          toast.success("Achievement progress updated!", {
+            id: toastId
+          });
+        }
       } else {
-        // Failed to check achievements
+        // Failed to check achievements, update toast
+        toast.error("Failed to check achievements", {
+          id: toastId
+        });
       }
     } catch (error) {
+      console.error("Error checking achievements:", error);
       // Just log the error but don't throw it further to prevent app crashes
+      toast.error("Error checking achievements");
     }
   };
 
@@ -1599,7 +1613,7 @@ function Profile() {
         {/* Achievements Section */}
         <div className="mt-8" id="achievements">
           <ErrorBoundary>
-            <AchievementsSection backendURL={backendURL} />
+            <AchievementsSection backendURL={backendURL} key={`achievements-${user?.id}`} />
           </ErrorBoundary>
         </div>
 

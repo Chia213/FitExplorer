@@ -159,42 +159,236 @@ async def startup_event():
 
 def initialize_achievements(db: Session):
     """Initialize achievements in the database if they don't exist"""
+    # Count of created achievements
+    created_count = 0
+    
     # New achievements to add
     new_achievements = [
+        # Original achievements
         {
             "name": "Weight Goal Achiever",
             "description": "Reach your target weight goal",
-            "icon": "weight-hanging",
+            "icon": "FaWeight",
             "category": "profile",
             "requirement": 1
         },
         {
             "name": "Routine Creator",
             "description": "Create 3 or more custom workout routines",
-            "icon": "dumbbell",
+            "icon": "FaDumbbell",
             "category": "routines",
             "requirement": 3
         },
         {
             "name": "Workout Frequency Champion",
             "description": "Maintain your workout frequency goal for 4 or more consecutive weeks",
-            "icon": "calendar-check",
+            "icon": "FaCalendarCheck",
             "category": "streak",
             "requirement": 4
         },
         {
             "name": "Workout Variety Master",
             "description": "Perform 20 different exercises across your workouts",
-            "icon": "dumbbell",
+            "icon": "FaDumbbell",
             "category": "workout",
             "requirement": 20
         },
         {
             "name": "Consistency King",
             "description": "Complete at least 3 workouts per week for 4 consecutive weeks",
-            "icon": "crown",
+            "icon": "FaCrown",
             "category": "streak",
             "requirement": 4
+        },
+        # Additional workout achievements
+        {
+            "name": "Workout Beginner",
+            "description": "Complete your first workout",
+            "icon": "FaDumbbell",
+            "category": "workout",
+            "requirement": 1
+        },
+        {
+            "name": "Workout Enthusiast",
+            "description": "Complete 10 workouts",
+            "icon": "FaDumbbell",
+            "category": "workout",
+            "requirement": 10
+        },
+        {
+            "name": "Workout Addict",
+            "description": "Complete 50 workouts",
+            "icon": "FaDumbbell",
+            "category": "workout",
+            "requirement": 50
+        },
+        {
+            "name": "Workout Master",
+            "description": "Complete 100 workouts",
+            "icon": "FaDumbbell",
+            "category": "workout", 
+            "requirement": 100
+        },
+        # Additional streak achievements
+        {
+            "name": "Workout Streak: Week",
+            "description": "Maintain a workout streak of 7 days",
+            "icon": "FaFire",
+            "category": "streak",
+            "requirement": 7
+        },
+        {
+            "name": "Workout Streak: Month",
+            "description": "Maintain a workout streak of 30 days",
+            "icon": "FaFire",
+            "category": "streak",
+            "requirement": 30
+        },
+        {
+            "name": "Workout Streak: Season",
+            "description": "Maintain a workout streak of 90 days",
+            "icon": "FaFire",
+            "category": "streak",
+            "requirement": 90
+        },
+        # Profile achievements
+        {
+            "name": "Profile Picture",
+            "description": "Upload your first profile picture",
+            "icon": "FaUser",
+            "category": "profile",
+            "requirement": 1
+        },
+        {
+            "name": "Personal Info",
+            "description": "Complete all personal information fields",
+            "icon": "FaIdCard",
+            "category": "profile",
+            "requirement": 6
+        },
+        {
+            "name": "Username Change",
+            "description": "Change your username for the first time",
+            "icon": "FaUserEdit",
+            "category": "profile",
+            "requirement": 1
+        },
+        # Customization achievements
+        {
+            "name": "Color Customizer",
+            "description": "Change your card color",
+            "icon": "FaPalette",
+            "category": "customization",
+            "requirement": 1
+        },
+        {
+            "name": "Theme Switcher",
+            "description": "Try both light and dark themes",
+            "icon": "FaMoon",
+            "category": "customization",
+            "requirement": 1
+        },
+        {
+            "name": "Theme Collector",
+            "description": "Unlock 3 premium themes",
+            "icon": "FaPalette",
+            "category": "customization",
+            "requirement": 3
+        },
+        # Nutrition achievements
+        {
+            "name": "Nutrition Tracker",
+            "description": "Record your first meal",
+            "icon": "FaAppleAlt",
+            "category": "nutrition",
+            "requirement": 1
+        },
+        {
+            "name": "Nutrition Enthusiast",
+            "description": "Record 20 meals",
+            "icon": "FaAppleAlt",
+            "category": "nutrition",
+            "requirement": 20
+        },
+        {
+            "name": "Nutrition Expert",
+            "description": "Record 50 meals",
+            "icon": "FaAppleAlt",
+            "category": "nutrition",
+            "requirement": 50
+        },
+        {
+            "name": "Nutrition Master",
+            "description": "Record 100 meals",
+            "icon": "FaAppleAlt",
+            "category": "nutrition",
+            "requirement": 100
+        },
+        # Social achievements
+        {
+            "name": "Social Butterfly",
+            "description": "Share your first workout",
+            "icon": "FaShare",
+            "category": "social",
+            "requirement": 1
+        },
+        {
+            "name": "Social Influencer",
+            "description": "Share 10 workouts",
+            "icon": "FaShare",
+            "category": "social",
+            "requirement": 10
+        },
+        # App usage achievements
+        {
+            "name": "Fitness Explorer",
+            "description": "Visit all main sections of the app",
+            "icon": "FaCompass",
+            "category": "app",
+            "requirement": 5
+        },
+        {
+            "name": "Dedicated User",
+            "description": "Login to the app for 30 consecutive days",
+            "icon": "FaCalendarCheck",
+            "category": "app",
+            "requirement": 30
+        },
+        {
+            "name": "Fitness Enthusiast",
+            "description": "Use the app for 60 days",
+            "icon": "FaHeart",
+            "category": "app",
+            "requirement": 60
+        },
+        # Additional workout specific achievements
+        {
+            "name": "Cardio Lover",
+            "description": "Complete 10 cardio workouts",
+            "icon": "FaRunning",
+            "category": "workout",
+            "requirement": 10
+        },
+        {
+            "name": "Strength Master",
+            "description": "Complete 10 strength workouts",
+            "icon": "FaDumbbell",
+            "category": "workout",
+            "requirement": 10
+        },
+        {
+            "name": "Morning Person",
+            "description": "Complete 5 workouts before 9 AM",
+            "icon": "FaSun",
+            "category": "workout",
+            "requirement": 5
+        },
+        {
+            "name": "Night Owl",
+            "description": "Complete 5 workouts after 8 PM",
+            "icon": "FaMoon",
+            "category": "workout",
+            "requirement": 5
         }
     ]
     
@@ -215,9 +409,13 @@ def initialize_achievements(db: Session):
                 requirement=achievement_data["requirement"]
             )
             db.add(new_achievement)
+            created_count += 1
     
     # Commit changes
     db.commit()
+    
+    # Return the count of created achievements
+    return created_count
 
 
 @app.on_event("shutdown")
@@ -1725,45 +1923,75 @@ def get_user_achievements(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Get all achievements with user progress"""
+    """Get all achievements"""
     try:
-        # Get all achievements
         achievements = db.query(Achievement).all()
-        
-        # Get user's achievement progress
-        user_achievements = db.query(UserAchievement).filter(
-            UserAchievement.user_id == user.id
-        ).all()
-        
-        # Create a mapping of achievement_id to user progress
-        progress_map = {ua.achievement_id: ua for ua in user_achievements}
-        
-        # Format response
-        result = []
-        for achievement in achievements:
-            user_achievement = progress_map.get(achievement.id)
-            
-            is_achieved = user_achievement is not None and user_achievement.progress >= achievement.requirement
-            
-            result.append({
-                "id": achievement.id,
-                "name": achievement.name,
-                "description": achievement.description,
-                "icon": achievement.icon,
-                "category": achievement.category,
-                "requirement": achievement.requirement,
-                "progress": user_achievement.progress if user_achievement else 0,
-                "achieved_at": user_achievement.achieved_at if user_achievement and is_achieved else None,
-                "is_achieved": is_achieved
-            })
-            
-        return result
+        return achievements
     except Exception as e:
-        # Only print the traceback for unexpected errors
         if not isinstance(e, HTTPException):
             import traceback
             traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Error fetching achievements: {str(e)}")
+
+
+@app.get("/user/achievements/progress")
+def get_user_achievements_with_progress(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get all achievements with user's progress"""
+    try:
+        # Get all achievements
+        achievements = db.query(Achievement).all()
+        
+        # Get user's current achievements
+        user_achievements = {
+            ua.achievement_id: ua 
+            for ua in db.query(UserAchievement)
+            .filter(UserAchievement.user_id == user.id)
+            .all()
+        }
+        
+        # Build response with progress
+        result = []
+        for achievement in achievements:
+            user_achievement = user_achievements.get(achievement.id)
+            
+            # Set default values
+            progress = 0
+            is_achieved = False
+            achieved_at = None
+            
+            # Update with actual values if user has this achievement
+            if user_achievement:
+                progress = user_achievement.progress
+                is_achieved = user_achievement.achieved_at is not None
+                achieved_at = user_achievement.achieved_at
+            
+            # Create response object with achievement details and progress
+            achievement_data = {
+                "id": achievement.id,
+                "name": achievement.name,
+                "description": achievement.description,
+                "category": achievement.category,
+                "requirement": achievement.requirement,
+                "icon": achievement.icon,
+                "progress": progress,
+                "is_achieved": is_achieved,
+                "achieved_at": achieved_at
+            }
+            
+            result.append(achievement_data)
+        
+        # Sort the achievements with achieved ones first, then by achievement ID
+        result = sorted(result, key=lambda x: (not x["is_achieved"], x["id"]))
+            
+        return result
+    except Exception as e:
+        if not isinstance(e, HTTPException):
+            import traceback
+            traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error fetching achievements with progress: {str(e)}")
 
 
 @app.post("/achievements/check")
@@ -2525,20 +2753,27 @@ def create_default_achievements(
 ):
     """Create default achievements if they don't exist"""
     try:
-        # Check if user is admin
+        # Check if there are any achievements in the system
+        existing_count = db.query(Achievement).count()
+        
+        # Allow creation if no achievements exist, regardless of admin status
+        if existing_count == 0:
+            # Call the function to initialize achievements
+            created_count = initialize_achievements(db)
+            return {"message": f"Created {created_count} default achievements", "count": created_count}
+        
+        # If achievements already exist and user is not an admin, return a success=false response
+        # instead of raising an exception
         if not user.is_admin:
-            # Check if there are already achievements in the system
-            existing_count = db.query(Achievement).count()
-            if existing_count > 0:
-                # Only allow admins to create defaults if achievements already exist
-                raise HTTPException(status_code=403, detail="Only administrators can create default achievements")
+            return {
+                "message": "Default achievements already exist. Only administrators can recreate them.",
+                "count": 0,
+                "success": False
+            }
         
-        # Call the function to initialize achievements
+        # If admin, allow recreation of achievements
         created_count = initialize_achievements(db)
-        
         return {"message": f"Created {created_count} default achievements", "count": created_count}
-    except HTTPException:
-        raise
     except Exception as e:
         db.rollback()
         if not isinstance(e, HTTPException):
@@ -2922,3 +3157,72 @@ def move_routine_to_folder(
             status_code=500,
             detail=f"Error moving routine to folder: {str(e)}"
         )
+
+@app.post("/user/workout-frequency")
+def update_workout_frequency(
+    frequency_data: dict = Body(...),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Update user's workout frequency goal"""
+    try:
+        # Get frequency goal from request
+        frequency_goal = frequency_data.get("frequency_goal")
+        
+        # Validate frequency goal (null or 1-7)
+        if frequency_goal is not None and (not isinstance(frequency_goal, int) or frequency_goal < 1 or frequency_goal > 7):
+            raise HTTPException(status_code=400, detail="Frequency goal must be between 1 and 7 or null")
+        
+        # Start a transaction
+        db.begin()
+        
+        try:
+            # Get or create workout preferences
+            preferences = db.query(WorkoutPreferences).filter(
+                WorkoutPreferences.user_id == user.id
+            ).first()
+            
+            if not preferences:
+                preferences = WorkoutPreferences(
+                    user_id=user.id,
+                    workout_frequency_goal=frequency_goal
+                )
+                db.add(preferences)
+            else:
+                preferences.workout_frequency_goal = frequency_goal
+            
+            # Also update streak frequency goal in UserProfile
+            profile = db.query(UserProfile).filter(
+                UserProfile.user_id == user.id
+            ).first()
+            
+            if not profile:
+                profile = UserProfile(
+                    user_id=user.id,
+                    frequency_goal=frequency_goal
+                )
+                db.add(profile)
+            else:
+                profile.frequency_goal = frequency_goal
+            
+            # Commit all changes
+            db.commit()
+            db.refresh(preferences)
+            
+            return {
+                "message": "Workout frequency goal updated successfully",
+                "workout_frequency_goal": preferences.workout_frequency_goal
+            }
+            
+        except Exception as e:
+            # Rollback on any error
+            db.rollback()
+            raise e
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        if not isinstance(e, HTTPException):
+            import traceback
+            traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error updating workout frequency goal: {str(e)}")
