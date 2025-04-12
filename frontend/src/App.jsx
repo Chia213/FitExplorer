@@ -30,7 +30,7 @@ import SavedPrograms from "./pages/SavedPrograms";
 import ProgramTracker from "./pages/ProgramTracker";
 import ChangePassword from "./pages/ChangePassword";
 import Notifications from "./pages/Notifications";
-import FAQ from "./pages/FAQ";
+import Faq from "./pages/Faq";
 import FitnessCalculator from "./pages/FitnessCalculator";
 import Settings from "./pages/Settings";
 import Achievements from "./pages/Achievements";
@@ -102,7 +102,7 @@ function App() {
                     <Route path="/terms" element={<TermsOfService />} />
                     <Route path="/verify-email" element={<VerifyEmail />} />
                     <Route path="/reset-password" element={<ResetPassword />} />
-                    <Route path="/faq" element={<FAQ />} />
+                    <Route path="/faq" element={<Faq />} />
 
                     {/* Protected Routes (require authentication) */}
                     <Route path="/workout-generator" element={<AuthRoute><WorkoutGenerator /></AuthRoute>} />
