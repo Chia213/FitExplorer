@@ -2,7 +2,7 @@ fastapi==0.115.11
 fastapi-mail==1.4.2
 uvicorn==0.34.0   
 SQLAlchemy==2.0.38 
-psycopg2==2.9.10   
+psycopg2-binary==2.9.10   
 bcrypt==4.0.1 
 PyJWT==2.9.0   
 passlib[bcrypt]==1.7.4 
