@@ -78,7 +78,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173",  # Local dev
-        "https://fitexplorerse.vercel.app",  # Deployed frontend
+        "https://fitexplorerse.vercel.app",
+	"https://fitexplorer.se", 
     ],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
