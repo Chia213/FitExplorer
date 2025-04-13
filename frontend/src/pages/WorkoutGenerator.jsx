@@ -19,6 +19,9 @@ import {
   FaTimes,
   FaYoutube,
 } from "react-icons/fa";
+import titanImage from '../assets/titan.png';
+import femaleTitanImage from '../assets/female-titan.png';
+
 
 const allExercises = {
   // CHEST BODYWEIGHT EXERCISES
@@ -2010,8 +2013,8 @@ const getExerciseAsset = (exerciseName, fitnessLevel = "beginner") => {
 };
 
 const bodyImages = {
-  male: "/src/assets/titan.png",
-  female: "/src/assets/female-titan.png",
+  male: titanImage,
+  female: femaleTitanImage,
 };
 
 const fitnessGoalInfo = {

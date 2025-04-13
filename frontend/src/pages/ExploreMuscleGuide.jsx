@@ -2,7 +2,8 @@ import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useTheme } from "../hooks/useTheme";
 import BodyTypeToggle from "../components/BodyTypeToggle";
 import LoadingSpinner from "../components/LoadingSpinner";
-
+import maleTitanImage from '../assets/titan.png';
+import femaleTitanImage from '../assets/female-titan.png';
 
 const exerciseAssetsMale = {
   // Shoulders Exercises - Dumbbells
@@ -5456,10 +5457,10 @@ function ExploreMuscleGuide() {
   const imageRef = useRef(null);
 
   // Memoized values
-  const bodyImages = useMemo(() => ({
-    male: "/src/assets/titan.png",
-    female: "/src/assets/female-titan.png",
-  }), []);
+  const bodyImages = {
+    male: maleTitanImage,
+    female: femaleTitanImage,
+  }; 
 
   const frontMuscles = useMemo(() => 
     state.bodyType === "male" ? maleFrontMuscles : femaleFrontMuscles,
