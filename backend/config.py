@@ -6,7 +6,7 @@ load_dotenv(dotenv_path=".env", override=True)
 
 class Settings:
     DB_URL: str = os.getenv(
-        "DB_URL", "postgresql+psycopg2://postgres:idioten@localhost:5432/fitdemo")
+        "DB_URL", "postgresql+psycopg2://postgres:idioten123!@fitexplorer.c5qmy0yqglup.eu-north-1.rds.amazonaws.com:5432/fitexplorer")
     SECRET_KEY: str = os.getenv("SECRET_KEY", "default_secret_key")
     ACCESS_TOKEN_EXPIRE_MINUTES: int = int(
         os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 1000000))
@@ -33,7 +33,7 @@ class Settings:
     SUMMARY_FREQUENCY = os.getenv("SUMMARY_FREQUENCY", "weekly")
 
     # Frontend URL for email verification links
-    FRONTEND_URL: str = os.getenv("FRONTEND_BASE_URL", "http://localhost:5173")
+    FRONTEND_URL: str = os.getenv("FRONTEND_BASE_URL", "https://fitexplorer.se")
     DEFAULT_ADMIN_EMAIL: str = os.getenv(
         "DEFAULT_ADMIN_EMAIL", "fitexplorer.fitnessapp@gmail.com")
 

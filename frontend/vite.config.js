@@ -10,6 +10,11 @@ export default defineConfig({
   server: {
     port: 5173,
   },
+  resolve: {
+    alias: [
+      { find: '/src/assets', replacement: '/assets' }
+    ]
+  },
   define: {
     "import.meta.env.VITE_API_URL": JSON.stringify(
       process.env.VITE_API_URL || "http://localhost:8000"

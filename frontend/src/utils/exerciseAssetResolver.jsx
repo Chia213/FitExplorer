@@ -17,10 +17,10 @@ export function resolveExercisePath(exerciseName, type = null) {
 
   // If a specific type is provided, prioritize that
   if (type && exerciseTypes.includes(type)) {
-    const specificPath = `/src/assets/exercises/${type}/${normalizedName}.gif`;
+    const specificPath = `/assets/exercises/${type}/${normalizedName}.gif`;
     try {
       // In Vite/React, you can use import.meta.glob or require to check file existence
-      const module = import.meta.glob("/src/assets/exercises/**/*.gif");
+      const module = import.meta.glob("/assets/exercises/**/*.gif");
       if (module[specificPath]) return specificPath;
     } catch (error) {
       console.warn(`Specific path check failed: ${specificPath}`, error);
@@ -29,10 +29,10 @@ export function resolveExercisePath(exerciseName, type = null) {
 
   // Try to find the gif in all folders
   for (let exerciseType of exerciseTypes) {
-    const possiblePath = `/src/assets/exercises/${exerciseType}/${normalizedName}.gif`;
+    const possiblePath = `/assets/exercises/${exerciseType}/${normalizedName}.gif`;
 
     try {
-      const module = import.meta.glob("/src/assets/exercises/**/*.gif");
+      const module = import.meta.glob("/assets/exercises/**/*.gif");
       if (module[possiblePath]) return possiblePath;
     } catch (error) {
       console.warn(
@@ -42,7 +42,7 @@ export function resolveExercisePath(exerciseName, type = null) {
   }
 
   // Fallback to placeholder
-  return "/src/assets/placeholder-exercise.png";
+  return "/assets/placeholder-exercise.png";
 }
 
 // Optional: Add a function to update exercise objects
