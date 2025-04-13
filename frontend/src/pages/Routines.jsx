@@ -32,7 +32,7 @@ import AddExercise from "./AddExercise";
 import FolderModal from "./FolderModal";
 import { notifyRoutineCreated } from '../utils/notificationsHelpers';
 
-const backendURL = "http://localhost:8000";
+const backendURL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 function Routines() {
   const [routines, setRoutines] = useState([]);

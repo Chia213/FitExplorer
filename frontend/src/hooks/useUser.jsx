@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { useAuth } from './useAuth.jsx';
 import { useNavigate } from 'react-router-dom';
 
-const backendURL = 'http://localhost:8000';
+const backendURL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 export const useUser = () => {
   const { user: authUser } = useAuth();

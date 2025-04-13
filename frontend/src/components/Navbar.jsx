@@ -267,54 +267,34 @@ function Navbar() {
   // Handle logout
   const handleLogout = async () => {
     try {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("token") || localStorage.getItem("access_token");
       
-      // First, update UI state immediately to show logged out state
-      setIsAuthenticated(false);
-      setUsername(null);
-      setIsAdmin(false);
-      setAuthDropdownOpen(false);
-      
-      // Clear authentication data from storage
+      if (token) {
+        await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:8000"}/auth/logout`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+      }
+    } catch (error) {
+      console.error("Error during logout:", error);
+    } finally {
       localStorage.removeItem("token");
+      localStorage.removeItem("access_token");
       localStorage.removeItem("isAdmin");
       
-      // Clear achievements notification history
-      localStorage.removeItem("notifiedAchievements");
-      
-      // Reset theme settings to prevent theme leakage between users
-      clearThemeStorage();
-      
-      // Dispatch events to notify other components about the logout
+      // Dispatch events to notify other components
       window.dispatchEvent(new Event("storage"));
       window.dispatchEvent(new Event("auth-change"));
       
-      // Call backend logout endpoint after UI is updated
-      if (token) {
-        try {
-          await fetch("http://localhost:8000/auth/logout", {
-            method: "POST",
-            headers: {
-              "Authorization": `Bearer ${token}`
-            }
-          });
-        } catch (error) {
-          console.error("Error calling logout endpoint:", error);
-        }
-      }
+      // Close dropdown
+      setAuthDropdownOpen(false);
       
       // Navigate to login page
       navigate("/login");
-    } catch (error) {
-      console.error("Error during logout:", error);
-      
-      // Even if there's an error, make sure we log out on the frontend
-      localStorage.removeItem("token");
-      localStorage.removeItem("isAdmin");
-      localStorage.removeItem("notifiedAchievements");
-      navigate("/login");
     }
-  };
+  };  
 
   // Handle search
   const handleSearch = (e) => {

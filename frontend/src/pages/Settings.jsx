@@ -5,7 +5,7 @@ import { getTranslation } from "../utils/translations";
 import { useLanguage } from "../contexts/LanguageContext";
 import { useTheme, premiumThemes } from "../hooks/useTheme";
 
-const backendURL = "http://localhost:8000";
+const backendURL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 function Settings() {
   const navigate = useNavigate();

@@ -901,27 +901,28 @@ function Profile() {
 
   const handleLogout = async () => {
     try {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("access_token");
+      if (token) {
+        await fetch(`${backendURL}/auth/logout`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+      }
       
-      // Call backend logout endpoint
-      await fetch("http://localhost:8000/auth/logout", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${token}`
-        }
-      });
-      
-    } catch (error) {
-      console.error("Error during logout:", error);
-    } finally {
+      // Clear all storage
+      localStorage.removeItem("access_token");
       localStorage.removeItem("token");
       localStorage.removeItem("isAdmin");
-      // Clear achievements notification history
-      localStorage.removeItem("notifiedAchievements");
-      // Dispatch events to notify other components
-      window.dispatchEvent(new Event("storage"));
+      localStorage.removeItem("profile");
+      
+      // Dispatch a global event to notify other components
       window.dispatchEvent(new Event("auth-change"));
+      
       navigate("/login");
+    } catch (error) {
+      console.error("Error during logout:", error);
     }
   };
 

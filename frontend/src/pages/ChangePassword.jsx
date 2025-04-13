@@ -3,9 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { useTheme } from "../hooks/useTheme";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+
 function ChangePassword() {
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [message, setMessage] = useState(null);
   const [showOldPassword, setShowOldPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -14,24 +17,27 @@ function ChangePassword() {
 
   const handlePasswordChange = async (e) => {
     e.preventDefault();
-    const token = localStorage.getItem("token");
+    setError('');
+    setLoading(true);
 
-    if (!oldPassword || !newPassword) {
-      setMessage("Both fields are required.");
+    if (newPassword !== confirmPassword) {
+      setError('New passwords do not match');
+      setLoading(false);
       return;
     }
 
     try {
-      const response = await fetch("http://localhost:8000/change-password", {
-        method: "POST",
+      const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+      const response = await fetch(`${API_URL}/change-password`, {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           old_password: oldPassword,
-          new_password: newPassword,
-        }),
+          new_password: newPassword
+        })
       });
 
       const data = await response.json();
@@ -45,6 +51,8 @@ function ChangePassword() {
     } catch (error) {
       console.error("Error updating password:", error);
       setMessage("Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -110,6 +118,17 @@ function ChangePassword() {
             >
               {showNewPassword ? <FaEyeSlash size={20} /> : <FaEye size={20} />}
             </button>
+          </div>
+
+          <label className="font-semibold">Confirm Password:</label>
+          <div className="relative mb-3">
+            <input
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="border p-2 rounded w-full"
+              required
+            />
           </div>
 
           <button
