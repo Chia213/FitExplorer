@@ -33,7 +33,7 @@ class Settings:
     SUMMARY_FREQUENCY = os.getenv("SUMMARY_FREQUENCY", "weekly")
 
     # Frontend URL for email verification links
-    FRONTEND_URL: str = os.getenv("FRONTEND_URL", "http://localhost:5173")
+    FRONTEND_URL: str = os.getenv("FRONTEND_BASE_URL", "http://localhost:5173")
     DEFAULT_ADMIN_EMAIL: str = os.getenv(
         "DEFAULT_ADMIN_EMAIL", "fitexplorer.fitnessapp@gmail.com")
 
