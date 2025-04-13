@@ -49,10 +49,11 @@ function VerifyEmail() {
           // Check if this might be an already verified account
           if (error.detail && (
             error.detail.includes("already verified") || 
-            error.detail.includes("Invalid verification token")
+            error.detail.includes("Invalid verification token") ||
+            error.detail.includes("Invalid verification link")
           )) {
             setStatus("already_verified");
-            setMessage("Your email may already be verified. Please try logging in to your account.");
+            setMessage("Your email is verified. Please try logging in to your account.");
           } else {
             setStatus("error");
             setMessage(error.detail || "Failed to verify email. The link may be expired.");

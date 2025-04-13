@@ -15,6 +15,14 @@ export function resolveExercisePath(exerciseName, type = null) {
     "kettlebell",
   ];
 
+  // Fix paths for production by removing '/src' prefix if it exists
+  const fixPath = (path) => {
+    if (path.startsWith('/src/assets/')) {
+      return path.replace('/src/assets/', '/assets/');
+    }
+    return path;
+  };
+
   // If a specific type is provided, prioritize that
   if (type && exerciseTypes.includes(type)) {
     const specificPath = `/assets/exercises/${type}/${normalizedName}.gif`;
@@ -56,4 +64,13 @@ export function updateExerciseAssets(exercisesObject) {
       },
     ])
   );
+}
+
+// Add a utility function to fix paths for any asset
+export function fixAssetPath(path) {
+  if (!path) return '/assets/placeholder-exercise.png';
+  if (path.startsWith('/src/assets/')) {
+    return path.replace('/src/assets/', '/assets/');
+  }
+  return path;
 }
