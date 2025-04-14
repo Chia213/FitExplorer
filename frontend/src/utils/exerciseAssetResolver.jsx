@@ -68,41 +68,40 @@ export function updateExerciseAssets(exercisesObject) {
 
 // Add a utility function to fix paths for any asset
 export function fixAssetPath(path) {
-  if (!path) return '/src/assets/placeholder-exercise.png';
+  if (!path) return '/assets/placeholder-exercise.png';
   
   // Handle all types of exercise file paths
   if (path.includes('/exercises/') || path.includes('exercises/') || path.endsWith('.gif')) {
     // Extract filename from path regardless of structure
     let filename = path.split('/').pop();
     
-    // For predictable path handling:
+    // For predictable path handling in production:
     // 1. If path includes gender info (male/female)
     if (path.includes('/male/') || path.includes('male/')) {
-      return `/src/assets/exercises/male@assets/${filename}`;
+      return `/assets/exercises/male/${filename}`;
     } 
     else if (path.includes('/female/') || path.includes('female/')) {
-      return `/src/assets/exercises/female@assets/${filename}`;
+      return `/assets/exercises/female/${filename}`;
     }
     
     // 2. Default to male path for exercise files (most common in the app)
-    return `/src/assets/exercises/male@assets/${filename}`;
+    return `/assets/exercises/male/${filename}`;
   }
   
-  // For other assets in src/assets
+  // For other assets, ensure they start with /assets/
   if (path.includes('/assets/')) {
-    return `/src/assets/${path.split('/assets/').pop()}`;
-  }
-  
-  // If the path starts with /src/assets, keep it as is
-  if (path.startsWith('/src/assets/')) {
     return path;
   }
   
-  // If the path doesn't start with a slash, add it and prepend src/assets
-  if (!path.startsWith('/')) {
-    return `/src/assets/${path}`;
+  // Convert any remaining /src/assets paths
+  if (path.startsWith('/src/assets/')) {
+    return path.replace('/src/assets/', '/assets/');
   }
   
-  // For any other path, prepend src/assets
-  return `/src/assets${path}`;
+  // If the path doesn't start with a slash, add it
+  if (!path.startsWith('/')) {
+    return `/${path}`;
+  }
+  
+  return path;
 }
