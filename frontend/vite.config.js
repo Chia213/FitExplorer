@@ -17,6 +17,7 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src')
     }
   },
+  publicDir: 'public',
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
@@ -36,13 +37,8 @@ export default defineConfig({
             return `assets/exercises/${parts[1]}`; // Preserve the full path after 'exercises/'
           }
 
-          // Keep other assets in their original structure
-          if (assetInfo.name.includes('src/assets/')) {
-            const parts = assetInfo.name.split('src/assets/');
-            return `assets/${parts[1]}`;
-          }
-
-          return `assets/[name]-[hash][extname]`;
+          // For other assets, preserve their original structure
+          return `assets/${assetInfo.name}`;
         }
       }
     }
