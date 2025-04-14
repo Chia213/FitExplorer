@@ -73,13 +73,34 @@ export function fixAssetPath(path) {
   // For paths starting with '/src/assets/', convert them to proper URLs for Vercel deployment
   if (path.startsWith('/src/assets/')) {
     // In Vercel deployment, the structure might be different
-    // Try different path structures
     const fixedPath = path.replace('/src/assets/', '/assets/');
     
     // Log for debugging
     console.log(`Asset path fixed from ${path} to ${fixedPath}`);
     
     return fixedPath;
+  }
+  
+  // Handle exercise files in a more general way
+  if (path.includes('/exercises/') && (path.endsWith('.gif') || path.endsWith('.png'))) {
+    // Extract filename from path
+    const pathParts = path.split('/');
+    const filename = pathParts[pathParts.length - 1];
+    
+    // Determine if the path contains gender information
+    const hasGender = path.includes('/male/') || path.includes('/female/');
+    const gender = path.includes('/male/') ? 'male' : 'female';
+    
+    // Log for debugging
+    console.log(`Special handling for exercise file: ${filename}, original path: ${path}`);
+    
+    // Try a direct path based on gender if available
+    if (hasGender) {
+      return `/assets/exercises/${gender}/${filename}`;
+    }
+    
+    // If no gender info, try the general exercises path
+    return `/assets/exercises/${filename}`;
   }
   
   return path;

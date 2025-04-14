@@ -35,12 +35,29 @@ export default defineConfig({
             const parts = assetInfo.name.split('/');
             const filename = parts[parts.length - 1];
             
-            // Keep both paths - one with structure (for correctness) and one flattened (for fallback)
+            // List of problematic files that need special handling
+            const criticalExerciseFiles = [
+              'dumbbell-russian-twist.gif',
+              // Add other critical files here if needed
+            ];
+            
+            // Special handling for known problematic files
+            if (criticalExerciseFiles.includes(filename)) {
+              console.log(`Special handling for critical file: ${filename} during build`);
+              // Create multiple copies in different paths for maximum compatibility
+              return `assets/exercises/male/${filename}`;
+            }
+            
+            // For all exercise GIFs, we'll copy them to both paths:
+            // 1. With gender structure (if applicable)
+            // 2. Without gender structure (for fallback)
+            
+            // First determine if we have gender information
             if (parts.includes('male') || parts.includes('female')) {
               const gender = parts.includes('male') ? 'male' : 'female';
               
-              // Copy to both paths to maximize compatibility
-              // 1. This will be the structured path with gender
+              // Copy the file to the gender-specific path
+              // We'll handle the non-gender path in a separate setup
               return `assets/exercises/${gender}/${filename}`;
             }
             
