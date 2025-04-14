@@ -7,12 +7,17 @@ export default function InstallAppQR() {
   const [isOpen, setIsOpen] = useState(true);
   const [isIOS, setIsIOS] = useState(false);
   const [isAndroid, setIsAndroid] = useState(false);
+  const [installationUrl, setInstallationUrl] = useState('');
 
   useEffect(() => {
     // Detect device type
     const userAgent = navigator.userAgent || navigator.vendor || window.opera;
     setIsIOS(/iPad|iPhone|iPod/.test(userAgent) && !window.MSStream);
     setIsAndroid(/android/i.test(userAgent));
+
+    // Set the installation URL based on the current URL
+    const currentUrl = window.location.origin;
+    setInstallationUrl(currentUrl);
   }, []);
 
   const handleClose = () => setIsOpen(false);
@@ -42,7 +47,7 @@ export default function InstallAppQR() {
           <div className="text-center">
             <div className="mb-4 flex justify-center p-4 bg-white rounded-lg">
               <QRCode
-                value={window.location.origin}
+                value={installationUrl}
                 size={200}
                 style={{ height: "auto", maxWidth: "100%", width: "100%" }}
                 viewBox={`0 0 256 256`}
@@ -60,7 +65,8 @@ export default function InstallAppQR() {
                   <li>Open your camera app</li>
                   <li>Point it at the QR code</li>
                   <li>Tap the notification that appears</li>
-                  <li>Tap "Add to Home Screen"</li>
+                  <li>Tap the Share button (square with up arrow)</li>
+                  <li>Scroll down and tap "Add to Home Screen"</li>
                 </ol>
               </div>
             )}
@@ -72,7 +78,7 @@ export default function InstallAppQR() {
                   <li>Open your camera app</li>
                   <li>Point it at the QR code</li>
                   <li>Tap the notification that appears</li>
-                  <li>Tap "Install"</li>
+                  <li>Tap "Install" or "Add to Home Screen"</li>
                 </ol>
               </div>
             )}
