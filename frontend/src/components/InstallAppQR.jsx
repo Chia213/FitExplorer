@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { QRCodeSVG } from 'qrcode.react';
+import QRCode from 'react-qr-code';
 import { Dialog } from '@headlessui/react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 
@@ -40,13 +40,12 @@ export default function InstallAppQR() {
           </div>
 
           <div className="text-center">
-            <div className="mb-4 flex justify-center">
-              <QRCodeSVG
+            <div className="mb-4 flex justify-center p-4 bg-white rounded-lg">
+              <QRCode
                 value={window.location.origin}
                 size={200}
-                level="H"
-                includeMargin={true}
-                className="rounded-lg"
+                style={{ height: "auto", maxWidth: "100%", width: "100%" }}
+                viewBox={`0 0 256 256`}
               />
             </div>
 
