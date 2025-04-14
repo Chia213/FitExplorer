@@ -5703,29 +5703,22 @@ function ExploreMuscleGuide() {
 
   // Get alternative exercise asset with proper fallback
   const getAlternativeExerciseAsset = (exerciseName) => {
-    const alternativeAsset = state.bodyType === "female" 
-      ? exerciseAlternativesFemale[exerciseName] 
-      : exerciseAlternativesMale[exerciseName];
-    if (!alternativeAsset) {
+    const asset = getExerciseAssetByGender(exerciseName, state.bodyType);
+    
+    if (!asset) {
+      console.warn(`No asset found for exercise: ${exerciseName}`);
       return {
-        src: "/src/assets/placeholder-exercise.png",
+        src: fixAssetPath("/src/assets/placeholder-exercise.png"),
         description: "Demonstration for this exercise will be added soon.",
-        equipment: null,
-        difficulty: null,
+        equipment: "Varies",
+        difficulty: "Intermediate"
       };
     }
-
-    const variantAsset =
-      alternativeAsset[state.bodyType] ||
-      alternativeAsset.male ||
-      alternativeAsset.female;
-    return {
-      src: variantAsset?.src || "/src/assets/placeholder-exercise.png",
-      description:
-        variantAsset?.description || "Demonstration for this exercise.",
-      equipment: alternativeAsset.equipment || null,
-      difficulty: alternativeAsset.difficulty || null,
-    };
+    
+    // Add debugging to help diagnose path issues
+    console.log(`Loading asset for ${exerciseName}:`, asset.src);
+    
+    return asset;
   };
 
   // Filter exercises based on selected equipment

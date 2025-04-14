@@ -70,11 +70,16 @@ export function updateExerciseAssets(exercisesObject) {
 export function fixAssetPath(path) {
   if (!path) return '/assets/placeholder-exercise.png';
   
-  // For paths starting with '/src/assets/', convert them to proper URLs
+  // For paths starting with '/src/assets/', convert them to proper URLs for Vercel deployment
   if (path.startsWith('/src/assets/')) {
-    // In production on Vercel, we need to ensure paths are correctly resolved
-    // Just use a direct replacement without try/catch which is more reliable
-    return path.replace('/src/assets/', '/assets/');
+    // In Vercel deployment, the structure might be different
+    // Try different path structures
+    const fixedPath = path.replace('/src/assets/', '/assets/');
+    
+    // Log for debugging
+    console.log(`Asset path fixed from ${path} to ${fixedPath}`);
+    
+    return fixedPath;
   }
   
   return path;
