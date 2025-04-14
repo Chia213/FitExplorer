@@ -3,131 +3,118 @@
 @tailwind utilities;
 
 /* Base styles */
-html {
-  font-size: 16px;
-  -webkit-text-size-adjust: 100%;
+:root {
+  --primary-color: #4f46e5;
+  --secondary-color: #10b981;
+  --accent-color: #8b5cf6;
 }
 
-html, body {
+html {
   height: 100%;
-  width: 100%;
-  padding: 0;
-  margin: 0;
-  overflow-x: hidden;
+  scroll-behavior: smooth;
 }
 
 body {
+  min-height: 100%;
+  margin: 0;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  line-height: 1.5;
-  text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  @apply bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white;
 }
 
-/* Responsive layout */
 #root {
-  min-height: 100vh;
   display: flex;
   flex-direction: column;
+  min-height: 100vh;
+}
+
+/* Layout components */
+.container {
+  @apply mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl;
+}
+
+.section {
+  @apply py-12 sm:py-16;
 }
 
 /* Form elements */
-button, 
-.btn, 
-a.btn, 
-input[type="button"], 
-input[type="submit"],
-input[type="reset"],
-.nav-link,
-select {
-  @apply px-4 py-2 rounded-md transition-all duration-200 ease-in-out;
+.input {
+  @apply block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm;
 }
 
-input[type="text"],
-input[type="email"],
-input[type="password"],
-input[type="number"],
-input[type="search"],
-input[type="tel"],
-input[type="url"],
-textarea {
-  @apply px-3 py-2 rounded-md border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all duration-200;
+.btn {
+  @apply inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2;
 }
 
-/* Responsive design */
-@media (max-width: 768px) {
-  html {
-    font-size: 14px;
-  }
-  
+.btn-primary {
+  @apply bg-indigo-600 text-white hover:bg-indigo-700 focus:ring-indigo-500;
+}
+
+.btn-secondary {
+  @apply bg-white text-gray-700 border-gray-300 hover:bg-gray-50 focus:ring-indigo-500;
+}
+
+/* Card styles */
+.card {
+  @apply bg-white dark:bg-gray-800 rounded-lg shadow;
+}
+
+.card-body {
+  @apply p-6;
+}
+
+/* Navigation */
+.nav-link {
+  @apply px-3 py-2 rounded-md text-sm font-medium;
+}
+
+.nav-link-active {
+  @apply bg-gray-900 text-white;
+}
+
+/* Transitions */
+.fade-enter {
+  opacity: 0;
+}
+
+.fade-enter-active {
+  opacity: 1;
+  transition: opacity 200ms ease-in;
+}
+
+.fade-exit {
+  opacity: 1;
+}
+
+.fade-exit-active {
+  opacity: 0;
+  transition: opacity 200ms ease-out;
+}
+
+/* Responsive utilities */
+@screen sm {
   .container {
-    @apply px-4;
+    @apply px-6;
   }
 }
 
-/* Page transitions */
-.page-transition-enter {
-  opacity: 0;
-  transform: translateX(100%);
-}
-
-.page-transition-enter-active {
-  opacity: 1;
-  transform: translateX(0);
-  transition: opacity 300ms, transform 300ms;
-}
-
-.page-transition-exit {
-  opacity: 1;
-  transform: translateX(0);
-}
-
-.page-transition-exit-active {
-  opacity: 0;
-  transform: translateX(-100%);
-  transition: opacity 300ms, transform 300ms;
-}
-
-@layer base {
-  :root {
-    --color-primary: #3b82f6; /* blue-500 */
-    --color-secondary: #10b981; /* emerald-500 */
-    --color-accent: #8b5cf6; /* violet-500 */
-  }
-
-  /* Theme colors */
-  .btn-primary {
-    @apply bg-[var(--color-primary)] text-white hover:opacity-90 shadow-sm;
-  }
-  
-  .btn-secondary {
-    @apply bg-[var(--color-secondary)] text-white hover:opacity-90 shadow-sm;
-  }
-  
-  .text-accent {
-    @apply text-[var(--color-accent)];
-  }
-  
-  .border-accent {
-    @apply border-[var(--color-accent)];
-  }
-  
-  .bg-accent {
-    @apply bg-[var(--color-accent)];
-  }
-
-  /* Card styles */
-  .card {
-    @apply bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700;
-    
-    &.premium {
-      @apply bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-800 dark:to-gray-900;
-      border: 1px solid rgba(var(--color-accent-rgb), 0.2);
-    }
+@screen lg {
+  .container {
+    @apply px-8;
   }
 }
 
-/* Layout utilities */
+/* Dark mode adjustments */
+.dark .card {
+  @apply bg-gray-800 border-gray-700;
+}
+
+.dark .btn-secondary {
+  @apply bg-gray-700 text-gray-200 border-gray-600 hover:bg-gray-600;
+}
+
+/* Utility classes */
 .flex-center {
   @apply flex items-center justify-center;
 }
@@ -136,7 +123,6 @@ textarea {
   @apply grid place-items-center;
 }
 
-/* Container width control */
-.container {
-  @apply mx-auto max-w-7xl;
+.text-gradient {
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-purple-500;
 }
