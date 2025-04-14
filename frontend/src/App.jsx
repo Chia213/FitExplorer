@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
 import Navbar from "./components/Navbar";
+import MobileNav from "./components/MobileNav";
+import InstallAppButton from "./components/InstallAppButton";
 import Layout from "./components/Layout";
 import PageTransition from "./components/PageTransition";
 import AdminRoute from "./components/AdminRoute";
@@ -136,6 +138,8 @@ function App() {
                   </Routes>
                 </PageTransition>
               </Layout>
+              <MobileNav />
+              <InstallAppButton />
               <WelcomeModalWrapper />
             </div>
           </NotificationProvider>
