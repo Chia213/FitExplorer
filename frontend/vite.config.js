@@ -11,6 +11,9 @@ export default defineConfig({
   base: '/',
   server: {
     port: 5173,
+    fs: {
+      strict: true
+    }
   },
   resolve: {
     alias: {
@@ -22,6 +25,7 @@ export default defineConfig({
     outDir: 'dist',
     assetsDir: 'assets',
     emptyOutDir: true,
+    cssCodeSplit: true,
     rollupOptions: {
       input: {
         main: path.resolve(__dirname, 'index.html')
@@ -43,6 +47,15 @@ export default defineConfig({
           // For other assets
           return `assets/[name]-[hash].[ext]`;
         }
+      }
+    },
+    assetsInlineLimit: 4096,
+    sourcemap: true,
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: false,
+        drop_debugger: true
       }
     }
   },

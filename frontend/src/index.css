@@ -3,14 +3,35 @@
 @tailwind utilities;
 
 /* Base styles */
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+}
+
 html, body {
   height: 100%;
   width: 100%;
   padding: 0;
   margin: 0;
+  overflow-x: hidden;
 }
 
-/* Basic form element styles */
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  line-height: 1.5;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Responsive layout */
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Form elements */
 button, 
 .btn, 
 a.btn, 
@@ -19,8 +40,7 @@ input[type="submit"],
 input[type="reset"],
 .nav-link,
 select {
-  padding: 0.5rem 1rem;
-  font-size: 1rem;
+  @apply px-4 py-2 rounded-md transition-all duration-200 ease-in-out;
 }
 
 input[type="text"],
@@ -31,16 +51,21 @@ input[type="search"],
 input[type="tel"],
 input[type="url"],
 textarea {
-  padding: 0.5rem;
+  @apply px-3 py-2 rounded-md border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all duration-200;
 }
 
-/* Responsive spacing */
-.space-y-2 {
-  margin-top: 0.75rem;
-  margin-bottom: 0.75rem;
+/* Responsive design */
+@media (max-width: 768px) {
+  html {
+    font-size: 14px;
+  }
+  
+  .container {
+    @apply px-4;
+  }
 }
 
-/* Page transition animations */
+/* Page transitions */
 .page-transition-enter {
   opacity: 0;
   transform: translateX(100%);
@@ -65,19 +90,18 @@ textarea {
 
 @layer base {
   :root {
-    /* Default theme colors */
     --color-primary: #3b82f6; /* blue-500 */
     --color-secondary: #10b981; /* emerald-500 */
     --color-accent: #8b5cf6; /* violet-500 */
   }
 
-  /* Apply theme colors to Tailwind elements */
+  /* Theme colors */
   .btn-primary {
-    @apply bg-[var(--color-primary)] text-white hover:opacity-90;
+    @apply bg-[var(--color-primary)] text-white hover:opacity-90 shadow-sm;
   }
   
   .btn-secondary {
-    @apply bg-[var(--color-secondary)] text-white hover:opacity-90;
+    @apply bg-[var(--color-secondary)] text-white hover:opacity-90 shadow-sm;
   }
   
   .text-accent {
@@ -91,30 +115,28 @@ textarea {
   .bg-accent {
     @apply bg-[var(--color-accent)];
   }
-  
-  /* Enhanced card styles */
+
+  /* Card styles */
   .card {
-    @apply rounded-lg shadow-md;
+    @apply bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700;
     
     &.premium {
-      background: linear-gradient(
-        135deg,
-        rgba(var(--color-primary-rgb), 0.1) 0%,
-        rgba(var(--color-secondary-rgb), 0.1) 100%
-      );
+      @apply bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-800 dark:to-gray-900;
       border: 1px solid rgba(var(--color-accent-rgb), 0.2);
     }
   }
-  
-  /* Dark mode adjustments */
-  .dark {
-    .card.premium {
-      background: linear-gradient(
-        135deg,
-        rgba(var(--color-primary-rgb), 0.2) 0%,
-        rgba(var(--color-secondary-rgb), 0.2) 100%
-      );
-      border: 1px solid rgba(var(--color-accent-rgb), 0.3);
-    }
-  }
+}
+
+/* Layout utilities */
+.flex-center {
+  @apply flex items-center justify-center;
+}
+
+.grid-center {
+  @apply grid place-items-center;
+}
+
+/* Container width control */
+.container {
+  @apply mx-auto max-w-7xl;
 }
