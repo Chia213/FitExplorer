@@ -32,6 +32,13 @@ export default defineConfig({
             const parts = assetInfo.name.split('src/assets/');
             return `assets/${parts[1]}`;
           }
+          // Special handling for exercise GIFs
+          if (assetInfo.name.endsWith('.gif')) {
+            const parts = assetInfo.name.split('/');
+            const filename = parts[parts.length - 1];
+            const gender = assetInfo.name.includes('/male/') ? 'male' : 'female';
+            return `assets/exercises/${gender}/${filename}`;
+          }
           return 'assets/[name]-[hash][extname]';
         }
       }
