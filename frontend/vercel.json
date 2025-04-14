@@ -16,15 +16,11 @@
       ]
     },
     {
-      "source": "/assets/(.*)",
+      "source": "/assets/(.*)\\.css",
       "headers": [
         {
-          "key": "Cache-Control",
-          "value": "public, max-age=3600, must-revalidate"
-        },
-        {
           "key": "Content-Type",
-          "value": "application/javascript; charset=utf-8"
+          "value": "text/css"
         }
       ]
     },
