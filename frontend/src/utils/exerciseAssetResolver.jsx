@@ -70,38 +70,35 @@ export function updateExerciseAssets(exercisesObject) {
 export function fixAssetPath(path) {
   if (!path) return '/assets/placeholder-exercise.png';
   
-  // Handle all types of exercise file paths
-  if (path.includes('/exercises/') || path.includes('exercises/') || path.endsWith('.gif')) {
-    // Extract filename from path regardless of structure
-    let filename = path.split('/').pop();
-    
-    // For predictable path handling in production:
-    // 1. If path includes gender info (male/female)
-    if (path.includes('/male/') || path.includes('male/')) {
-      return `/assets/exercises/male/${filename}`;
-    } 
-    else if (path.includes('/female/') || path.includes('female/')) {
-      return `/assets/exercises/female/${filename}`;
+  // Remove any leading slash for consistency
+  const cleanPath = path.startsWith('/') ? path.slice(1) : path;
+  
+  // Handle exercise GIFs
+  if (cleanPath.includes('exercises/') || cleanPath.endsWith('.gif')) {
+    // Extract the relevant parts of the path after 'exercises/'
+    const exercisePath = cleanPath.includes('exercises/') 
+      ? cleanPath.split('exercises/')[1]
+      : cleanPath;
+      
+    // Ensure the path includes gender (male/female)
+    if (!exercisePath.includes('male/') && !exercisePath.includes('female/')) {
+      const gender = cleanPath.includes('female') ? 'female' : 'male';
+      return `/assets/exercises/${gender}/${exercisePath.split('/').pop()}`;
     }
     
-    // 2. Default to male path for exercise files (most common in the app)
-    return `/assets/exercises/male/${filename}`;
+    return `/assets/exercises/${exercisePath}`;
   }
   
-  // For other assets, ensure they start with /assets/
-  if (path.includes('/assets/')) {
-    return path;
+  // For other assets in the assets directory
+  if (cleanPath.includes('assets/')) {
+    return `/${cleanPath}`;
   }
   
-  // Convert any remaining /src/assets paths
-  if (path.startsWith('/src/assets/')) {
-    return path.replace('/src/assets/', '/assets/');
+  // Convert any remaining src/assets paths
+  if (cleanPath.startsWith('src/assets/')) {
+    return `/${cleanPath.replace('src/assets/', 'assets/')}`;
   }
   
-  // If the path doesn't start with a slash, add it
-  if (!path.startsWith('/')) {
-    return `/${path}`;
-  }
-  
-  return path;
+  // If none of the above, assume it's in the assets directory
+  return `/assets/${cleanPath}`;
 }

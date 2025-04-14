@@ -8,6 +8,7 @@ export default defineConfig({
     react(), 
     tailwindcss()
   ],
+  base: '/',
   server: {
     port: 5173,
   },
@@ -27,19 +28,22 @@ export default defineConfig({
     rollupOptions: {
       output: {
         assetFileNames: (assetInfo) => {
-          // Keep the original path structure for assets in src/assets
+          const info = assetInfo.name.split('.');
+          const ext = info[info.length - 1];
+
+          // Special handling for exercise GIFs
+          if (ext === 'gif' && assetInfo.name.includes('/exercises/')) {
+            const parts = assetInfo.name.split('/exercises/');
+            return `assets/exercises/${parts[1]}`; // Preserve the full path after 'exercises/'
+          }
+
+          // Keep other assets in their original structure
           if (assetInfo.name.includes('src/assets/')) {
             const parts = assetInfo.name.split('src/assets/');
             return `assets/${parts[1]}`;
           }
-          // Special handling for exercise GIFs
-          if (assetInfo.name.endsWith('.gif')) {
-            const parts = assetInfo.name.split('/');
-            const filename = parts[parts.length - 1];
-            const gender = assetInfo.name.includes('/male/') ? 'male' : 'female';
-            return `assets/exercises/${gender}/${filename}`;
-          }
-          return 'assets/[name]-[hash][extname]';
+
+          return `assets/[name]-[hash][extname]`;
         }
       }
     }
