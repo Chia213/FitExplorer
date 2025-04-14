@@ -83,10 +83,12 @@ export function fixAssetPath(path) {
     // Ensure the path includes gender (male/female)
     if (!exercisePath.includes('male/') && !exercisePath.includes('female/')) {
       const gender = cleanPath.includes('female') ? 'female' : 'male';
-      return `/assets/exercises/${gender}/${exercisePath.split('/').pop()}`;
+      return `/assets/exercises/${gender}/${exercisePath.split('/').pop().toLowerCase()}`;
     }
     
-    return `/assets/exercises/${exercisePath}`;
+    // Ensure the path is lowercase for consistency
+    const [gender, ...rest] = exercisePath.split('/');
+    return `/assets/exercises/${gender}/${rest.join('/').toLowerCase()}`;
   }
   
   // For other assets in the assets directory
