@@ -10,26 +10,37 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
+      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
       manifest: {
         name: 'FitExplorer',
         short_name: 'FitExplorer',
-        description: 'Your fitness tracking companion',
-        theme_color: '#000000',
+        description: 'Your fitness companion',
+        theme_color: '#ffffff',
         icons: [
           {
-            src: '/icons/icon-192x192.png',
+            src: 'pwa-192x192.png',
             sizes: '192x192',
             type: 'image/png'
           },
           {
-            src: '/icons/icon-512x512.png',
+            src: 'pwa-512x512.png',
             sizes: '512x512',
             type: 'image/png'
+          },
+          {
+            src: 'pwa-512x512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'any maskable'
           }
-        ]
+        ],
+        start_url: '/',
+        display: 'standalone',
+        background_color: '#ffffff'
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg}']
+        cleanupOutdatedCaches: true,
+        sourcemap: true
       }
     })
   ],

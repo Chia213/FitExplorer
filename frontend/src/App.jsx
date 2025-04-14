@@ -1,7 +1,5 @@
 import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
 import Navbar from "./components/Navbar";
-import MobileNav from "./components/MobileNav";
-import InstallAppButton from "./components/InstallAppButton";
 import Layout from "./components/Layout";
 import PageTransition from "./components/PageTransition";
 import AdminRoute from "./components/AdminRoute";
@@ -9,6 +7,7 @@ import AuthRoute from "./components/AuthRoute";
 import ScrollToTop from "./components/ScrollToTop";
 import { NotificationProvider } from "./contexts/NotificationContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
+import InstallAppQR from "./components/InstallAppQR";
 
 // Pagess
 import ExploreMuscleGuide from "./pages/ExploreMuscleGuide";
@@ -138,9 +137,8 @@ function App() {
                   </Routes>
                 </PageTransition>
               </Layout>
-              <MobileNav />
-              <InstallAppButton />
               <WelcomeModalWrapper />
+              <InstallAppQR />
             </div>
           </NotificationProvider>
         </WelcomeProvider>
