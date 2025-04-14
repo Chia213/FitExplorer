@@ -534,7 +534,7 @@ def create_workout(
                     # Additional set properties
                     drop_number=getattr(set_data, 'drop_number', None),
                     original_weight=getattr(set_data, 'original_weight', None),
-                    superset_with=getattr(set_data, 'superset_with', None),
+                    superset_with=str(getattr(set_data, 'superset_with', None)) if getattr(set_data, 'superset_with', None) is not None else None,
                     rest_pauses=getattr(set_data, 'rest_pauses', None),
                     pyramid_type=getattr(set_data, 'pyramid_type', None),
                     pyramid_step=getattr(set_data, 'pyramid_step', None),
@@ -1287,7 +1287,7 @@ def create_routine(
                         is_giant=getattr(set_data, 'is_giant', False),
                         drop_number=getattr(set_data, 'drop_number', None),
                         original_weight=getattr(set_data, 'original_weight', None),
-                        superset_with=getattr(set_data, 'superset_with', None),
+                        superset_with=str(getattr(set_data, 'superset_with', None)) if getattr(set_data, 'superset_with', None) is not None else None,
                         rest_pauses=getattr(set_data, 'rest_pauses', None),
                         pyramid_type=getattr(set_data, 'pyramid_type', None),
                         pyramid_step=getattr(set_data, 'pyramid_step', None),
@@ -1532,7 +1532,7 @@ def update_routine(
                     # Additional set properties
                     drop_number=getattr(set_data, 'drop_number', None),
                     original_weight=getattr(set_data, 'original_weight', None),
-                    superset_with=getattr(set_data, 'superset_with', None),
+                    superset_with=str(getattr(set_data, 'superset_with', None)) if getattr(set_data, 'superset_with', None) is not None else None,
                     rest_pauses=getattr(set_data, 'rest_pauses', None),
                     pyramid_type=getattr(set_data, 'pyramid_type', None),
                     pyramid_step=getattr(set_data, 'pyramid_step', None),

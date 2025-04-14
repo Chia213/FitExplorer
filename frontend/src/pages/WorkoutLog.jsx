@@ -1464,7 +1464,7 @@ const WorkoutLog = () => {
         is_restpause: false,
         is_pyramid: false,
         is_giant: false,
-        superset_with: parseInt(supersetExerciseId)
+        superset_with: String(supersetExerciseId)
       };
       
       updatedExercises[primaryExerciseIndex].sets.push(primarySet);
@@ -1481,7 +1481,7 @@ const WorkoutLog = () => {
         is_restpause: false,
         is_pyramid: false,
         is_giant: false,
-        superset_with: primaryExerciseIndex
+        superset_with: String(primaryExerciseIndex)
       };
       
       updatedExercises[parseInt(supersetExerciseId)].sets.push(pairedSet);
