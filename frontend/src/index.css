@@ -2,127 +2,175 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Base styles */
-:root {
-  --primary-color: #4f46e5;
-  --secondary-color: #10b981;
-  --accent-color: #8b5cf6;
+/* PWA specific styles */
+html, body {
+  height: 100%;
+  width: 100%;
+  padding: 0;
+  margin: 0;
+  overscroll-behavior-y: none;
+  -webkit-overflow-scrolling: touch;
+  -webkit-tap-highlight-color: transparent;
 }
 
+/* Remove browser tap highlight color */
+a, button, input[type="button"], input[type="submit"], input[type="reset"] {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Disable pull-to-refresh on iOS Safari */
 html {
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
   height: 100%;
-  scroll-behavior: smooth;
 }
 
 body {
-  min-height: 100%;
-  margin: 0;
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  @apply bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  height: 100%;
 }
 
-#root {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-}
-
-/* Layout components */
-.container {
-  @apply mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl;
-}
-
-.section {
-  @apply py-12 sm:py-16;
-}
-
-/* Form elements */
-.input {
-  @apply block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm;
-}
-
-.btn {
-  @apply inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2;
-}
-
-.btn-primary {
-  @apply bg-indigo-600 text-white hover:bg-indigo-700 focus:ring-indigo-500;
-}
-
-.btn-secondary {
-  @apply bg-white text-gray-700 border-gray-300 hover:bg-gray-50 focus:ring-indigo-500;
-}
-
-/* Card styles */
-.card {
-  @apply bg-white dark:bg-gray-800 rounded-lg shadow;
-}
-
-.card-body {
-  @apply p-6;
-}
-
-/* Navigation */
-.nav-link {
-  @apply px-3 py-2 rounded-md text-sm font-medium;
-}
-
-.nav-link-active {
-  @apply bg-gray-900 text-white;
-}
-
-/* Transitions */
-.fade-enter {
-  opacity: 0;
-}
-
-.fade-enter-active {
-  opacity: 1;
-  transition: opacity 200ms ease-in;
-}
-
-.fade-exit {
-  opacity: 1;
-}
-
-.fade-exit-active {
-  opacity: 0;
-  transition: opacity 200ms ease-out;
-}
-
-/* Responsive utilities */
-@screen sm {
-  .container {
-    @apply px-6;
+/* Mobile optimizations - make touch targets bigger */
+@media (max-width: 768px) {
+  button, 
+  .btn, 
+  a.btn, 
+  input[type="button"], 
+  input[type="submit"],
+  input[type="reset"],
+  .nav-link,
+  select {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 0.5rem 1rem;
+    font-size: 1rem;
+  }
+  
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="search"],
+  input[type="tel"],
+  input[type="url"],
+  textarea {
+    font-size: 16px; /* Prevents iOS zoom on focus */
+    min-height: 44px;
+    padding: 0.5rem;
+  }
+  
+  /* Add more spacing for better touch targets */
+  .space-y-2 {
+    margin-top: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+  
+  /* Enlarge checkboxes and radio buttons */
+  input[type="checkbox"],
+  input[type="radio"] {
+    transform: scale(1.2);
+    margin: 0.2rem;
   }
 }
 
-@screen lg {
-  .container {
-    @apply px-8;
+/* iOS specific styles for home screen app */
+@media (display-mode: standalone) {
+  /* Add padding to avoid bottom navigation bars */
+  body {
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-top: env(safe-area-inset-top);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+  
+  /* Simulate a native app by hiding scrollbars */
+  ::-webkit-scrollbar {
+    display: none;
+  }
+  
+  /* Fix for iOS bottom navigation area */
+  .bottom-nav {
+    padding-bottom: env(safe-area-inset-bottom);
   }
 }
 
-/* Dark mode adjustments */
-.dark .card {
-  @apply bg-gray-800 border-gray-700;
+/* App-like animations for transitions */
+.page-transition-enter {
+  opacity: 0;
+  transform: translateX(100%);
 }
 
-.dark .btn-secondary {
-  @apply bg-gray-700 text-gray-200 border-gray-600 hover:bg-gray-600;
+.page-transition-enter-active {
+  opacity: 1;
+  transform: translateX(0);
+  transition: opacity 300ms, transform 300ms;
 }
 
-/* Utility classes */
-.flex-center {
-  @apply flex items-center justify-center;
+.page-transition-exit {
+  opacity: 1;
+  transform: translateX(0);
 }
 
-.grid-center {
-  @apply grid place-items-center;
+.page-transition-exit-active {
+  opacity: 0;
+  transform: translateX(-100%);
+  transition: opacity 300ms, transform 300ms;
 }
 
-.text-gradient {
-  @apply bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-purple-500;
+@layer base {
+  :root {
+    /* Default theme colors */
+    --color-primary: #3b82f6; /* blue-500 */
+    --color-secondary: #10b981; /* emerald-500 */
+    --color-accent: #8b5cf6; /* violet-500 */
+  }
+
+  /* Apply theme colors to Tailwind elements */
+  .btn-primary {
+    @apply bg-[var(--color-primary)] text-white hover:opacity-90;
+  }
+  
+  .btn-secondary {
+    @apply bg-[var(--color-secondary)] text-white hover:opacity-90;
+  }
+  
+  .text-accent {
+    @apply text-[var(--color-accent)];
+  }
+  
+  .border-accent {
+    @apply border-[var(--color-accent)];
+  }
+  
+  .bg-accent {
+    @apply bg-[var(--color-accent)];
+  }
+  
+  /* Enhanced card styles for premium themes */
+  .card {
+    @apply rounded-lg shadow-md;
+    
+    &.premium {
+      background: linear-gradient(
+        135deg,
+        rgba(var(--color-primary-rgb), 0.1) 0%,
+        rgba(var(--color-secondary-rgb), 0.1) 100%
+      );
+      border: 1px solid rgba(var(--color-accent-rgb), 0.2);
+    }
+  }
+  
+  /* Dark mode adjustments */
+  .dark {
+    .card.premium {
+      background: linear-gradient(
+        135deg,
+        rgba(var(--color-primary-rgb), 0.2) 0%,
+        rgba(var(--color-secondary-rgb), 0.2) 100%
+      );
+      border: 1px solid rgba(var(--color-accent-rgb), 0.3);
+    }
+  }
 }

@@ -11,9 +11,6 @@ export default defineConfig({
   base: '/',
   server: {
     port: 5173,
-    fs: {
-      strict: true
-    }
   },
   resolve: {
     alias: {
@@ -25,18 +22,28 @@ export default defineConfig({
     outDir: 'dist',
     assetsDir: 'assets',
     emptyOutDir: true,
-    cssCodeSplit: true,
+    // Copy all exercise GIFs to a predictable location
+    assetsInlineLimit: 0, // Don't inline any assets as data URLs
+    copyPublicDir: true, // Ensure public directory is copied
+    // Ensure no hashing for GIF files to make paths predictable
     rollupOptions: {
-      input: {
-        main: path.resolve(__dirname, 'index.html')
-      },
       output: {
-        entryFileNames: 'assets/[name]-[hash].js',
-        chunkFileNames: 'assets/[name]-[hash].js',
-        assetFileNames: 'assets/[name]-[hash].[ext]'
+        assetFileNames: (assetInfo) => {
+          const info = assetInfo.name.split('.');
+          const ext = info[info.length - 1];
+
+          // Special handling for exercise GIFs
+          if (ext === 'gif' && assetInfo.name.includes('/exercises/')) {
+            const parts = assetInfo.name.split('/exercises/');
+            // Ensure the path is exactly as expected
+            return `assets/exercises/${parts[1].toLowerCase()}`;
+          }
+
+          // For other assets, preserve their original structure
+          return `assets/${assetInfo.name}`;
+        }
       }
-    },
-    sourcemap: true
+    }
   },
   define: {
     "import.meta.env.VITE_API_URL": JSON.stringify(
