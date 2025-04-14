@@ -4,6 +4,7 @@ import BodyTypeToggle from "../components/BodyTypeToggle";
 import LoadingSpinner from "../components/LoadingSpinner";
 import maleTitanImage from '../assets/titan.png';
 import femaleTitanImage from '../assets/female-titan.png';
+import ExerciseImage from "../components/ExerciseImage";
 
 const exerciseAssetsMale = {
   // Shoulders Exercises - Dumbbells
@@ -6394,11 +6395,11 @@ function ExploreMuscleGuide() {
                   state.viewingAlternativeExercise
                 );
                 return (
-                  <img
-                    src={asset.src}
-                    alt={`${state.viewingAlternativeExercise} demonstration`}
-                    className="w-full object-contain max-h-60"
-                  />
+                  <ExerciseImage
+  src={asset.src}
+  alt={`${state.viewingAlternativeExercise} demonstration`}
+  className="w-full object-contain max-h-60"
+/>
                 );
               })()}
             </div>
@@ -6522,10 +6523,10 @@ function ExploreMuscleGuide() {
               {(() => {
                 const exerciseDetails = getExerciseDetails(state.viewingExercise);
                 return (
-                  <img
-                    src={exerciseDetails.src}
-                    alt={`${state.viewingExercise} demonstration`}
-                    className="w-full object-contain max-h-60"
+                  <ExerciseImage
+  src={exerciseDetails.src}
+  alt={`${state.viewingExercise} demonstration`}
+  className="w-full object-contain max-h-60"
                   />
                 );
               })()}
