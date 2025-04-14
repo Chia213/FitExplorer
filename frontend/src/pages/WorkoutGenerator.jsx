@@ -2013,8 +2013,8 @@ const getExerciseAsset = (exerciseName, fitnessLevel = "beginner") => {
 };
 
 const bodyImages = {
-  male: titanImage,
-  female: femaleTitanImage,
+  male: `${titanImage}?v=${Date.now()}`,
+  female: `${femaleTitanImage}?v=${Date.now()}`,
 };
 
 const fitnessGoalInfo = {
@@ -3666,8 +3666,8 @@ function WorkoutGenerator() {
                     key={preferences.gender} // Add key to force re-render when gender changes
                     src={
                       preferences.gender === "Male"
-                        ? titanImage
-                        : femaleTitanImage
+                        ? `${titanImage}?v=${Date.now()}` 
+                        : `${femaleTitanImage}?v=${Date.now()}`
                     }
                     alt={`${preferences.gender} Muscle Groups Diagram`}
                     className="w-full"
