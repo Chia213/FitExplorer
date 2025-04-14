@@ -31,33 +31,12 @@ export default defineConfig({
         main: path.resolve(__dirname, 'index.html')
       },
       output: {
-        manualChunks: undefined,
         entryFileNames: 'assets/[name]-[hash].js',
         chunkFileNames: 'assets/[name]-[hash].js',
-        assetFileNames: (assetInfo) => {
-          const info = assetInfo.name.split('.');
-          const ext = info[info.length - 1];
-
-          // Special handling for exercise GIFs
-          if (ext === 'gif' && assetInfo.name.includes('/exercises/')) {
-            const parts = assetInfo.name.split('/exercises/');
-            return `assets/exercises/${parts[1].toLowerCase()}`;
-          }
-
-          // For other assets
-          return `assets/[name]-[hash].[ext]`;
-        }
+        assetFileNames: 'assets/[name]-[hash].[ext]'
       }
     },
-    assetsInlineLimit: 4096,
-    sourcemap: true,
-    minify: 'terser',
-    terserOptions: {
-      compress: {
-        drop_console: false,
-        drop_debugger: true
-      }
-    }
+    sourcemap: true
   },
   define: {
     "import.meta.env.VITE_API_URL": JSON.stringify(
