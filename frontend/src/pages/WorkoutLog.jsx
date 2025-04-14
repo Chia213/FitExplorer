@@ -1315,7 +1315,7 @@ const WorkoutLog = () => {
     }
   };
 
-  const handleAddSetByType = () => {
+   const handleAddSetByType = () => {
     if (!setTypeExercise) return;
 
     if (selectedSetType === "drop") {
@@ -1332,23 +1332,23 @@ const WorkoutLog = () => {
       }
 
       const newSets = [];
-      const originalWeightNum = parseFloat(originalWeight);
+      let currentWeight = parseFloat(originalWeight);
 
       // Calculate all weights first
       const weights = [];
       for (let i = 0; i < dropSetCount; i++) {
-        const reducedWeight = calculateNextWeight(originalWeightNum, dropSetPercentage * (i + 1));
-        weights.push(parseFloat(reducedWeight));
+        const reducedWeight = calculateNextWeight(currentWeight, dropSetPercentage * (i + 1));
+        weights.push(reducedWeight);
       }
-      weights.push(originalWeightNum); // Add the original (heaviest) weight
+      weights.push(currentWeight); // Add the original (heaviest) weight
 
       // Sort weights in ascending order (lightest to heaviest)
-      weights.sort((a, b) => a - b);
+      weights.sort((a, b) => parseFloat(a) - parseFloat(b));
 
       // Create sets in ascending order
       weights.forEach((weight, index) => {
         newSets.push({
-          weight: weight.toString(), // Convert back to string for consistency
+          weight: weight,
           reps: dropSetReps,
           notes: index < weights.length - 1 ? 
             `Drop Set #${index + 1} (Build-up)` : 
@@ -1360,10 +1360,50 @@ const WorkoutLog = () => {
           is_restpause: false,
           is_pyramid: false,
           is_giant: false,
-          original_weight: originalWeightNum.toString(), // Store original weight as string for consistency
+          original_weight: originalWeight,
           drop_number: index + 1,
         });
       });
+
+      setWorkoutExercises((prev) =>
+        prev.map((ex) => {
+          if (ex === setTypeExercise) {
+            return {
+              ...ex,
+              sets: [...ex.sets, ...newSets],
+            };
+          }
+          return ex;
+        })
+      );
+    } else if (selectedSetType === "warmup") {
+      // Add a warm-up set
+      const newSet = setTypeExercise.is_cardio
+        ? { 
+            distance: "", 
+            duration: "", 
+            intensity: "", 
+            notes: "Warm-up Set", 
+            is_warmup: true,
+            is_drop_set: false,
+            is_superset: false,
+            is_amrap: false,
+            is_restpause: false,
+            is_pyramid: false,
+            is_giant: false
+          }
+        : { 
+            weight: originalWeight ? (parseFloat(originalWeight) * 0.7).toFixed(1) : "", 
+            reps: "", 
+            notes: "Warm-up Set", 
+            is_warmup: true,
+            is_drop_set: false,
+            is_superset: false,
+            is_amrap: false,
+            is_restpause: false,
+            is_pyramid: false,
+            is_giant: false
+          };
 
 
       setWorkoutExercises((prev) =>
