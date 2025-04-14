@@ -15,57 +15,68 @@ const ExerciseImage = ({ src, alt, className, onLoad, ...props }) => {
     setError(false);
     setFallbackAttempts(0);
     
+    // Log the original source for debugging
+    console.log(`Original image source: ${src}`);
+    
     // First try the fixed path
-    setImageSrc(fixAssetPath(src));
+    const fixedPath = fixAssetPath(src);
+    console.log(`Starting with fixed path: ${fixedPath}`);
+    setImageSrc(fixedPath);
   }, [src]);
   
   const handleError = () => {
     console.error(`Failed to load image: ${src} (transformed to ${imageSrc})`);
     
     // Prevent infinite fallback attempts
-    if (fallbackAttempts >= 5) {
+    if (fallbackAttempts >= 6) {
+      console.warn(`All fallback attempts failed for ${src}, using placeholder`);
       setError(true);
       return;
     }
     
+    // Extract filename regardless of path structure
+    const pathParts = src.split('/');
+    const exerciseFile = pathParts[pathParts.length - 1];
+    
     // Handle all exercise files with a general approach
-    if (src && src.includes('/exercises/')) {
-      const pathParts = src.split('/');
-      const exerciseFile = pathParts[pathParts.length - 1]; // Get the filename
-      
+    if (exerciseFile.endsWith('.gif') || exerciseFile.endsWith('.png')) {
       // Determine if it has gender info
       const hasGender = src.includes('/male/') || src.includes('/female/');
       const gender = src.includes('/male/') ? 'male' : 'female';
       
       let fallbackPath;
       
-      // Try different fallback paths based on the attempt number
+      // Comprehensive fallback strategy
       switch (fallbackAttempts) {
         case 0:
-          // Try with gender path if appropriate
-          fallbackPath = hasGender 
-            ? `/assets/exercises/${gender}/${exerciseFile}`
-            : `/assets/exercises/${exerciseFile}`;
+          // Try with gender path 
+          fallbackPath = `/assets/exercises/${gender}/${exerciseFile}`;
           break;
         case 1:
-          // Try the opposite (with or without gender path)
-          fallbackPath = hasGender 
-            ? `/assets/exercises/${exerciseFile}` 
-            : `/assets/exercises/male/${exerciseFile}`;
+          // Try without gender path
+          fallbackPath = `/assets/exercises/${exerciseFile}`;
           break;
         case 2:
-          // Try without the 'src' prefix if it had it
-          fallbackPath = src.replace('/src/', '/');
+          // Try with opposite gender as a desperate attempt
+          const oppositeGender = gender === 'male' ? 'female' : 'male';
+          fallbackPath = `/assets/exercises/${oppositeGender}/${exerciseFile}`;
           break;
         case 3:
+          // Try without the 'src' prefix
+          fallbackPath = src.replace('/src/', '/');
+          break;
+        case 4:
           // Try with static path
-          fallbackPath = hasGender
-            ? `/static/exercises/${gender}/${exerciseFile}`
-            : `/static/exercises/${exerciseFile}`;
+          fallbackPath = `/static/exercises/${gender}/${exerciseFile}`;
+          break;
+        case 5:
+          // Last resort - try directly at root
+          fallbackPath = `/${exerciseFile}`;
           break;
         default:
-          // Try directly at root
-          fallbackPath = `/${exerciseFile}`;
+          // If all else fails, use placeholder
+          setError(true);
+          return;
       }
       
       console.log(`Trying fallback path (attempt ${fallbackAttempts + 1}): ${fallbackPath}`);

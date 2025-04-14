@@ -70,37 +70,39 @@ export function updateExerciseAssets(exercisesObject) {
 export function fixAssetPath(path) {
   if (!path) return '/assets/placeholder-exercise.png';
   
+  // Handle all types of exercise file paths
+  if (path.includes('/exercises/') || path.includes('exercises/') || path.endsWith('.gif')) {
+    // Extract filename from path regardless of structure
+    let filename = path.split('/').pop();
+    
+    // Log for debugging
+    console.log(`Exercise asset detected: ${filename}, original path: ${path}`);
+    
+    // For predictable path handling in production:
+    // 1. If path includes gender info (male/female)
+    if (path.includes('/male/') || path.includes('male/')) {
+      console.log(`Using male path for: ${filename}`);
+      return `/assets/exercises/male/${filename}`;
+    } 
+    else if (path.includes('/female/') || path.includes('female/')) {
+      console.log(`Using female path for: ${filename}`);
+      return `/assets/exercises/female/${filename}`;
+    }
+    
+    // 2. Default to male path for exercise files (most common in the app)
+    console.log(`Defaulting to male path for: ${filename}`);
+    return `/assets/exercises/male/${filename}`;
+  }
+  
   // For paths starting with '/src/assets/', convert them to proper URLs for Vercel deployment
   if (path.startsWith('/src/assets/')) {
     // In Vercel deployment, the structure might be different
     const fixedPath = path.replace('/src/assets/', '/assets/');
     
     // Log for debugging
-    console.log(`Asset path fixed from ${path} to ${fixedPath}`);
+    console.log(`Standard asset path fixed from ${path} to ${fixedPath}`);
     
     return fixedPath;
-  }
-  
-  // Handle exercise files in a more general way
-  if (path.includes('/exercises/') && (path.endsWith('.gif') || path.endsWith('.png'))) {
-    // Extract filename from path
-    const pathParts = path.split('/');
-    const filename = pathParts[pathParts.length - 1];
-    
-    // Determine if the path contains gender information
-    const hasGender = path.includes('/male/') || path.includes('/female/');
-    const gender = path.includes('/male/') ? 'male' : 'female';
-    
-    // Log for debugging
-    console.log(`Special handling for exercise file: ${filename}, original path: ${path}`);
-    
-    // Try a direct path based on gender if available
-    if (hasGender) {
-      return `/assets/exercises/${gender}/${filename}`;
-    }
-    
-    // If no gender info, try the general exercises path
-    return `/assets/exercises/${filename}`;
   }
   
   return path;
