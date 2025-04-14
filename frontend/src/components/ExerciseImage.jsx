@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { fixAssetPath } from '../utils/exerciseAssetResolver';
 
 /**
  * ExerciseImage component that properly handles GIF and image loading in both development and production.
@@ -6,22 +7,15 @@ import { useState } from 'react';
  */
 const ExerciseImage = ({ src, alt, className, onLoad, ...props }) => {
   const [error, setError] = useState(false);
+  const [imageSrc, setImageSrc] = useState('');
   
-  // Function to properly transform paths for production
-  const getProperImagePath = (path) => {
-    if (!path) return '/assets/placeholder-exercise.png';
-    
-    // For paths starting with '/src/assets/'
-    if (path.startsWith('/src/assets/')) {
-      // Simply remove the /src prefix which works with our vite.config.js alias
-      return path.replace('/src/assets/', '/assets/');
-    }
-    
-    return path;
-  };
+  useEffect(() => {
+    // Use the utility function from exerciseAssetResolver
+    setImageSrc(fixAssetPath(src));
+  }, [src]);
   
   const handleError = () => {
-    console.error(`Failed to load image: ${src}`);
+    console.error(`Failed to load image: ${src} (transformed to ${imageSrc})`);
     setError(true);
   };
   
@@ -31,7 +25,7 @@ const ExerciseImage = ({ src, alt, className, onLoad, ...props }) => {
   
   return (
     <img 
-      src={error ? '/assets/placeholder-exercise.png' : getProperImagePath(src)}
+      src={error ? '/assets/placeholder-exercise.png' : imageSrc}
       alt={alt || ''} 
       className={className || ''}
       onError={handleError}

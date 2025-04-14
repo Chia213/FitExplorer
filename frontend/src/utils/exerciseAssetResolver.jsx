@@ -72,18 +72,9 @@ export function fixAssetPath(path) {
   
   // For paths starting with '/src/assets/', convert them to proper URLs
   if (path.startsWith('/src/assets/')) {
-    try {
-      // This approach works better in production with Vercel
-      // First, clean up the path to remove '/src/' prefix
-      const cleanPath = path.replace('/src/', '/');
-      
-      // In production, Vite will correctly resolve this to the processed asset URL
-      return cleanPath;
-    } catch (error) {
-      console.error('Error fixing asset path:', error);
-      // Fallback to direct replacement (works in development)
-      return path.replace('/src/assets/', '/assets/');
-    }
+    // In production on Vercel, we need to ensure paths are correctly resolved
+    // Just use a direct replacement without try/catch which is more reliable
+    return path.replace('/src/assets/', '/assets/');
   }
   
   return path;

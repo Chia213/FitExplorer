@@ -5458,10 +5458,10 @@ function ExploreMuscleGuide() {
   const imageRef = useRef(null);
 
   // Memoized values
-  const bodyImages = {
+  const bodyImages = useMemo(() => ({
     male: maleTitanImage,
     female: femaleTitanImage,
-  }; 
+  }), []);
 
   const frontMuscles = useMemo(() => 
     state.bodyType === "male" ? maleFrontMuscles : femaleFrontMuscles,
