@@ -5,6 +5,7 @@ import LoadingSpinner from "../components/LoadingSpinner";
 import maleTitanImage from '../assets/titan.png';
 import femaleTitanImage from '../assets/female-titan.png';
 import ExerciseImage from "../components/ExerciseImage";
+import { fixAssetPath } from "../utils/exerciseAssetResolver";
 
 const exerciseAssetsMale = {
   // Shoulders Exercises - Dumbbells
@@ -4963,7 +4964,7 @@ const getExerciseAssetByGender = (exerciseName, gender = "male") => {
   if (!data) {
     return {
       type: "image",
-      src: "/src/assets/placeholder-exercise.png",
+      src: fixAssetPath("/src/assets/placeholder-exercise.png"),
       description: "No demonstration available yet.",
       alternatives: [],
       equipment: null,
@@ -4977,7 +4978,7 @@ const getExerciseAssetByGender = (exerciseName, gender = "male") => {
   if (!genderData) {
     return {
       type: data.type || "image",
-      src: "/src/assets/placeholder-exercise.png",
+      src: fixAssetPath("/src/assets/placeholder-exercise.png"),
       description: "No demonstration available for this gender.",
       alternatives: data.alternatives || [],
       equipment: data.equipment,
@@ -4986,15 +4987,14 @@ const getExerciseAssetByGender = (exerciseName, gender = "male") => {
   }
 
   return {
-    type: data.type,
-    src: genderData.src,
-    description: genderData.description,
-    alternatives: data.alternatives || [],
+    type: data.type || "image",
+    src: fixAssetPath(genderData.src),
+    description: genderData.description || "No description available.",
+    alternatives: genderData.alternatives || [],
     equipment: data.equipment,
     difficulty: data.difficulty
   };
 };
-
 
 const maleFrontMuscles = [
   {
@@ -5804,13 +5804,13 @@ function ExploreMuscleGuide() {
   }, [state.bodyType, getExerciseEquipment]);
 
   // This replaces the getExerciseAsset function for the exercise modal
-  const getExerciseDetails = useCallback((exerciseName) => {
+   const getExerciseDetails = useCallback((exerciseName) => {
     const equipment = getExerciseEquipment(exerciseName);
     const exerciseData = getExerciseAssetByGender(exerciseName, state.bodyType);
     
     if (!exerciseData) {
       return {
-        src: "/src/assets/placeholder-exercise.png",
+        src: fixAssetPath("/src/assets/placeholder-exercise.png"),
         description: "Demonstration for this exercise will be added soon.",
         equipment: equipment,
         difficulty: "Intermediate",
@@ -5819,7 +5819,7 @@ function ExploreMuscleGuide() {
     }
     
     return {
-      src: exerciseData.src || "/src/assets/placeholder-exercise.png",
+      src: exerciseData.src || fixAssetPath("/src/assets/placeholder-exercise.png"),
       description: exerciseData.description || "Demonstration for this exercise will be added soon.",
       equipment: equipment,
       difficulty: exerciseData.difficulty || "Intermediate",
