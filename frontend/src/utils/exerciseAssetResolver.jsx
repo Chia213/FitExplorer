@@ -75,34 +75,32 @@ export function fixAssetPath(path) {
     // Extract filename from path regardless of structure
     let filename = path.split('/').pop();
     
-    // Log for debugging
-    console.log(`Exercise asset detected: ${filename}, original path: ${path}`);
-    
     // For predictable path handling in production:
     // 1. If path includes gender info (male/female)
     if (path.includes('/male/') || path.includes('male/')) {
-      console.log(`Using male path for: ${filename}`);
       return `/assets/exercises/male/${filename}`;
     } 
     else if (path.includes('/female/') || path.includes('female/')) {
-      console.log(`Using female path for: ${filename}`);
       return `/assets/exercises/female/${filename}`;
     }
     
     // 2. Default to male path for exercise files (most common in the app)
-    console.log(`Defaulting to male path for: ${filename}`);
     return `/assets/exercises/male/${filename}`;
   }
   
-  // For paths starting with '/src/assets/', convert them to proper URLs for Vercel deployment
+  // For other assets, ensure they start with /assets/
+  if (path.includes('/assets/')) {
+    return path;
+  }
+  
+  // Convert any remaining /src/assets paths
   if (path.startsWith('/src/assets/')) {
-    // In Vercel deployment, the structure might be different
-    const fixedPath = path.replace('/src/assets/', '/assets/');
-    
-    // Log for debugging
-    console.log(`Standard asset path fixed from ${path} to ${fixedPath}`);
-    
-    return fixedPath;
+    return path.replace('/src/assets/', '/assets/');
+  }
+  
+  // If the path doesn't start with a slash, add it
+  if (!path.startsWith('/')) {
+    return `/${path}`;
   }
   
   return path;

@@ -12,9 +12,9 @@ export default defineConfig({
     port: 5173,
   },
   resolve: {
-    alias: [
-      { find: '/src/assets', replacement: '/assets' }
-    ]
+    alias: {
+      '/assets': '/src/assets'
+    }
   },
   build: {
     outDir: 'dist',
@@ -29,44 +29,21 @@ export default defineConfig({
           const info = assetInfo.name.split('.');
           const ext = info[info.length - 1];
           
-          // Special handling for exercise GIFs to maintain folder structure
           if (ext === 'gif' && assetInfo.name.includes('exercises')) {
-            // Extract the path structure
             const parts = assetInfo.name.split('/');
             const filename = parts[parts.length - 1];
             
-            // List of problematic files that need special handling
-            const criticalExerciseFiles = [
-              'dumbbell-russian-twist.gif',
-              // Add other critical files here if needed
-            ];
-            
-            // Special handling for known problematic files
-            if (criticalExerciseFiles.includes(filename)) {
-              console.log(`Special handling for critical file: ${filename} during build`);
-              // Create multiple copies in different paths for maximum compatibility
+            // For exercise GIFs, maintain the exact same structure as source
+            if (assetInfo.name.includes('/male/')) {
               return `assets/exercises/male/${filename}`;
             }
-            
-            // For all exercise GIFs, we'll copy them to both paths:
-            // 1. With gender structure (if applicable)
-            // 2. Without gender structure (for fallback)
-            
-            // First determine if we have gender information
-            if (parts.includes('male') || parts.includes('female')) {
-              const gender = parts.includes('male') ? 'male' : 'female';
-              
-              // Copy the file to the gender-specific path
-              // We'll handle the non-gender path in a separate setup
-              return `assets/exercises/${gender}/${filename}`;
+            if (assetInfo.name.includes('/female/')) {
+              return `assets/exercises/female/${filename}`;
             }
-            
-            // Default flattened path for exercises that don't have gender folders
             return `assets/exercises/${filename}`;
           }
           
-          // Default pattern for other assets
-          return 'assets/[name]-[hash][extname]';
+          return `assets/[name]-[hash][extname]`;
         }
       }
     }
