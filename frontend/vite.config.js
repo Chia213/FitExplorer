@@ -13,6 +13,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
+      '@': path.resolve(__dirname, './src'),
       '/assets': '/src/assets'
     }
   },
@@ -26,25 +27,12 @@ export default defineConfig({
     rollupOptions: {
       output: {
         assetFileNames: (assetInfo) => {
-          const info = assetInfo.name.split('.');
-          const ext = info[info.length - 1];
-          
-          if (ext === 'gif' && assetInfo.name.includes('exercises')) {
-            const parts = assetInfo.name.split('/');
-            const filename = parts[parts.length - 1];
-            
-            // For exercise GIFs, maintain the exact same structure as source
-            if (assetInfo.name.includes('/male/')) {
-              return `assets/exercises/male/${filename}`;
-            }
-            if (assetInfo.name.includes('/female/')) {
-              return `assets/exercises/female/${filename}`;
-            }
-            return `assets/exercises/${filename}`;
+          // Keep the original path structure for assets in src/assets
+          if (assetInfo.name.includes('src/assets/')) {
+            const parts = assetInfo.name.split('src/assets/');
+            return `assets/${parts[1]}`;
           }
-          
-          // For other assets, use the default naming scheme
-          return `assets/[name]-[hash][extname]`;
+          return 'assets/[name]-[hash][extname]';
         }
       }
     }
