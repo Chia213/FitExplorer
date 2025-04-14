@@ -3666,8 +3666,8 @@ function WorkoutGenerator() {
                     key={preferences.gender} // Add key to force re-render when gender changes
                     src={
                       preferences.gender === "Male"
-                        ? "/src/assets/titan.png"
-                        : "/src/assets/female-titan.png"
+                        ? titanImage
+                        : femaleTitanImage
                     }
                     alt={`${preferences.gender} Muscle Groups Diagram`}
                     className="w-full"
