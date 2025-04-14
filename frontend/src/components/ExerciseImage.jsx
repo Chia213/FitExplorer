@@ -89,19 +89,26 @@ const ExerciseImage = ({ src, alt, className, onLoad, ...props }) => {
     setError(true);
   };
   
-  const handleLoad = (e) => {
-    console.log(`Successfully loaded image: ${imageSrc}`);
-    if (onLoad) onLoad(e);
-  };
+  // If we've exhausted all fallback attempts, show the placeholder
+  if (error) {
+    return (
+      <img
+        src="/assets/placeholder-exercise.png"
+        alt={alt || 'Exercise demonstration not available'}
+        className={className}
+        onLoad={onLoad}
+        {...props}
+      />
+    );
+  }
   
   return (
-    <img 
-      src={error ? '/assets/placeholder-exercise.png' : imageSrc}
-      alt={alt || ''} 
-      className={className || ''}
+    <img
+      src={imageSrc}
+      alt={alt || 'Exercise demonstration'}
+      className={className}
       onError={handleError}
-      onLoad={handleLoad}
-      loading="lazy"
+      onLoad={onLoad}
       {...props}
     />
   );

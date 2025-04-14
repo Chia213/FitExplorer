@@ -43,6 +43,7 @@ export default defineConfig({
             return `assets/exercises/${filename}`;
           }
           
+          // For other assets, use the default naming scheme
           return `assets/[name]-[hash][extname]`;
         }
       }
