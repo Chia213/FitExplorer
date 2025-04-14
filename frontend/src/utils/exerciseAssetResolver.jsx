@@ -94,11 +94,6 @@ export function fixAssetPath(path) {
     return `/${cleanPath}`;
   }
   
-  // Convert any remaining src/assets paths
-  if (cleanPath.startsWith('src/assets/')) {
-    return `/${cleanPath.replace('src/assets/', 'assets/')}`;
-  }
-  
   // If none of the above, assume it's in the assets directory
   return `/assets/${cleanPath}`;
 }
