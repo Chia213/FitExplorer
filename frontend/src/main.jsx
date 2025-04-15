@@ -10,6 +10,18 @@ const clientId =
   import.meta.env.VITE_GOOGLE_CLIENT_ID ||
   "917960701094-3448boe93v2n4bru03t0t71n6016lbao.apps.googleusercontent.com";
 
+// Detect if we're running on mobile
+const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+const isPwa = window.matchMedia('(display-mode: standalone)').matches || 
+              window.navigator.standalone === true;
+
+console.log("App initialization - Environment:", {
+  isMobile,
+  isPwa,
+  clientId,
+  userAgent: navigator.userAgent
+});
+
 // Register service worker for PWA
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
@@ -28,6 +40,8 @@ createRoot(document.getElementById("root")).render(
   <StrictMode>
     <GoogleOAuthProvider 
       clientId={clientId}
+      onScriptLoadError={() => console.error("Google API script failed to load")}
+      onScriptLoadSuccess={() => console.log("Google API script loaded successfully")}
     >
       <BrowserRouter>
         <AuthProvider>

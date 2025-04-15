@@ -5451,11 +5451,30 @@ function ExploreMuscleGuide() {
     navigationHistory: [],
     isLoading: false,
     selectedEquipment: "All Equipment",
-    muscleExerciseFilter: "All Equipment" // New state for muscle-specific equipment filter
+    muscleExerciseFilter: "All Equipment", // New state for muscle-specific equipment filter
+    isMobile: false // Track if we're on a mobile device
   });
 
   const exerciseModalContentRef = useRef(null);
   const imageRef = useRef(null);
+
+  // Detect mobile devices
+  useEffect(() => {
+    const checkMobile = () => {
+      const isMobileDevice = window.innerWidth < 768 || /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      setState(prev => ({
+        ...prev,
+        isMobile: isMobileDevice
+      }));
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => {
+      window.removeEventListener('resize', checkMobile);
+    };
+  }, []);
 
   // Memoized values
   const bodyImages = useMemo(() => ({
@@ -5688,6 +5707,14 @@ function ExploreMuscleGuide() {
     }
   };
 
+  const handleMobileSelectMuscle = (muscleIndex) => {
+    setState(prev => ({
+      ...prev,
+      activeMuscleIndex: muscleIndex,
+      hoveredMuscle: allMuscles[muscleIndex].name
+    }));
+  };
+
   const toggleBodyType = () => {
     setState(prev => ({
       ...prev,
@@ -5912,7 +5939,7 @@ function ExploreMuscleGuide() {
 
       <p className="text-center mb-5">
         Hover over or click on any muscle area to explore exercises
-      </p>
+      </p>    
 
       <div className="flex flex-col md:flex-row gap-6">
         {/* Left sidebar with filters */}
@@ -6598,6 +6625,3 @@ function ExploreMuscleGuide() {
 }
 
 export default ExploreMuscleGuide;
-
-
-

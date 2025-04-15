@@ -386,19 +386,55 @@ function Login() {
           {/* Custom English Google sign-in button */}
           <button
             onClick={() => {
-              // Check if running as PWA
+              // Check if running as PWA or on mobile
               const isPwa = window.matchMedia('(display-mode: standalone)').matches || 
                             window.navigator.standalone === true;
+              const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
               
-              // If in PWA mode, we'll use a different approach since popups behave differently
-              if (isPwa) {
-                // For PWA, it's better to redirect the whole app rather than using a popup
-                // First create a "return to" indicator in localStorage
+              // Log device information for debugging
+              console.log("Device info - isPWA:", isPwa, "isMobile:", isMobile, "UserAgent:", navigator.userAgent);
+              
+              // For mobile devices or PWA mode, we need a different approach
+              if (isPwa || isMobile) {
+                // For PWA/mobile, directly trigger the Google login without popup
+                console.log("Using direct trigger approach for mobile/PWA");
                 localStorage.setItem('auth_return_to', window.location.pathname);
                 
-                // Directly trigger the Google login without popup
                 try {
-                  document.querySelector('[aria-labelledby="button-label"]')?.click();
+                  // Find the Google button - try multiple selectors to improve reliability
+                  const googleButton = 
+                    document.querySelector('[aria-labelledby="button-label"]') || 
+                    document.querySelector('.nsm7Bb-HzV7m-LgbsSe') ||
+                    document.querySelector('iframe').contentDocument?.querySelector('button');
+                  
+                  if (googleButton) {
+                    console.log("Found Google button, clicking it");
+                    googleButton.click();
+                  } else {
+                    // If we can't find the button, try the fallback Google login flow
+                    console.log("Google button not found, using fallback approach");
+                    const googleLoginDiv = document.querySelector('div[style*="height: 0"]');
+                    if (googleLoginDiv) {
+                      // Temporarily make the hidden Google login visible and click it
+                      const originalStyle = googleLoginDiv.getAttribute('style');
+                      googleLoginDiv.setAttribute('style', 'height: auto; visibility: visible; position: absolute; z-index: -1;');
+                      
+                      setTimeout(() => {
+                        const button = googleLoginDiv.querySelector('button') || googleLoginDiv.querySelector('div[role="button"]');
+                        if (button) {
+                          button.click();
+                          // Reset the style after clicking
+                          setTimeout(() => {
+                            googleLoginDiv.setAttribute('style', originalStyle);
+                          }, 1000);
+                        } else {
+                          setError("Could not find Google login button. Please try again.");
+                        }
+                      }, 100);
+                    } else {
+                      setError("Could not initiate Google login. Please try again.");
+                    }
+                  }
                 } catch (e) {
                   console.error("Failed to trigger Google login:", e);
                   setError("Could not initiate Google login. Please try again.");
@@ -406,7 +442,7 @@ function Login() {
                 return;
               }
               
-              // Non-PWA flow - use popup approach
+              // Regular desktop browser flow below - use popup approach
               // Calculate window size and position for centered popup
               const width = 450;
               const height = 630;

@@ -71,14 +71,25 @@ const OAuthHandler = () => {
     // Check if we're returning from an OAuth flow
     const isPwa = window.matchMedia('(display-mode: standalone)').matches || 
                   window.navigator.standalone === true;
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     
-    if (isPwa) {
+    console.log("OAuthHandler - checking for return path", {
+      isPwa,
+      isMobile,
+      pathname: location.pathname,
+      token: !!localStorage.getItem('access_token'),
+      returnTo: localStorage.getItem('auth_return_to')
+    });
+    
+    // Handle both PWA and mobile browser returns
+    if (isPwa || isMobile) {
       // Check for access_token in localStorage that might have been set during login
       const token = localStorage.getItem('access_token');
       const returnTo = localStorage.getItem('auth_return_to');
       
       // If we have a token and return path, redirect to the return path
-      if (token && returnTo && location.pathname === '/login') {
+      if (token && returnTo && (location.pathname === '/login' || location.pathname === '/')) {
+        console.log("OAuthHandler - redirecting to return path:", returnTo);
         localStorage.removeItem('auth_return_to'); // Clear the return path
         navigate(returnTo);
       }
