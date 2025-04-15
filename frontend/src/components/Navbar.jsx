@@ -78,20 +78,17 @@ const NAVIGATION_ITEMS = {
     { label: 'My Routines', path: '/routines', icon: <FaSave /> },
     { label: 'Progress Tracker', path: '/progress-tracker', icon: <FaChartLine /> },
     { label: 'Program Tracker', path: '/program-tracker', icon: <LuCalendarClock /> },
-    { label: 'Personal Records', path: '/personal-records', icon: <FaRunning /> },
     { label: 'Muscle Guide', path: '/explore-muscle-guide', icon: <LuBicepsFlexed /> },
   ],
   tools: [
     { label: 'Fitness Calculator', path: '/fitness-calculator', icon: <FaCalculator /> },
     { label: 'Nutrition', path: '/nutrition', icon: <FaAppleAlt /> },
-    { label: 'Achievements', path: '/achievements', icon: <FaAtlas /> },
-    { label: 'Settings', path: '/settings', icon: <FaCog /> }
   ],
   help: [
     { label: 'About', path: '/about', icon: <FaInfoCircle /> },
     { label: 'FAQ', path: '/faq', icon: <FaQuestionCircle /> },
     { label: 'Privacy Policy', path: '/privacy-policy', icon: <FaLock /> },
-    { label: 'Terms of Service', path: '/terms', icon: <FaInfoCircle /> }
+    { label: 'Terms of Service', path: '/terms', icon: <FaListAlt /> }
   ]
 };
 
