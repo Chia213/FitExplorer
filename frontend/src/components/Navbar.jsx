@@ -71,16 +71,27 @@ const MobileAccordion = ({ title, icon, items, onItemClick }) => {
 // Navigation items grouped by category
 const NAVIGATION_ITEMS = {
   workout: [
-    { label: 'Workout Plans', path: '/workouts', icon: <FaDumbbell /> },
-    { label: 'My Routines', path: '/routines', icon: <FaSave /> }
+    { label: 'Workout Generator', path: '/workout-generator', icon: <FaDumbbell /> },
+    { label: 'AI Workout Generator', path: '/ai-workout-generator', icon: <FaRobot /> },
+    { label: 'Workout Log', path: '/workout-log', icon: <FaListAlt /> },
+    { label: 'Workout History', path: '/workout-history', icon: <FaHistory /> },
+    { label: 'My Routines', path: '/routines', icon: <FaSave /> },
+    { label: 'Progress Tracker', path: '/progress-tracker', icon: <FaChartLine /> },
+    { label: 'Program Tracker', path: '/program-tracker', icon: <LuCalendarClock /> },
+    { label: 'Personal Records', path: '/personal-records', icon: <FaRunning /> },
+    { label: 'Muscle Guide', path: '/explore-muscle-guide', icon: <LuBicepsFlexed /> },
   ],
   tools: [
-    { label: 'Calculators', path: '/calculators', icon: <FaTools /> },
-    { label: 'Nutrition', path: '/nutrition', icon: <FaTools /> }
+    { label: 'Fitness Calculator', path: '/fitness-calculator', icon: <FaCalculator /> },
+    { label: 'Nutrition', path: '/nutrition', icon: <FaAppleAlt /> },
+    { label: 'Achievements', path: '/achievements', icon: <FaAtlas /> },
+    { label: 'Settings', path: '/settings', icon: <FaCog /> }
   ],
   help: [
-    { label: 'FAQ', path: '/faq', icon: <FaInfoCircle /> },
-    { label: 'Privacy', path: '/privacy', icon: <FaLock /> }
+    { label: 'About', path: '/about', icon: <FaInfoCircle /> },
+    { label: 'FAQ', path: '/faq', icon: <FaQuestionCircle /> },
+    { label: 'Privacy Policy', path: '/privacy-policy', icon: <FaLock /> },
+    { label: 'Terms of Service', path: '/terms', icon: <FaInfoCircle /> }
   ]
 };
 
@@ -592,9 +603,29 @@ function Navbar() {
                         <FaUser className="mr-2 text-blue-500" />
                         Profile
                       </DropdownItem>
+                      <DropdownItem to="/settings" onClick={() => setAuthDropdownOpen(false)}>
+                        <FaCog className="mr-2 text-gray-500" />
+                        Settings
+                      </DropdownItem>
+                      <DropdownItem to="/notifications" onClick={() => setAuthDropdownOpen(false)}>
+                        <FaBell className="mr-2 text-yellow-500" />
+                        Notifications
+                      </DropdownItem>
                       <DropdownItem to="/saved-programs" onClick={() => setAuthDropdownOpen(false)}>
                         <FaSave className="mr-2 text-indigo-500" />
                         Saved Programs
+                      </DropdownItem>
+                      <DropdownItem to="/personal-records" onClick={() => setAuthDropdownOpen(false)}>
+                        <FaRunning className="mr-2 text-green-500" />
+                        Personal Records
+                      </DropdownItem>
+                      <DropdownItem to="/achievements" onClick={() => setAuthDropdownOpen(false)}>
+                        <FaAtlas className="mr-2 text-orange-500" />
+                        Achievements
+                      </DropdownItem>
+                      <DropdownItem to="/change-password" onClick={() => setAuthDropdownOpen(false)}>
+                        <FaLock className="mr-2 text-red-500" />
+                        Change Password
                       </DropdownItem>
                       {isAdmin && (
                         <DropdownItem to="/admin" onClick={() => setAuthDropdownOpen(false)}>
@@ -790,6 +821,23 @@ function Navbar() {
                 items={NAVIGATION_ITEMS.help}
                 onItemClick={() => setMobileMenuOpen(false)}
               />
+
+              {isAuthenticated && (
+                <MobileAccordion 
+                  title="User" 
+                  icon={<FaUser className="mr-2" />}
+                  items={[
+                    { label: 'Settings', path: '/settings', icon: <FaCog className="mr-2" /> },
+                    { label: 'Notifications', path: '/notifications', icon: <FaBell className="mr-2" /> },
+                    { label: 'Saved Programs', path: '/saved-programs', icon: <FaSave className="mr-2" /> },
+                    { label: 'Personal Records', path: '/personal-records', icon: <FaRunning className="mr-2" /> },
+                    { label: 'Achievements', path: '/achievements', icon: <FaAtlas className="mr-2" /> },
+                    { label: 'Change Password', path: '/change-password', icon: <FaLock className="mr-2" /> },
+                    ...(isAdmin ? [{ label: 'Admin Dashboard', path: '/admin', icon: <FaLock className="mr-2" /> }] : [])
+                  ]}
+                  onItemClick={() => setMobileMenuOpen(false)}
+                />
+              )}
             </div>
           </div>
 
