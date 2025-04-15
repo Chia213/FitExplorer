@@ -563,20 +563,27 @@ function Navbar() {
 
               {/* Notifications */}
               {isAuthenticated && (
-                <div className="relative" ref={notificationsRef}>
+                <div className="relative">
                   <button
                     onClick={() => setShowNotifications(!showNotifications)}
-                    className="relative p-2 rounded-full text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                    aria-label="Notifications"
+                    className="nav-item flex flex-col items-center p-3 hover:bg-sky-700/20 dark:hover:bg-sky-700/40 rounded-md transition-all"
+                    aria-label={`Notifications - ${unreadCount} unread`}
+                    ref={notificationsRef}
                   >
-                    <FaBell className="w-5 h-5" />
-                    {unreadCount > 0 && (
-                      <span className="notification-badge bg-red-500 text-white w-5 h-5 min-w-[1.25rem]">
-                        {unreadCount > 9 ? '9+' : unreadCount}
-                      </span>
-                    )}
+                    <div className="relative">
+                      <FaBell className="nav-icon" size={20} />
+                      {unreadCount > 0 && (
+                        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                          {unreadCount > 9 ? '9+' : unreadCount}
+                        </span>
+                      )}
+                    </div>
+                    <span className="nav-text text-sm mt-1">Alerts</span>
                   </button>
-                  {showNotifications && <NotificationDropdown />}
+                  <NotificationDropdown 
+                    isOpen={showNotifications} 
+                    toggleDropdown={setShowNotifications} 
+                  />
                 </div>
               )}
 

@@ -3,10 +3,15 @@ import os
 
 load_dotenv(dotenv_path=".env", override=True)
 
+# Check if we're in development mode
+ENV = os.getenv("ENV", "production")
+
 
 class Settings:
+    # Choose DB URL based on environment
     DB_URL: str = os.getenv(
-        "DB_URL", "postgresql+psycopg2://postgres:idioten123!@fitexplorer.c5qmy0yqglup.eu-north-1.rds.amazonaws.com:5432/fitexplorer")
+        "DB_URL_LOCAL" if ENV == "development" else "DB_URL", 
+        "postgresql+psycopg2://postgres:idioten123!@fitexplorer.c5qmy0yqglup.eu-north-1.rds.amazonaws.com:5432/fitexplorer")
     SECRET_KEY: str = os.getenv("SECRET_KEY", "default_secret_key")
     ACCESS_TOKEN_EXPIRE_MINUTES: int = int(
         os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 1000000))
@@ -24,6 +29,7 @@ class Settings:
     MAIL_SSL_TLS = os.getenv("MAIL_SSL", "false").lower() == "true"
     MAIL_USE_CREDENTIALS = True
 
+    # Get the correct Google OAuth credentials based on environment
     GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
     GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
     GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI", "")
@@ -32,8 +38,9 @@ class Settings:
         "ENABLE_EMAIL_NOTIFICATIONS", "true").lower() == "true"
     SUMMARY_FREQUENCY = os.getenv("SUMMARY_FREQUENCY", "weekly")
 
-    # Frontend URL for email verification links
-    FRONTEND_URL: str = os.getenv("FRONTEND_BASE_URL", "https://fitexplorer.se")
+    # Frontend URL for email verification links - use environment-specific URL
+    FRONTEND_URL: str = os.getenv("FRONTEND_BASE_URL", 
+                                 "https://fitexplorer.se" if ENV == "production" else "http://localhost:5173")
     DEFAULT_ADMIN_EMAIL: str = os.getenv(
         "DEFAULT_ADMIN_EMAIL", "fitexplorer.fitnessapp@gmail.com")
 

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { QRCodeSVG } from 'qrcode.react';
 import titanImage from '../assets/titan.png';
 import femaleTitanImage from '../assets/female-titan.png';
 import aiWorkoutGeneratorImage from '../assets/ai-workoutgenerator.png';
@@ -8,6 +9,7 @@ import nutritionTrackingImage from '../assets/nutrition-tracking.png';
 import progressTrackingImage from '../assets/progress-tracking.png';
 import personalRecordsImage from '../assets/personal-records.png';
 import fitnessCalculatorImage from '../assets/fitness-calculator.png';
+import logo from '../assets/Ronjasdrawing.png';
 import '../styles/landing-page.css';
 import HeroSection from '../components/HeroSection';
 
@@ -204,32 +206,38 @@ const ProgramShowcase = () => (
   </section>
 );
 
-// QR Code SVG component
-const QRCodeSVG = () => {
-  // Function to get current URL for QR code content
-  const currentUrl = typeof window !== 'undefined' ? window.location.origin : 'https://fitexplorer.se';
+// QR Code component using qrcode.react library
+const QRCodeComponent = () => {
+  const [currentUrl, setCurrentUrl] = useState('https://fitexplorer.se');
+  
+  useEffect(() => {
+    // Get the current URL to encode in the QR code
+    if (typeof window !== 'undefined') {
+      setCurrentUrl(window.location.origin);
+    }
+  }, []);
   
   return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="256"
-      height="256"
-      viewBox="0 0 256 256"
-      className="w-full h-full"
-    >
-      <rect width="256" height="256" fill="white" />
-      
-      {/* FitExplorer QR code - Points to current site origin */}
-      <path
-        fill="black"
-        d="M16,16h32v32h-32zm48,0h16v16h-16zm32,0h16v16h-16zm32,0h32v32h-32zm48,0h16v16h-16zm32,0h16v16h-16zm-192,48h16v16h-16zm32,0h16v16h-16zm32,0h16v16h-16zm64,0h16v16h-16zm-128,16h16v16h-16zm32,0h16v16h-16zm32,0h32v32h-32zm48,0h16v16h-16zm32,0h16v16h-16zm-144,32h32v32h-32zm64,0h16v16h-16zm32,0h16v16h-16zm32,0h16v16h-16zm-112,48h16v16h-16zm32,0h32v32h-32zm64,0h16v16h-16zm-96,16h16v16h-16zm96,0h16v16h-16zm-128,16h32v32h-32zm64,0h16v16h-16zm32,0h16v16h-16zm32,0h32v32h-32z"
-      />
-      
-      {/* FitExplorer logo placeholder (center of QR code) */}
-      <rect x="112" y="112" width="32" height="32" fill="white" />
-      <rect x="116" y="116" width="24" height="24" fill="#4f46e5" rx="4" />
-      <text x="128" y="132" textAnchor="middle" fill="white" fontWeight="bold" fontSize="14">FE</text>
-    </svg>
+    <div className="bg-white p-4 rounded-lg shadow-md relative">
+      <div className="relative">
+        <QRCodeSVG
+          value={currentUrl}
+          size={200}
+          bgColor={"#ffffff"}
+          fgColor={"#000000"}
+          level={"H"}
+          includeMargin={false}
+          imageSettings={{
+            src: logo,
+            x: undefined,
+            y: undefined,
+            height: 40,
+            width: 40,
+            excavate: true,
+          }}
+        />
+      </div>
+    </div>
   );
 };
 
@@ -250,60 +258,52 @@ const QRCodeSection = () => {
               <span className="inline-block mb-4 px-4 py-1.5 bg-primary-900/50 rounded-full backdrop-blur-sm border border-primary-700/30 text-sm font-medium text-primary-400">
                 Mobile App
               </span>
-              
-              <h2 className="text-3xl md:text-4xl font-bold mb-6 text-white">
-                Install FitExplorer on Your Device
-              </h2>
-              
-              <p className="text-lg text-neutral-300 mb-8">
-                Get the full FitExplorer experience on your phone. Scan the QR code to install directly to your home screen.
+              <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">Install FitExplorer on Your Phone</h2>
+              <p className="text-lg text-neutral-300 mb-6">
+                Get the same experience as a native app! Add FitExplorer to your home screen for quick access.
               </p>
               
-              <ul className="space-y-4 mb-8">
-                <li className="flex items-center">
-                  <div className="bg-primary-500/20 p-2 rounded-full mr-3">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
+              <div className="space-y-4 mb-8">
+                <div className="flex items-start">
+                  <div className="w-8 h-8 rounded-full bg-primary-500/20 flex items-center justify-center text-primary-400 mr-4 mt-1">1</div>
+                  <div>
+                    <h3 className="text-white font-medium mb-1">Scan the QR Code</h3>
+                    <p className="text-neutral-400">Use your phone's camera to scan the code</p>
                   </div>
-                  <span className="text-white">Works offline – train anywhere</span>
-                </li>
-                <li className="flex items-center">
-                  <div className="bg-primary-500/20 p-2 rounded-full mr-3">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
+                </div>
+                
+                <div className="flex items-start">
+                  <div className="w-8 h-8 rounded-full bg-primary-500/20 flex items-center justify-center text-primary-400 mr-4 mt-1">2</div>
+                  <div>
+                    <h3 className="text-white font-medium mb-1">Open in Browser</h3>
+                    <p className="text-neutral-400">Visit the link in Safari (iOS) or Chrome (Android)</p>
                   </div>
-                  <span className="text-white">Better performance on mobile devices</span>
-                </li>
-                <li className="flex items-center">
-                  <div className="bg-primary-500/20 p-2 rounded-full mr-3">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
+                </div>
+                
+                <div className="flex items-start">
+                  <div className="w-8 h-8 rounded-full bg-primary-500/20 flex items-center justify-center text-primary-400 mr-4 mt-1">3</div>
+                  <div>
+                    <h3 className="text-white font-medium mb-1">Add to Home Screen</h3>
+                    <p className="text-neutral-400">Use the "Add to Home Screen" option in your browser</p>
                   </div>
-                  <span className="text-white">Get mobile-specific workout features</span>
-                </li>
-              </ul>
+                </div>
+              </div>
             </motion.div>
           </div>
           
           <div className="md:w-1/2 flex justify-center">
             <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
+              initial={{ opacity: 0, scale: 0.95 }}
               whileInView={{ opacity: 1, scale: 1 }}
               viewport={{ once: true }}
-              className="bg-white p-8 rounded-3xl shadow-2xl w-80"
+              className="bg-gradient-to-br from-gray-800 to-gray-900 p-6 rounded-xl shadow-2xl relative w-fit mx-auto"
             >
-              <div className="relative rounded-xl overflow-hidden border-4 border-neutral-100">
-                <QRCodeSVG />
+              <QRCodeComponent />
+              <div className="mt-4 text-center">
+                <p className="text-neutral-300 text-sm">
+                  FitExplorer Web App
+                </p>
               </div>
-              <p className="text-center mt-6 text-neutral-700 font-bold">
-                Scan with your phone's camera
-              </p>
-              <p className="text-center text-sm text-neutral-500 mt-2">
-                This QR code will take you to our app for installation
-              </p>
             </motion.div>
           </div>
         </div>

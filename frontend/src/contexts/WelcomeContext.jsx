@@ -59,8 +59,14 @@ export const WelcomeProvider = ({ children }) => {
 
       // Check for "just logged in" flag
       const justLoggedIn = localStorage.getItem("justLoggedIn");
+      
+      // Check if we've already shown the welcome modal this session
+      const shownThisSession = sessionStorage.getItem("welcomeModalShown");
 
-      if (justLoggedIn === "true") {
+      if (justLoggedIn === "true" && shownThisSession !== "true") {
+        // Mark that we've shown the modal this session
+        sessionStorage.setItem("welcomeModalShown", "true");
+        
         // Clear the flag
         localStorage.removeItem("justLoggedIn");
 
@@ -90,7 +96,7 @@ export const WelcomeProvider = ({ children }) => {
 
     // Setup listener for token changes
     window.addEventListener("storage", (e) => {
-      if (e.key === "token") {
+      if (e.key === "token" || e.key === "access_token") {
         checkLoginStatus();
       }
     });
@@ -98,7 +104,7 @@ export const WelcomeProvider = ({ children }) => {
     // Clean up storage event listener
     return () => {
       window.removeEventListener("storage", (e) => {
-        if (e.key === "token") {
+        if (e.key === "token" || e.key === "access_token") {
           checkLoginStatus();
         }
       });
@@ -113,6 +119,9 @@ export const WelcomeProvider = ({ children }) => {
   const triggerWelcomeModal = (isFirst = false) => {
     setIsFirstLogin(isFirst);
     setShowWelcomeModal(true);
+    
+    // Mark that we've shown the modal this session
+    sessionStorage.setItem("welcomeModalShown", "true");
 
     // Set user data if not already set
     if (!userData) {
