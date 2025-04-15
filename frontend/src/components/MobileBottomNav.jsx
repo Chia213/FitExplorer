@@ -48,7 +48,8 @@ const MobileBottomNav = () => {
       initial={{ y: 100 }}
       animate={{ y: 0 }}
       transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-      className={`fixed bottom-0 left-0 right-0 z-50 h-16 bg-gray-200 dark:bg-gray-200 border-t border-gray-300 flex justify-around items-center px-2 md:hidden ${isStandalone ? 'bottom-nav' : ''}`}
+      className={`fixed bottom-0 left-0 right-0 z-50 h-20 bg-white dark:bg-gray-800 border-t-2 border-gray-300 dark:border-gray-600 flex justify-around items-center px-2 md:hidden shadow-lg ${isStandalone ? 'bottom-nav' : ''}`}
+      style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >
       {navItems.map((item) => {
         const isActive = location.pathname === item.path || 
@@ -67,18 +68,18 @@ const MobileBottomNav = () => {
             }}
           >
             <div className="relative flex flex-col items-center">
-              <div className={`p-1 rounded-full transition-colors ${isActive ? 'text-black' : 'text-gray-600'}`}>
+              <div className={`p-1.5 rounded-full transition-colors ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-gray-600 dark:text-gray-400'}`}>
                 {item.icon}
                 
                 {isActive && (
                   <motion.div
                     layoutId="bottomNavIndicator"
-                    className="absolute -bottom-1 w-1 h-1 bg-black rounded-full"
+                    className="absolute -bottom-1 w-6 h-1 bg-blue-600 dark:bg-blue-400 rounded-full"
                     transition={{ type: 'spring', stiffness: 500, damping: 30 }}
                   />
                 )}
               </div>
-              <span className={`text-xs mt-1 ${isActive ? 'text-black font-medium' : 'text-gray-600'}`}>
+              <span className={`text-sm mt-1 ${isActive ? 'text-blue-600 dark:text-blue-400 font-medium' : 'text-gray-600 dark:text-gray-400'}`}>
                 {item.label}
               </span>
             </div>

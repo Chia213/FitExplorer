@@ -236,6 +236,7 @@ class RoutineResponse(BaseModel):
 
 class GoogleTokenVerifyRequest(BaseModel):
     token: str
+    source: Optional[str] = None  # To identify where the request is coming from (e.g., 'mobile')
 
 
 class GoogleAuthResponse(Token):

@@ -164,12 +164,20 @@ function Login() {
       const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
       console.log(`Using API URL: ${API_URL}`);
       
+      // Show loading state while processing
+      setError("Processing Google login...");
+      
       const response = await fetch(`${API_URL}/auth/google-verify`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ token: credentialResponse.credential }),
+        body: JSON.stringify({ 
+          token: credentialResponse.credential,
+          source: 'mobile', // Add source information to help backend identify mobile logins
+        }),
+        // Add timeouts to prevent hanging on mobile networks
+        signal: AbortSignal.timeout(15000)
       });
 
       const responseText = await response.text();
@@ -193,6 +201,9 @@ function Login() {
         // Set just logged in flag to trigger welcome modal
         localStorage.setItem("justLoggedIn", "true");
 
+        // Clear any previous errors
+        setError(null);
+
         // Check if this is the first login
         const hasLoggedInBefore =
           localStorage.getItem("hasLoggedInBefore") === "true";
@@ -201,16 +212,24 @@ function Login() {
           localStorage.setItem("hasLoggedInBefore", "true");
         }
 
+        // Force auth state refresh before navigation
+        window.dispatchEvent(new Event('storage'));
+        window.dispatchEvent(new Event('auth-change'));
+
         // Navigate to home or previous route
         const from = location.state?.from?.pathname || "/";
         navigate(from);
       } else {
         console.error(`Google login failed: Status ${response.status}`, responseText);
-        setError(`Google login failed: ${response.status} - ${responseText}`);
+        setError(`Google login failed: ${data.detail || 'Please try again'}`);
       }
     } catch (error) {
       console.error("Error during Google login:", error);
-      setError(`Google login error: ${error.message}`);
+      if (error.name === "AbortError") {
+        setError("Google login request timed out. Please check your connection and try again.");
+      } else {
+        setError(`Google login error: ${error.message}`);
+      }
     }
   };
 
@@ -362,177 +381,45 @@ function Login() {
           </p>
         </form>
 
-        <div className="mt-6 flex justify-center flex-col items-center">
-          {/* Hide the default Google button but keep its functionality */}
-          <div style={{ height: 0, overflow: 'hidden', visibility: 'hidden' }}>
+        <div className="mt-6 relative">
+          <div className="relative flex justify-center items-center">
+            <hr className="w-full border-gray-300 dark:border-gray-600" />
+            <span className="px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-sm absolute">
+              or
+            </span>
+          </div>
+
+          {/* Fixed Google Login Button */}
+          <div className="mt-6 flex justify-center">
             <GoogleLogin
               onSuccess={handleGoogleLogin}
-              onError={(error) => {
-                console.error("Google login error:", error);
-                setError(`Google login failed: ${error.error || error}`);
+              onError={() => {
+                console.error("Google Login Failed");
+                setError("Could not initiate Google login. Please try again.");
               }}
+              useOneTap
+              theme={theme === "dark" ? "filled_black" : "outline"}
               shape="pill"
-              type="standard"
-              theme="filled_blue"
-              text="signin_with"
+              text="continue_with"
+              width={300}
               locale="en"
-              useOneTap={false}
-              cookiePolicy={'single_host_origin'}
-              width="400"
-              ux_mode="popup"
+              context="signin"
             />
           </div>
           
-          {/* Custom English Google sign-in button */}
-          <button
-            onClick={() => {
-              // Check if running as PWA or on mobile
-              const isPwa = window.matchMedia('(display-mode: standalone)').matches || 
-                            window.navigator.standalone === true;
-              const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-              
-              // Log device information for debugging
-              console.log("Device info - isPWA:", isPwa, "isMobile:", isMobile, "UserAgent:", navigator.userAgent);
-              
-              // For mobile devices or PWA mode, we need a different approach
-              if (isPwa || isMobile) {
-                // For PWA/mobile, directly trigger the Google login without popup
-                console.log("Using direct trigger approach for mobile/PWA");
-                localStorage.setItem('auth_return_to', window.location.pathname);
-                
-                try {
-                  // Find the Google button - try multiple selectors to improve reliability
-                  const googleButton = 
-                    document.querySelector('[aria-labelledby="button-label"]') || 
-                    document.querySelector('.nsm7Bb-HzV7m-LgbsSe') ||
-                    document.querySelector('iframe').contentDocument?.querySelector('button');
-                  
-                  if (googleButton) {
-                    console.log("Found Google button, clicking it");
-                    googleButton.click();
-                  } else {
-                    // If we can't find the button, try the fallback Google login flow
-                    console.log("Google button not found, using fallback approach");
-                    const googleLoginDiv = document.querySelector('div[style*="height: 0"]');
-                    if (googleLoginDiv) {
-                      // Temporarily make the hidden Google login visible and click it
-                      const originalStyle = googleLoginDiv.getAttribute('style');
-                      googleLoginDiv.setAttribute('style', 'height: auto; visibility: visible; position: absolute; z-index: -1;');
-                      
-                      setTimeout(() => {
-                        const button = googleLoginDiv.querySelector('button') || googleLoginDiv.querySelector('div[role="button"]');
-                        if (button) {
-                          button.click();
-                          // Reset the style after clicking
-                          setTimeout(() => {
-                            googleLoginDiv.setAttribute('style', originalStyle);
-                          }, 1000);
-                        } else {
-                          setError("Could not find Google login button. Please try again.");
-                        }
-                      }, 100);
-                    } else {
-                      setError("Could not initiate Google login. Please try again.");
-                    }
-                  }
-                } catch (e) {
-                  console.error("Failed to trigger Google login:", e);
-                  setError("Could not initiate Google login. Please try again.");
-                }
-                return;
-              }
-              
-              // Regular desktop browser flow below - use popup approach
-              // Calculate window size and position for centered popup
-              const width = 450;
-              const height = 630;
-              const left = Math.max(0, (window.innerWidth - width) / 2 + window.screenX);
-              const top = Math.max(0, (window.innerHeight - height) / 2 + window.screenY);
-              
-              // Create a custom popup window first with our exact specifications
-              const popup = window.open(
-                'about:blank',
-                'Google OAuth2 Login',
-                `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=yes`
-              );
-              
-              // If popup was blocked, fall back to default behavior
-              if (!popup || popup.closed || typeof popup.closed === 'undefined') {
-                console.log("Popup was blocked, using default behavior");
+          {/* Fallback for mobile devices */}
+          <div className="mt-4 text-center">
+            <button
+              type="button"
+              onClick={() => {
+                // Manually trigger Google login UI
                 document.querySelector('[aria-labelledby="button-label"]')?.click();
-                return;
-              }
-              
-              // Set some styles to show a loading indicator in the popup
-              popup.document.write(`
-                <html>
-                <head>
-                  <title>Google Sign In</title>
-                  <style>
-                    body {
-                      font-family: 'Roboto', Arial, sans-serif;
-                      display: flex;
-                      justify-content: center;
-                      align-items: center;
-                      height: 100vh;
-                      margin: 0;
-                      background-color: #f5f5f5;
-                      flex-direction: column;
-                    }
-                    .spinner {
-                      border: 4px solid rgba(0, 0, 0, 0.1);
-                      width: 36px;
-                      height: 36px;
-                      border-radius: 50%;
-                      border-left-color: #4285F4;
-                      animation: spin 1s linear infinite;
-                      margin-bottom: 16px;
-                    }
-                    @keyframes spin {
-                      0% { transform: rotate(0deg); }
-                      100% { transform: rotate(360deg); }
-                    }
-                    p {
-                      color: #5f6368;
-                    }
-                  </style>
-                </head>
-                <body>
-                  <div class="spinner"></div>
-                  <p>Connecting to Google...</p>
-                </body>
-                </html>
-              `);
-              
-              // Save the original window.open function
-              const originalOpen = window.open;
-              
-              // Override window.open to redirect Google's popup to our existing window
-              window.open = function(url, name, features) {
-                if (name === 'Google OAuth2 Login' || url.includes('accounts.google.com')) {
-                  // Instead of opening a new window, redirect our existing popup
-                  popup.location.href = url;
-                  return popup;
-                }
-                // For any other window.open calls, use the original behavior
-                return originalOpen.apply(this, arguments);
-              };
-              
-              // Trigger the GoogleLogin click
-              setTimeout(() => {
-                document.querySelector('[aria-labelledby="button-label"]')?.click();
-                
-                // Restore original window.open after a short delay
-                setTimeout(() => {
-                  window.open = originalOpen;
-                }, 2000);
-              }, 100);
-            }}
-            className="flex items-center justify-center gap-2 bg-white text-gray-700 border border-gray-300 rounded-full px-6 py-2 font-medium hover:bg-gray-50 transition-colors"
-          >
-            <FaGoogle className="text-blue-500" />
-            Sign in with Google
-          </button>
+              }}
+              className="text-blue-500 text-sm hover:underline"
+            >
+              Having trouble? Try tapping here
+            </button>
+          </div>
         </div>
 
         {showForgotPassword && (

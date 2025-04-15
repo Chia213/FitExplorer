@@ -458,6 +458,12 @@ async def verify_google_token(
         print(f"=== GOOGLE VERIFICATION ATTEMPT ===")
         # Log the token length to avoid printing the whole token
         print(f"Received token of length: {len(request_data.token)}")
+        
+        # Check if this is a mobile request
+        is_mobile = getattr(request_data, 'source', '') == 'mobile'
+        if is_mobile:
+            print("Request is from mobile device")
+        
         print(f"Using Google Client ID: {GOOGLE_CLIENT_ID}")
         
         # Print other crucial info
@@ -466,13 +472,39 @@ async def verify_google_token(
         print(f"PyJWT version: {pyjwt.__version__}")
         print(f"Is Google Client ID set: {bool(GOOGLE_CLIENT_ID)}")
         
+        if not GOOGLE_CLIENT_ID:
+            print("ERROR: Missing Google Client ID")
+            raise ValueError("Server configuration error: Missing Google Client ID")
+        
+        # Use a longer timeout for mobile devices
         request = google_requests.Request()
-
-        id_info = id_token.verify_oauth2_token(
-            request_data.token,
-            request,
-            GOOGLE_CLIENT_ID
-        )
+        
+        try:
+            id_info = id_token.verify_oauth2_token(
+                request_data.token,
+                request,
+                GOOGLE_CLIENT_ID,
+                clock_skew_in_seconds=60 if is_mobile else 10  # Allow more clock skew for mobile
+            )
+        except ValueError as token_error:
+            print(f"Token verification failed: {str(token_error)}")
+            # Provide more friendly error messages for common issues
+            error_message = str(token_error).lower()
+            if "expired" in error_message:
+                raise HTTPException(
+                    status_code=401, 
+                    detail="Your login session has expired. Please try logging in again."
+                )
+            elif "audience" in error_message:
+                raise HTTPException(
+                    status_code=401, 
+                    detail="Authentication failed. Please ensure you're using the correct app."
+                )
+            else:
+                raise HTTPException(
+                    status_code=401, 
+                    detail=f"Google login verification failed. Please try again."
+                )
 
         print(f"Token verification successful!")
         print(f"Extracted email: {id_info.get('email')}")
@@ -624,13 +656,29 @@ async def verify_google_token(
 
     except ValueError as e:
         print(f"Invalid token error: {str(e)}")
-        raise HTTPException(status_code=401, detail=f"Invalid token: {str(e)}")
+        raise HTTPException(
+            status_code=401, 
+            detail="Google login failed. Please try again or use email/password to sign in."
+        )
+    except HTTPException:
+        # Re-raise HTTP exceptions as they already have proper status/detail
+        raise
     except Exception as e:
         print(f"Authentication error: {str(e)}")
         import traceback
         traceback.print_exc()
-        raise HTTPException(
-            status_code=500, detail=f"Authentication error: {str(e)}")
+        
+        # Provide a more helpful message for mobile users
+        if is_mobile:
+            raise HTTPException(
+                status_code=500, 
+                detail="Google login failed on mobile. Please try again or use email login instead."
+            )
+        else:
+            raise HTTPException(
+                status_code=500, 
+                detail="Authentication error occurred. Please try again later."
+            )
 
 
 @router.post("/forgot-password")
