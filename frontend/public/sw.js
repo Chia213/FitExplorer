@@ -6,6 +6,7 @@ const urlsToCache = [
   '/manifest.json',
   '/src/main.jsx',
   '/src/assets/Ronjasdrawing.png',
+  '/qr-install.html',
 ];
 
 // Install event - cache assets
@@ -42,6 +43,12 @@ self.addEventListener('activate', event => {
 
 // Fetch event - serve from cache, then network
 self.addEventListener('fetch', event => {
+  // Handle QR code install requests
+  if (event.request.url.includes('/qr-install')) {
+    event.respondWith(caches.match('/qr-install.html'));
+    return;
+  }
+  
   event.respondWith(
     caches.match(event.request)
       .then(response => {
@@ -80,4 +87,17 @@ self.addEventListener('fetch', event => {
           });
       })
   );
+});
+
+// Handle messages from clients
+self.addEventListener('message', event => {
+  if (event.data && event.data.type === 'PROMPT_INSTALL') {
+    self.clients.matchAll().then(clients => {
+      clients.forEach(client => {
+        client.postMessage({
+          type: 'SHOW_INSTALL_PROMPT'
+        });
+      });
+    });
+  }
 }); 

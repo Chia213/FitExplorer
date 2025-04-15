@@ -8,6 +8,7 @@ import nutritionTrackingImage from '../assets/nutrition-tracking.png';
 import progressTrackingImage from '../assets/progress-tracking.png';
 import personalRecordsImage from '../assets/personal-records.png';
 import fitnessCalculatorImage from '../assets/fitness-calculator.png';
+import qrCodeImage from '../assets/install-qr.png';
 import '../styles/landing-page.css';
 import HeroSection from '../components/HeroSection';
 import FeaturesSection from '../components/FeaturesSection';
@@ -202,6 +203,93 @@ const CallToAction = ({ stats }) => (
   </section>
 );
 
+const QRCodeSection = () => (
+  <section className="py-16 relative overflow-hidden">
+    <div className="absolute inset-0 bg-gradient-to-br from-neutral-900 to-black/90"></div>
+    <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(79,70,229,0.1),transparent)] opacity-70"></div>
+    
+    <div className="container-modern relative z-10">
+      <motion.div 
+        className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center"
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        viewport={{ once: true }}
+      >
+        <motion.div
+          initial={{ opacity: 0, x: -30 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="text-center md:text-left"
+        >
+          <div className="inline-block mb-4 px-4 py-1.5 bg-primary-900/50 rounded-full backdrop-blur-sm border border-primary-700/30">
+            <span className="text-sm font-medium text-primary-400">Mobile App</span>
+          </div>
+          
+          <h2 className="text-3xl md:text-4xl font-bold mb-6">
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-white to-neutral-300">
+              Install FitExplorer on Your Device
+            </span>
+          </h2>
+          
+          <p className="text-lg text-neutral-300 mb-8">
+            Get the full FitExplorer experience with our mobile app. Scan the QR code with your phone's camera to install directly to your home screen.
+          </p>
+          
+          <div className="space-y-4">
+            <div className="flex items-center">
+              <div className="bg-primary-500/20 p-2 rounded-full">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <span className="ml-3 text-white">Works offline – train anywhere</span>
+            </div>
+            
+            <div className="flex items-center">
+              <div className="bg-primary-500/20 p-2 rounded-full">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <span className="ml-3 text-white">Faster load times</span>
+            </div>
+            
+            <div className="flex items-center">
+              <div className="bg-primary-500/20 p-2 rounded-full">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <span className="ml-3 text-white">Native app-like experience</span>
+            </div>
+          </div>
+        </motion.div>
+        
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5, delay: 0.4 }}
+          className="flex justify-center"
+        >
+          <div className="bg-white/10 backdrop-blur-md p-8 rounded-3xl border border-white/20 shadow-2xl relative">
+            <div className="absolute -top-3 -left-3 -right-3 -bottom-3 bg-gradient-to-br from-primary-500/30 to-accent-500/30 rounded-3xl blur-xl z-0"></div>
+            <img 
+              src={qrCodeImage} 
+              alt="Install FitExplorer QR Code" 
+              className="w-64 h-64 object-contain relative z-10" 
+            />
+            <p className="text-center mt-4 text-sm text-white/80 relative z-10">
+              Scan with your phone's camera
+            </p>
+          </div>
+        </motion.div>
+      </motion.div>
+    </div>
+  </section>
+);
+
 const LandingPage = () => {
   const [activeFeature, setActiveFeature] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
@@ -353,6 +441,7 @@ const LandingPage = () => {
         </div>
       </section>
 
+      <QRCodeSection />
       <CallToAction stats={stats} />
     </div>
   );
