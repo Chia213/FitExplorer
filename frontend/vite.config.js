@@ -33,6 +33,11 @@ export default defineConfig({
           const info = assetInfo.name.split('.');
           const ext = info[info.length - 1];
 
+          // Special handling for icons
+          if (assetInfo.name.includes('/icons/')) {
+            return `assets/icons/${path.basename(assetInfo.name)}`;
+          }
+
           // Special handling for exercise GIFs
           if (ext === 'gif' && assetInfo.name.includes('/exercises/')) {
             const parts = assetInfo.name.split('/exercises/');
