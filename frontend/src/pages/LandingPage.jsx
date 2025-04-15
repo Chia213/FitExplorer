@@ -33,6 +33,14 @@ const staggerContainer = {
   }
 };
 
+// Stats for the call to action section
+const stats = [
+  { value: "500+", label: "Exercises" },
+  { value: "AI", label: "Powered" },
+  { value: "Free", label: "14-Day Trial" },
+  { value: "24/7", label: "Support" }
+];
+
 const AnimatedFeatureCard = ({ feature, index }) => (
   <motion.div
     initial={{ opacity: 0, y: 20 }}
@@ -62,10 +70,10 @@ const AnimatedFeatureCard = ({ feature, index }) => (
   </motion.div>
 );
 
-const CallToAction = () => (
+const CallToAction = ({ stats }) => (
   <section className="py-24 relative overflow-hidden">
     <div className="absolute inset-0 bg-gradient-to-br from-primary-900 via-neutral-900 to-accent-900"></div>
-    <div className="absolute inset-0 bg-[url('/src/assets/pattern.svg')] opacity-10"></div>
+    <div className="absolute inset-0 bg-gradient-radial from-transparent to-black/40 opacity-10"></div>
     
     {/* Animated background elements */}
     <motion.div 
@@ -299,14 +307,6 @@ const LandingPage = () => {
     }
   ];
 
-  // Stats for the call to action section
-  const stats = [
-    { value: "500+", label: "Exercises" },
-    { value: "AI", label: "Powered" },
-    { value: "Free", label: "14-Day Trial" },
-    { value: "24/7", label: "Support" }
-  ];
-
   return (
     <div className="bg-neutral-900 text-white">
       <HeroSection />
@@ -314,7 +314,7 @@ const LandingPage = () => {
       
       {/* Feature Highlights - Instead of testimonials */}
       <section className="py-20 bg-neutral-800 relative overflow-hidden">
-        <div className="absolute inset-0 bg-[url('/src/assets/grid-pattern.svg')] opacity-5"></div>
+        <div className="absolute inset-0 bg-gradient-radial from-neutral-800 to-neutral-900 opacity-80"></div>
         <div className="container-modern relative z-10">
           <div className="text-center mb-16">
             <motion.div
@@ -353,7 +353,7 @@ const LandingPage = () => {
         </div>
       </section>
 
-      <CallToAction />
+      <CallToAction stats={stats} />
     </div>
   );
 };

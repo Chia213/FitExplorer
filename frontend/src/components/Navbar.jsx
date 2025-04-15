@@ -434,11 +434,8 @@ function Navbar() {
                 <img 
                   src={logo} 
                   alt="FitExplorer Logo" 
-                  className="h-10 w-auto mr-3 dark:invert" 
+                  className="h-14 w-auto dark:invert" 
                 />
-                <span className="text-xl font-bold text-gray-900 dark:text-white hidden sm:block">
-                  FitExplorer
-                </span>
               </Link>
             </div>
 
@@ -699,8 +696,7 @@ function Navbar() {
         <div className="absolute right-0 top-0 bottom-0 w-64 bg-white dark:bg-gray-900 shadow-xl flex flex-col h-full">
           <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center">
-              <img src={logo} alt="FitExplorer" className="h-8 w-auto mr-2 dark:invert" />
-              <span className="font-bold text-lg">FitExplorer</span>
+              <img src={logo} alt="FitExplorer" className="h-12 w-auto dark:invert" />
             </div>
             <button
               onClick={() => setMobileMenuOpen(false)}
@@ -841,7 +837,7 @@ function Navbar() {
           {/* Mobile footer */}
           <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
             <div className="text-sm text-gray-500 dark:text-gray-400">
-              © {new Date().getFullYear()} FitExplorer
+              © {new Date().getFullYear()}
             </div>
             <div className="flex items-center space-x-3">
               <ThemeToggle />
