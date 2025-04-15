@@ -142,9 +142,9 @@ function AddExercise({ onClose, onSelectExercise }) {
       : exercises[selectedCategory] || [];
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-gray-800 w-full max-w-md mx-auto rounded-lg shadow-lg overflow-hidden">
-        <div className="p-6">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-0">
+      <div className="bg-white dark:bg-gray-800 w-full max-w-md mx-auto rounded-lg shadow-lg overflow-hidden max-h-[90vh] flex flex-col">
+        <div className="p-4 sm:p-6 flex-1 overflow-y-auto">
           <div className="flex justify-between items-center mb-4">
             {selectedCategory && !selectedExercise ? (
               <button
@@ -173,7 +173,7 @@ function AddExercise({ onClose, onSelectExercise }) {
                 Cancel
               </button>
             )}
-            <h2 className="text-gray-900 dark:text-white font-semibold">
+            <h2 className="text-gray-900 dark:text-white font-semibold truncate max-w-[200px]">
               {selectedExercise
                 ? selectedExercise
                 : selectedCategory
@@ -198,105 +198,93 @@ function AddExercise({ onClose, onSelectExercise }) {
           ) : !selectedExercise ? (
             <div>
               <div className="relative mb-4">
+                <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" />
                 <input
                   type="text"
                   placeholder="Search exercises..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full p-3 bg-white text-gray-900 rounded-md pl-10 dark:bg-gray-700 dark:text-white border border-gray-300 dark:border-gray-600"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500"
                 />
-                <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
               </div>
-              <div className="space-y-1 mt-3 max-h-64 overflow-y-auto">
+
+              <div className="max-h-60 md:max-h-72 overflow-y-auto mb-4 border border-gray-200 dark:border-gray-700 rounded-lg">
                 {filteredExercises.length > 0 ? (
                   filteredExercises.map((exercise) => (
                     <div
                       key={exercise}
-                      className="flex items-center justify-between border-b border-gray-300 dark:border-gray-700 py-2"
+                      className="border-b border-gray-200 dark:border-gray-700 last:border-b-0 relative"
                     >
                       {editingExercise === exercise ? (
-                        <div className="flex items-center w-full">
+                        <div className="flex items-center p-3">
                           <input
                             type="text"
                             value={editExerciseName}
-                            onChange={(e) =>
-                              setEditExerciseName(e.target.value)
-                            }
-                            className="flex-1 p-2 bg-white text-gray-900 rounded-md dark:bg-gray-700 dark:text-white border border-gray-300 dark:border-gray-600"
+                            onChange={(e) => setEditExerciseName(e.target.value)}
+                            className="flex-1 p-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                             autoFocus
                           />
-                          <div className="flex ml-2">
-                            <button
-                              onClick={saveExerciseEdit}
-                              className="p-2 text-green-500 hover:text-green-400"
-                              title="Save"
-                            >
-                              <FaCheck />
-                            </button>
-                            <button
-                              onClick={cancelExerciseEdit}
-                              className="p-2 text-red-500 hover:text-red-400"
-                              title="Cancel"
-                            >
-                              <FaTimes />
-                            </button>
-                          </div>
+                          <button
+                            onClick={saveExerciseEdit}
+                            className="ml-2 text-teal-500 hover:text-teal-400"
+                          >
+                            <FaCheck />
+                          </button>
+                          <button
+                            onClick={cancelExerciseEdit}
+                            className="ml-2 text-red-500 hover:text-red-400"
+                          >
+                            <FaTimes />
+                          </button>
                         </div>
                       ) : (
-                        <>
+                        <div className="flex justify-between items-center">
                           <button
                             onClick={() => setSelectedExercise(exercise)}
-                            className="block flex-grow py-2 text-left px-3 text-gray-900 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-black dark:hover:text-white rounded"
+                            className="block w-full text-left p-3 text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition"
                           >
                             {exercise}
                           </button>
-                          <div className="flex">
+                          <div className="flex space-x-1 p-1 pr-2">
                             <button
                               onClick={() => startEditExercise(exercise)}
-                              className="p-2 text-blue-500 hover:text-blue-400"
-                              title="Edit exercise"
+                              className="text-blue-500 hover:text-blue-400 p-1"
                             >
                               <FaEdit />
                             </button>
                             <button
                               onClick={() => handleRemoveExercise(exercise)}
-                              className="p-2 text-red-500 hover:text-red-400"
-                              title="Remove exercise"
+                              className="text-red-500 hover:text-red-400 p-1"
                             >
                               <FaTrash />
                             </button>
                           </div>
-                        </>
+                        </div>
                       )}
                     </div>
                   ))
                 ) : (
-                  <p className="text-gray-500 dark:text-gray-400 mt-2 text-center">
-                    No results found
-                  </p>
+                  <div className="p-4 text-center text-gray-600 dark:text-gray-400">
+                    No exercises found. Add a custom exercise below.
+                  </div>
                 )}
               </div>
 
-              <div className="mt-4 pt-3 border-t border-gray-300 dark:border-gray-700">
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                  Can't find your exercise? Add a custom one:
-                </p>
-                <div className="flex gap-2">
+              <div className="mt-4">
+                <h3 className="text-gray-800 dark:text-gray-200 font-medium mb-2">
+                  Add Custom Exercise
+                </h3>
+                <div className="flex space-x-2">
                   <input
                     type="text"
+                    placeholder="Exercise name"
                     value={customExercise}
                     onChange={(e) => setCustomExercise(e.target.value)}
-                    placeholder="Add custom exercise"
-                    className="flex-1 p-2 bg-white text-gray-900 rounded-md dark:bg-gray-700 dark:text-white border border-gray-300 dark:border-gray-600"
+                    className="flex-1 p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   />
                   <button
                     onClick={handleAddCustomExercise}
-                    disabled={!customExercise.trim()}
-                    className={`p-2 rounded-md text-white ${
-                      !customExercise.trim()
-                        ? "bg-gray-400 cursor-not-allowed"
-                        : "bg-teal-500 hover:bg-teal-600"
-                    }`}
+                    className="bg-teal-500 hover:bg-teal-400 text-white p-2 rounded-lg flex-shrink-0"
                   >
                     <FaPlus />
                   </button>

@@ -30,7 +30,9 @@ import {
 } from "react-icons/fa";
 import AddExercise from "./AddExercise";
 import FolderModal from "./FolderModal";
+import MobileInstallPrompt from "../components/MobileInstallPrompt";
 import { notifyRoutineCreated } from '../utils/notificationsHelpers';
+import '../styles/routines-mobile.css'; // Import mobile styles
 
 const backendURL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
@@ -808,41 +810,23 @@ function Routines() {
 
   // Add the filter UI right after the header buttons
   const renderFilterBar = () => (
-    <div className={`mb-4 p-4 ${theme === "dark" ? "bg-gray-800" : "bg-white"} rounded-lg shadow`}>
-      <div className="flex flex-wrap gap-4 items-center">
-        {/* Search */}
-        <div className="flex-1 min-w-[200px]">
-          <div className="relative">
-            <FaSearch className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`} />
-            <input
-              type="text"
-              placeholder="Search routines..."
-              value={filterOptions.search}
-              onChange={(e) => setFilterOptions(prev => ({ ...prev, search: e.target.value }))}
-              className={`w-full pl-10 pr-4 py-2 rounded-lg ${
-                theme === "dark" 
-                  ? "bg-gray-700 text-white border-gray-600" 
-                  : "bg-gray-100 text-gray-900 border-gray-300"
-              } border`}
-            />
-          </div>
-        </div>
-
-        {/* Create New Folder Button */}
-        <button
-          onClick={handleCreateNewFolder}
-          className={`px-3 py-2 rounded-lg border flex items-center gap-2 ${
-            theme === "dark"
-              ? "bg-gray-700 text-white border-gray-600 hover:bg-gray-600"
-              : "bg-gray-100 text-gray-900 border-gray-300 hover:bg-gray-200"
-          }`}
-          title="Create New Folder"
-        >
-          <FaFolderPlus />
-          <span className="hidden sm:inline">New Folder</span>
-        </button>
-
-        {/* Last Updated Filter */}
+    <div className="filter-bar flex flex-wrap gap-2 items-center">
+      {/* Create New Folder Button */}
+      <button
+        onClick={handleCreateNewFolder}
+        className={`px-3 py-2 rounded-lg border flex items-center gap-2 ${
+          theme === "dark"
+            ? "bg-gray-700 text-white border-gray-600 hover:bg-gray-600"
+            : "bg-gray-100 text-gray-900 border-gray-300 hover:bg-gray-200"
+        }`}
+        title="Create New Folder"
+      >
+        <FaFolderPlus className="svg-icon" />
+        <span className="hidden sm:inline">New Folder</span>
+      </button>
+      
+      {/* Last Updated Filter */}
+      <div className="flex items-center">
         <select
           value={filterOptions.lastUpdated}
           onChange={(e) => setFilterOptions(prev => ({ ...prev, lastUpdated: e.target.value }))}
@@ -857,8 +841,10 @@ function Routines() {
           <option value="week">Last 7 Days</option>
           <option value="month">Last 30 Days</option>
         </select>
+      </div>
 
-        {/* Exercise Count Filter */}
+      {/* Exercise Count Filter */}
+      <div className="flex items-center">
         <select
           value={filterOptions.exerciseCount}
           onChange={(e) => setFilterOptions(prev => ({ ...prev, exerciseCount: e.target.value }))}
@@ -874,8 +860,10 @@ function Routines() {
           <option value="4-6">4-6 Exercises</option>
           <option value="7+">7+ Exercises</option>
         </select>
+      </div>
 
-        {/* Type Filter */}
+      {/* Type Filter */}
+      <div className="flex items-center">
         <select
           value={filterOptions.type}
           onChange={(e) => setFilterOptions(prev => ({ ...prev, type: e.target.value }))}
@@ -890,39 +878,39 @@ function Routines() {
           <option value="strength">Strength Only</option>
           <option value="mixed">Mixed</option>
         </select>
+      </div>
 
-        {/* Sort Options */}
-        <div className="flex gap-2">
-          <select
-            value={filterOptions.sortBy}
-            onChange={(e) => setFilterOptions(prev => ({ ...prev, sortBy: e.target.value }))}
-            className={`rounded-lg px-3 py-2 ${
-              theme === "dark"
-                ? "bg-gray-700 text-white border-gray-600"
-                : "bg-gray-100 text-gray-900 border-gray-300"
-            } border`}
-          >
-            <option value="updated">Sort by Last Updated</option>
-            <option value="created">Sort by Created Date</option>
-            <option value="name">Sort by Name</option>
-            <option value="exercises">Sort by Exercise Count</option>
-          </select>
+      {/* Sort Options */}
+      <div className="flex gap-2">
+        <select
+          value={filterOptions.sortBy}
+          onChange={(e) => setFilterOptions(prev => ({ ...prev, sortBy: e.target.value }))}
+          className={`rounded-lg px-3 py-2 ${
+            theme === "dark"
+              ? "bg-gray-700 text-white border-gray-600"
+              : "bg-gray-100 text-gray-900 border-gray-300"
+          } border`}
+        >
+          <option value="updated">Sort by Last Updated</option>
+          <option value="created">Sort by Created Date</option>
+          <option value="name">Sort by Name</option>
+          <option value="exercises">Sort by Exercise Count</option>
+        </select>
 
-          <button
-            onClick={() => setFilterOptions(prev => ({ 
-              ...prev, 
-              sortOrder: prev.sortOrder === "asc" ? "desc" : "asc" 
-            }))}
-            className={`px-3 py-2 rounded-lg border ${
-              theme === "dark"
-                ? "bg-gray-700 text-white border-gray-600 hover:bg-gray-600"
-                : "bg-gray-100 text-gray-900 border-gray-300 hover:bg-gray-200"
-            }`}
-            title={filterOptions.sortOrder === "asc" ? "Ascending" : "Descending"}
-          >
-            <FaSort className={filterOptions.sortOrder === "asc" ? "transform rotate-180" : ""} />
-          </button>
-        </div>
+        <button
+          onClick={() => setFilterOptions(prev => ({ 
+            ...prev, 
+            sortOrder: prev.sortOrder === "asc" ? "desc" : "asc" 
+          }))}
+          className={`px-3 py-2 rounded-lg border ${
+            theme === "dark"
+              ? "bg-gray-700 text-white border-gray-600 hover:bg-gray-600"
+              : "bg-gray-100 text-gray-900 border-gray-300 hover:bg-gray-200"
+          }`}
+          title={filterOptions.sortOrder === "asc" ? "Ascending" : "Descending"}
+        >
+          <FaSort className={`svg-icon ${filterOptions.sortOrder === "asc" ? "transform rotate-180" : ""}`} />
+        </button>
       </div>
     </div>
   );
@@ -947,7 +935,7 @@ function Routines() {
     
     return (
       <div className="mt-2">
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 exercise-overview">
           {exercises.slice(0, maxExercises).map((exercise, index) => (
             <span
               key={index}
@@ -1048,31 +1036,31 @@ function Routines() {
               <div className="p-4">
                 <div className="flex justify-between items-center">
                   <h3 className="text-xl font-semibold">{routine.name}</h3>
-                  <div className="flex space-x-2">
+                  <div className="flex space-x-2 routine-actions">
                     <button
                       onClick={() => handleStartWorkout(routine)}
-                      className="bg-teal-500 hover:bg-teal-600 text-white p-2 rounded-full"
+                      className="bg-teal-500 hover:bg-teal-600 text-white p-2 rounded-full routine-card-button"
                       title="Start routine"
                     >
                       <FaPlay />
                     </button>
                     <button
                       onClick={() => openFolderModal(routine.id)}
-                      className="bg-yellow-500 hover:bg-yellow-600 text-white p-2 rounded-full"
+                      className="bg-yellow-500 hover:bg-yellow-600 text-white p-2 rounded-full routine-card-button"
                       title="Move to folder"
                     >
                       <FaFolder />
                     </button>
                     <button
                       onClick={() => handleStartEditRoutine(routine)}
-                      className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-full"
+                      className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-full routine-card-button"
                       title="Edit routine"
                     >
                       <FaEdit />
                     </button>
                     <button
                       onClick={() => handleDeleteRoutine(routine.id)}
-                      className="bg-red-500 hover:bg-red-600 text-white p-2 rounded-full"
+                      className="bg-red-500 hover:bg-red-600 text-white p-2 rounded-full routine-card-button"
                       title="Delete routine"
                     >
                       <FaTrash />
@@ -1780,8 +1768,9 @@ function Routines() {
         )}
       </div>
 
-      {/* Other modals and components remain unchanged */}
-
+      {/* Mobile Install Prompt and Touch Event Fixes */}
+      <MobileInstallPrompt />
+      
       {/* Show loading indicator */}
       {loading && (
         <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">

@@ -1,0 +1,187 @@
+/* Mobile-specific styles for Routines page */
+
+/* General mobile improvements */
+@media (max-width: 640px), (display-mode: standalone) {
+  /* Make all buttons more touch-friendly */
+  .routines-page button,
+  .routines-page .btn,
+  .folder-button,
+  .routine-button {
+    min-height: 44px !important;
+    min-width: 44px !important;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    position: relative;
+    z-index: 1;
+  }
+  
+  /* Add space between buttons to prevent accidental taps */
+  .routines-action-buttons {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+  
+  /* Ensure action buttons are visible and accessible */
+  .routines-action-buttons button {
+    flex: 1 1 auto !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 10px 16px !important;
+    font-size: 14px !important;
+  }
+  
+  /* Improve routine card buttons spacing and sizing */
+  .routine-actions {
+    display: flex !important;
+    gap: 6px !important;
+    margin-top: 8px !important;
+  }
+  
+  .routine-actions button {
+    width: 40px !important;
+    height: 40px !important;
+    border-radius: 8px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+  
+  /* Make text larger and more readable on small screens */
+  .routines-page h1 {
+    font-size: 1.5rem !important;
+  }
+  
+  .routines-page h3 {
+    font-size: 1.25rem !important;
+  }
+  
+  /* Ensure filter icons are visible */
+  .filter-bar button svg,
+  .filter-bar .svg-icon {
+    display: inline-block !important;
+    margin-right: 4px !important;
+    font-size: 1rem !important;
+  }
+  
+  /* Adjust filter buttons for better visibility */
+  .filter-bar {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+  
+  .filter-bar button {
+    padding: 8px 12px !important;
+    display: flex !important;
+    align-items: center !important;
+    white-space: nowrap !important;
+  }
+  
+  /* Fix SVG icon display in buttons */
+  button svg {
+    display: inline-block !important;
+    vertical-align: middle !important;
+    width: 1em !important;
+    height: 1em !important;
+  }
+  
+  /* Ensure icons in routine card buttons are visible */
+  .routine-card-button svg {
+    display: inline-block !important;
+    margin: 0 auto !important;
+  }
+  
+  /* Ensure routine cards have adequate spacing */
+  .routines-card {
+    margin-bottom: 16px !important;
+    padding: 16px !important;
+  }
+  
+  /* Improve layout for routine exercise overview */
+  .exercise-overview {
+    margin-top: 12px !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+  
+  /* Add extra space when in PWA mode */
+  @media (display-mode: standalone) {
+    .routines-container {
+      padding-bottom: 5rem !important;
+    }
+  }
+  
+  /* Landscape orientation optimizations */
+  @media (orientation: landscape) {
+    .routines-filters {
+      display: flex !important;
+      flex-direction: row !important;
+    }
+    
+    .routines-search-input {
+      width: 50% !important;
+    }
+    
+    .filter-bar {
+      width: 50% !important;
+    }
+  }
+}
+
+/* Fix button active/hover states */
+.routines-page button:active,
+.folder-button:active,
+.routine-button:active {
+  transform: scale(0.97) !important;
+  transition: transform 0.1s ease !important;
+}
+
+/* Fix common issues with modal buttons */
+.routines-modal button {
+  min-height: 44px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 10px 16px !important;
+}
+
+/* Add iOS Safari specific fixes */
+@supports (-webkit-touch-callout: none) {
+  /* iOS Safari specific styles */
+  .routines-page button,
+  .folder-button,
+  .routine-button,
+  .routine-card-button {
+    cursor: pointer !important;
+    -webkit-touch-callout: none !important;
+    -webkit-tap-highlight-color: transparent !important;
+    touch-action: manipulation !important;
+  }
+  
+  /* Apply special tap highlights for iOS */
+  .routines-page button:active,
+  .folder-button:active,
+  .routine-button:active,
+  .routine-card-button:active {
+    background-color: rgba(0, 0, 0, 0.1) !important;
+    opacity: 0.8 !important;
+    transition: background-color 0s !important;
+  }
+  
+  /* Force pointer events and touch actions */
+  .routines-page button svg,
+  .folder-button svg,
+  .routine-button svg,
+  .routine-card-button svg {
+    pointer-events: none !important;
+  }
+  
+  /* Make sure buttons with icons have proper sizing */
+  button svg {
+    min-width: 1em !important;
+    min-height: 1em !important;
+  }
+} 

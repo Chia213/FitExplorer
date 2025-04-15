@@ -34,6 +34,8 @@ import {
   notifyWorkoutStreak,
   notifyStreakBroken 
 } from '../utils/notificationsHelpers';
+import '../styles/workout-log-mobile.css'; // Import mobile-specific styles
+import WorkoutActionButtons from '../components/WorkoutActionButtons';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
@@ -2147,36 +2149,15 @@ const WorkoutLog = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center p-2 sm:p-6 pb-24 bg-gray-100 dark:bg-gray-900">
-      <div className="w-full max-w-lg p-4 flex flex-col sm:flex-row justify-between items-center">
-        <input
-          type="text"
-          value={workoutName}
-          onChange={(e) => setWorkoutName(e.target.value)}
-          placeholder="What are we training today?"
-          className="bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-semibold text-lg px-3 py-2 rounded-lg w-full sm:flex-grow sm:mr-2 mb-2 sm:mb-0"
-        />
-        <div className="flex space-x-2 w-full sm:w-auto justify-center">
-          <button
-            onClick={() => setShowRoutinesSelector(true)}
-            className="bg-blue-500 text-white p-2 rounded-lg hover:bg-blue-400 flex-1 sm:flex-none"
-            title="Select Routine"
-          >
-            <LuCalendarClock className="text-xl mx-auto" />
-          </button>
+    <div className="workout-log-container p-4 md:p-6 pb-32">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Workout Log</h1>
+        <div className="flex space-x-2">
           <button
             onClick={() => setShowExerciseSelection(true)}
-            className="bg-teal-500 text-white p-2 rounded-lg hover:bg-teal-400 flex-1 sm:flex-none"
-            title="Add Exercise"
+            className="bg-teal-500 hover:bg-teal-400 text-white py-2 px-4 rounded-lg text-sm md:text-base flex items-center"
           >
-            <FaDumbbell className="text-xl mx-auto" />
-          </button>
-          <button
-            onClick={() => navigate("/workout-history")}
-            className="bg-teal-500 text-white p-2 rounded-lg hover:bg-teal-400 flex-1 sm:flex-none"
-            title="View Workout History"
-          >
-            <FaHistory className="text-xl mx-auto" />
+            <FaDumbbell className="mr-1 text-xs" /> Add Exercise
           </button>
         </div>
       </div>
@@ -2269,8 +2250,8 @@ const WorkoutLog = () => {
 
       {workoutExercises.map((exercise, exerciseIndex) => (
         <div
-          key={exerciseIndex}
-          className="bg-white dark:bg-gray-800 p-3 sm:p-4 rounded-lg shadow-sm my-2"
+          key={`${exercise.name}-${exerciseIndex}`}
+          className="exercise-card"
         >
           {/* Exercise header */}
           <div className="flex flex-wrap items-center mb-2">
@@ -2389,10 +2370,18 @@ const WorkoutLog = () => {
                 {/* Exercise sets */}
                 {exercise.sets.map((set, setIndex) => (
                   <div 
-                    key={setIndex}
-                    className={`grid ${exercise.is_cardio ? 'grid-cols-4' : 'grid-cols-4'} gap-1 py-1 items-center ${
-                      setIndex % 2 === 0 ? "bg-gray-50 dark:bg-gray-750" : ""
-                    } rounded`}
+                    key={`${exercise.name}-${exerciseIndex}-${setIndex}`}
+                    className={`set-row ${
+                      set.is_warmup ? "border-l-4 border-yellow-500" : ""
+                    } ${
+                      set.is_drop_set ? "border-l-4 border-purple-500" : ""
+                    } ${
+                      set.is_superset ? "border-l-4 border-blue-500" : ""
+                    } ${
+                      set.is_amrap ? "border-l-4 border-green-500" : ""
+                    } ${
+                      set.is_restpause ? "border-l-4 border-red-500" : ""
+                    }`}
                   >
                     {!exercise.is_cardio ? (
                       <>
@@ -2580,22 +2569,12 @@ const WorkoutLog = () => {
         </div>
       ))}
 
-      <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 p-3 flex justify-center space-x-3 shadow-lg">
-        <button
-          onClick={handleFinishWorkout}
-          className="flex-1 max-w-xs bg-teal-500 hover:bg-teal-400 text-white py-3 px-6 rounded-lg font-medium flex items-center justify-center"
-        >
-          <FaCheck className="mr-2" />
-          Finish Workout
-        </button>
-        <button
-          onClick={() => setShowSaveRoutineModal(true)}
-          className="flex-1 max-w-xs bg-blue-500 hover:bg-blue-400 text-white py-3 px-6 rounded-lg font-medium flex items-center justify-center"
-        >
-          <FaSave className="mr-2" />
-          Save as Routine
-        </button>
-      </div>
+      {/* Replace the original buttons with the new component */}
+      {/* Action buttons at the bottom */}
+      <WorkoutActionButtons 
+        onFinishWorkout={handleFinishWorkout}
+        onSaveRoutine={() => setShowSaveRoutineModal(true)}
+      />
 
       {showExerciseSelection && (
         <AddExercise
