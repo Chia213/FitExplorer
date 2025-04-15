@@ -8,7 +8,6 @@ import nutritionTrackingImage from '../assets/nutrition-tracking.png';
 import progressTrackingImage from '../assets/progress-tracking.png';
 import personalRecordsImage from '../assets/personal-records.png';
 import fitnessCalculatorImage from '../assets/fitness-calculator.png';
-import qrCodeImage from '../assets/install-qr.png';
 import '../styles/landing-page.css';
 import HeroSection from '../components/HeroSection';
 import FeaturesSection from '../components/FeaturesSection';
@@ -276,7 +275,7 @@ const QRCodeSection = () => (
           <div className="bg-white/10 backdrop-blur-md p-8 rounded-3xl border border-white/20 shadow-2xl relative">
             <div className="absolute -top-3 -left-3 -right-3 -bottom-3 bg-gradient-to-br from-primary-500/30 to-accent-500/30 rounded-3xl blur-xl z-0"></div>
             <img 
-              src={qrCodeImage} 
+              src="/assets/install-qr.png" 
               alt="Install FitExplorer QR Code" 
               className="w-64 h-64 object-contain relative z-10" 
             />
