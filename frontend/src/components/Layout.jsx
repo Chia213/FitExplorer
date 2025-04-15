@@ -1,20 +1,10 @@
-import React, { useEffect, useState } from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
-import Navbar from './Navbar';
-import MobileNav from './MobileNav';
 import { motion, AnimatePresence } from "framer-motion";
+import { useLocation } from "react-router-dom";
 import { useTheme } from "../hooks/useTheme";
 
-export default function Layout() {
+function Layout({ children }) {
   const { theme } = useTheme();
   const location = useLocation();
-  const [isStandalone, setIsStandalone] = useState(false);
-
-  useEffect(() => {
-    // Check if the app is running in standalone mode (installed as PWA)
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-    setIsStandalone(isStandalone);
-  }, []);
 
   return (
     <div
@@ -29,7 +19,6 @@ export default function Layout() {
         antialiased
         overflow-x-hidden
         relative
-        flex flex-col
       `}
     >
       {/* Add subtle pattern overlay */}
@@ -40,9 +29,7 @@ export default function Layout() {
         }}
       />
       
-      {!isStandalone && <Navbar />}
-      
-      <div className="w-full relative z-10 flex-1">
+      <div className="w-full relative z-10">
         <AnimatePresence mode="wait">
           <motion.div
             key={location.pathname}
@@ -53,14 +40,14 @@ export default function Layout() {
               duration: 0.4,
               ease: [0.4, 0, 0.2, 1]
             }}
-            className={`w-full ${isStandalone ? 'pb-16' : ''}`}
+            className="w-full"
           >
-            <Outlet />
+            {children}
           </motion.div>
         </AnimatePresence>
       </div>
-
-      {isStandalone && <MobileNav />}
     </div>
   );
 }
+
+export default Layout;
