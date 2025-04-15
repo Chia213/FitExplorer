@@ -11,6 +11,7 @@ export default defineConfig({
   base: '/',
   server: {
     port: 5173,
+    host: true,
   },
   resolve: {
     alias: {
@@ -41,7 +42,10 @@ export default defineConfig({
 
           // For other assets, preserve their original structure
           return `assets/${assetInfo.name}`;
-        }
+        },
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+        },
       }
     }
   },
