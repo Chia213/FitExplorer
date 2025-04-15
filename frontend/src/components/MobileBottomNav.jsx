@@ -8,12 +8,19 @@ const MobileBottomNav = () => {
   
   // Only show on mobile devices
   const [isMobile, setIsMobile] = React.useState(false);
+  // Track iOS specifically
+  const [isIOS, setIsIOS] = React.useState(false);
   
   React.useEffect(() => {
     // Check if device is mobile
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);
     };
+    
+    // Check if device is iOS
+    const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+               (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    setIsIOS(iOS);
     
     // Initial check
     checkMobile();
@@ -43,13 +50,38 @@ const MobileBottomNav = () => {
     { path: '/profile', icon: <FaUser className="w-6 h-6" />, label: 'Profile' }
   ];
   
+  // Determine additional styles for iOS
+  const iosStyles = isIOS ? {
+    // Add more space for home indicator on iOS
+    paddingBottom: isStandalone ? 'env(safe-area-inset-bottom, 20px)' : '20px',
+    height: isStandalone ? 'calc(5rem + env(safe-area-inset-bottom, 20px))' : '5rem',
+    // Remove border for cleaner look on iOS
+    borderTopWidth: '1px',
+    // Add backdrop blur effect that matches iOS style
+    backdropFilter: 'blur(10px)',
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    dark: {
+      backgroundColor: 'rgba(31, 41, 55, 0.8)'
+    }
+  } : {};
+  
   return (
     <motion.nav 
       initial={{ y: 100 }}
       animate={{ y: 0 }}
       transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-      className={`fixed bottom-0 left-0 right-0 z-50 h-20 bg-white dark:bg-gray-800 border-t-2 border-gray-300 dark:border-gray-600 flex justify-around items-center px-2 md:hidden shadow-lg ${isStandalone ? 'bottom-nav' : ''}`}
-      style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+      className={`fixed bottom-0 left-0 right-0 z-50 h-20 bg-white dark:bg-gray-800 border-t border-gray-300 dark:border-gray-600 flex justify-around items-center px-2 md:hidden shadow-lg ${isStandalone ? 'bottom-nav' : ''}`}
+      style={{ 
+        paddingBottom: isIOS ? iosStyles.paddingBottom : 'env(safe-area-inset-bottom, 0px)',
+        height: isIOS ? iosStyles.height : '5rem',
+        borderTopWidth: isIOS ? iosStyles.borderTopWidth : '2px',
+        backdropFilter: isIOS ? iosStyles.backdropFilter : 'none',
+        backgroundColor: isIOS 
+          ? (document.documentElement.classList.contains('dark') 
+            ? iosStyles.dark.backgroundColor 
+            : iosStyles.backgroundColor)
+          : ''
+      }}
     >
       {navItems.map((item) => {
         const isActive = location.pathname === item.path || 

@@ -337,3 +337,49 @@ body {
     }
   }
 }
+
+/* Fix for iOS bottom navigation area */
+.bottom-nav {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Add specific fixes for iOS bottom navigation */
+@supports (-webkit-touch-callout: none) {
+  /* iOS specific styles */
+  .bottom-nav {
+    border-top-width: 1px !important;
+    background-color: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+
+  /* Dark mode for iOS */
+  .dark .bottom-nav {
+    background-color: rgba(31, 41, 55, 0.8);
+  }
+
+  /* Extra padding for bottom nav to ensure content isn't hidden */
+  body {
+    /* Add padding to ensure content isn't hidden behind the navigation */
+    padding-bottom: calc(5rem + env(safe-area-inset-bottom, 20px));
+  }
+
+  /* Fix for iOS standalone mode (PWA) */
+  @media (display-mode: standalone) {
+    /* Additional adjustments for PWA mode */
+    body {
+      /* Ensure content isn't cut off */
+      min-height: -webkit-fill-available;
+    }
+    
+    /* Ensure the bottom nav doesn't block content */
+    main {
+      margin-bottom: calc(5rem + env(safe-area-inset-bottom, 20px));
+    }
+    
+    /* Remove any borders that might cause visual issues */
+    .bottom-nav {
+      border-top: none !important;
+    }
+  }
+}
