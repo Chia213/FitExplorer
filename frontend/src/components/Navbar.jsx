@@ -23,6 +23,7 @@ import {
   FaRobot,
   FaChevronDown,
   FaCog,
+  FaQrcode,
 } from "react-icons/fa";
 import { LuBicepsFlexed, LuCalendarClock } from "react-icons/lu";
 import logo from "../assets/Ronjasdrawing.png";
@@ -30,6 +31,7 @@ import ThemeToggle from "./ThemeToggle";
 import { useTheme } from "../hooks/useTheme";
 import NotificationDropdown from "./NotificationDropdown";
 import { useNotifications } from "../contexts/NotificationContext";
+import MobileInstallQR from "./MobileInstallQR";
 import "../styles/navHover.css";
 import "../styles/navbar.css";
 import { notifyWorkoutCompleted } from '../utils/notificationsHelpers';
@@ -132,6 +134,7 @@ function Navbar() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [showQRModal, setShowQRModal] = useState(false);
   
   // Dropdowns state
   const [workoutDropdownOpen, setWorkoutDropdownOpen] = useState(false);
@@ -546,6 +549,16 @@ function Navbar() {
 
             {/* Right side items */}
             <div className="flex items-center space-x-2">
+              {/* QR Code for mobile install */}
+              <button
+                onClick={() => setShowQRModal(true)}
+                className="p-2 rounded-full text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                aria-label="Install Mobile App"
+                title="Scan to install on mobile"
+              >
+                <FaQrcode className="w-5 h-5" />
+              </button>
+              
               {/* Theme toggle */}
               <ThemeToggle />
 
@@ -840,8 +853,16 @@ function Navbar() {
               © {new Date().getFullYear()}
             </div>
             <div className="flex items-center space-x-3">
+              <button
+                onClick={() => setShowQRModal(true)}
+                className="p-2 rounded-full text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                aria-label="Install Mobile App"
+              >
+                <FaQrcode className="w-5 h-5" />
+              </button>
+            
               <ThemeToggle />
-              
+            
               {isAuthenticated && (
                 <button
                   onClick={() => {
@@ -863,6 +884,8 @@ function Navbar() {
           </div>
         </div>
       </div>
+
+      <MobileInstallQR isOpen={showQRModal} onClose={() => setShowQRModal(false)} />
     </>
   );
 }

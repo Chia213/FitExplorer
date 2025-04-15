@@ -5,6 +5,7 @@ import PageTransition from "./components/PageTransition";
 import AdminRoute from "./components/AdminRoute";
 import AuthRoute from "./components/AuthRoute";
 import ScrollToTop from "./components/ScrollToTop";
+import MobileBottomNav from "./components/MobileBottomNav";
 import { NotificationProvider } from "./contexts/NotificationContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
 
@@ -137,6 +138,7 @@ function App() {
                 </PageTransition>
               </Layout>
               <WelcomeModalWrapper />
+              <MobileBottomNav />
             </div>
           </NotificationProvider>
         </WelcomeProvider>

@@ -1,5 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import usePullToRefresh from "../hooks/usePullToRefresh";
+import useHapticFeedback from "../hooks/useHapticFeedback";
 import {
   FaCalendarAlt,
   FaWeight,
@@ -17,6 +19,7 @@ import {
   FaChevronRight,
   FaExclamationTriangle,
   FaCheckSquare,
+  FaSyncAlt
 } from "react-icons/fa";
 import { Line } from "react-chartjs-2";
 import { notifyRoutineCreated } from '../utils/notificationsHelpers';
@@ -67,6 +70,27 @@ function WorkoutHistory() {
   const [selectedWorkouts, setSelectedWorkouts] = useState([]);
   const [showDeleteSelectedConfirmation, setShowDeleteSelectedConfirmation] = useState(false);
   const [deletingSelected, setDeletingSelected] = useState(false);
+
+  // Initialize haptic feedback
+  const haptic = useHapticFeedback();
+  
+  // Initialize pull-to-refresh
+  const { refreshing, PullToRefreshIndicator, pullToRefreshProps } = usePullToRefresh(async () => {
+    // Trigger haptic feedback when refresh starts
+    haptic.selection();
+    
+    // Create a small delay to make the refresh feel more natural
+    await new Promise(resolve => setTimeout(resolve, 800));
+    
+    // Fetch fresh data
+    const token = localStorage.getItem("access_token");
+    if (token) {
+      await fetchWorkoutHistory(token);
+      
+      // Success haptic feedback
+      haptic.success();
+    }
+  });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -294,47 +318,29 @@ function WorkoutHistory() {
   };
 
   const handleSaveAsRoutine = async (workout) => {
-    try {
-      const token = localStorage.getItem("access_token");
-      if (!token) {
-        alert("You need to be logged in to save routines.");
-        navigate("/login");
-        return;
-      }
-
-      // Show name input dialog
-      const routineName = prompt(
-        "Enter a name for this routine:",
-        workout.name
-      );
-      if (!routineName) {
-        return; // User cancelled
-      }
-
-      // Prepare workout data with new name
-      const workoutToSave = {
-        ...workout,
-        name: routineName,
-      };
-
-      const result = await saveWorkoutAsRoutine(workoutToSave, token);
-      if (result && result.success) {
-        alert(result.updated ? "Routine updated successfully!" : "Workout saved as routine successfully!");
-        
-        // Send notification for new routine or skip if it was just an update
-        if (!result.updated) {
-          try {
-            console.log("Creating notification for new routine:", routineName);
-            await notifyRoutineCreated(routineName);
-          } catch (notificationError) {
-            console.error("Error creating notification:", notificationError);
-          }
-        }
-      }
-    } catch (error) {
-      console.error("Error saving routine:", error);
-      alert(`Error saving routine: ${error.message}. Please try again.`);
+    // Light haptic feedback for menu opening
+    haptic.buttonPress();
+    
+    // Set the workout to be saved as a routine
+    setSelectedWorkout(workout);
+    
+    // Default routine name is workout date + first exercise name
+    let defaultName = "";
+    if (workout.date) {
+      defaultName += formatDate(workout.date) + " ";
     }
+    if (
+      workout.exercises &&
+      workout.exercises.length > 0 &&
+      workout.exercises[0].name
+    ) {
+      defaultName += workout.exercises[0].name;
+    } else {
+      defaultName += "Workout";
+    }
+    
+    setRoutineName(defaultName);
+    setShowSaveRoutineModal(true);
   };
 
   const handleSaveRoutine = async () => {
@@ -360,7 +366,7 @@ function WorkoutHistory() {
 
       const result = await saveWorkoutAsRoutine(workoutToSave, token);
       if (result && result.success) {
-        alert(result.updated ? "Routine updated successfully!" : "Routine saved successfully!");
+        alert(result.updated ? "Routine updated successfully!" : "Routine saved as routine successfully!");
         setShowSaveRoutineModal(false);
         
         // Send notification for new routine or skip if it was just an update
@@ -382,12 +388,18 @@ function WorkoutHistory() {
   };
 
   const handleDeleteWorkout = (workoutId) => {
+    // Use warning haptic pattern for destructive action
+    haptic.warning();
+    
     setWorkoutToDelete(workoutId);
     setShowDeleteConfirmation(true);
   };
 
   const confirmDeleteWorkout = async () => {
     try {
+      // Use error haptic pattern for destructive action confirmation
+      haptic.error();
+      
       const token = localStorage.getItem("access_token");
       if (!token) {
         alert("You need to be logged in to delete workouts.");
@@ -395,8 +407,9 @@ function WorkoutHistory() {
         return;
       }
 
+      setDeletingAll(true);
       const response = await fetch(
-        `${API_BASE_URL}/workouts/${workoutToDelete}`,
+        `${API_BASE_URL}/api/workouts-delete-all`,
         {
           method: "DELETE",
           headers: {
@@ -405,25 +418,30 @@ function WorkoutHistory() {
         }
       );
 
-      if (!response.ok) {
-        throw new Error(`Failed to delete workout: ${response.status}`);
+      if (response.ok) {
+        // Filter out the deleted workout
+        setWorkoutHistory([]);
+        
+        // Success haptic feedback on successful deletion
+        haptic.success();
+        
+        setShowDeleteAllConfirmation(false);
+      } else {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to delete workouts");
       }
-
-      // Remove the workout from state
-      setWorkoutHistory(
-        workoutHistory.filter((workout) => workout.id !== workoutToDelete)
-      );
-      setShowDeleteConfirmation(false);
-      setWorkoutToDelete(null);
-
-      alert("Workout deleted successfully!");
     } catch (error) {
-      console.error("Error deleting workout:", error);
-      alert(`Error deleting workout: ${error.message}. Please try again.`);
+      console.error("Error deleting workouts:", error);
+      alert(`Error deleting workouts: ${error.message}`);
+    } finally {
+      setDeletingAll(false);
     }
   };
 
   const toggleWorkoutExpansion = (workoutId) => {
+    // Provide haptic feedback on expansion toggle
+    haptic.selection();
+    
     setExpandedWorkouts((prev) => ({
       ...prev,
       [workoutId]: !prev[workoutId],
@@ -812,43 +830,6 @@ function WorkoutHistory() {
 
   const handleDeleteAllWorkouts = () => {
     setShowDeleteAllConfirmation(true);
-  };
-
-  const confirmDeleteAllWorkouts = async () => {
-    setDeletingAll(true);
-    try {
-      const token = localStorage.getItem("access_token");
-      const response = await fetch(`${API_BASE_URL}/api/workouts-delete-all`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to delete all workouts");
-      }
-
-      const result = await response.json();
-      console.log(result.message);
-      
-      // Clear the workout history
-      setWorkoutHistory([]);
-      setShowDeleteAllConfirmation(false);
-      
-      // Show success message
-      setError(`Success: ${result.message}`);
-      
-      // Clear the success message after 5 seconds
-      setTimeout(() => {
-        setError(null);
-      }, 5000);
-    } catch (error) {
-      console.error("Error deleting all workouts:", error);
-      setError(`Failed to delete all workouts: ${error.message}`);
-    } finally {
-      setDeletingAll(false);
-    }
   };
 
   const handleSelectWorkout = (workoutId) => {
@@ -1531,38 +1512,6 @@ function WorkoutHistory() {
                 onClick={() => setShowSaveRoutineModal(false)}
                 className="flex-1 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-white py-2 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500"
                 disabled={savingRoutine}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showDeleteConfirmation && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
-            <h2 className="text-xl font-bold mb-4 text-red-600 dark:text-red-500">
-              Delete Workout
-            </h2>
-            <p className="text-gray-600 dark:text-gray-400 mb-4">
-              Are you sure you want to delete this workout? This action cannot
-              be undone.
-            </p>
-
-            <div className="flex space-x-3">
-              <button
-                onClick={confirmDeleteWorkout}
-                className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg"
-              >
-                Delete
-              </button>
-              <button
-                onClick={() => {
-                  setShowDeleteConfirmation(false);
-                  setWorkoutToDelete(null);
-                }}
-                className="flex-1 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-white py-2 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500"
               >
                 Cancel
               </button>
