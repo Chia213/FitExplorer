@@ -42,6 +42,7 @@ import {
   FaExternalLinkAlt,
 } from "react-icons/fa";
 import { toast } from "react-hot-toast";
+import "../styles/profile-card-animations.css";
 
 const backendURL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
@@ -103,7 +104,10 @@ function Profile() {
     cardColor: null, // Initialize as null to prevent default color flash
     workoutFrequencyGoal: null,
     goalWeight: null,
-    useCustomCardColor: false
+    useCustomCardColor: false,
+    enableAnimations: false,
+    animationStyle: "subtle",
+    animationSpeed: "medium"
   });
   const [preferencesChanged, setPreferencesChanged] = useState(false);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
@@ -116,6 +120,100 @@ function Profile() {
   const navigate = useNavigate();
   const { theme, premiumTheme, premiumThemes, isAdmin, changePremiumTheme } = useTheme();
   const { allNotificationsEnabled } = useNotifications();
+
+  // Add a function to get animation classes based on user preferences
+  const getAnimationClasses = () => {
+    // Direct debugging of preferences
+    console.log("Current animation preferences:", {
+      enabled: preferences.enableAnimations,
+      style: preferences.animationStyle,
+      speed: preferences.animationSpeed
+    });
+    
+    // Check if global animation state exists as fallback
+    const globalAnimations = window.FitExplorerAnimations;
+    let animationsEnabled = preferences.enableAnimations;
+    let animationStyle = preferences.animationStyle || 'subtle';
+    let animationSpeed = preferences.animationSpeed || 'medium';
+    
+    // If preferences aren't set but global state exists, use it instead
+    if (!animationsEnabled && globalAnimations && globalAnimations.enabled) {
+      console.log("Using global animation state as fallback:", globalAnimations);
+      animationsEnabled = globalAnimations.enabled;
+      animationStyle = globalAnimations.style;
+      animationSpeed = globalAnimations.speed;
+    }
+    
+    if (animationsEnabled) {
+      // Apply animation classes directly for maximum compatibility
+      return `profile-animation ${animationStyle} ${animationSpeed}`;
+    }
+    return '';
+  };
+  
+  // Apply animations directly when component mounts or preferences change
+  useEffect(() => {
+    // Check if global animation state exists and use as fallback
+    const globalAnimations = window.FitExplorerAnimations;
+    
+    let animationsEnabled = preferences.enableAnimations;
+    let animationStyle = preferences.animationStyle || 'subtle';
+    let animationSpeed = preferences.animationSpeed || 'medium';
+    
+    // If preferences aren't set but global state exists, use it instead
+    if (!animationsEnabled && globalAnimations && globalAnimations.enabled) {
+      console.log("Using global animation state as fallback:", globalAnimations);
+      animationsEnabled = globalAnimations.enabled;
+      animationStyle = globalAnimations.style;
+      animationSpeed = globalAnimations.speed;
+      
+      // Update local state with global settings
+      setPreferences(prev => ({
+        ...prev,
+        enableAnimations: globalAnimations.enabled,
+        animationStyle: globalAnimations.style,
+        animationSpeed: globalAnimations.speed
+      }));
+    }
+    
+    console.log("Applying animations directly from useEffect - preferences:", {
+      enabled: animationsEnabled,
+      style: animationStyle,
+      speed: animationSpeed
+    });
+    
+    // Small delay to ensure the DOM is ready
+    setTimeout(() => {
+      const profileCard = document.querySelector('.profile-header-card');
+      if (profileCard) {
+        // Clear existing animation classes
+        profileCard.classList.remove('profile-animation');
+        ['subtle', 'bounce', 'pulse', 'wave', 'glide', 'sparkle', 'pop', 'swing', 'ripple',
+         'float', 'rotate', 'spin', 'shake', 'wobble'].forEach(style => 
+          profileCard.classList.remove(style));
+        ['slow', 'medium', 'fast'].forEach(speed => 
+          profileCard.classList.remove(speed));
+        
+        // Apply new animation classes if enabled
+        if (animationsEnabled) {
+          profileCard.classList.add('profile-animation');
+          profileCard.classList.add(animationStyle);
+          profileCard.classList.add(animationSpeed);
+          
+          // Set animation duration
+          profileCard.style.setProperty('--animation-duration', 
+            animationSpeed === "slow" ? "4s" : 
+            animationSpeed === "fast" ? "1.5s" : "2.5s"
+          );
+          
+          console.log("Animation classes applied:", 
+            `profile-animation ${animationStyle} ${animationSpeed}`);
+        } else {
+          console.log("Animations disabled, classes removed");
+        }
+      }
+    }, 100);
+  }, [preferences.enableAnimations, preferences.animationStyle, preferences.animationSpeed]);
 
   // Function to fetch user data - extracted for reuse
   const fetchUserData = useCallback(async () => {
@@ -196,18 +294,34 @@ function Profile() {
       
       // Set user preferences
       if (userData.preferences) {
+        // Log all preferences from backend for debugging
+        console.log("Preferences received from backend:", userData.preferences);
+        console.log("Animation preferences from backend:", {
+          enable_animations: userData.preferences.enable_animations,
+          animation_style: userData.preferences.animation_style,
+          animation_speed: userData.preferences.animation_speed
+        });
+        
         // Check for goal weight in user.preferences (preferred) or from workout prefs
         if (userData.preferences.goal_weight !== undefined) {
           goalWeight = userData.preferences.goal_weight;
         }
         
-        setPreferences((prev) => ({
-          ...prev,
-          cardColor: userData.preferences.card_color || prev.cardColor,
-          workoutFrequencyGoal: workoutFrequencyGoal, 
-          goalWeight: goalWeight,
-          useCustomCardColor: userData.preferences.use_custom_card_color || false
-        }));
+        setPreferences((prev) => {
+          const newPrefs = {
+            ...prev,
+            cardColor: userData.preferences.card_color || prev.cardColor,
+            workoutFrequencyGoal: workoutFrequencyGoal, 
+            goalWeight: goalWeight,
+            useCustomCardColor: userData.preferences.use_custom_card_color || false,
+            enableAnimations: userData.preferences.enable_animations === true,
+            animationStyle: userData.preferences.animation_style || "subtle",
+            animationSpeed: userData.preferences.animation_speed || "medium"
+          };
+          
+          console.log("Setting preferences state to:", newPrefs);
+          return newPrefs;
+        });
         
         // Set card color from backend preferences
         if (userData.preferences.use_custom_card_color) {
@@ -914,9 +1028,70 @@ function Profile() {
     setPreferencesChanged(true);
   };
 
+  // Listen for animation preference changes
   useEffect(() => {
-    // Existing code
-  }, [preferences]);
+    const handleAnimationPreferences = (event) => {
+      if (event.detail) {
+        const { enabled, style, speed } = event.detail;
+        console.log("Received animation preferences event:", enabled, style, speed);
+        
+        // Force immediate state update
+        setPreferences(prev => {
+          const newPrefs = {
+            ...prev,
+            enableAnimations: enabled,
+            animationStyle: style || prev.animationStyle,
+            animationSpeed: speed || prev.animationSpeed
+          };
+          
+          console.log("Updating preferences to:", newPrefs);
+          
+          // Apply changes directly to DOM for immediate effect
+          setTimeout(() => {
+            const profileCard = document.querySelector('.profile-header-card');
+            if (profileCard) {
+              if (enabled) {
+                profileCard.classList.add('profile-animation');
+                profileCard.classList.add(style || 'subtle');
+                profileCard.classList.add(speed || 'medium');
+                
+                // Update custom properties
+                profileCard.style.setProperty('--animation-duration', 
+                  speed === "slow" ? "4s" : 
+                  speed === "fast" ? "1.5s" : "2.5s"
+                );
+                
+                // Force a repaint to ensure animation restarts
+                profileCard.style.animation = 'none';
+                profileCard.offsetHeight; // Trigger reflow
+                profileCard.style.animation = '';
+              } else {
+                profileCard.classList.remove('profile-animation');
+                // Remove all possible animation styles
+                ['subtle', 'bounce', 'pulse', 'wave', 'glide', 'sparkle', 'pop', 'swing', 'ripple',
+                 'float', 'rotate', 'spin', 'shake', 'wobble'].forEach(s => 
+                  profileCard.classList.remove(s));
+                // Remove all possible speeds
+                ['slow', 'medium', 'fast'].forEach(s => 
+                  profileCard.classList.remove(s));
+              }
+            }
+          }, 0);
+          
+          return newPrefs;
+        });
+      }
+    };
+    
+    console.log("Adding animationPreferencesChanged event listener");
+    window.addEventListener('animationPreferencesChanged', handleAnimationPreferences);
+    
+    // Cleanup
+    return () => {
+      console.log("Removing animationPreferencesChanged event listener");
+      window.removeEventListener('animationPreferencesChanged', handleAnimationPreferences);
+    };
+  }, []);
 
   if (loading) {
     return (
@@ -952,19 +1127,23 @@ function Profile() {
     <div className={`min-h-screen ${theme === "dark" ? "bg-gray-900" : "bg-gray-100"} ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
       <div className="max-w-7xl mx-auto">
         {/* Profile Header */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8" style={{ 
-          backgroundColor: preferences.useCustomCardColor 
-            ? preferences.cardColor 
-            : (premiumTheme && premiumTheme !== "default" && premiumThemes && premiumThemes[premiumTheme])
-              ? premiumThemes[premiumTheme].primary
-              : preferences.cardColor,
-          background: preferences.useCustomCardColor 
-            ? preferences.cardColor 
-            : (premiumTheme && premiumTheme !== "default" && premiumThemes && premiumThemes[premiumTheme])
-              ? `linear-gradient(135deg, ${premiumThemes[premiumTheme].primary}dd, ${premiumThemes[premiumTheme].secondary}aa)`
-              : preferences.cardColor,
-          color: theme === "dark" ? "white" : "#334155"
-        }}>
+        <div 
+          className={`bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8 profile-header-card ${getAnimationClasses()}`} 
+          style={{ 
+            backgroundColor: preferences.useCustomCardColor 
+              ? preferences.cardColor 
+              : (premiumTheme && premiumTheme !== "default" && premiumThemes && premiumThemes[premiumTheme])
+                ? premiumThemes[premiumTheme].primary
+                : preferences.cardColor,
+            background: preferences.useCustomCardColor 
+              ? preferences.cardColor 
+              : (premiumTheme && premiumTheme !== "default" && premiumThemes && premiumThemes[premiumTheme])
+                ? `linear-gradient(135deg, ${premiumThemes[premiumTheme].primary}dd, ${premiumThemes[premiumTheme].secondary}aa)`
+                : preferences.cardColor,
+            color: theme === "dark" ? "white" : "#334155",
+            "--animation-duration": preferences.animationSpeed === "slow" ? "4s" : preferences.animationSpeed === "fast" ? "1.5s" : "2.5s"
+          }}
+        >
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-6">
               <div className="relative">

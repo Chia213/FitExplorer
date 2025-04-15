@@ -135,10 +135,24 @@ function Navbar() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
-  const [emojiPrefs, setEmojiPrefs] = useState({
-    show: true,
-    emoji: "🏋️‍♂️",
-    animation: "lift"
+  const [emojiPrefs, setEmojiPrefs] = useState(() => {
+    // Try to get saved emoji prefs from localStorage first
+    try {
+      const savedPrefs = localStorage.getItem("emoji_prefs");
+      if (savedPrefs) {
+        return JSON.parse(savedPrefs);
+      }
+    } catch (e) {
+      console.warn("Could not parse saved emoji preferences:", e);
+    }
+    
+    // Default fallback values
+    return {
+      show: true,
+      emoji: "🏋️‍♂️",
+      animation: "lift",
+      customEmojiSrc: null
+    };
   });
   
   // Dropdowns state
@@ -248,11 +262,21 @@ function Navbar() {
         if (response.ok) {
           const userData = await response.json();
           if (userData.preferences) {
-            setEmojiPrefs({
+            const emojiPreferences = {
               show: userData.preferences.show_profile_emoji || true,
               emoji: userData.preferences.profile_emoji || "🏋️‍♂️",
-              animation: userData.preferences.emoji_animation || "lift"
-            });
+              animation: userData.preferences.emoji_animation || "lift",
+              customEmojiSrc: userData.preferences.custom_emoji_src || null
+            };
+            
+            setEmojiPrefs(emojiPreferences);
+            
+            // Save to localStorage as a backup
+            try {
+              localStorage.setItem("emoji_prefs", JSON.stringify(emojiPreferences));
+            } catch (e) {
+              console.warn("Could not save emoji preferences to localStorage:", e);
+            }
           }
         }
       } catch (error) {
@@ -519,8 +543,57 @@ function Navbar() {
 
   // Listen for preferences changes
   useEffect(() => {
-    const handlePreferencesChange = () => {
-      fetchEmojiPreferences();
+    const handlePreferencesChange = (event) => {
+      // If the event has specific emoji details, use them directly for immediate update
+      if (event.detail && event.detail.type === 'emoji') {
+        const { show, emoji, animation, customEmojiSrc } = event.detail;
+        const emojiPreferences = {
+          show,
+          emoji,
+          animation,
+          customEmojiSrc
+        };
+        
+        setEmojiPrefs(emojiPreferences);
+        
+        // Save to localStorage as a backup
+        try {
+          localStorage.setItem("emoji_prefs", JSON.stringify(emojiPreferences));
+        } catch (e) {
+          console.warn("Could not save emoji preferences to localStorage:", e);
+        }
+        
+        console.log('Updated emoji preferences directly from event:', event.detail);
+      } else {
+        // Reference to fetchEmojiPreferences is not available in this scope
+        // Use a function reference that's always available
+        const fetchPreferences = async () => {
+          try {
+            const token = localStorage.getItem("token") || localStorage.getItem("access_token");
+            if (!token) return;
+            
+            const response = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:8000"}/user-profile`, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            if (response.ok) {
+              const userData = await response.json();
+              if (userData.preferences) {
+                setEmojiPrefs({
+                  show: userData.preferences.show_profile_emoji || true,
+                  emoji: userData.preferences.profile_emoji || "🏋️‍♂️",
+                  animation: userData.preferences.emoji_animation || "lift",
+                  customEmojiSrc: userData.preferences.custom_emoji_src || null
+                });
+              }
+            }
+          } catch (error) {
+            console.error("Error fetching emoji preferences:", error);
+          }
+        };
+
+        fetchPreferences();
+      }
     };
     
     window.addEventListener('preferences-change', handlePreferencesChange);
@@ -554,19 +627,32 @@ function Navbar() {
         card_color: currentPrefs.card_color || "#dbeafe"
       };
       
+      // Update the local emojiPrefs state
+      let updatedEmojiPrefs = { ...emojiPrefs };
+      
       if (setting === 'show') {
         updatedPrefs.show_profile_emoji = value;
-        setEmojiPrefs(prev => ({...prev, show: value}));
+        updatedEmojiPrefs.show = value;
       } else if (setting === 'emoji') {
         updatedPrefs.profile_emoji = value;
-        setEmojiPrefs(prev => ({...prev, emoji: value}));
+        updatedEmojiPrefs.emoji = value;
       } else if (setting === 'animation') {
         updatedPrefs.emoji_animation = value;
-        setEmojiPrefs(prev => ({...prev, animation: value}));
+        updatedEmojiPrefs.animation = value;
       }
       
-      // Save updated preferences
-      await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:8000"}/user/settings/notifications`, {
+      // Update local state
+      setEmojiPrefs(updatedEmojiPrefs);
+      
+      // Save to localStorage as backup
+      try {
+        localStorage.setItem("emoji_prefs", JSON.stringify(updatedEmojiPrefs));
+      } catch (e) {
+        console.warn("Could not save emoji preferences to localStorage:", e);
+      }
+      
+      // Save updated preferences to backend
+      await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:8000"}/user/settings`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -575,8 +661,7 @@ function Navbar() {
         body: JSON.stringify(updatedPrefs)
       });
       
-      // Refetch emoji preferences to ensure UI is up to date
-      fetchEmojiPreferences();
+      // No need to refetch as we've already updated the local state
     } catch (error) {
       console.error("Error updating emoji preferences:", error);
     }
@@ -771,7 +856,19 @@ function Navbar() {
                           className="text-gray-500 hover:text-blue-500 dark:text-gray-400 dark:hover:text-blue-400 text-lg p-2 rounded-lg"
                           title="Emoji Settings"
                         >
-                          {emojiPrefs.show ? emojiPrefs.emoji : "😶"}
+                          {emojiPrefs.show ? (
+                            emojiPrefs.emoji && emojiPrefs.emoji.startsWith('custom:') && emojiPrefs.customEmojiSrc ? (
+                              <img 
+                                src={emojiPrefs.customEmojiSrc} 
+                                alt="Custom emoji" 
+                                className={`w-6 h-6 object-contain ${emojiPrefs.animation !== "none" ? `animate-${emojiPrefs.animation}` : ""}`}
+                              />
+                            ) : (
+                              <span className={emojiPrefs.animation !== "none" ? `animate-${emojiPrefs.animation}` : ""}>
+                                {emojiPrefs.emoji}
+                              </span>
+                            )
+                          ) : "😶"}
                         </button>
                         
                         {/* Emoji Settings Dropdown */}
@@ -815,6 +912,18 @@ function Navbar() {
                                         {emoji}
                                       </button>
                                     ))}
+                                  </div>
+                                  <div className="mt-2 text-center">
+                                    <Link 
+                                      to="/settings?tab=appearance" 
+                                      onClick={() => setShowEmojiSettings(false)}
+                                      className="text-xs text-blue-500 hover:text-blue-700 flex items-center justify-center"
+                                    >
+                                      <span className="mr-1">More emoji options</span>
+                                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                                      </svg>
+                                    </Link>
                                   </div>
                                 </div>
                                 
@@ -1096,6 +1205,18 @@ function Navbar() {
                               {emoji}
                             </button>
                           ))}
+                        </div>
+                        <div className="mt-2 text-center">
+                          <Link 
+                            to="/settings?tab=appearance" 
+                            onClick={() => setMobileMenuOpen(false)}
+                            className="text-xs text-blue-500 hover:text-blue-700 flex items-center justify-center"
+                          >
+                            <span className="mr-1">More emoji options</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                            </svg>
+                          </Link>
                         </div>
                       </div>
                       

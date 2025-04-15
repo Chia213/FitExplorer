@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { FaLock, FaEye, FaEyeSlash, FaSave, FaTimes, FaUser, FaBell, FaLanguage, FaPalette, FaCrown, FaShieldAlt } from "react-icons/fa";
+import { FaLock, FaEye, FaEyeSlash, FaSave, FaTimes, FaUser, FaBell, FaLanguage, FaPalette, FaCrown, FaShieldAlt, FaClock, FaTachometerAlt, FaBolt } from "react-icons/fa";
 import { getTranslation } from "../utils/translations";
 import { useLanguage } from "../contexts/LanguageContext";
 import { useTheme, premiumThemes } from "../hooks/useTheme";
@@ -10,8 +10,39 @@ import { toast } from "react-hot-toast";
 import { BiPalette, BiColorFill, BiGlobe, BiBell, BiUser, BiDevices } from "react-icons/bi";
 import { useTranslation } from "react-i18next";
 import { BsCheck2 } from "react-icons/bs";
+import { FaPlay } from "react-icons/fa";
+import "../styles/theme-animations.css";  // Import the animations CSS
+
+// Import custom emoji assets - SVG placeholders
+// These could be replaced with actual emojis downloaded from slackmojis.com
+import dumbbellEmoji from '../assets/emojis/dumbbell.svg';
+import proteinEmoji from '../assets/emojis/protein.svg';
+
+// Import downloaded emoji from Slackmojis
+import yayEmoji from '../assets/emojis/downloads/yay.gif';
+import coolEmoji from '../assets/emojis/downloads/cool-doge.gif';
+import typingEmoji from '../assets/emojis/downloads/typingcat.gif';
 
 const backendURL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+
+// Define custom emojis
+// To add more emojis from Slackmojis.com:
+// 1. Visit https://slackmojis.com/ and find emojis you like
+// 2. Download them (right-click on emoji and "Save Image As...")
+// 3. Save them to frontend/src/assets/emojis/downloads folder
+// 4. Import them at the top of this file
+// 5. Add them to this list with a unique ID
+const customEmojis = {
+  fitness: [
+    { id: 'dumbbell', src: dumbbellEmoji, alt: 'Dumbbell Emoji' },
+    { id: 'protein', src: proteinEmoji, alt: 'Protein Shake Emoji' },
+    { id: 'yay', src: yayEmoji, alt: 'Yay Emoji' },
+    { id: 'cool', src: coolEmoji, alt: 'Cool Emoji' },
+    { id: 'typing', src: typingEmoji, alt: 'Typing Emoji' },
+    // Add downloaded emojis from Slackmojis.com here following this format:
+    // { id: 'unique-id', src: importedEmojiVariable, alt: 'Description' },
+  ]
+};
 
 // Custom event for notifying other components about card color changes
 export const notifyCardColorChanged = (useCustomColor, color) => {
@@ -39,6 +70,7 @@ function Settings() {
     applyTheme
   } = useTheme();
   
+  const { i18n } = useTranslation();
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -49,22 +81,28 @@ function Settings() {
   const [success, setSuccess] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [username, setUsername] = useState("");
-  const [activeTab, setActiveTab] = useState("appearance");
+  const [activeTab, setActiveTab] = useState(window.location.hash.substring(1) || "appearance");
   const [userPreferences, setUserPreferences] = useState({
+    language: i18n.language,
     emailNotifications: true,
-    workoutReminders: true,
-    progressReports: true,
-    language: "en",
-    summary_frequency: "weekly",
-    summary_day: "monday",
+    pushNotifications: false,
     useCustomCardColor: false,
-    cardColor: "#f0f4ff",
+    cardColor: "#3b82f6",
+    premiumTheme: "default",
+    enableAnimations: false,
+    animationStyle: "subtle",
+    animationSpeed: "medium",
     showProfileEmoji: true,
     profileEmoji: "🏋️‍♂️",
-    emojiAnimation: "lift"
+    emojiAnimation: "lift",
+    customEmojiSrc: null,
+    favoriteEmojis: ["🏋️‍♂️", "💪", "🏃‍♂️", "🏃‍♀️", "🚴", "🏊‍♂️"], // Default favorite emojis
+    favoriteAnimations: ["lift", "bounce", "pulse"] // Default favorite animations
   });
   const [isSavingPreferences, setIsSavingPreferences] = useState(false);
   const [showColorOptions, setShowColorOptions] = useState(false);
+  const [emojiCategory, setEmojiCategory] = useState('faces');
+  const [emojiChanged, setEmojiChanged] = useState(false);
 
   // Replace the local applyTheme function with a wrapper that uses the useTheme hook's applyTheme
   const handleApplyTheme = async (themeKey) => {
@@ -103,6 +141,20 @@ function Settings() {
         window.history.replaceState({}, '', newUrl);
       }, 500);
     }
+    
+    // Check if we need to scroll to the emoji section
+    const tabParam = urlParams.get('tab');
+    if (tabParam === 'appearance') {
+      setActiveTab("appearance");
+      
+      // After a short delay, scroll to the emoji section
+      setTimeout(() => {
+        const emojiSection = document.getElementById('emoji-preferences-section');
+        if (emojiSection) {
+          emojiSection.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 600);
+    }
   }, [loading, navigate, premiumThemes, applyTheme]);
 
   // Apply language to the document
@@ -138,7 +190,13 @@ function Settings() {
               cardColor: userData.preferences.card_color || "#f0f4ff",
               showProfileEmoji: userData.preferences.show_profile_emoji || true,
               profileEmoji: userData.preferences.profile_emoji || "🏋️‍♂️",
-              emojiAnimation: userData.preferences.emoji_animation || "lift"
+              emojiAnimation: userData.preferences.emoji_animation || "lift",
+              enableAnimations: userData.preferences.enable_animations || false,
+              animationStyle: userData.preferences.animation_style || "subtle",
+              animationSpeed: userData.preferences.animation_speed || "medium",
+              customEmojiSrc: userData.preferences.custom_emoji_src || null,
+              favoriteEmojis: userData.preferences.favorite_emojis || ["🏋️‍♂️", "💪", "🏃‍♂️", "🏃‍♀️", "🚴", "🏊‍♂️"],
+              favoriteAnimations: userData.preferences.favorite_animations || ["lift", "bounce", "pulse"]
             });
           }
           // Add the username
@@ -228,107 +286,182 @@ function Settings() {
       }
       return;
     }
+    
+    // Mark emoji settings as changed if related to emojis
+    if (['showProfileEmoji', 'profileEmoji', 'emojiAnimation', 'customEmojiSrc'].includes(key)) {
+      setEmojiChanged(true);
+    }
+    
     setUserPreferences(prev => ({
       ...prev,
       [key]: value
     }));
   };
 
-  const savePreferences = async () => {
+  const savePreferences = async (currentTab) => {
     setIsSavingPreferences(true);
     
+    // Reset emoji changed flag when saving
+    if (currentTab === "appearance") {
+      setEmojiChanged(false);
+    }
+    
     try {
-      const toastMessage = activeTab === "language" 
-        ? "Language preferences saved!" 
-        : activeTab === "appearance" 
-          ? "Appearance settings saved!" 
-          : activeTab === "colorappearance"
-            ? "Color appearance settings saved!"
-            : "Preferences saved!";
-      
-      // Get the token
-      const token = localStorage.getItem("token");
-      if (!token) {
-        toast.error("You must be logged in to save preferences");
-        return;
-      }
-      
-      // Convert userPreferences to backend format
+      // Transform preferences to backend format
       const backendPreferences = {
-        email_notifications: userPreferences.emailNotifications,
-        workout_reminders: userPreferences.workoutReminders,
-        progress_reports: userPreferences.progressReports,
-        language: userPreferences.language,
-        summary_frequency: userPreferences.summary_frequency,
-        summary_day: userPreferences.summary_day,
-        use_custom_card_color: userPreferences.useCustomCardColor,
-        card_color: userPreferences.cardColor,
-        show_profile_emoji: userPreferences.showProfileEmoji,
-        profile_emoji: userPreferences.profileEmoji,
-        emoji_animation: userPreferences.emojiAnimation
+          email_notifications: userPreferences.emailNotifications,
+          workout_reminders: userPreferences.workoutReminders,
+          progress_reports: userPreferences.progressReports,
+          language: userPreferences.language,
+          summary_frequency: userPreferences.summary_frequency,
+          summary_day: userPreferences.summary_day,
+          use_custom_card_color: userPreferences.useCustomCardColor,
+          card_color: userPreferences.cardColor,
+          show_profile_emoji: userPreferences.showProfileEmoji,
+          profile_emoji: userPreferences.profileEmoji,
+          emoji_animation: userPreferences.emojiAnimation,
+          enable_animations: userPreferences.enableAnimations,
+          animation_style: userPreferences.animationStyle,
+          animation_speed: userPreferences.animationSpeed,
+          custom_emoji_src: userPreferences.customEmojiSrc,
+          favorite_emojis: userPreferences.favoriteEmojis,
+          favorite_animations: userPreferences.favoriteAnimations
       };
       
-      // Send to backend
-      const response = await fetch(`${backendURL}/user-profile`, {
-        method: "PUT", 
+      console.log("Saving preferences:", backendPreferences);
+      
+      // Also save emoji preferences to localStorage as a backup
+      if (currentTab === "appearance") {
+        try {
+          const emojiPrefsObj = {
+            show: userPreferences.showProfileEmoji,
+            emoji: userPreferences.profileEmoji,
+            animation: userPreferences.emojiAnimation,
+            customEmojiSrc: userPreferences.customEmojiSrc
+          };
+          localStorage.setItem("emoji_prefs", JSON.stringify(emojiPrefsObj));
+          console.log("Emoji preferences saved to localStorage:", emojiPrefsObj);
+        } catch (e) {
+          console.warn("Could not save emoji preferences to localStorage:", e);
+        }
+      }
+      
+      const token = localStorage.getItem("token");
+      console.log("Using token for API call:", token ? "Valid token" : "No token");
+      
+      const response = await fetch(`${backendURL}/user/settings`, {
+        method: "PATCH",  // Changed from PUT to PATCH to match Profile.jsx
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          preferences: backendPreferences
-        })
+        body: JSON.stringify(backendPreferences),
       });
+
+      console.log("API Response status:", response.status);
       
       if (response.ok) {
-        // Create prominent toast with appropriate message
-        if (activeTab === "colorappearance") {
-          if (userPreferences.useCustomCardColor) {
-            toast.success(`Custom card color applied: ${userPreferences.cardColor}`, {
-              duration: 3000,
-              position: 'top-center',
-              icon: '🎨',
-              style: {
-                border: `2px solid ${userPreferences.cardColor}`,
-                padding: '16px',
-                color: '#713200',
-              },
-            });
-            
-            // Also set local success message
-            setSuccess(`Custom color ${userPreferences.cardColor} applied to profile!`);
-            setTimeout(() => setSuccess(null), 3000);
-          } else {
-            toast.success(`Using theme colors for profile`, {
-              duration: 3000,
-              position: 'top-center',
-              icon: '🎨'
-            });
-            
-            // Also set local success message
-            setSuccess(`Using theme colors for profile`);
-            setTimeout(() => setSuccess(null), 3000);
+        // Always dispatch a preferences-change event when preferences are saved successfully,
+        // so all components can update accordingly
+        const preferenceEvent = new CustomEvent('preferences-change', {
+          detail: {
+            type: 'general',
+            preferences: userPreferences
           }
-          
-          // Dispatch a custom event to notify other components
-          notifyCardColorChanged(
-            userPreferences.useCustomCardColor, 
-            userPreferences.cardColor
-          );
-        } else {
-          toast.success(toastMessage);
+        });
+        window.dispatchEvent(preferenceEvent);
+        console.log("Dispatched general preferences-change event");
+        
+        // If we have emoji changes, also dispatch specific emoji event for immediate UI update
+        if (currentTab === "appearance") {
+          const emojiEvent = new CustomEvent('preferences-change', {
+            detail: {
+              type: 'emoji',
+              show: userPreferences.showProfileEmoji,
+              emoji: userPreferences.profileEmoji,
+              animation: userPreferences.emojiAnimation,
+              customEmojiSrc: userPreferences.customEmojiSrc
+            }
+          });
+          window.dispatchEvent(emojiEvent);
+          console.log("Dispatched emoji preferences-change event:", {
+            show: userPreferences.showProfileEmoji,
+            emoji: userPreferences.profileEmoji,
+            animation: userPreferences.emojiAnimation,
+            customEmojiSrc: userPreferences.customEmojiSrc
+          });
         }
         
-        // Apply the color immediately to see the effect
-        if (userPreferences.useCustomCardColor) {
-          document.documentElement.style.setProperty('--custom-card-color', userPreferences.cardColor);
+        if (currentTab) {
+          // Update the tab-specific toast message
+          switch (currentTab) {
+            case "appearance":
+              toast.success(t("appearancePreferencesSaved"));
+              // Show special toast for emoji changes if they were changed
+              if (emojiChanged) {
+                toast.success(t("emojiSaved"), { 
+                  icon: userPreferences.profileEmoji || '👍',
+                  duration: 3000,
+                  style: {
+                    borderRadius: '10px',
+                    background: '#4CAF50',
+                    color: '#fff',
+                  },
+                });
+              }
+              break;
+            case "colorappearance":
+              toast.success(t("colorAppearancePreferencesSaved"));
+              // When animation settings are saved, dispatch custom event for other components to listen
+              if (userPreferences.enableAnimations !== undefined) {
+                const { enableAnimations, animationStyle, animationSpeed } = userPreferences;
+                
+                // Notify other components (like Profile) about animation preference changes
+                const event = new CustomEvent('animationPreferencesChanged', { 
+                  detail: { 
+                    enabled: enableAnimations, 
+                    style: animationStyle, 
+                    speed: animationSpeed 
+                  } 
+                });
+                window.dispatchEvent(event);
+              }
+              break;
+            case "language":
+              toast.success(t("languagePreferencesSaved"));
+              break;
+            case "notifications":
+              toast.success(t("notificationPreferencesSaved"));
+              break;
+            case "account":
+              toast.success(t("accountPreferencesSaved"));
+              break;
+            case "sessions":
+              toast.success(t("sessionsPreferencesSaved"));
+              break;
+            default:
+              toast.success(t("preferencesSaved"));
+          }
         }
+        
+        // If there was a function to update user prefs in context, we'd call it here
+        // For now, we'll just log that preferences were saved
+        console.log("Preferences saved successfully", userPreferences);
       } else {
-        toast.error("Failed to save preferences. Please try again.");
+        // Handle error response
+        try {
+          const errorData = await response.json();
+          console.error("Error saving preferences:", errorData);
+          toast.error(errorData.detail || t("errorSavingPreferences"));
+        } catch (e) {
+          console.error("Error parsing error response:", e);
+          console.error("Response status:", response.status, response.statusText);
+          toast.error(`${response.status}: ${response.statusText}`);
+        }
       }
     } catch (error) {
       console.error("Error saving preferences:", error);
-      toast.error("An error occurred. Please try again.");
+      toast.error(error.message || t("errorSavingPreferences"));
     } finally {
       setIsSavingPreferences(false);
     }
@@ -355,8 +488,8 @@ function Settings() {
   };
 
   const renderTabButton = (tabName, label, icon) => {
-    return (
-      <button
+  return (
+                <button
         onClick={() => setActiveTab(tabName)}
         className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${
           activeTab === tabName 
@@ -366,8 +499,122 @@ function Settings() {
       >
         {icon}
         <span>{label}</span>
-      </button>
+                </button>
     );
+  };
+
+  // Apply animation settings to the body element
+  const applyAnimationSettings = (enabled, style, speed) => {
+    const body = document.body;
+    
+    console.log("Applying animation settings:", enabled, style, speed);
+    
+    // Set animation enabled state
+    if (enabled) {
+      body.setAttribute('data-animations-enabled', 'true');
+      body.setAttribute('data-animation-style', style || 'subtle');
+      body.setAttribute('data-animation-speed', speed || 'medium');
+      
+      // Try to apply to profile card directly if it exists on the page
+      const profileCards = document.querySelectorAll('.profile-header-card');
+      profileCards.forEach(card => {
+        // Remove all animation classes first
+        card.classList.remove('profile-animation');
+        ['subtle', 'bounce', 'pulse', 'wave', 'glide', 'sparkle', 'pop', 'swing', 'ripple',
+         'float', 'rotate', 'spin', 'shake', 'wobble'].forEach(s => 
+          card.classList.remove(s));
+        ['slow', 'medium', 'fast'].forEach(s => 
+          card.classList.remove(s));
+        
+        // Apply new classes
+        card.classList.add('profile-animation');
+        card.classList.add(style || 'subtle');
+        card.classList.add(speed || 'medium');
+        
+        // Set animation duration
+        card.style.setProperty('--animation-duration', 
+          speed === "slow" ? "4s" : 
+          speed === "fast" ? "1.5s" : "2.5s");
+      });
+    } else {
+      body.removeAttribute('data-animations-enabled');
+      body.removeAttribute('data-animation-style');
+      body.removeAttribute('data-animation-speed');
+      
+      // Disable animations on profile cards if they exist
+      const profileCards = document.querySelectorAll('.profile-header-card');
+      profileCards.forEach(card => {
+        card.classList.remove('profile-animation');
+        // Remove all possible animation styles
+        ['subtle', 'bounce', 'pulse', 'wave', 'glide', 'sparkle', 'pop', 'swing', 'ripple',
+         'float', 'rotate', 'spin', 'shake', 'wobble'].forEach(s => 
+          card.classList.remove(s));
+        // Remove all possible speeds
+        ['slow', 'medium', 'fast'].forEach(s => 
+          card.classList.remove(s));
+      });
+    }
+    
+    // Update global animation state that can be used anywhere in the app
+    window.FitExplorerAnimations = {
+      enabled: enabled,
+      style: style || 'subtle',
+      speed: speed || 'medium'
+    };
+    
+    // Notify other components (like Profile) about animation preference changes
+    const event = new CustomEvent('animationPreferencesChanged', { 
+      detail: { 
+        enabled, 
+        style, 
+        speed 
+      } 
+    });
+    console.log("Dispatching animationPreferencesChanged event", { enabled, style, speed });
+    window.dispatchEvent(event);
+  };
+
+  // Also apply animation settings when they change
+  useEffect(() => {
+    if (userPreferences) {
+      console.log("Initial animation settings being applied:", {
+        enable: userPreferences.enableAnimations,
+        style: userPreferences.animationStyle,
+        speed: userPreferences.animationSpeed
+      });
+      
+      applyAnimationSettings(
+        userPreferences.enableAnimations,
+        userPreferences.animationStyle,
+        userPreferences.animationSpeed
+      );
+    }
+  }, [
+    userPreferences.enableAnimations,
+    userPreferences.animationStyle,
+    userPreferences.animationSpeed
+  ]);
+
+  // Get display username with fallback
+  const displayUsername = username || "User";
+
+  const getEmojisForCategory = () => {
+    // For standard Unicode emojis
+    const emojis = {
+      faces: ["😀", "😎", "🤩", "😍", "🥳", "😊", "🤓", "🥸", "🤪", "🤗", "😏", "😇", "🤠", "🥺", "😁", "🤯", "🧠", "🦾", "👑", "✌️"],
+      fitness: ["💪", "🏋️‍♂️", "🏋️‍♀️", "🏃‍♂️", "🏃‍♀️", "🧘‍♂️", "🧘‍♀️", "🤸‍♂️", "🤸‍♀️", "🦾", "🦵", "🦿", "👊", "✊", "🤛", "🤜", "👏", "🧍‍♂️", "🧎‍♂️", "🧠"],
+      nutrition: ["🥗", "🥦", "🍗", "🥚", "🍌", "🥛", "🧃", "🥤", "🍲", "🥩", "🍓", "🥑", "🌰", "🥕", "⚖️", "🥜", "🍇", "💊", "💉", "🧬"],
+      activities: ["🏋️‍♂️", "🧘‍♀️", "🏃‍♂️", "🤸‍♀️", "🚴‍♂️", "🏊‍♀️", "⚽", "🏀", "🎾", "🏈", "🏄‍♂️", "🧗‍♀️", "🏌️‍♂️", "🤺", "⛹️‍♀️", "🤾‍♂️", "🏂", "🏆", "🥇", "⛳"],
+      animals: ["🐱", "🐶", "🦁", "🦊", "🐻", "🐨", "🦄", "🦋", "🦖", "🐙", "🦈", "🐉", "🐬", "🦜", "🦢", "🐘", "🦔", "🐅", "🦩", "🦦"],
+      objects: ["🔥", "✨", "💯", "🏆", "🎯", "💡", "🥇", "🌟", "💪", "👊", "🚀", "📊", "📈", "⏱️", "⏲️", "🧮", "🔋", "🧲", "💎", "🛡️"]
+    };
+    
+    // If the category is for custom emojis, return those instead
+    if (emojiCategory === 'custom') {
+      return customEmojis.fitness || [];
+    }
+    
+    return emojis[emojiCategory] || [];
   };
 
   return (
@@ -384,20 +631,20 @@ function Settings() {
           {renderTabButton("account", t("changePassword"), <BiUser className="text-xl" />)}
           {renderTabButton("sessions", t("sessions"), <BiDevices className="text-xl" />)}
         </div>
-        
+
         {/* Tab Content */}
         <div className="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-sm">
-          {/* Error and Success Messages */}
-          {error && (
+            {/* Error and Success Messages */}
+            {error && (
             <div className="mb-4 p-4 bg-red-100 border border-red-200 text-red-700 rounded-lg">
-              {error}
+                {error}
             </div>
-          )}
-          {success && (
+            )}
+            {success && (
             <div className="mb-4 p-4 bg-green-100 border border-green-200 text-green-700 rounded-lg">
-              {success}
+                {success}
             </div>
-          )}
+            )}
 
           {/* Appearance Tab */}
           {activeTab === "appearance" && (
@@ -406,7 +653,7 @@ function Settings() {
               <div className="mb-6">
                 <label className="block text-sm font-medium mb-2">{t("theme")}</label>
                 <div className="flex gap-3">
-                  <button
+                      <button
                     onClick={() => setThemeMode("light")}
                     className={`px-4 py-2 rounded-lg border ${
                       theme === "light"
@@ -440,13 +687,13 @@ function Settings() {
               </div>
 
               {/* Emoji preferences */}
-              <div className="mt-6 border-t pt-6 dark:border-gray-700">
+              <div className="mt-6 border-t pt-6 dark:border-gray-700" id="emoji-preferences-section">
                 <h3 className="text-lg font-medium mb-4">{t("emojiPreferences")}</h3>
                 
                 {/* Show profile emoji toggle */}
                 <div className="mb-4">
                   <label className="flex items-center">
-                    <input
+                      <input
                       type="checkbox"
                       checked={userPreferences.showProfileEmoji}
                       onChange={(e) => handlePreferenceChange("showProfileEmoji", e.target.checked)}
@@ -459,70 +706,340 @@ function Settings() {
                 {/* Emoji selection */}
                 {userPreferences.showProfileEmoji && (
                   <>
-                    <div className="mb-4">
+                    <div className="mb-6">
                       <label className="block text-sm font-medium mb-2">{t("selectEmoji")}</label>
-                      <div className="grid grid-cols-5 gap-2 max-w-xs">
-                        {["😀", "😎", "🚀", "💪", "🔥", "✨", "💯", "🏆", "🎯", "💡"].map((emoji) => (
+                      <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                        {/* Emoji categories */}
+                        <div className="mb-3 pb-3 border-b border-gray-200 dark:border-gray-700 flex space-x-2 overflow-x-auto">
                           <button
-                            key={emoji}
-                            onClick={() => handlePreferenceChange("profileEmoji", emoji)}
-                            className={`text-2xl p-2 rounded-lg ${
-                              userPreferences.profileEmoji === emoji
-                                ? "bg-primary/10 border border-primary"
-                                : "border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
+                            onClick={() => setEmojiCategory('fitness')}
+                            className={`px-3 py-1.5 rounded-full text-sm whitespace-nowrap ${
+                              emojiCategory === 'fitness' 
+                                ? 'bg-primary text-white' 
+                                : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
                             }`}
                           >
-                            {emoji}
+                            💪 {t("fitness")}
                           </button>
-                        ))}
-                      </div>
-                    </div>
-                    
-                    {/* Animation style */}
-                    <div className="mb-4">
-                      <label className="block text-sm font-medium mb-2">{t("animationStyle")}</label>
-                      <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-                        {["none", "lift", "bounce", "spin", "pulse", "wave"].map((animation) => (
-                          <button
-                            key={animation}
-                            onClick={() => handlePreferenceChange("emojiAnimation", animation)}
-                            className={`px-3 py-2 capitalize rounded-lg border ${
-                              userPreferences.emojiAnimation === animation
-                                ? "bg-primary/10 border-primary text-primary"
-                                : "border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
+                          <button 
+                            onClick={() => setEmojiCategory('custom')}
+                            className={`px-3 py-1.5 rounded-full text-sm whitespace-nowrap ${
+                              emojiCategory === 'custom' 
+                                ? 'bg-primary text-white' 
+                                : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
                             }`}
                           >
-                            {animation}
+                            🎨 {t("custom")}
                           </button>
-                        ))}
-                      </div>
-                    </div>
-                    
-                    {/* Preview */}
-                    <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">{t("preview")}:</p>
-                      <div className="flex items-center gap-2">
-                        <span className={`text-xl ${userPreferences.emojiAnimation !== "none" ? `animate-${userPreferences.emojiAnimation}` : ""}`}>
-                          {userPreferences.profileEmoji}
-                        </span>
-                        <span className="font-medium">Username</span>
+                          <button 
+                            onClick={() => setEmojiCategory('nutrition')}
+                            className={`px-3 py-1.5 rounded-full text-sm whitespace-nowrap ${
+                              emojiCategory === 'nutrition' 
+                                ? 'bg-primary text-white' 
+                                : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                            }`}
+                          >
+                            🥗 {t("nutrition")}
+                          </button>
+                          <button 
+                            onClick={() => setEmojiCategory('faces')}
+                            className={`px-3 py-1.5 rounded-full text-sm whitespace-nowrap ${
+                              emojiCategory === 'faces' 
+                                ? 'bg-primary text-white' 
+                                : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                            }`}
+                          >
+                            😀 {t("faces")}
+                          </button>
+                          <button 
+                            onClick={() => setEmojiCategory('activities')}
+                            className={`px-3 py-1.5 rounded-full text-sm whitespace-nowrap ${
+                              emojiCategory === 'activities' 
+                                ? 'bg-primary text-white' 
+                                : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                            }`}
+                          >
+                            🏃‍♂️ {t("activities")}
+                          </button>
+                          <button 
+                            onClick={() => setEmojiCategory('animals')}
+                            className={`px-3 py-1.5 rounded-full text-sm whitespace-nowrap ${
+                              emojiCategory === 'animals' 
+                                ? 'bg-primary text-white' 
+                                : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                            }`}
+                          >
+                            🐱 {t("animals")}
+                          </button>
+                          <button 
+                            onClick={() => setEmojiCategory('objects')}
+                            className={`px-3 py-1.5 rounded-full text-sm whitespace-nowrap ${
+                              emojiCategory === 'objects' 
+                                ? 'bg-primary text-white' 
+                                : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                            }`}
+                          >
+                            🔥 {t("objects")}
+                          </button>
+                        </div>
+                        
+                        {emojiCategory === 'custom' && (
+                          <div className="mb-2 text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 p-2 rounded">
+                            <p>These are custom emoji examples. You can download more from <a href="https://slackmojis.com/" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Slackmojis.com</a> and add them to your app.</p>
+                          </div>
+                        )}
+                        
+                        <div className="grid grid-cols-8 gap-2 max-h-40 overflow-y-auto p-2">
+                          {getEmojisForCategory().map((emoji) => (
+                            <button
+                              key={typeof emoji === 'string' ? emoji : emoji.id}
+                              onClick={() => {
+                                // Handle both Unicode emojis and custom emojis
+                                if (typeof emoji === 'string') {
+                                  console.log("Selected standard emoji:", emoji);
+                                  handlePreferenceChange("profileEmoji", emoji);
+                                } else {
+                                  console.log("Selected custom emoji:", emoji.id, emoji.src);
+                                  handlePreferenceChange("profileEmoji", `custom:${emoji.id}`);
+                                  handlePreferenceChange("customEmojiSrc", emoji.src);
+                                }
+                              }}
+                              className={`text-2xl p-2 rounded-lg transition-all ${
+                                userPreferences.profileEmoji === (typeof emoji === 'string' ? emoji : `custom:${emoji.id}`)
+                                  ? "bg-primary/10 border border-primary shadow-inner"
+                                  : "border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
+                              }`}
+                            >
+                              {typeof emoji === 'string' 
+                                ? emoji 
+                                : <img src={emoji.src} alt={emoji.alt} className="w-full h-full object-contain" />
+                              }
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Animation style for emoji */}
+                        <div className="mt-4">
+                          <div className="text-sm font-medium mb-2">{t("emojiAnimation")}</div>
+                          <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
+                            {["none", "bounce", "pulse", "spin", "float", "shake", "tada"].map((animation) => (
+                              <button
+                                key={animation}
+                                onClick={() => handlePreferenceChange("emojiAnimation", animation)}
+                                className={`px-2 py-1.5 rounded-lg border text-xs capitalize transition-all ${
+                                  userPreferences.emojiAnimation === animation
+                                    ? "bg-primary/10 border-primary text-primary"
+                                    : "border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
+                                }`}
+                              >
+                                <div className="flex flex-col items-center">
+                                  <span className={`text-xl mb-1 ${animation !== "none" ? `animate-${animation}` : ""}`}>
+                                    {userPreferences.profileEmoji && userPreferences.profileEmoji.startsWith('custom:') 
+                                      ? <img 
+                                          src={userPreferences.customEmojiSrc} 
+                                          alt="Custom emoji" 
+                                          className="w-6 h-6 object-contain" 
+                                        />
+                                      : userPreferences.profileEmoji
+                                    }
+                                  </span>
+                                  <span>{animation}</span>
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Emoji preview */}
+                        <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                          <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">{t("preview")}:</p>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-900 rounded shadow-sm">
+                              <span className={`text-xl ${userPreferences.emojiAnimation !== "none" ? `animate-${userPreferences.emojiAnimation}` : ""}`}>
+                                {userPreferences.profileEmoji && userPreferences.profileEmoji.startsWith('custom:') 
+                                  ? <img 
+                                      src={userPreferences.customEmojiSrc} 
+                                      alt="Custom emoji" 
+                                      className="w-6 h-6 object-contain" 
+                                    />
+                                  : userPreferences.profileEmoji
+                                }
+                              </span>
+                              <span className="font-medium">{displayUsername}</span>
+                            </div>
+                            <div className="text-sm text-gray-500 dark:text-gray-400">
+                              {userPreferences.emojiAnimation !== "none" ? 
+                                <span>{t("animationActive")}: <span className="font-medium">{userPreferences.emojiAnimation}</span></span> : 
+                                <span>{t("noAnimation")}</span>
+                              }
+                            </div>
+                          </div>
+                          <div className="mt-3 text-xs text-amber-600 dark:text-amber-400 flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span>Don't forget to click "Save Changes" button below to save your emoji selection permanently.</span>
+                          </div>
+                        </div>
+
+                        {/* Favorite Emojis Management - outside the conditional rendering */}
+                        <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+                          <div className="flex items-center justify-between mb-3">
+                            <h4 className="text-sm font-medium">Favorite Emojis for Dropdown</h4>
+                            <span className="text-xs text-gray-500">Max 8</span>
+                          </div>
+                          
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+                            These emojis will appear in your quick-access dropdown in the navbar
+                          </p>
+                          
+                          {/* Display and manage current favorites */}
+                          <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
+                            <div className="mb-2 font-medium text-xs">Current Favorites:</div>
+                            <div className="flex flex-wrap gap-2">
+                              {userPreferences.favoriteEmojis.map((emoji, index) => (
+                                <div 
+                                  key={index} 
+                                  className="relative group p-2 bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600"
+                                >
+                                  <span className="text-xl">{emoji}</span>
+                                  <button
+                                    onClick={() => {
+                                      const updatedFavorites = userPreferences.favoriteEmojis.filter((_, i) => i !== index);
+                                      handlePreferenceChange("favoriteEmojis", updatedFavorites);
+                                      setEmojiChanged(true);
+                                    }}
+                                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                    title="Remove from favorites"
+                                  >
+                                    ×
+                                  </button>
+                                </div>
+                              ))}
+                              
+                              {/* Add button if we have less than 8 favorites */}
+                              {userPreferences.favoriteEmojis.length < 8 && (
+                                <button
+                                  onClick={() => {
+                                    // If current emoji isn't already in favorites, add it
+                                    if (!userPreferences.favoriteEmojis.includes(userPreferences.profileEmoji)) {
+                                      const newFavorites = [...userPreferences.favoriteEmojis, userPreferences.profileEmoji];
+                                      handlePreferenceChange("favoriteEmojis", newFavorites);
+                                      setEmojiChanged(true);
+                                    } else {
+                                      toast.error("This emoji is already in your favorites");
+                                    }
+                                  }}
+                                  className="p-2 bg-gray-100 dark:bg-gray-600 rounded-lg border border-dashed border-gray-300 dark:border-gray-500 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-500 transition-colors"
+                                  title="Add current emoji to favorites"
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                  </svg>
+                                </button>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Favorite Animation Styles */}
+                          <div className="mt-5">
+                            <div className="flex items-center justify-between mb-3">
+                              <h4 className="text-sm font-medium">Favorite Animation Styles</h4>
+                              <span className="text-xs text-gray-500">Max 5</span>
+                            </div>
+                            
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+                              These animation styles will appear in your quick-access dropdown
+                            </p>
+                            
+                            <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
+                              <div className="mb-2 font-medium text-xs">Current Favorites:</div>
+                              <div className="flex flex-wrap gap-2">
+                                {userPreferences.favoriteAnimations.map((animation, index) => (
+                                  <div 
+                                    key={index} 
+                                    className="relative group p-2 bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600"
+                                  >
+                                    <span className="text-sm capitalize">{animation}</span>
+                                    <button
+                                      onClick={() => {
+                                        const updatedFavorites = userPreferences.favoriteAnimations.filter((_, i) => i !== index);
+                                        handlePreferenceChange("favoriteAnimations", updatedFavorites);
+                                        setEmojiChanged(true);
+                                      }}
+                                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                      title="Remove from favorites"
+                                    >
+                                      ×
+                                    </button>
+                                  </div>
+                                ))}
+                                
+                                {/* Add button if we have less than 5 favorites */}
+                                {userPreferences.favoriteAnimations.length < 5 && (
+                                  <button
+                                    onClick={() => {
+                                      // If current animation isn't already in favorites, add it
+                                      if (!userPreferences.favoriteAnimations.includes(userPreferences.emojiAnimation)) {
+                                        const newFavorites = [...userPreferences.favoriteAnimations, userPreferences.emojiAnimation];
+                                        handlePreferenceChange("favoriteAnimations", newFavorites);
+                                        setEmojiChanged(true);
+                                      } else {
+                                        toast.error("This animation is already in your favorites");
+                                      }
+                                    }}
+                                    className="p-2 bg-gray-100 dark:bg-gray-600 rounded-lg border border-dashed border-gray-300 dark:border-gray-500 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-500 transition-colors"
+                                    title="Add current animation to favorites"
+                                  >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                    </svg>
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </>
                 )}
-              </div>
 
-              <div className="mt-6 flex justify-end">
-                <button
-                  onClick={() => savePreferences("appearance")}
-                  disabled={isLoading}
-                  className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50"
-                >
-                  {isLoading ? t("saving") : t("saveChanges")}
-                </button>
+                <div className="mt-6 flex justify-end">
+                  <button
+                    onClick={() => {
+                      console.log("Saving emoji preferences:", {
+                        showProfileEmoji: userPreferences.showProfileEmoji,
+                        profileEmoji: userPreferences.profileEmoji,
+                        emojiAnimation: userPreferences.emojiAnimation,
+                        customEmojiSrc: userPreferences.customEmojiSrc
+                      });
+                      savePreferences("appearance");
+                    }}
+                    disabled={isLoading || isSavingPreferences}
+                    className={`px-4 py-2 rounded-lg hover:bg-primary/90 disabled:opacity-50 ${
+                      emojiChanged 
+                      ? "bg-primary text-white border-2 border-primary/50 shadow-md animate-pulse" 
+                      : "bg-primary text-white"
+                    }`}
+                  >
+                    {isSavingPreferences ? (
+                      <span className="flex items-center">
+                        <svg className="w-4 h-4 mr-2 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        {t("saving")}
+                      </span>
+                    ) : (
+                      t("saveChanges")
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
           )}
+           
 
           {/* Color Appearance Tab */}
           {activeTab === "colorappearance" && (
@@ -536,14 +1053,14 @@ function Settings() {
                   <div className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
                     <FaCrown className="w-3 h-3 mr-1" />
                     {t("premium")}
-                  </div>
+                    </div>
                   {isAdmin && (
                     <div className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
                       {t("admin")}
                     </div>
                   )}
-                </div>
-                
+                  </div>
+
                 <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
                   {t("premiumThemesDescription")}
                   {isAdmin ? (
@@ -576,7 +1093,7 @@ function Settings() {
                         {premiumThemes[themeKey].isPremium && !isAdmin && !unlockedThemes.includes(themeKey) && (
                           <FaLock className="text-amber-500" size={14} />
                         )}
-                      </div>
+                          </div>
 
                       <div 
                         className="h-20 mb-3 rounded-md overflow-hidden"
@@ -605,57 +1122,282 @@ function Settings() {
                           t("applyTheme")
                         )}
                       </button>
-                    </div>
+                      </div>
                   ))}
-                </div>
+                    </div>
               </div>
 
-              {/* Custom Card Color Option */}
+              {/* Premium Theme Animations */}
               <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
                 <div className="flex flex-col">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{t("cardColorOptions")}</span>
-                    <button 
-                      onClick={() => setShowColorOptions(!showColorOptions)}
-                      className="text-xs bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 px-2 py-1 rounded"
-                    >
-                      {showColorOptions ? t("hideOptions") : t("showOptions")}
+                  <div className="flex items-center mb-4">
+                    <h3 className="text-lg font-medium">{t("themeAnimations")}</h3>
+                    <div className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                      <FaCrown className="w-3 h-3 mr-1" />
+                      {t("premium")}
+                    </div>
+                  </div>
+
+                  <div className="mb-4">
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      {t("animationsDescription")}
+                    </p>
+                    </div>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-2">
+                    {/* Enable Animations Toggle */}
+                    <div className="col-span-full mb-3 flex items-center">
+                      <input
+                        type="checkbox"
+                        id="enableAnimations"
+                        checked={userPreferences.enableAnimations || false}
+                        onChange={(e) => handlePreferenceChange("enableAnimations", e.target.checked)}
+                        className="mr-2 h-4 w-4"
+                      />
+                      <label htmlFor="enableAnimations" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        {t("enableAnimations")}
+                    </label>
+                  </div>
+
+                    {/* Animation Options */}
+                    {userPreferences.enableAnimations && (
+                      <>
+                        <div className="col-span-full mb-4">
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {t("animationStyle")}
+                          </label>
+                          
+                          {/* Animation categories */}
+                          <div className="mb-3">
+                            <div className="text-xs text-gray-500 dark:text-gray-400 mb-2">{t("movementAnimations")}</div>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 mb-4">
+                              {["subtle", "bounce", "float", "wave", "glide"].map(style => (
+                    <button
+                                  key={style}
+                                  onClick={() => handlePreferenceChange("animationStyle", style)}
+                                  className={`p-3 rounded-lg border text-sm capitalize transition-all ${
+                                    userPreferences.animationStyle === style 
+                                    ? "bg-primary/10 border-primary text-primary shadow-md" 
+                                    : "border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
+                                  }`}
+                                >
+                                  <div className="flex flex-col items-center">
+                                    <div className={`w-6 h-6 bg-primary/20 rounded-full mb-1.5 animate-${style}`}>
+                                      <span className="sr-only">{style}</span>
+                  </div>
+                                    {style}
+                </div>
+                                </button>
+                              ))}
+              </div>
+                            
+                            <div className="text-xs text-gray-500 dark:text-gray-400 mb-2">{t("rotationAnimations")}</div>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 mb-4">
+                              {["rotate", "spin", "swing", "wobble", "shake"].map(style => (
+                                <button
+                                  key={style}
+                                  onClick={() => handlePreferenceChange("animationStyle", style)}
+                                  className={`p-3 rounded-lg border text-sm capitalize transition-all ${
+                                    userPreferences.animationStyle === style 
+                                    ? "bg-primary/10 border-primary text-primary shadow-md" 
+                                    : "border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
+                                  }`}
+                                >
+                                  <div className="flex flex-col items-center">
+                                    <div className={`w-6 h-6 bg-primary/20 rounded-full mb-1.5 animate-${style}`}>
+                                      <span className="sr-only">{style}</span>
+                                    </div>
+                                    {style}
+                                  </div>
+                                </button>
+                              ))}
+                  </div>
+
+                            <div className="text-xs text-gray-500 dark:text-gray-400 mb-2">{t("specialEffects")}</div>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 mb-4">
+                              {["pulse", "sparkle", "pop", "ripple"].map(style => (
+                    <button
+                                  key={style}
+                                  onClick={() => handlePreferenceChange("animationStyle", style)}
+                                  className={`p-3 rounded-lg border text-sm capitalize transition-all ${
+                                    userPreferences.animationStyle === style 
+                                    ? "bg-primary/10 border-primary text-primary shadow-md" 
+                                    : "border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
+                                  }`}
+                                >
+                                  <div className="flex flex-col items-center">
+                                    <div className={`w-6 h-6 bg-primary/20 rounded-full mb-1.5 animate-${style}`}>
+                                      <span className="sr-only">{style}</span>
+                                    </div>
+                                    {style}
+                                  </div>
                     </button>
+                              ))}
+                  </div>
+                </div>
+              </div>
+                        
+                        <div className="col-span-full mb-4">
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {t("animationSpeed")}
+                          </label>
+                          <div className="flex space-x-2">
+                            {["slow", "medium", "fast"].map(speed => (
+                    <button
+                                key={speed}
+                                onClick={() => handlePreferenceChange("animationSpeed", speed)}
+                                className={`flex-1 p-3 rounded-lg border text-sm capitalize transition-all ${
+                                  userPreferences.animationSpeed === speed 
+                                  ? "bg-primary/10 border-primary text-primary font-medium" 
+                                  : "border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
+                                }`}
+                              >
+                                <div className="flex items-center justify-center">
+                                  <div className={`animation-${speed} mr-2`}>
+                                    {speed === "slow" && <FaClock className="text-primary w-4 h-4" />}
+                                    {speed === "medium" && <FaTachometerAlt className="text-primary w-4 h-4" />}
+                                    {speed === "fast" && <FaBolt className="text-primary w-4 h-4" />}
+                                  </div>
+                                  {speed}
+                                </div>
+                    </button>
+                            ))}
+                          </div>
+                        </div>
+                        
+                        {/* Animation Preview */}
+                        <div className="col-span-full mt-4 p-5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800">
+                          <h4 className="text-sm font-medium mb-3">{t("preview")}</h4>
+                          
+                          <div className="flex items-center justify-between mb-4">
+                            <div className={`inline-flex items-center p-3 rounded-lg shadow-sm
+                              ${userPreferences.enableAnimations ? `animate-${userPreferences.animationStyle || 'subtle'} 
+                              ${userPreferences.animationSpeed || 'medium'}` : ''
+                              }`}
+                              style={{
+                                backgroundColor: userPreferences.useCustomCardColor ? userPreferences.cardColor : 'var(--color-primary-light)'
+                              }}
+                            >
+                              <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary">
+                                <span className="text-sm">{displayUsername.charAt(0).toUpperCase()}</span>
+                              </div>
+                              <span className="ml-2 font-medium">{displayUsername}</span>
+                            </div>
+                            
+                            <div className="text-sm text-gray-500 dark:text-gray-400">
+                              <span className="font-medium">{userPreferences.animationStyle}</span> at <span className="font-medium">{userPreferences.animationSpeed}</span> speed
+                            </div>
+                          </div>
+                          
+                          {/* Card animation previews */}
+                          <h4 className="text-sm font-medium mt-6 mb-3">{t("cardPreview")}</h4>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div 
+                              className={`card p-4 bg-white dark:bg-gray-800 rounded-xl shadow-md ${
+                                userPreferences.enableAnimations ? `animate-${userPreferences.animationStyle || 'subtle'} 
+                                ${userPreferences.animationSpeed || 'medium'}` : ''
+                              }`}
+                              style={userPreferences.useCustomCardColor ? { backgroundColor: userPreferences.cardColor } : {}}
+                            >
+                              <div className="flex items-center gap-3 mb-3">
+                                <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary">
+                                  <span className="text-lg">{displayUsername.charAt(0).toUpperCase()}</span>
+                                </div>
+                                <h3 className="font-medium">Profile Card</h3>
+                              </div>
+                              <div className="text-sm text-gray-500 dark:text-gray-400">
+                                {t("cardAnimationPreviewText")}
+                  </div>
+                </div>
+                
+                            <div 
+                              className={`card p-4 dark:text-white rounded-xl shadow-md theme-animated-card ${
+                                userPreferences.enableAnimations ? `animate-${userPreferences.animationStyle || 'subtle'} 
+                                ${userPreferences.animationSpeed || 'medium'}` : ''
+                              }`}
+                              style={{ 
+                                background: `linear-gradient(135deg, var(--color-primary), var(--color-secondary))`,
+                                color: 'white'
+                              }}
+                            >
+                              <div className="flex items-center gap-3 mb-3">
+                                <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+                                  <span className="text-lg">{displayUsername.charAt(0).toUpperCase()}</span>
+                    </div>
+                                <h3 className="font-medium">Premium Card</h3>
+                      </div>
+                              <div className="text-sm text-white/80">
+                                {t("premiumCardAnimationPreview")}
+                              </div>
+                            </div>
                   </div>
                   
-                  {showColorOptions && (
-                    <div className="mt-3 border-t pt-3 border-gray-200 dark:border-gray-600">
-                      <div className="flex items-center mb-2">
-                        <input
-                          type="checkbox" 
-                          id="useCustomCardColor"
-                          checked={userPreferences.useCustomCardColor}
-                          onChange={(e) => toggleCustomCardColor(e.target.checked)}
-                          className="mr-2 h-4 w-4"
-                        />
-                        <label htmlFor="useCustomCardColor" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                          {t("useCustomCardColor")}
-                        </label>
-                      </div>
-                      
-                      {userPreferences.useCustomCardColor && (
-                        <div className="flex items-center mt-2">
-                          <label className="text-sm text-gray-600 dark:text-gray-400 mr-3">
-                            {t("customCardColor")}:
-                          </label>
-                          <input
-                            type="color"
-                            value={userPreferences.cardColor}
-                            onChange={(e) => handleColorChange(e.target.value)}
-                            className="w-8 h-8 rounded cursor-pointer"
-                          />
+                          {/* Animation settings button - Always visible regardless of animation state */}
+                          <div className="mt-6 flex justify-end">
+                            <button
+                              onClick={() => {
+                                savePreferences("colorappearance");
+                                toast.success("Animation settings applied to profile cards");
+                              }}
+                              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-md flex items-center justify-center"
+                            >
+                              <FaPlay className="mr-2" />
+                              <span>{isSavingPreferences ? "Saving..." : "Apply Animations"}</span>
+                            </button>
+                          </div>
                         </div>
-                      )}
-                      
-                      <div className="mt-3 text-xs text-gray-500 dark:text-gray-400">
-                        {t("cardColorDescription")}
+                      </>
+                    )}
+                  </div>
+                </div>
+                  </div>
+                  
+                  {/* Custom Card Color Option */}
+              <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <div className="flex flex-col">
+                      <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{t("cardColorOptions")}</span>
+                        <button 
+                          onClick={() => setShowColorOptions(!showColorOptions)}
+                          className="text-xs bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 px-2 py-1 rounded"
+                        >
+                      {showColorOptions ? t("hideOptions") : t("showOptions")}
+                        </button>
                       </div>
-
+                      
+                      {showColorOptions && (
+                        <div className="mt-3 border-t pt-3 border-gray-200 dark:border-gray-600">
+                          <div className="flex items-center mb-2">
+                            <input
+                              type="checkbox" 
+                              id="useCustomCardColor"
+                              checked={userPreferences.useCustomCardColor}
+                              onChange={(e) => toggleCustomCardColor(e.target.checked)}
+                              className="mr-2 h-4 w-4"
+                            />
+                            <label htmlFor="useCustomCardColor" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                          {t("useCustomCardColor")}
+                            </label>
+                          </div>
+                          
+                          {userPreferences.useCustomCardColor && (
+                            <div className="flex items-center mt-2">
+                              <label className="text-sm text-gray-600 dark:text-gray-400 mr-3">
+                            {t("customCardColor")}:
+                              </label>
+                              <input
+                                type="color"
+                                value={userPreferences.cardColor}
+                                onChange={(e) => handleColorChange(e.target.value)}
+                                className="w-8 h-8 rounded cursor-pointer"
+                              />
+                            </div>
+                          )}
+                          
+                          <div className="mt-3 text-xs text-gray-500 dark:text-gray-400">
+                        {t("cardColorDescription")}
+                          </div>
+                      
                       <div className="mt-4 flex justify-end">
                         <button
                           onClick={() => {
@@ -679,9 +1421,9 @@ function Settings() {
                       </div>
                     </div>
                   )}
-                </div>
-              </div>
-
+                    </div>
+                  </div>
+                  
               <div className="mt-6 flex justify-end">
                 <button
                   onClick={() => savePreferences("colorappearance")}
@@ -745,9 +1487,9 @@ function Settings() {
                     <span>Deutsch</span>
                     {language === "de" && <BsCheck2 className="text-lg" />}
                   </button>
-                </div>
-              </div>
-
+                              </div>
+                          </div>
+                          
               <div className="mt-6 flex justify-end">
                 <button
                   onClick={() => savePreferences("language")}
@@ -756,9 +1498,9 @@ function Settings() {
                 >
                   {isLoading ? t("saving") : t("saveChanges")}
                 </button>
-              </div>
-            </div>
-          )}
+                                  </div>
+                                </div>
+                              )}
 
           {/* Notifications Tab */}
           {activeTab === "notifications" && (
@@ -769,7 +1511,7 @@ function Settings() {
                   <div>
                     <h3 className="font-medium">{t("emailNotifications")}</h3>
                     <p className="text-sm text-gray-500 dark:text-gray-400">{t("emailNotificationsDesc")}</p>
-                  </div>
+                                </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
                       type="checkbox"
@@ -799,8 +1541,8 @@ function Settings() {
                     <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
                   </label>
                 </div>
-              </div>
-
+                            </div>
+                            
               <div className="mt-6 flex justify-end">
                 <button
                   onClick={() => savePreferences("notifications")}
@@ -809,7 +1551,7 @@ function Settings() {
                 >
                   {isLoading ? t("saving") : t("saveChanges")}
                 </button>
-              </div>
+                            </div>
             </div>
           )}
 
@@ -831,7 +1573,7 @@ function Settings() {
                       className="w-full p-2 pr-10 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-blue-500"
                       required
                     />
-                    <button
+                            <button
                       type="button"
                       onClick={() => setShowCurrentPassword(!showCurrentPassword)}
                       className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
@@ -841,9 +1583,9 @@ function Settings() {
                       ) : (
                         <FaEye className="w-5 h-5" />
                       )}
-                    </button>
-                  </div>
-                </div>
+                            </button>
+                          </div>
+                        </div>
 
                 {/* New Password */}
                 <div>
@@ -870,8 +1612,8 @@ function Settings() {
                       )}
                     </button>
                   </div>
-                </div>
-
+                  </div>
+                  
                 {/* Confirm New Password */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -885,7 +1627,7 @@ function Settings() {
                       className="w-full p-2 pr-10 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-blue-500"
                       required
                     />
-                    <button
+                      <button 
                       type="button"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                       className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
@@ -895,8 +1637,8 @@ function Settings() {
                       ) : (
                         <FaEye className="w-5 h-5" />
                       )}
-                    </button>
-                  </div>
+                      </button>
+                    </div>
                 </div>
 
                 {/* Submit Button */}
@@ -920,11 +1662,11 @@ function Settings() {
                   </button>
                 </div>
               </form>
-            </div>
-          )}
-          
-          {/* Sessions Tab */}
-          {activeTab === "sessions" && (
+              </div>
+            )}
+
+            {/* Sessions Tab */}
+            {activeTab === "sessions" && (
             <div>
               <h2 className="text-xl font-semibold mb-4">{t("sessions")}</h2>
               <p className="text-gray-600 dark:text-gray-400 mb-4">
@@ -937,7 +1679,7 @@ function Settings() {
                     <div className="flex items-center">
                       <div className="p-2 bg-green-100 text-green-600 rounded-full mr-3">
                         <BiDevices className="text-xl" />
-                      </div>
+              </div>
                       <div>
                         <h3 className="font-medium">Current Session</h3>
                         <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -949,8 +1691,8 @@ function Settings() {
                       Active
                     </span>
                   </div>
-                </div>
-                
+          </div>
+
                 <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center">
@@ -971,13 +1713,13 @@ function Settings() {
                 </div>
               </div>
               
-              <button
+            <button
                 onClick={() => {/* Handle revoke all sessions */}}
                 className="px-4 py-2 text-red-600 border border-red-200 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/10"
-              >
+            >
                 {t("revokeAllSessions")}
-              </button>
-            </div>
+            </button>
+          </div>
           )}
         </div>
       </div>

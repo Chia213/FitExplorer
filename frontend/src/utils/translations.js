@@ -26,6 +26,13 @@ const translations = {
     selectLanguage: "Select Language",
     savePreferences: "Save Preferences",
     preferencesSaved: "Preferences saved successfully",
+    appearancePreferencesSaved: "Appearance preferences saved successfully",
+    colorAppearancePreferencesSaved: "Color appearance preferences saved successfully",
+    languagePreferencesSaved: "Language preferences saved successfully",
+    notificationPreferencesSaved: "Notification preferences saved successfully",
+    accountPreferencesSaved: "Account preferences saved successfully",
+    sessionsPreferencesSaved: "Session preferences saved successfully",
+    emojiSaved: "Emoji preferences saved successfully!",
     appearance: "Appearance",
     colorAppearance: "Color Appearance",
     theme: "Theme",
@@ -116,6 +123,16 @@ const translations = {
     workoutFrequencyGoal: "Workout Frequency Goal",
     dailyStreak: "Daily Streak",
     workoutsPerWeek: "workouts/week",
+    
+    // Animation related
+    cardPreview: "Card Preview",
+    applyAnimations: "Apply Animations",
+    enableAnimations: "Enable Animations",
+    animationSpeed: "Animation Speed",
+    cardAnimationPreviewText: "This shows how your profile card will appear with animations.",
+    premiumCardAnimationPreview: "Premium theme cards will also be animated with your selected style.",
+    themeAnimations: "Theme Animations",
+    animationsDescription: "Add beautiful animations to your profile cards and other elements throughout the app.",
   },
   
   sv: {
@@ -235,6 +252,16 @@ const translations = {
     workoutFrequencyGoal: "Träningsfrekvens Mål",
     dailyStreak: "Daglig Streak",
     workoutsPerWeek: "träningar/vecka",
+    
+    // Animation related
+    cardPreview: "Vista previa de tarjeta",
+    applyAnimations: "Aplicar animaciones",
+    enableAnimations: "Habilitar animaciones",
+    animationSpeed: "Velocidad de animación",
+    cardAnimationPreviewText: "Así es como aparecerá tu tarjeta de perfil con animaciones.",
+    premiumCardAnimationPreview: "Las tarjetas de tema premium también se animarán con tu estilo seleccionado.",
+    themeAnimations: "Animaciones de tema",
+    animationsDescription: "Añade hermosas animaciones a tus tarjetas de perfil y otros elementos en toda la aplicación.",
   }
 };
 
