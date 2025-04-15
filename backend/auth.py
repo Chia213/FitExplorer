@@ -2,8 +2,8 @@ from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 from email_validator import validate_email, EmailNotValidError
 import os
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, status, Body, Request
-from fastapi.responses import Response, RedirectResponse
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, status, Body
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 from sqlalchemy import func, inspect, text
 from passlib.context import CryptContext
@@ -20,12 +20,9 @@ from email_service import send_verification_email, notify_admin_new_registration
 
 from requests_oauthlib import OAuth2Session
 from dotenv import load_dotenv
-import requests
 
 import redis
 from redis.exceptions import ConnectionError
-
-from pydantic import BaseModel
 
 load_dotenv()
 
@@ -1363,57 +1360,3 @@ async def change_password(
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail="An error occurred while changing your password")
-
-class MobileGoogleAuthRequest(BaseModel):
-    id_token: str
-
-@router.get("/auth/mobile/callback")
-async def mobile_google_auth():
-    """Redirect to Google's mobile OAuth page"""
-    client_id = os.getenv("GOOGLE_CLIENT_ID")
-    redirect_uri = os.getenv("GOOGLE_MOBILE_REDIRECT_URI")
-    scope = "email profile"
-    
-    auth_url = (
-        f"https://accounts.google.com/o/oauth2/v2/auth?"
-        f"client_id={client_id}&"
-        f"redirect_uri={redirect_uri}&"
-        f"response_type=code&"
-        f"scope={scope}&"
-        f"access_type=offline&"
-        f"prompt=consent"
-    )
-    
-    return RedirectResponse(url=auth_url)
-
-@router.post("/auth/mobile/callback")
-async def mobile_google_callback(request: MobileGoogleAuthRequest):
-    """Handle Google OAuth callback for mobile"""
-    try:
-        # Verify the ID token
-        idinfo = id_token.verify_oauth2_token(
-            request.id_token,
-            requests.Request(),
-            os.getenv("GOOGLE_CLIENT_ID")
-        )
-
-        # Get user info from the token
-        email = idinfo['email']
-        name = idinfo.get('name', '')
-        picture = idinfo.get('picture', '')
-
-        # Here you would typically:
-        # 1. Check if user exists in your database
-        # 2. Create user if they don't exist
-        # 3. Generate a JWT token
-        # 4. Return the token to the mobile app
-
-        # For now, we'll just return a success response
-        return {
-            "status": "success",
-            "email": email,
-            "name": name,
-            "picture": picture
-        }
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))

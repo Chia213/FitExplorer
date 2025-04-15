@@ -11,7 +11,6 @@ export default defineConfig({
   base: '/',
   server: {
     port: 5173,
-    host: true,
   },
   resolve: {
     alias: {
@@ -33,11 +32,6 @@ export default defineConfig({
           const info = assetInfo.name.split('.');
           const ext = info[info.length - 1];
 
-          // Special handling for icons
-          if (assetInfo.name.includes('/icons/')) {
-            return `assets/icons/${path.basename(assetInfo.name)}`;
-          }
-
           // Special handling for exercise GIFs
           if (ext === 'gif' && assetInfo.name.includes('/exercises/')) {
             const parts = assetInfo.name.split('/exercises/');
@@ -47,10 +41,7 @@ export default defineConfig({
 
           // For other assets, preserve their original structure
           return `assets/${assetInfo.name}`;
-        },
-        manualChunks: {
-          vendor: ['react', 'react-dom', 'react-router-dom'],
-        },
+        }
       }
     }
   },
