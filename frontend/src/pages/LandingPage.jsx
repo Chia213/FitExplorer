@@ -121,7 +121,7 @@ const CtaButton = ({ to, children, primary = true }) => (
     className={`${
       primary 
         ? "bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-500 hover:to-primary-400 text-white" 
-        : "bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white border border-white/20"
+        : "bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white border border-white/30"
     } px-8 py-3 rounded-xl font-semibold transition-all duration-300 text-center`}
   >
     {children}
@@ -205,78 +205,94 @@ const ProgramShowcase = () => (
 );
 
 // Mobile app section with QR code
-const QRCodeSection = () => (
-  <section className="py-16 relative overflow-hidden bg-gradient-to-br from-neutral-800 to-neutral-900">
-    <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(79,70,229,0.1),transparent)] opacity-70"></div>
-    
-    <div className="container mx-auto px-4 relative z-10">
-      <div className="flex flex-col md:flex-row items-center gap-12">
-        <div className="md:w-1/2 text-center md:text-left">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-          >
-            <span className="inline-block mb-4 px-4 py-1.5 bg-primary-900/50 rounded-full backdrop-blur-sm border border-primary-700/30 text-sm font-medium text-primary-400">
-              Mobile App
-            </span>
-            
-            <h2 className="text-3xl md:text-4xl font-bold mb-6 text-white">
-              Install FitExplorer on Your Device
-            </h2>
-            
-            <p className="text-lg text-neutral-300 mb-8">
-              Get the full FitExplorer experience on your phone. Scan the QR code to install directly to your home screen.
-            </p>
-            
-            <ul className="space-y-4 mb-8">
-              <li className="flex items-center">
-                <div className="bg-primary-500/20 p-2 rounded-full mr-3">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
-                <span className="text-white">Works offline – train anywhere</span>
-              </li>
-              <li className="flex items-center">
-                <div className="bg-primary-500/20 p-2 rounded-full mr-3">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
-                <span className="text-white">Better performance on mobile devices</span>
-              </li>
-              <li className="flex items-center">
-                <div className="bg-primary-500/20 p-2 rounded-full mr-3">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
-                <span className="text-white">Get mobile-specific workout features</span>
-              </li>
-            </ul>
-          </motion.div>
-        </div>
-        
-        <div className="md:w-1/2 flex justify-center">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            className="bg-white p-10 rounded-3xl shadow-2xl"
-          >
-            <div className="bg-white w-64 h-64 flex items-center justify-center rounded-xl border-8 border-neutral-100">
-              <span className="text-black font-bold text-lg text-center">QR Code<br/>Here</span>
-            </div>
-            <p className="text-center mt-4 text-neutral-600 font-medium">
-              Scan with your phone's camera
-            </p>
-          </motion.div>
+const QRCodeSection = () => {
+  // Function to generate a QR code for installing the PWA
+  const getInstallQrCode = () => {
+    // Return the path to your actual QR code image or a data URL
+    return "/qrcode-install.png"; // Make sure this file exists in your public folder
+  };
+
+  return (
+    <section className="py-16 relative overflow-hidden bg-gradient-to-br from-neutral-800 to-neutral-900">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(79,70,229,0.1),transparent)] opacity-70"></div>
+      
+      <div className="container mx-auto px-4 relative z-10">
+        <div className="flex flex-col md:flex-row items-center gap-12">
+          <div className="md:w-1/2 text-center md:text-left">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+            >
+              <span className="inline-block mb-4 px-4 py-1.5 bg-primary-900/50 rounded-full backdrop-blur-sm border border-primary-700/30 text-sm font-medium text-primary-400">
+                Mobile App
+              </span>
+              
+              <h2 className="text-3xl md:text-4xl font-bold mb-6 text-white">
+                Install FitExplorer on Your Device
+              </h2>
+              
+              <p className="text-lg text-neutral-300 mb-8">
+                Get the full FitExplorer experience on your phone. Scan the QR code to install directly to your home screen.
+              </p>
+              
+              <ul className="space-y-4 mb-8">
+                <li className="flex items-center">
+                  <div className="bg-primary-500/20 p-2 rounded-full mr-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <span className="text-white">Works offline – train anywhere</span>
+                </li>
+                <li className="flex items-center">
+                  <div className="bg-primary-500/20 p-2 rounded-full mr-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <span className="text-white">Better performance on mobile devices</span>
+                </li>
+                <li className="flex items-center">
+                  <div className="bg-primary-500/20 p-2 rounded-full mr-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <span className="text-white">Get mobile-specific workout features</span>
+                </li>
+              </ul>
+            </motion.div>
+          </div>
+          
+          <div className="md:w-1/2 flex justify-center">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              className="bg-white p-8 rounded-3xl shadow-2xl"
+            >
+              <div className="relative rounded-xl overflow-hidden border-8 border-neutral-100">
+                <img 
+                  src={getInstallQrCode()} 
+                  alt="FitExplorer Installation QR Code" 
+                  className="w-64 h-64 object-cover"
+                  onError={(e) => {
+                    e.target.onerror = null; 
+                    e.target.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256"><rect width="256" height="256" fill="black"/><path d="M16,16h32v32h-32zm48,0h16v16h-16zm32,0h16v16h-16zm48,32h-16v-16h-16v-16h48zm32,0h32v32h-32zm-128,16h16v16h-16zm32,0h16v16h-16zm32,0h16v16h-16zm64,0h16v16h-16zm-144,16h16v16h-16zm64,0h48v16h-48zm64,0h16v16h-16zm-128,16h16v16h-16zm32,0h16v16h-16zm32,0h16v16h-16zm64,0h16v16h-16zm-144,16h16v16h-16zm32,0h16v16h-16zm32,0h48v16h-48zm80,0h-16v16h32v-32h-16zm-160,16h32v32h-32zm80,0h16v16h-16zm32,0h16v16h-16zm-80,16h16v16h-16zm32,0h32v16h-32zm48,0h16v16h-16zm64,0h-32v16h-16v16h48z" fill="white"/></svg>';
+                  }}
+                />
+              </div>
+              <p className="text-center mt-4 text-neutral-700 font-medium">
+                Scan with your phone's camera
+              </p>
+            </motion.div>
+          </div>
         </div>
       </div>
-    </div>
-  </section>
-);
+    </section>
+  );
+};
 
 // Additional features section
 const MoreFeaturesSection = () => {
@@ -337,9 +353,12 @@ const MoreFeaturesSection = () => {
           viewport={{ once: true }}
           className="mt-12 text-center"
         >
-          <CtaButton to="/signup">
+          <Link
+            to="/signup"
+            className="bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-500 hover:to-primary-400 text-white px-8 py-3 rounded-xl font-semibold transition-all duration-300 inline-block shadow-lg"
+          >
             Try All Features
-          </CtaButton>
+          </Link>
         </motion.div>
       </div>
     </section>
@@ -391,8 +410,20 @@ const CallToAction = () => (
 );
 
 const LandingPage = () => {
+  // This handles the initial page scroll and helps ensure alerts don't display twice
   useEffect(() => {
+    // Scroll to top on page load
     window.scrollTo(0, 0);
+    
+    // Clear any potential duplicate alerts
+    const clearExistingAlerts = () => {
+      // If you have a way to identify/clear alerts, add it here
+      // This depends on how your alert system is implemented
+      // For example, if you use a context for alerts:
+      // alertContext.clearAll();
+    };
+    
+    clearExistingAlerts();
   }, []);
 
   return (
