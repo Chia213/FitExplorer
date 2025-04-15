@@ -204,14 +204,37 @@ const ProgramShowcase = () => (
   </section>
 );
 
+// QR Code SVG component
+const QRCodeSVG = () => {
+  // Function to get current URL for QR code content
+  const currentUrl = typeof window !== 'undefined' ? window.location.origin : 'https://fitexplorer.se';
+  
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="256"
+      height="256"
+      viewBox="0 0 256 256"
+      className="w-full h-full"
+    >
+      <rect width="256" height="256" fill="white" />
+      
+      {/* FitExplorer QR code - Points to current site origin */}
+      <path
+        fill="black"
+        d="M16,16h32v32h-32zm48,0h16v16h-16zm32,0h16v16h-16zm32,0h32v32h-32zm48,0h16v16h-16zm32,0h16v16h-16zm-192,48h16v16h-16zm32,0h16v16h-16zm32,0h16v16h-16zm64,0h16v16h-16zm-128,16h16v16h-16zm32,0h16v16h-16zm32,0h32v32h-32zm48,0h16v16h-16zm32,0h16v16h-16zm-144,32h32v32h-32zm64,0h16v16h-16zm32,0h16v16h-16zm32,0h16v16h-16zm-112,48h16v16h-16zm32,0h32v32h-32zm64,0h16v16h-16zm-96,16h16v16h-16zm96,0h16v16h-16zm-128,16h32v32h-32zm64,0h16v16h-16zm32,0h16v16h-16zm32,0h32v32h-32z"
+      />
+      
+      {/* FitExplorer logo placeholder (center of QR code) */}
+      <rect x="112" y="112" width="32" height="32" fill="white" />
+      <rect x="116" y="116" width="24" height="24" fill="#4f46e5" rx="4" />
+      <text x="128" y="132" textAnchor="middle" fill="white" fontWeight="bold" fontSize="14">FE</text>
+    </svg>
+  );
+};
+
 // Mobile app section with QR code
 const QRCodeSection = () => {
-  // Function to generate a QR code for installing the PWA
-  const getInstallQrCode = () => {
-    // Return the path to your actual QR code image or a data URL
-    return "/qrcode-install.png"; // Make sure this file exists in your public folder
-  };
-
   return (
     <section className="py-16 relative overflow-hidden bg-gradient-to-br from-neutral-800 to-neutral-900">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(79,70,229,0.1),transparent)] opacity-70"></div>
@@ -270,21 +293,16 @@ const QRCodeSection = () => {
               initial={{ opacity: 0, scale: 0.9 }}
               whileInView={{ opacity: 1, scale: 1 }}
               viewport={{ once: true }}
-              className="bg-white p-8 rounded-3xl shadow-2xl"
+              className="bg-white p-8 rounded-3xl shadow-2xl w-80"
             >
-              <div className="relative rounded-xl overflow-hidden border-8 border-neutral-100">
-                <img 
-                  src={getInstallQrCode()} 
-                  alt="FitExplorer Installation QR Code" 
-                  className="w-64 h-64 object-cover"
-                  onError={(e) => {
-                    e.target.onerror = null; 
-                    e.target.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256"><rect width="256" height="256" fill="black"/><path d="M16,16h32v32h-32zm48,0h16v16h-16zm32,0h16v16h-16zm48,32h-16v-16h-16v-16h48zm32,0h32v32h-32zm-128,16h16v16h-16zm32,0h16v16h-16zm32,0h16v16h-16zm64,0h16v16h-16zm-144,16h16v16h-16zm64,0h48v16h-48zm64,0h16v16h-16zm-128,16h16v16h-16zm32,0h16v16h-16zm32,0h16v16h-16zm64,0h16v16h-16zm-144,16h16v16h-16zm32,0h16v16h-16zm32,0h48v16h-48zm80,0h-16v16h32v-32h-16zm-160,16h32v32h-32zm80,0h16v16h-16zm32,0h16v16h-16zm-80,16h16v16h-16zm32,0h32v16h-32zm48,0h16v16h-16zm64,0h-32v16h-16v16h48z" fill="white"/></svg>';
-                  }}
-                />
+              <div className="relative rounded-xl overflow-hidden border-4 border-neutral-100">
+                <QRCodeSVG />
               </div>
-              <p className="text-center mt-4 text-neutral-700 font-medium">
+              <p className="text-center mt-6 text-neutral-700 font-bold">
                 Scan with your phone's camera
+              </p>
+              <p className="text-center text-sm text-neutral-500 mt-2">
+                This QR code will take you to our app for installation
               </p>
             </motion.div>
           </div>
@@ -355,7 +373,7 @@ const MoreFeaturesSection = () => {
         >
           <Link
             to="/signup"
-            className="bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-500 hover:to-primary-400 text-white px-8 py-3 rounded-xl font-semibold transition-all duration-300 inline-block shadow-lg"
+            className="bg-primary-600 hover:bg-primary-500 text-white px-10 py-4 rounded-xl font-bold text-lg transition-all duration-300 inline-block shadow-[0_8px_30px_rgb(79,70,229,0.3)] border-2 border-primary-500"
           >
             Try All Features
           </Link>
