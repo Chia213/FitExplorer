@@ -1,12 +1,21 @@
 // Service Worker for FitExplorer PWA
-const CACHE_NAME = 'fitexplorer-v1';
+const CACHE_NAME = 'fitexplorer-v2';
 const urlsToCache = [
   '/',
   '/index.html',
   '/manifest.json',
+  '/favicon.ico',
   '/src/main.jsx',
   '/src/assets/Ronjasdrawing.png',
   '/qr-install.html',
+  '/qr-redirect.html',
+  '/icons/icon-192x192.png',
+  '/icons/icon-512x512.png',
+  '/icons/maskable_icon.png',
+  '/icons/splash-640x1136.png',
+  '/icons/splash-750x1334.png',
+  '/icons/splash-1242x2208.png',
+  '/icons/splash-1125x2436.png',
 ];
 
 // Install event - cache assets
@@ -49,6 +58,23 @@ self.addEventListener('fetch', event => {
     return;
   }
   
+  // Handle QR redirect requests
+  if (event.request.url.includes('/qr-redirect')) {
+    event.respondWith(caches.match('/qr-redirect.html'));
+    return;
+  }
+  
+  // Handle icons specifically for PWA installation
+  if (event.request.url.includes('/icons/')) {
+    const iconUrl = new URL(event.request.url);
+    const iconPath = iconUrl.pathname;
+    event.respondWith(
+      caches.match(iconPath)
+        .then(response => response || fetch(event.request))
+    );
+    return;
+  }
+  
   event.respondWith(
     caches.match(event.request)
       .then(response => {
@@ -81,7 +107,7 @@ self.addEventListener('fetch', event => {
           })
           .catch(() => {
             // Fallback for offline pages
-            if (event.request.headers.get('accept').includes('text/html')) {
+            if (event.request.headers.get('accept')?.includes('text/html')) {
               return caches.match('/index.html');
             }
           });
@@ -89,7 +115,7 @@ self.addEventListener('fetch', event => {
   );
 });
 
-// Handle messages from clients
+// Handle app installation events
 self.addEventListener('message', event => {
   if (event.data && event.data.type === 'PROMPT_INSTALL') {
     self.clients.matchAll().then(clients => {

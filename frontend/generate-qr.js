@@ -9,7 +9,7 @@ const __dirname = path.dirname(__filename);
 
 // Get your domain from the command line or use a default
 const domain = process.argv[2] || 'https://yourapp-domain.com';
-const qrUrl = `${domain}/qr-install`;
+const qrUrl = `${domain}/qr-redirect.html`; // Point to the redirect page
 
 // Output filepath
 const outputDir = path.join(__dirname, 'public', 'assets');
