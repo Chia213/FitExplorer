@@ -33,43 +33,82 @@ const staggerContainer = {
   }
 };
 
-const TestimonialCard = ({ testimonial }) => (
+const TestimonialCard = ({ testimonial, index }) => (
   <motion.div
     initial={{ opacity: 0, y: 20 }}
     whileInView={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.5, delay: index * 0.1 }}
     viewport={{ once: true }}
-    className="glass-effect rounded-2xl p-6"
+    className="bg-neutral-800/60 backdrop-blur-sm border border-neutral-700/50 rounded-2xl p-6 h-full hover:shadow-lg transition-all duration-300 relative group"
+    style={{ boxShadow: "0 0 0 1px rgba(255, 255, 255, 0.05) inset" }}
   >
-    <div className="flex items-center mb-4">
-      <img
-        src={testimonial.avatar}
-        alt={testimonial.name}
-        className="w-12 h-12 rounded-full mr-4"
-      />
-      <div>
-        <h4 className="font-semibold text-white">{testimonial.name}</h4>
-        <p className="text-sm text-neutral-400">{testimonial.title}</p>
+    <div className="absolute -top-1 -left-1 w-8 h-8 bg-primary-500 rounded-lg flex items-center justify-center text-white font-bold text-sm">
+      {index + 1}
+    </div>
+    <div className="absolute -right-3 -bottom-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+      <div className="text-5xl text-neutral-700 font-serif">"</div>
+    </div>
+    <div className="pt-6 pb-6">
+      <p className="text-neutral-300 italic mb-6 relative">
+        <span className="text-2xl text-primary-400 absolute -top-3 -left-1">"</span>
+        {testimonial.quote}
+        <span className="text-2xl text-primary-400 absolute -bottom-3 -right-1">"</span>
+      </p>
+      <div className="flex items-center">
+        <img
+          src={testimonial.avatar}
+          alt={testimonial.name}
+          className="w-12 h-12 rounded-full mr-4 border-2 border-white/10 object-cover"
+        />
+        <div>
+          <h4 className="font-semibold bg-gradient-to-r from-primary-400 to-accent-400 bg-clip-text text-transparent">
+            {testimonial.name}
+          </h4>
+          <p className="text-sm text-neutral-400">{testimonial.title}</p>
+        </div>
       </div>
     </div>
-    <p className="text-neutral-300 italic">{testimonial.quote}</p>
   </motion.div>
 );
 
 const CallToAction = () => (
   <section className="py-20 relative overflow-hidden">
-    <div className="absolute inset-0 bg-gradient-to-r from-primary-900 to-accent-900"></div>
+    <div className="absolute inset-0 bg-gradient-to-r from-primary-800 to-accent-800"></div>
     <div className="absolute inset-0 bg-[url('/src/assets/pattern.svg')] opacity-10"></div>
     
+    {/* Background decorations */}
+    <motion.div 
+      className="absolute top-1/4 -left-24 w-64 h-64 rounded-full bg-white/5 backdrop-blur-lg"
+      animate={{ y: [0, -30, 0], rotate: [0, 5, 0] }}
+      transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+    />
+    
+    <motion.div 
+      className="absolute bottom-1/4 -right-24 w-80 h-80 rounded-full bg-white/5 backdrop-blur-lg"
+      animate={{ y: [0, 30, 0], rotate: [0, -5, 0] }}
+      transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+    />
+    
     <div className="container-modern relative z-10">
-      <div className="max-w-3xl mx-auto text-center">
+      <motion.div 
+        className="max-w-3xl mx-auto bg-black/20 backdrop-blur-md rounded-2xl p-8 md:p-12 border border-white/10 shadow-xl"
+        initial={{ opacity: 0, y: 40 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.6 }}
+      >
+        <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-primary-500 to-accent-500 rounded-full py-2 px-6 shadow-lg">
+          <span className="text-white font-bold">Join Today</span>
+        </div>
+        
         <motion.h2
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="text-3xl md:text-4xl font-bold mb-6"
+          className="text-3xl md:text-4xl font-bold mb-6 text-center"
         >
           Ready to Transform Your
-          <span className="block text-transparent bg-clip-text bg-gradient-to-r from-primary-400 to-accent-400">
+          <span className="block text-transparent bg-clip-text bg-gradient-to-r from-primary-400 to-accent-400 mt-1">
             Fitness Journey?
           </span>
         </motion.h2>
@@ -79,10 +118,10 @@ const CallToAction = () => (
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ delay: 0.2 }}
-          className="text-lg text-neutral-300 mb-8"
+          className="text-lg text-neutral-300 mb-8 text-center"
         >
           Join thousands of users who have already transformed their lives with FitExplorer.
-          Start your 14-day free trial today!
+          Start your 14-day free trial today with no credit card required!
         </motion.p>
         
         <motion.div
@@ -94,18 +133,43 @@ const CallToAction = () => (
         >
           <Link
             to="/signup"
-            className="btn-primary text-lg px-8 py-4"
+            className="relative overflow-hidden group bg-gradient-to-r from-primary-600 to-primary-500 text-white text-lg px-8 py-4 rounded-lg shadow-lg flex items-center justify-center"
           >
-            Start Free Trial
+            <span className="relative z-10 font-semibold">Start Free Trial</span>
+            <span className="absolute inset-0 bg-gradient-to-r from-accent-500 to-accent-600 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></span>
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2 relative z-10" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
+            </svg>
           </Link>
           <Link
             to="/about"
-            className="glass-effect text-white text-lg px-8 py-4 rounded-lg hover:bg-white/20 transition-colors duration-300"
+            className="bg-white/10 backdrop-blur-sm text-white text-lg px-8 py-4 rounded-lg hover:bg-white/20 transition-colors duration-300 border border-white/20"
           >
             Learn More
           </Link>
         </motion.div>
-      </div>
+        
+        <div className="mt-8 pt-8 border-t border-white/10 flex flex-wrap justify-center gap-4">
+          {[
+            { icon: "🎯", text: "Personalized Workouts" },
+            { icon: "📊", text: "Progress Tracking" },
+            { icon: "🥗", text: "Nutrition Plans" },
+            { icon: "📱", text: "Mobile Optimized" }
+          ].map((item, index) => (
+            <motion.div 
+              key={index}
+              initial={{ opacity: 0, y: 10 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.6 + (index * 0.1) }}
+              className="flex items-center text-sm text-neutral-300"
+            >
+              <span className="mr-2">{item.icon}</span>
+              <span>{item.text}</span>
+            </motion.div>
+          ))}
+        </div>
+      </motion.div>
     </div>
   </section>
 );
@@ -249,9 +313,19 @@ const LandingPage = () => {
       <FeaturesSection />
       
       {/* Testimonials Section */}
-      <section className="py-20">
-        <div className="container-modern">
+      <section className="py-20 bg-neutral-800 relative overflow-hidden">
+        <div className="absolute inset-0 bg-[url('/src/assets/grid-pattern.svg')] opacity-5"></div>
+        <div className="container-modern relative z-10">
           <div className="text-center mb-16">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="inline-block mb-2 px-4 py-1.5 bg-accent-900/50 rounded-full backdrop-blur-sm border border-accent-700/30"
+            >
+              <span className="text-sm font-medium text-accent-400">User Experiences</span>
+            </motion.div>
+            
             <motion.h2
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -273,7 +347,7 @@ const LandingPage = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {testimonials.map((testimonial, index) => (
-              <TestimonialCard key={index} testimonial={testimonial} />
+              <TestimonialCard key={index} testimonial={testimonial} index={index} />
             ))}
           </div>
         </div>
