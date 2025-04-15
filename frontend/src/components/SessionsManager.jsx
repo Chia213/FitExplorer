@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiUser, FiLogOut, FiSettings, FiTrash2, FiClock, FiShield, FiInfo, FiGlobe, FiSmartphone, FiDesktop } from 'react-icons/fi';
+import { FiUser, FiLogOut, FiSettings, FiTrash2, FiClock, FiShield, FiInfo, FiMonitor, FiSmartphone, FiGlobe } from 'react-icons/fi';
 import { getUserSessions, revokeSession, revokeAllSessions, updateSessionSettings, logoutUser } from '../api/auth';
 import { format, formatDistanceToNow } from 'date-fns';
 
@@ -79,7 +79,7 @@ const SessionsManager = () => {
     if (!deviceInfo || deviceInfo === 'Unknown') return <FiGlobe />;
     if (deviceInfo === 'Mobile') return <FiSmartphone />;
     if (deviceInfo === 'Tablet') return <FiSmartphone />;
-    return <FiDesktop />;
+    return <FiMonitor />;
   };
 
   const handleLogout = async () => {
