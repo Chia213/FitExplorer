@@ -386,6 +386,27 @@ function Login() {
           {/* Custom English Google sign-in button */}
           <button
             onClick={() => {
+              // Check if running as PWA
+              const isPwa = window.matchMedia('(display-mode: standalone)').matches || 
+                            window.navigator.standalone === true;
+              
+              // If in PWA mode, we'll use a different approach since popups behave differently
+              if (isPwa) {
+                // For PWA, it's better to redirect the whole app rather than using a popup
+                // First create a "return to" indicator in localStorage
+                localStorage.setItem('auth_return_to', window.location.pathname);
+                
+                // Directly trigger the Google login without popup
+                try {
+                  document.querySelector('[aria-labelledby="button-label"]')?.click();
+                } catch (e) {
+                  console.error("Failed to trigger Google login:", e);
+                  setError("Could not initiate Google login. Please try again.");
+                }
+                return;
+              }
+              
+              // Non-PWA flow - use popup approach
               // Calculate window size and position for centered popup
               const width = 450;
               const height = 630;

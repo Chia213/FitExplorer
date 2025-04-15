@@ -30,7 +30,7 @@
   "scope": "/",
   "display": "standalone",
   "display_override": ["standalone", "fullscreen", "minimal-ui"],
-  "theme_color": "#4f46e5",
+  "theme_color": "#e5e7eb",
   "background_color": "#1f2937",
   "orientation": "portrait",
   "description": "Track workouts, nutrition, and fitness progress with FitExplorer",

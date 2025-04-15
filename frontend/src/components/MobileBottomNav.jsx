@@ -30,6 +30,10 @@ const MobileBottomNav = () => {
     return null;
   }
   
+  // Check if the app is running in standalone mode (installed PWA)
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
+                      window.navigator.standalone === true;
+  
   // Navigation items for the bottom nav
   const navItems = [
     { path: '/', icon: <FaHome className="w-6 h-6" />, label: 'Home' },
@@ -44,7 +48,7 @@ const MobileBottomNav = () => {
       initial={{ y: 100 }}
       animate={{ y: 0 }}
       transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-      className="fixed bottom-0 left-0 right-0 z-50 h-16 bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg border-t border-gray-200 dark:border-gray-800 flex justify-around items-center px-2 md:hidden"
+      className={`fixed bottom-0 left-0 right-0 z-50 h-16 bg-gray-200 dark:bg-gray-200 border-t border-gray-300 flex justify-around items-center px-2 md:hidden ${isStandalone ? 'bottom-nav' : ''}`}
     >
       {navItems.map((item) => {
         const isActive = location.pathname === item.path || 
@@ -63,18 +67,18 @@ const MobileBottomNav = () => {
             }}
           >
             <div className="relative flex flex-col items-center">
-              <div className={`p-1 rounded-full transition-colors ${isActive ? 'text-primary-500' : 'text-gray-600 dark:text-gray-400'}`}>
+              <div className={`p-1 rounded-full transition-colors ${isActive ? 'text-black' : 'text-gray-600'}`}>
                 {item.icon}
                 
                 {isActive && (
                   <motion.div
                     layoutId="bottomNavIndicator"
-                    className="absolute -bottom-1 w-1 h-1 bg-primary-500 rounded-full"
+                    className="absolute -bottom-1 w-1 h-1 bg-black rounded-full"
                     transition={{ type: 'spring', stiffness: 500, damping: 30 }}
                   />
                 )}
               </div>
-              <span className={`text-xs mt-1 ${isActive ? 'text-primary-500 font-medium' : 'text-gray-600 dark:text-gray-400'}`}>
+              <span className={`text-xs mt-1 ${isActive ? 'text-black font-medium' : 'text-gray-600'}`}>
                 {item.label}
               </span>
             </div>

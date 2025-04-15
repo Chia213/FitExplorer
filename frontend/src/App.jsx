@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Outlet, useNavigate, useLocation } from "react-router-dom";
+import { useEffect } from "react";
 import Navbar from "./components/Navbar";
 import Layout from "./components/Layout";
 import PageTransition from "./components/PageTransition";
@@ -61,6 +62,32 @@ import "./styles/micro-interactions.css";
 import "./styles/custom-scrollbar.css";
 import "./styles/responsive-utilities.css";
 
+// Component to handle OAuth return in PWA mode
+const OAuthHandler = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  
+  useEffect(() => {
+    // Check if we're returning from an OAuth flow
+    const isPwa = window.matchMedia('(display-mode: standalone)').matches || 
+                  window.navigator.standalone === true;
+    
+    if (isPwa) {
+      // Check for access_token in localStorage that might have been set during login
+      const token = localStorage.getItem('access_token');
+      const returnTo = localStorage.getItem('auth_return_to');
+      
+      // If we have a token and return path, redirect to the return path
+      if (token && returnTo && location.pathname === '/login') {
+        localStorage.removeItem('auth_return_to'); // Clear the return path
+        navigate(returnTo);
+      }
+    }
+  }, [navigate, location]);
+  
+  return null; // This component doesn't render anything
+};
+
 // WelcomeModalWrapper component to manage the welcome modal
 const WelcomeModalWrapper = () => {
   const {
@@ -92,6 +119,7 @@ function App() {
               <Navbar />
               <Layout>
                 <ScrollToTop />
+                <OAuthHandler />
                 <PageTransition>
                   <Routes>
                     {/* Public Routes */}

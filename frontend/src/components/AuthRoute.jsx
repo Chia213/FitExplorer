@@ -8,6 +8,11 @@ const AuthRoute = ({ children }) => {
   const location = useLocation();
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
+  // Check if running as PWA
+  const isPwa = typeof window !== 'undefined' && 
+                (window.matchMedia('(display-mode: standalone)').matches || 
+                window.navigator.standalone === true);
+
   useEffect(() => {
     const checkAuth = async () => {
       try {
@@ -23,7 +28,9 @@ const AuthRoute = ({ children }) => {
         const response = await fetch(`${API_URL}/auth/verify-session`, {
           headers: {
             'Authorization': `Bearer ${token}`
-          }
+          },
+          // Add a cache busting parameter for PWA
+          cache: isPwa ? 'no-store' : 'default'
         });
         
         if (response.ok) {
@@ -68,17 +75,34 @@ const AuthRoute = ({ children }) => {
     
     window.addEventListener("auth-change", handleAuthChange);
     
+    // Special handling for PWA mode
+    if (isPwa) {
+      // Check authentication status more frequently in PWA mode
+      // This helps with OAuth redirect flows
+      const interval = setInterval(checkAuth, 3000);
+      return () => {
+        clearInterval(interval);
+        window.removeEventListener("storage", handleStorageChange);
+        window.removeEventListener("auth-change", handleAuthChange);
+      };
+    }
+    
     return () => {
       window.removeEventListener("storage", handleStorageChange);
       window.removeEventListener("auth-change", handleAuthChange);
     };
-  }, [API_URL]);
+  }, [API_URL, isPwa]);
 
   if (loading) {
     return <LoadingSpinner />;
   }
 
   if (!isAuthenticated) {
+    // Save current location for return after login
+    if (isPwa && location.pathname !== '/login') {
+      localStorage.setItem("auth_return_to", location.pathname);
+    }
+    
     // Redirect to login and pass the intended location
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
