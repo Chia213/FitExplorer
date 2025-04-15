@@ -521,3 +521,20 @@ class BadgeSelectionRequest(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class UserSessionResponse(BaseModel):
+    id: int
+    created_at: datetime
+    expires_at: datetime
+    ip_address: Optional[str] = None
+    user_agent: Optional[str] = None
+    device_info: Optional[str] = None
+    is_active: bool
+
+    class Config:
+        from_attributes = True
+
+
+class SessionSettingsUpdate(BaseModel):
+    allow_multiple_sessions: bool

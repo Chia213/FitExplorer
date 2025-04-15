@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { FaLock, FaEye, FaEyeSlash, FaSave, FaTimes, FaUser, FaBell, FaLanguage, FaPalette, FaCrown } from "react-icons/fa";
+import { FaLock, FaEye, FaEyeSlash, FaSave, FaTimes, FaUser, FaBell, FaLanguage, FaPalette, FaCrown, FaShieldAlt } from "react-icons/fa";
 import { getTranslation } from "../utils/translations";
 import { useLanguage } from "../contexts/LanguageContext";
 import { useTheme, premiumThemes } from "../hooks/useTheme";
+import SessionsManager from "../components/SessionsManager";
 
 const backendURL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
@@ -266,7 +267,8 @@ function Settings() {
     { id: "account", label: getTranslation("account", userPreferences.language), icon: <FaUser className="w-5 h-5" /> },
     { id: "notifications", label: getTranslation("notifications", userPreferences.language), icon: <FaBell className="w-5 h-5" /> },
     { id: "language", label: getTranslation("language", userPreferences.language), icon: <FaLanguage className="w-5 h-5" /> },
-    { id: "appearance", label: getTranslation("appearance", userPreferences.language) || "Appearance", icon: <FaPalette className="w-5 h-5" /> }
+    { id: "appearance", label: getTranslation("appearance", userPreferences.language) || "Appearance", icon: <FaPalette className="w-5 h-5" /> },
+    { id: "sessions", label: "Sessions", icon: <FaShieldAlt className="w-5 h-5" /> }
   ];
 
   return (
@@ -837,6 +839,19 @@ function Settings() {
                     </div>
                   )}
                 </div>
+              </div>
+            )}
+
+            {/* Sessions Tab */}
+            {activeTab === "sessions" && (
+              <div className="space-y-6">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                  Session Management
+                </h2>
+                <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">
+                  Manage your active sessions and control where you're logged in.
+                </p>
+                <SessionsManager />
               </div>
             )}
           </div>

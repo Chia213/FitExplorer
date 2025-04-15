@@ -28,6 +28,7 @@ class User(Base):
     deletion_token_expires_at = Column(DateTime(timezone=True), nullable=True)
     is_active = Column(Boolean, default=True)
     last_login = Column(DateTime(timezone=True), nullable=True)
+    allow_multiple_sessions = Column(Boolean, default=False)
     
     # Add new profile fields
     height = Column(Float, nullable=True)
@@ -62,6 +63,7 @@ class User(Base):
     nutrition_meals = relationship("NutritionMeal", back_populates="user", cascade="all, delete-orphan")
     nutrition_goal = relationship("NutritionGoal", back_populates="user", uselist=False, cascade="all, delete-orphan")
     rewards = relationship("UserReward", back_populates="user", cascade="all, delete-orphan", lazy="noload", overlaps="rewards")
+    sessions = relationship("UserSession", back_populates="user", cascade="all, delete-orphan")
 
 
 class UserProfile(Base):
@@ -415,3 +417,18 @@ class UserReward(Base):
     claimed_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))
 
     user = relationship("User", back_populates="rewards")
+
+class UserSession(Base):
+    __tablename__ = "user_sessions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    token = Column(String, nullable=False, index=True)
+    created_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    ip_address = Column(String, nullable=True)
+    user_agent = Column(String, nullable=True)
+    device_info = Column(String, nullable=True)
+    is_active = Column(Boolean, default=True)
+
+    user = relationship("User", back_populates="sessions")

@@ -2,7 +2,7 @@ from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 from email_validator import validate_email, EmailNotValidError
 import os
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, status, Body
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, status, Body, Request
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 from sqlalchemy import func, inspect, text
@@ -11,8 +11,8 @@ from datetime import timedelta, datetime, timezone
 import jwt as pyjwt
 from jwt.exceptions import PyJWTError as JWTError
 from database import get_db, SessionLocal
-from models import User, AdminSettings, Set, Exercise, Workout, WorkoutPreferences, NutritionMeal, NutritionFood, NutritionGoal, CommonFood
-from schemas import UserCreate, UserLogin, Token, GoogleTokenVerifyRequest, GoogleAuthResponse, ForgotPasswordRequest, ResetPasswordRequest, TokenVerificationRequest, ConfirmAccountDeletionRequest, ResendVerificationRequest, ChangePasswordRequest
+from models import User, AdminSettings, Set, Exercise, Workout, WorkoutPreferences, NutritionMeal, NutritionFood, NutritionGoal, CommonFood, UserSession
+from schemas import UserCreate, UserLogin, Token, GoogleTokenVerifyRequest, GoogleAuthResponse, ForgotPasswordRequest, ResetPasswordRequest, TokenVerificationRequest, ConfirmAccountDeletionRequest, ResendVerificationRequest, ChangePasswordRequest, SessionSettingsUpdate, UserSessionResponse
 from config import settings
 from security import generate_verification_token, hash_password, verify_password
 from dependencies import get_current_user as original_get_current_user, oauth2_scheme
@@ -20,6 +20,7 @@ from email_service import send_verification_email, notify_admin_new_registration
 
 from requests_oauthlib import OAuth2Session
 from dotenv import load_dotenv
+import uuid
 
 import redis
 from redis.exceptions import ConnectionError
@@ -242,7 +243,7 @@ def register(user: UserCreate, background_tasks: BackgroundTasks, db: Session = 
 
 
 @router.post("/token", response_model=Token)
-def login(user: UserLogin, db: Session = Depends(get_db)):
+def login(user: UserLogin, request: Request, db: Session = Depends(get_db)):
     db_user = db.query(User).filter(User.email == user.email).first()
 
     if not db_user:
@@ -271,6 +272,21 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
         raise HTTPException(
             status_code=401, detail="Account not verified. Please check your email for verification link.")
 
+    # Check for existing active sessions
+    active_sessions = db.query(UserSession).filter(
+        UserSession.user_id == db_user.id,
+        UserSession.is_active == True,
+        UserSession.expires_at > datetime.now(timezone.utc)
+    ).all()
+
+    # If there are active sessions and multiple sessions aren't allowed
+    if active_sessions and not db_user.allow_multiple_sessions:
+        # Invalidate all existing sessions
+        for session in active_sessions:
+            session.is_active = False
+        db.commit()
+        print(f"Invalidated existing sessions for user {db_user.email} on new login")
+    
     # Update last login timestamp
     db_user.last_login = datetime.now(timezone.utc)
     db.commit()
@@ -280,6 +296,34 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
         {"sub": db_user.username}, 
         timedelta(minutes=admin_settings.session_timeout)
     )
+
+    # Create a new session record
+    expires_at = datetime.now(timezone.utc) + timedelta(minutes=admin_settings.session_timeout)
+    user_agent = request.headers.get("user-agent", "")
+    ip_address = request.client.host if request.client else None
+    
+    # Extract basic device info from user agent
+    device_info = "Unknown"
+    if user_agent:
+        if "Mobile" in user_agent:
+            device_info = "Mobile"
+        elif "Tablet" in user_agent:
+            device_info = "Tablet"
+        else:
+            device_info = "Desktop/Laptop"
+    
+    new_session = UserSession(
+        user_id=db_user.id,
+        token=access_token,
+        expires_at=expires_at,
+        ip_address=ip_address,
+        user_agent=user_agent,
+        device_info=device_info,
+        is_active=True
+    )
+    db.add(new_session)
+    db.commit()
+    
     print(f"Login successful for user {db_user.email}")
     return {"access_token": access_token, "token_type": "bearer"}
 
@@ -294,7 +338,7 @@ async def google_login():
 
 
 @router.get("/callback")
-async def google_callback(code: str, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+async def google_callback(code: str, request: Request, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     try:
         google_oauth = OAuth2Session(
             GOOGLE_CLIENT_ID, redirect_uri=GOOGLE_REDIRECT_URI)
@@ -434,18 +478,69 @@ async def google_callback(code: str, background_tasks: BackgroundTasks, db: Sess
 
             user = existing_user
 
+        # Check for existing active sessions
+        active_sessions = db.query(UserSession).filter(
+            UserSession.user_id == user.id,
+            UserSession.is_active == True,
+            UserSession.expires_at > datetime.now(timezone.utc)
+        ).all()
+
+        # If there are active sessions and multiple sessions aren't allowed
+        if active_sessions and not user.allow_multiple_sessions:
+            # Invalidate all existing sessions
+            for session in active_sessions:
+                session.is_active = False
+            db.commit()
+            print(f"Invalidated existing sessions for user {user.email} on new Google login")
+
+        admin_settings = db.query(AdminSettings).first()
+        session_timeout = settings.ACCESS_TOKEN_EXPIRE_MINUTES
+        if admin_settings:
+            session_timeout = admin_settings.session_timeout
+
         access_token = create_access_token(
-            {"sub": user.username}, timedelta(
-                minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+            {"sub": user.username}, timedelta(minutes=session_timeout)
         )
 
-        return {"access_token": access_token, "token_type": "bearer"}
+        # Create a new session record
+        expires_at = datetime.now(timezone.utc) + timedelta(minutes=session_timeout)
+        user_agent = request.headers.get("user-agent", "")
+        ip_address = request.client.host if request.client else None
+        
+        # Extract basic device info from user agent
+        device_info = "Unknown"
+        if user_agent:
+            if "Mobile" in user_agent:
+                device_info = "Mobile"
+            elif "Tablet" in user_agent:
+                device_info = "Tablet"
+            else:
+                device_info = "Desktop/Laptop"
+        
+        new_session = UserSession(
+            user_id=user.id,
+            token=access_token,
+            expires_at=expires_at,
+            ip_address=ip_address,
+            user_agent=user_agent,
+            device_info=device_info,
+            is_active=True
+        )
+        db.add(new_session)
+        db.commit()
 
-    except ValueError as e:
-        raise HTTPException(status_code=401, detail=f"Invalid token: {str(e)}")
+        # Update last login time
+        user.last_login = datetime.now(timezone.utc)
+        db.commit()
+
+        redirect_url = f"{settings.FRONTEND_URL}/login/success?token={access_token}"
+        return Response(status_code=303, headers={"Location": redirect_url})
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Authentication error: {str(e)}")
+        print(f"Google login failed: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        redirect_url = f"{settings.FRONTEND_URL}/login/error?message=Google login failed"
+        return Response(status_code=303, headers={"Location": redirect_url})
 
 
 @router.post("/google-verify", response_model=GoogleAuthResponse)
@@ -1271,22 +1366,38 @@ async def verify_session(current_user: User = Depends(original_get_current_user)
 
 
 @router.post("/logout", status_code=200)
-async def logout(token: str = Depends(oauth2_scheme), current_user: User = Depends(original_get_current_user)):
+async def logout(token: str = Depends(oauth2_scheme), current_user: User = Depends(original_get_current_user), db: Session = Depends(get_db)):
     """
     Logout the current user by invalidating their token
     """
     try:
-        # Extract expiry from token to know how long to blacklist it
-        payload = pyjwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"], options={"verify_signature": False})
-        expires_at = datetime.fromtimestamp(payload.get("exp", 0))
-        current_time = datetime.utcnow()
+        # Invalidate current session in the database
+        session = db.query(UserSession).filter(
+            UserSession.token == token,
+            UserSession.user_id == current_user.id,
+            UserSession.is_active == True
+        ).first()
         
-        # Calculate seconds remaining until token expiry
-        # If token is already expired, we don't need to blacklist it
-        if expires_at > current_time:
-            expires_delta = int((expires_at - current_time).total_seconds())
-            blacklist_token(token, expires_delta)
+        if session:
+            session.is_active = False
+            db.commit()
+            print(f"Session for user {current_user.username} invalidated")
         
+        # Add token to blacklist with expiry time from JWT payload
+        try:
+            payload = pyjwt.decode(
+                token, settings.SECRET_KEY, algorithms=["HS256"])
+            expire = payload.get("exp")
+            
+            if expire:
+                current_time = int(datetime.now(timezone.utc).timestamp())
+                expires_delta = expire - current_time
+                if expires_delta > 0:
+                    blacklist_token(token, expires_delta)
+        except JWTError:
+            # If token can't be decoded, blacklist it for a default period
+            blacklist_token(token, 86400)  # 24 hours
+            
         return {"message": "Successfully logged out"}
     except Exception as e:
         print(f"Error during logout: {str(e)}")
@@ -1302,7 +1413,44 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    # If not blacklisted, use the original function
+    # Check if this is a valid session in the database
+    try:
+        # First, decode the token to get the username
+        credentials_exception = HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+        
+        payload = pyjwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+        username = payload.get("sub")
+        if username is None:
+            raise credentials_exception
+        
+        # Get the user ID
+        user = db.query(User).filter(User.username == username).first()
+        if not user:
+            raise credentials_exception
+        
+        # Check if there is an active session with this token
+        session = db.query(UserSession).filter(
+            UserSession.token == token,
+            UserSession.user_id == user.id,
+            UserSession.is_active == True,
+            UserSession.expires_at > datetime.now(timezone.utc)
+        ).first()
+        
+        if not session and not user.is_admin:  # Admins can bypass session checks for emergency access
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Session is no longer active or has been logged out from another device",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+    except JWTError:
+        # If token decode fails, let the original function handle it
+        pass
+    
+    # If not blacklisted and session is valid, use the original function
     return original_get_current_user(token, db)
 
 @router.post("/resend-verification")
@@ -1408,3 +1556,99 @@ async def change_password(
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail="An error occurred while changing your password")
+
+@router.get("/sessions", response_model=list[UserSessionResponse])
+async def get_user_sessions(current_user: User = Depends(original_get_current_user), db: Session = Depends(get_db)):
+    """Get all active sessions for the current user"""
+    sessions = db.query(UserSession).filter(
+        UserSession.user_id == current_user.id,
+        UserSession.is_active == True,
+        UserSession.expires_at > datetime.now(timezone.utc)
+    ).all()
+    
+    return sessions
+
+@router.post("/sessions/revoke/{session_id}", status_code=200)
+async def revoke_session(
+    session_id: int, 
+    current_user: User = Depends(original_get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Revoke a specific session by ID"""
+    session = db.query(UserSession).filter(
+        UserSession.id == session_id,
+        UserSession.user_id == current_user.id,
+        UserSession.is_active == True
+    ).first()
+    
+    if not session:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Session not found or already inactive"
+        )
+    
+    session.is_active = False
+    db.commit()
+    
+    # Add token to blacklist
+    try:
+        payload = pyjwt.decode(
+            session.token, settings.SECRET_KEY, algorithms=["HS256"])
+        expire = payload.get("exp")
+        
+        if expire:
+            current_time = int(datetime.now(timezone.utc).timestamp())
+            expires_delta = expire - current_time
+            if expires_delta > 0:
+                blacklist_token(session.token, expires_delta)
+    except JWTError:
+        # If token can't be decoded, blacklist it for a default period
+        blacklist_token(session.token, 86400)  # 24 hours
+    
+    return {"message": "Session successfully revoked"}
+
+@router.post("/sessions/revoke-all", status_code=200)
+async def revoke_all_sessions(
+    current_user: User = Depends(original_get_current_user),
+    current_token: str = Depends(oauth2_scheme),
+    db: Session = Depends(get_db)
+):
+    """Revoke all active sessions except the current one"""
+    sessions = db.query(UserSession).filter(
+        UserSession.user_id == current_user.id,
+        UserSession.is_active == True,
+        UserSession.token != current_token  # Keep current session active
+    ).all()
+    
+    for session in sessions:
+        session.is_active = False
+        # Add token to blacklist
+        try:
+            payload = pyjwt.decode(
+                session.token, settings.SECRET_KEY, algorithms=["HS256"])
+            expire = payload.get("exp")
+            
+            if expire:
+                current_time = int(datetime.now(timezone.utc).timestamp())
+                expires_delta = expire - current_time
+                if expires_delta > 0:
+                    blacklist_token(session.token, expires_delta)
+        except JWTError:
+            # If token can't be decoded, blacklist it for a default period
+            blacklist_token(session.token, 86400)  # 24 hours
+    
+    db.commit()
+    return {"message": f"Successfully revoked {len(sessions)} sessions"}
+
+@router.put("/sessions/settings", status_code=200)
+async def update_session_settings(
+    settings: SessionSettingsUpdate,
+    current_user: User = Depends(original_get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Update session settings for the current user"""
+    user = db.query(User).filter(User.id == current_user.id).first()
+    user.allow_multiple_sessions = settings.allow_multiple_sessions
+    db.commit()
+    
+    return {"message": "Session settings updated successfully"}
