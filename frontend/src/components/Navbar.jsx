@@ -1,28 +1,163 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { FaUser, FaBell, FaCog, FaSignOutAlt } from 'react-icons/fa';
+import { useState, useEffect, useRef } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import {
+  FaUser,
+  FaInfoCircle,
+  FaDumbbell,
+  FaSearch,
+  FaBars,
+  FaTimes,
+  FaSave,
+  FaSignOutAlt,
+  FaHistory,
+  FaListAlt,
+  FaRunning,
+  FaAtlas,
+  FaLock,
+  FaChartLine,
+  FaBell,
+  FaCalculator,
+  FaTools,
+  FaQuestionCircle,
+  FaAppleAlt,
+  FaRobot,
+  FaChevronDown,
+  FaCog,
+} from "react-icons/fa";
+import { LuBicepsFlexed, LuCalendarClock } from "react-icons/lu";
+import logo from "../assets/Ronjasdrawing.png";
+import ThemeToggle from "./ThemeToggle";
+import { useTheme } from "../hooks/useTheme";
+import NotificationDropdown from "./NotificationDropdown";
+import { useNotifications } from "../contexts/NotificationContext";
+import "../styles/navHover.css";
+import "../styles/navbar.css";
+import { notifyWorkoutCompleted } from '../utils/notificationsHelpers';
 
-function Navbar() {
+// Mobile Accordion component for the mobile menu
+const MobileAccordion = ({ title, icon, items, onItemClick }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
-  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [username, setUsername] = useState(null);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [notificationCount, setNotificationCount] = useState(0);
   
-  const location = useLocation();
+  return (
+    <div className="border-b border-gray-200 dark:border-gray-700 pb-3">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center justify-between w-full py-3 px-1 font-medium text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors"
+      >
+        <div className="flex items-center">
+          {icon}
+          <span>{title}</span>
+        </div>
+        <FaChevronDown className={`w-3 h-3 transform transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+      
+      <div className={`mt-2 ml-2 pl-6 border-l border-gray-200 dark:border-gray-700 space-y-1 ${isOpen ? 'block' : 'hidden'}`}>
+        {items.map((item) => (
+          <Link
+            key={item.path}
+            to={item.path}
+            className="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors text-sm"
+            onClick={onItemClick}
+          >
+            <span className="mr-2">{item.icon}</span>
+            <span>{item.label}</span>
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// Navigation items grouped by category
+const NAVIGATION_ITEMS = {
+  workout: [
+    { label: 'Workout Plans', path: '/workouts', icon: <FaDumbbell /> },
+    { label: 'My Routines', path: '/routines', icon: <FaSave /> }
+  ],
+  tools: [
+    { label: 'Calculators', path: '/calculators', icon: <FaTools /> },
+    { label: 'Nutrition', path: '/nutrition', icon: <FaTools /> }
+  ],
+  help: [
+    { label: 'FAQ', path: '/faq', icon: <FaInfoCircle /> },
+    { label: 'Privacy', path: '/privacy', icon: <FaLock /> }
+  ]
+};
+
+// Dropdown component for better code organization
+const NavDropdown = ({ isOpen, children, align = "right" }) => {
+  if (!isOpen) return null;
+  
+  return (
+    <div 
+      className={`dropdown-menu ${align === "right" ? "right-0" : "left-0"} mt-1 bg-white dark:bg-gray-800 shadow-lg rounded-lg overflow-hidden z-50 w-56 border border-gray-200 dark:border-gray-700 animate-fadeIn`}
+      role="menu"
+      aria-orientation="vertical"
+    >
+      {children}
+    </div>
+  );
+};
+
+// Dropdown item component
+const DropdownItem = ({ to, onClick, children, className = "" }) => {
+  const handleClick = () => {
+    if (onClick) onClick();
+  };
+
+  return (
+    <Link
+      to={to}
+      className={`block p-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center text-gray-700 dark:text-gray-200 ${className}`}
+      onClick={handleClick}
+      role="menuitem"
+    >
+      {children}
+    </Link>
+  );
+};
+
+// Main Navbar component
+function Navbar() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [username, setUsername] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+  
+  // Dropdowns state
+  const [workoutDropdownOpen, setWorkoutDropdownOpen] = useState(false);
+  const [toolsDropdownOpen, setToolsDropdownOpen] = useState(false);
+  const [helpDropdownOpen, setHelpDropdownOpen] = useState(false);
+  const [authDropdownOpen, setAuthDropdownOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  
+  // Refs for detecting outside clicks
+  const workoutDropdownRef = useRef(null);
+  const toolsDropdownRef = useRef(null);
+  const helpDropdownRef = useRef(null);
+  const authDropdownRef = useRef(null);
+  const searchRef = useRef(null);
+  
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
-  const userMenuRef = React.useRef(null);
+  const location = useLocation();
+  const { unreadCount, addNotification } = useNotifications();
+  const [showNotifications, setShowNotifications] = useState(false);
+  const notificationsRef = useRef(null);
 
-  // Close mobile menu when changing routes
+  // Track scroll position for navbar styling
   useEffect(() => {
-    setIsOpen(false);
-    setUserDropdownOpen(false);
-  }, [location]);
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 20);
+    };
 
-  // Check auth status
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Check authentication status when location changes
   useEffect(() => {
     const checkAuth = () => {
       const token = localStorage.getItem("token") || localStorage.getItem("access_token");
@@ -41,35 +176,148 @@ function Navbar() {
         const isExpired = expiry < new Date();
         
         if (isExpired) {
+          // Token is expired
           setIsAuthenticated(false);
           setUsername(null);
           setIsAdmin(false);
           localStorage.removeItem("token");
           localStorage.removeItem("access_token");
+          localStorage.removeItem("isAdmin");
           return;
         }
         
         setUsername(decodedToken.sub);
         setIsAuthenticated(true);
-        setIsAdmin(decodedToken.is_admin === true);
+        
+        // Check admin status
+        const adminStatus = decodedToken.is_admin === true;
+        setIsAdmin(adminStatus);
+        localStorage.setItem("isAdmin", adminStatus ? "true" : "false");
       } catch (error) {
+        // Handle token parsing errors
         console.error("Error parsing token:", error);
+        setIsAdmin(false);
         setIsAuthenticated(false);
         setUsername(null);
-        setIsAdmin(false);
+        localStorage.removeItem("token");
+        localStorage.removeItem("access_token");
+        localStorage.setItem("isAdmin", "false");
       }
     };
     
+    // Check auth on mount and location change
     checkAuth();
     
-    window.addEventListener("storage", checkAuth);
-    window.addEventListener("auth-change", checkAuth);
+    // Add storage event listener to detect token changes from other tabs/components
+    const handleStorageChange = (e) => {
+      if (e.key === "token" || e.key === "access_token" || e.key === null) {
+        // If token was changed or removed, or localStorage was cleared
+        checkAuth();
+      }
+    };
     
+    window.addEventListener("storage", handleStorageChange);
+    
+    // Listen for auth-change events
+    const handleAuthChange = () => {
+      checkAuth();
+    };
+    
+    window.addEventListener("auth-change", handleAuthChange);
+    
+    // Clean up the event listeners
     return () => {
-      window.removeEventListener("storage", checkAuth);
-      window.removeEventListener("auth-change", checkAuth);
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("auth-change", handleAuthChange);
     };
   }, [location]);
+
+  // Close mobile menu when route changes
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [location]);
+
+  // Handle dropdown toggle functions
+  const toggleWorkoutDropdown = () => {
+    setToolsDropdownOpen(false);
+    setHelpDropdownOpen(false);
+    setAuthDropdownOpen(false);
+    setWorkoutDropdownOpen(!workoutDropdownOpen);
+  };
+  
+  const toggleToolsDropdown = () => {
+    setWorkoutDropdownOpen(false);
+    setHelpDropdownOpen(false);
+    setAuthDropdownOpen(false);
+    setToolsDropdownOpen(!toolsDropdownOpen);
+  };
+  
+  const toggleHelpDropdown = () => {
+    setWorkoutDropdownOpen(false);
+    setToolsDropdownOpen(false);
+    setAuthDropdownOpen(false);
+    setHelpDropdownOpen(!helpDropdownOpen);
+  };
+  
+  const toggleAuthDropdown = () => {
+    // Verify authentication state before showing dropdown
+    const token = localStorage.getItem("token") || localStorage.getItem("access_token");
+    if (!token) {
+      setIsAuthenticated(false);
+      setUsername(null);
+      setIsAdmin(false);
+    }
+    setWorkoutDropdownOpen(false);
+    setToolsDropdownOpen(false);
+    setHelpDropdownOpen(false);
+    setAuthDropdownOpen(!authDropdownOpen);
+  };
+  
+  // Centralized function to close all dropdowns
+  const closeAllDropdowns = () => {
+    setWorkoutDropdownOpen(false);
+    setToolsDropdownOpen(false);
+    setHelpDropdownOpen(false);
+    setAuthDropdownOpen(false);
+  };
+
+  // Handle outside clicks to close dropdowns
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      // Check if click was outside workout dropdown
+      if (workoutDropdownRef.current && !workoutDropdownRef.current.contains(event.target)) {
+        setWorkoutDropdownOpen(false);
+      }
+      
+      // Check if click was outside tools dropdown
+      if (toolsDropdownRef.current && !toolsDropdownRef.current.contains(event.target)) {
+        setToolsDropdownOpen(false);
+      }
+      
+      // Check if click was outside help dropdown
+      if (helpDropdownRef.current && !helpDropdownRef.current.contains(event.target)) {
+        setHelpDropdownOpen(false);
+      }
+      
+      // Check if click was outside auth dropdown
+      if (authDropdownRef.current && !authDropdownRef.current.contains(event.target)) {
+        setAuthDropdownOpen(false);
+      }
+      
+      // Check if click was outside search
+      if (searchRef.current && !searchRef.current.contains(event.target)) {
+        setSearchResults([]);
+      }
+      
+      // Check if click was outside notifications
+      if (notificationsRef.current && !notificationsRef.current.contains(event.target)) {
+        setShowNotifications(false);
+      }
+    };
+    
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // Handle logout
   const handleLogout = async () => {
@@ -91,341 +339,489 @@ function Navbar() {
       localStorage.removeItem("access_token");
       localStorage.removeItem("isAdmin");
       
+      // Dispatch events to notify other components
       window.dispatchEvent(new Event("storage"));
       window.dispatchEvent(new Event("auth-change"));
       
-      setUserDropdownOpen(false);
+      // Close dropdown
+      setAuthDropdownOpen(false);
+      
+      // Navigate to login page
       navigate("/login");
     }
+  };  
+
+  // Handle search
+  const handleSearch = (e) => {
+    const query = e.target.value.toLowerCase();
+    setSearchQuery(query);
+    
+    if (query.length > 0) {
+      // Combine all navigation items into one array for searching
+      const allItems = [
+        ...NAVIGATION_ITEMS.workout,
+        ...NAVIGATION_ITEMS.tools,
+        ...NAVIGATION_ITEMS.help,
+      ];
+
+      // First, try to find exact matches at the start of words
+      let filtered = allItems.filter(item =>
+        item.label.toLowerCase().startsWith(query)
+      );
+
+      // If no exact matches, look for partial matches
+      if (filtered.length === 0) {
+        filtered = allItems.filter(item => {
+          const words = item.label.toLowerCase().split(' ');
+          return words.some(word => word.startsWith(query)) ||
+                 item.label.toLowerCase().includes(query);
+        });
+      }
+
+      // Sort results: exact matches first, then partial matches
+      filtered.sort((a, b) => {
+        const aStartsWith = a.label.toLowerCase().startsWith(query);
+        const bStartsWith = b.label.toLowerCase().startsWith(query);
+        if (aStartsWith && !bStartsWith) return -1;
+        if (!aStartsWith && bStartsWith) return 1;
+        return a.label.localeCompare(b.label);
+      });
+
+      setSearchResults(filtered);
+    } else {
+      setSearchResults([]);
+    }
+  };
+  
+  // Handle search result selection
+  const handleResultClick = (path) => {
+    setSearchQuery("");
+    setSearchResults([]);
+    setMobileMenuOpen(false);
+    navigate(path);
   };
 
-  // Detect scroll for navbar appearance
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
-    };
-
-    window.addEventListener('scroll', handleScroll);
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-    };
-  }, []);
-
-  // Close user dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
-        setUserDropdownOpen(false);
-      }
-    };
-    
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  // Navigation links
-  const mainNavLinks = [
-    { name: 'Home', path: '/' },
-    { name: 'Workouts', path: '/workout-generator' },
-    { name: 'Nutrition', path: '/nutrition' },
-    { name: 'Progress', path: '/progress-tracker' },
-    { name: 'About', path: '/about' },
-  ];
-
-  const isActive = (path) => {
-    if (path === '/') {
-      return location.pathname === '/';
-    }
-    return location.pathname.startsWith(path);
+  const createSampleNotification = () => {
+    addNotification({
+      title: "New Notification",
+      message: "This is a test notification",
+      type: "info",
+      icon: "dumbbell" // Available icons: dumbbell, user, calendar
+    });
   };
 
   return (
     <>
+      {/* Desktop & Tablet Navbar */}
       <header 
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          isScrolled ? 'bg-neutral-900/80 backdrop-blur-lg shadow-md py-3' : 'bg-transparent py-5'
-        }`}
+        className={`navbar w-full ${
+          isScrolled ? 'navbar-glass shadow-md py-2' : 'bg-white dark:bg-gray-900 py-4'
+        } transition-all duration-300`}
       >
-        <div className="container-modern flex justify-between items-center">
-          {/* Logo with animated gradient */}
-          <Link to="/" className="flex items-center group">
-            <div className="w-10 h-10 rounded-lg overflow-hidden relative shadow-lg">
-              <div className="absolute inset-0 bg-gradient-to-r from-primary-500 via-accent-500 to-primary-500 bg-[length:200%_100%] animate-gradient-x"></div>
-              <div className="absolute inset-0 flex items-center justify-center text-white font-bold text-xl">F</div>
-            </div>
-            <span className="ml-2 text-xl font-semibold text-white hidden sm:block relative group-hover:text-transparent bg-clip-text bg-gradient-to-r from-primary-400 to-accent-400 transition-colors duration-300">
-              FitExplorer
-              <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-primary-400 to-accent-400 group-hover:w-full transition-all duration-300"></span>
-            </span>
-          </Link>
-
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-1">
-            {mainNavLinks.map((link) => (
-              <Link
-                key={link.path}
-                to={link.path}
-                className={`px-4 py-2 rounded-lg transition-colors duration-300 ${
-                  isActive(link.path)
-                    ? 'bg-white/10 text-transparent bg-clip-text bg-gradient-to-r from-primary-400 to-accent-400 font-medium' 
-                    : 'text-neutral-300 hover:text-white hover:bg-white/5'
-                }`}
-              >
-                {link.name}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center relative">
+            {/* Logo and brand */}
+            <div className="flex items-center">
+              <Link to="/" className="flex items-center logo-container">
+                <img 
+                  src={logo} 
+                  alt="FitExplorer Logo" 
+                  className="h-10 w-auto mr-3 dark:invert" 
+                />
+                <span className="text-xl font-bold text-gray-900 dark:text-white hidden sm:block">
+                  FitExplorer
+                </span>
               </Link>
-            ))}
-          </nav>
+            </div>
 
-          {/* Auth Buttons or User Menu (Desktop) */}
-          <div className="hidden md:flex items-center space-x-3">
-            {isAuthenticated ? (
-              <div className="relative" ref={userMenuRef}>
-                <button 
-                  onClick={() => setUserDropdownOpen(!userDropdownOpen)}
-                  className="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-white/10 transition-colors"
+            {/* Search Bar - Desktop */}
+            <div className="hidden md:block relative w-64" ref={searchRef}>
+              <div className="relative">
+                <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search..."
+                  value={searchQuery}
+                  onChange={handleSearch}
+                  className="w-full py-2 pl-10 pr-4 rounded-full border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-all"
+                />
+              </div>
+              
+              {/* Search Results Dropdown */}
+              {searchResults.length > 0 && (
+                <div className="search-results">
+                  {searchResults.map((result) => (
+                    <div
+                      key={result.path}
+                      className="search-result-item flex items-center"
+                      onClick={() => handleResultClick(result.path)}
+                    >
+                      {result.icon}
+                      <span>{result.label}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Main navigation - Only show on tablet/desktop */}
+            <div className="hidden md:flex items-center space-x-1">
+              {/* Workout dropdown */}
+              <div className="relative" ref={workoutDropdownRef}>
+                <button
+                  onClick={toggleWorkoutDropdown}
+                  className={`flex items-center px-3 py-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${
+                    workoutDropdownOpen ? 'bg-gray-100 dark:bg-gray-800' : ''
+                  }`}
+                  aria-expanded={workoutDropdownOpen}
                 >
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-r from-primary-500 to-accent-500 flex items-center justify-center text-white text-sm font-medium">
-                    {username ? username.charAt(0).toUpperCase() : 'U'}
-                  </div>
-                  <span className="text-white">{username}</span>
-                  <svg 
-                    xmlns="http://www.w3.org/2000/svg" 
-                    className={`h-4 w-4 text-neutral-400 transition-transform duration-200 ${userDropdownOpen ? 'rotate-180' : ''}`} 
-                    viewBox="0 0 20 20" 
-                    fill="currentColor"
-                  >
-                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                  </svg>
+                  <FaDumbbell className="mr-1" />
+                  <span className="mr-1">Workouts</span>
+                  <FaChevronDown className={`w-3 h-3 transform transition-transform ${workoutDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
                 
-                <AnimatePresence>
-                  {userDropdownOpen && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 10 }}
-                      transition={{ duration: 0.2 }}
-                      className="absolute right-0 mt-2 w-48 bg-neutral-800 rounded-xl shadow-lg overflow-hidden border border-white/10 backdrop-blur-sm"
+                <NavDropdown isOpen={workoutDropdownOpen}>
+                  {NAVIGATION_ITEMS.workout.map((item) => (
+                    <DropdownItem key={item.path} to={item.path} onClick={() => setWorkoutDropdownOpen(false)}>
+                      {item.icon}
+                      {item.label}
+                    </DropdownItem>
+                  ))}
+                </NavDropdown>
+              </div>
+
+              {/* Tools dropdown */}
+              <div className="relative" ref={toolsDropdownRef}>
+                <button
+                  onClick={toggleToolsDropdown}
+                  className={`flex items-center px-3 py-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${
+                    toolsDropdownOpen ? 'bg-gray-100 dark:bg-gray-800' : ''
+                  }`}
+                  aria-expanded={toolsDropdownOpen}
+                >
+                  <FaTools className="mr-1" />
+                  <span className="mr-1">Tools</span>
+                  <FaChevronDown className={`w-3 h-3 transform transition-transform ${toolsDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+                
+                <NavDropdown isOpen={toolsDropdownOpen}>
+                  {NAVIGATION_ITEMS.tools.map((item) => (
+                    <DropdownItem key={item.path} to={item.path} onClick={() => setToolsDropdownOpen(false)}>
+                      {item.icon}
+                      {item.label}
+                    </DropdownItem>
+                  ))}
+                </NavDropdown>
+              </div>
+
+              {/* Help dropdown */}
+              <div className="relative" ref={helpDropdownRef}>
+                <button
+                  onClick={toggleHelpDropdown}
+                  className={`flex items-center px-3 py-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${
+                    helpDropdownOpen ? 'bg-gray-100 dark:bg-gray-800' : ''
+                  }`}
+                  aria-expanded={helpDropdownOpen}
+                >
+                  <FaInfoCircle className="mr-1" />
+                  <span className="mr-1">Help</span>
+                  <FaChevronDown className={`w-3 h-3 transform transition-transform ${helpDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+                
+                <NavDropdown isOpen={helpDropdownOpen}>
+                  {NAVIGATION_ITEMS.help.map((item) => (
+                    <DropdownItem key={item.path} to={item.path} onClick={() => setHelpDropdownOpen(false)}>
+                      {item.icon}
+                      {item.label}
+                    </DropdownItem>
+                  ))}
+                </NavDropdown>
+              </div>
+            </div>
+
+            {/* Right side items */}
+            <div className="flex items-center space-x-2">
+              {/* Theme toggle */}
+              <ThemeToggle />
+
+              {/* Notifications */}
+              {isAuthenticated && (
+                <div className="relative" ref={notificationsRef}>
+                  <button
+                    onClick={() => setShowNotifications(!showNotifications)}
+                    className="relative p-2 rounded-full text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                    aria-label="Notifications"
+                  >
+                    <FaBell className="w-5 h-5" />
+                    {unreadCount > 0 && (
+                      <span className="notification-badge bg-red-500 text-white w-5 h-5 min-w-[1.25rem]">
+                        {unreadCount > 9 ? '9+' : unreadCount}
+                      </span>
+                    )}
+                  </button>
+                  {showNotifications && <NotificationDropdown />}
+                </div>
+              )}
+
+              {/* User menu - Desktop */}
+              <div className="hidden md:block">
+                {isAuthenticated ? (
+                  <div className="relative" ref={authDropdownRef}>
+                    <button
+                      onClick={toggleAuthDropdown}
+                      className={`flex items-center px-3 py-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${
+                        authDropdownOpen ? 'bg-gray-100 dark:bg-gray-800' : ''
+                      }`}
+                      aria-expanded={authDropdownOpen}
                     >
-                      <div className="py-2 px-4 border-b border-neutral-700">
-                        <p className="text-sm text-neutral-400">Signed in as</p>
-                        <p className="font-medium text-white">{username}</p>
+                      <div className="w-7 h-7 rounded-full bg-blue-500 text-white flex items-center justify-center font-medium mr-2">
+                        {username ? username.charAt(0).toUpperCase() : 'U'}
                       </div>
-                      <div className="py-1">
-                        <Link to="/profile" className="block px-4 py-2 text-sm text-neutral-300 hover:bg-white/10 flex items-center">
-                          <FaUser className="mr-2 text-primary-400" />
-                          Profile
-                        </Link>
-                        <Link to="/notifications" className="block px-4 py-2 text-sm text-neutral-300 hover:bg-white/10 flex items-center">
-                          <FaBell className="mr-2 text-accent-400" />
-                          Notifications
-                          {notificationCount > 0 && (
-                            <span className="ml-2 bg-accent-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                              {notificationCount}
-                            </span>
-                          )}
-                        </Link>
-                        <Link to="/settings" className="block px-4 py-2 text-sm text-neutral-300 hover:bg-white/10 flex items-center">
-                          <FaCog className="mr-2 text-neutral-400" />
-                          Settings
-                        </Link>
+                      <span className="max-w-[100px] truncate">{username || 'Account'}</span>
+                      <FaChevronDown className={`ml-1 w-3 h-3 transform transition-transform ${authDropdownOpen ? 'rotate-180' : ''}`} />
+                    </button>
+                    
+                    <NavDropdown isOpen={authDropdownOpen}>
+                      <div className="p-3 border-b border-gray-200 dark:border-gray-700">
+                        <div className="font-medium text-sm">{username}</div>
                         {isAdmin && (
-                          <Link to="/admin" className="block px-4 py-2 text-sm text-neutral-300 hover:bg-white/10 flex items-center">
-                            <span className="mr-2 text-xs bg-gradient-to-r from-purple-500 to-pink-500 text-white px-1.5 py-0.5 rounded">ADMIN</span>
-                            Dashboard
-                          </Link>
+                          <div className="admin-badge mt-1 inline-block">ADMIN</div>
                         )}
                       </div>
-                      <div className="py-1 border-t border-neutral-700">
-                        <button 
+                      <DropdownItem to="/profile" onClick={() => setAuthDropdownOpen(false)}>
+                        <FaUser className="mr-2 text-blue-500" />
+                        Profile
+                      </DropdownItem>
+                      <DropdownItem to="/saved-programs" onClick={() => setAuthDropdownOpen(false)}>
+                        <FaSave className="mr-2 text-indigo-500" />
+                        Saved Programs
+                      </DropdownItem>
+                      {isAdmin && (
+                        <DropdownItem to="/admin" onClick={() => setAuthDropdownOpen(false)}>
+                          <FaLock className="mr-2 text-purple-500" />
+                          Admin Dashboard
+                        </DropdownItem>
+                      )}
+                      <div className="p-2 border-t border-gray-200 dark:border-gray-700">
+                        <button
                           onClick={handleLogout}
-                          className="block w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-red-500/10 flex items-center"
+                          className="w-full text-left px-3 py-2 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors flex items-center text-red-600 dark:text-red-400"
                         >
                           <FaSignOutAlt className="mr-2" />
-                          Sign out
+                          Sign Out
                         </button>
                       </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                    </NavDropdown>
+                  </div>
+                ) : (
+                  <div className="flex items-center space-x-2">
+                    <Link
+                      to="/login"
+                      className="px-4 py-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                    >
+                      Sign In
+                    </Link>
+                    <Link
+                      to="/signup"
+                      className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors shadow-sm"
+                    >
+                      Sign Up
+                    </Link>
+                  </div>
+                )}
               </div>
-            ) : (
-              <>
-                <Link 
-                  to="/login" 
-                  className="relative px-4 py-2 text-neutral-300 hover:text-white transition-colors duration-300 group"
-                >
-                  Log In
-                  <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-0.5 bg-primary-500 group-hover:w-full transition-all duration-300"></span>
-                </Link>
-                <Link 
-                  to="/signup" 
-                  className="relative overflow-hidden px-6 py-2 bg-gradient-to-r from-primary-600 to-primary-500 text-white rounded-lg shadow-lg group"
-                >
-                  <span className="relative z-10">Sign Up</span>
-                  <span className="absolute inset-0 bg-gradient-to-r from-accent-500 to-accent-600 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></span>
-                </Link>
-              </>
-            )}
-          </div>
 
-          {/* Mobile Menu Button */}
-          <button
-            onClick={() => setIsOpen(!isOpen)}
-            className="md:hidden p-2 rounded-lg text-neutral-400 hover:text-white focus:outline-none hover:bg-white/10 transition-colors duration-300"
-            aria-label="Toggle menu"
-          >
-            <div className="relative w-6 h-5">
-              <span 
-                className={`absolute h-0.5 w-6 bg-current transform transition-all duration-300 ${
-                  isOpen ? 'rotate-45 top-2' : 'top-0'
-                }`}
-              ></span>
-              <span 
-                className={`absolute h-0.5 w-6 bg-current transform transition-all duration-300 ${
-                  isOpen ? 'opacity-0' : 'opacity-100 top-2'
-                }`}
-              ></span>
-              <span 
-                className={`absolute h-0.5 w-6 bg-current transform transition-all duration-300 ${
-                  isOpen ? '-rotate-45 top-2' : 'top-4'
-                }`}
-              ></span>
+              {/* Mobile menu button */}
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="md:hidden menu-button flex items-center justify-center p-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                aria-expanded={mobileMenuOpen}
+                aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+              >
+                <div className="relative w-6 h-5">
+                  <span 
+                    className={`menu-button-bar bg-current ${
+                      mobileMenuOpen ? 'top-2 rotate-45' : 'top-0'
+                    }`}
+                  ></span>
+                  <span 
+                    className={`menu-button-bar bg-current top-2 ${
+                      mobileMenuOpen ? 'opacity-0' : 'opacity-100'
+                    }`}
+                  ></span>
+                  <span 
+                    className={`menu-button-bar bg-current ${
+                      mobileMenuOpen ? 'top-2 -rotate-45' : 'top-4'
+                    }`}
+                  ></span>
+                </div>
+              </button>
             </div>
-          </button>
+          </div>
         </div>
       </header>
 
-      {/* Mobile Menu Overlay */}
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden"
-            onClick={() => setIsOpen(false)}
-          >
-            <motion.div
-              initial={{ x: '100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '100%' }}
-              transition={{ type: 'tween', duration: 0.3 }}
-              className="fixed top-0 right-0 bottom-0 w-3/4 max-w-sm bg-neutral-900 shadow-xl p-6 overflow-y-auto"
-              onClick={(e) => e.stopPropagation()}
+      {/* Mobile menu */}
+      <div
+        className={`fixed inset-0 z-50 md:hidden transform ${
+          mobileMenuOpen ? "translate-x-0" : "translate-x-full"
+        } transition-transform duration-300 ease-in-out`}
+      >
+        <div className="absolute inset-0 bg-black/50" onClick={() => setMobileMenuOpen(false)}></div>
+        <div className="absolute right-0 top-0 bottom-0 w-64 bg-white dark:bg-gray-900 shadow-xl flex flex-col h-full">
+          <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex items-center">
+              <img src={logo} alt="FitExplorer" className="h-8 w-auto mr-2 dark:invert" />
+              <span className="font-bold text-lg">FitExplorer</span>
+            </div>
+            <button
+              onClick={() => setMobileMenuOpen(false)}
+              className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400"
+              aria-label="Close menu"
             >
-              <div className="flex justify-between items-center mb-8">
-                <Link to="/" className="flex items-center">
-                  <div className="w-10 h-10 rounded-lg overflow-hidden relative shadow-lg">
-                    <div className="absolute inset-0 bg-gradient-to-r from-primary-500 via-accent-500 to-primary-500 bg-[length:200%_100%] animate-gradient-x"></div>
-                    <div className="absolute inset-0 flex items-center justify-center text-white font-bold text-xl">F</div>
-                  </div>
-                  <span className="ml-2 text-xl font-semibold text-transparent bg-clip-text bg-gradient-to-r from-primary-400 to-accent-400">
-                    FitExplorer
-                  </span>
-                </Link>
-                <button
-                  onClick={() => setIsOpen(false)}
-                  className="p-2 rounded-lg text-neutral-400 hover:text-white"
-                  aria-label="Close menu"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
+              <FaTimes className="w-5 h-5" />
+            </button>
+          </div>
 
-              {/* User Profile (Mobile) */}
-              {isAuthenticated && (
-                <div className="mb-6 pb-6 border-b border-neutral-800">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-r from-primary-500 to-accent-500 flex items-center justify-center text-white font-medium text-lg">
-                      {username ? username.charAt(0).toUpperCase() : 'U'}
-                    </div>
-                    <div>
-                      <div className="font-semibold text-white">{username}</div>
-                      {isAdmin && (
-                        <div className="text-xs bg-gradient-to-r from-purple-500 to-pink-500 text-white px-2 py-0.5 rounded mt-1 inline-block">
-                          ADMIN
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 mt-4">
-                    <Link to="/profile" className="flex items-center justify-center space-x-1 py-2 bg-white/10 rounded-lg text-neutral-300 hover:bg-white/20 transition-colors">
-                      <FaUser className="text-primary-400" />
-                      <span>Profile</span>
-                    </Link>
-                    <Link to="/notifications" className="flex items-center justify-center space-x-1 py-2 bg-white/10 rounded-lg text-neutral-300 hover:bg-white/20 transition-colors">
-                      <FaBell className="text-accent-400" />
-                      <span>Notifications</span>
-                    </Link>
-                  </div>
-                </div>
-              )}
-
-              {/* Mobile Nav Links */}
-              <nav className="flex flex-col space-y-1 mb-8">
-                {mainNavLinks.map((link, index) => (
-                  <motion.div
-                    key={link.path}
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.1 }}
+          {/* Mobile search */}
+          <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+            <div className="relative">
+              <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search..."
+                value={searchQuery}
+                onChange={handleSearch}
+                className="w-full py-2 pl-10 pr-4 rounded-full border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            {searchResults.length > 0 && (
+              <div className="search-results mt-2">
+                {searchResults.map((result) => (
+                  <div
+                    key={result.path}
+                    className="search-result-item flex items-center"
+                    onClick={() => {
+                      handleResultClick(result.path);
+                      setMobileMenuOpen(false);
+                    }}
                   >
-                    <Link
-                      to={link.path}
-                      className={`block px-4 py-3 rounded-lg transition-colors duration-300 ${
-                        isActive(link.path)
-                          ? 'bg-primary-900/30 text-primary-400 font-medium border-l-4 border-primary-500' 
-                          : 'text-neutral-300 hover:text-white hover:bg-white/5'
-                      }`}
-                    >
-                      {link.name}
-                    </Link>
-                  </motion.div>
+                    {result.icon}
+                    <span>{result.label}</span>
+                  </div>
                 ))}
-              </nav>
-
-              {/* Mobile Auth Buttons or Logout */}
-              {isAuthenticated ? (
-                <button 
-                  onClick={handleLogout}
-                  className="w-full py-3 text-center bg-red-500/10 text-red-400 font-medium rounded-lg hover:bg-red-500/20 transition-colors duration-300 flex items-center justify-center"
-                >
-                  <FaSignOutAlt className="mr-2" />
-                  Sign out
-                </button>
-              ) : (
-                <div className="grid grid-cols-2 gap-4 mt-auto">
-                  <Link 
-                    to="/login" 
-                    className="py-3 text-center text-neutral-300 hover:text-white border border-neutral-700 rounded-lg hover:border-neutral-600 transition-colors duration-300"
-                  >
-                    Log In
-                  </Link>
-                  <Link 
-                    to="/signup" 
-                    className="py-3 text-center bg-gradient-to-r from-primary-600 to-primary-500 text-white font-medium rounded-lg"
-                  >
-                    Sign Up
-                  </Link>
-                </div>
-              )}
-
-              {/* Mobile Footer */}
-              <div className="mt-12 pt-6 border-t border-neutral-800 text-center text-sm text-neutral-500">
-                <p>© {new Date().getFullYear()} FitExplorer.</p>
-                <p className="mt-1">All rights reserved.</p>
               </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            )}
+          </div>
 
-      {/* Spacer for fixed header */}
-      <div className={`${isScrolled ? 'h-[60px]' : 'h-[80px]'} transition-all duration-300`}></div>
+          {/* Mobile navigation */}
+          <div className="overflow-y-auto flex-1 p-4">
+            {/* Auth section */}
+            {isAuthenticated ? (
+              <div className="mb-6 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                <div className="flex items-center mb-3">
+                  <div className="w-10 h-10 rounded-full bg-blue-500 text-white flex items-center justify-center font-medium mr-3">
+                    {username ? username.charAt(0).toUpperCase() : 'U'}
+                  </div>
+                  <div>
+                    <div className="font-medium">{username}</div>
+                    {isAdmin && <div className="admin-badge mt-1">ADMIN</div>}
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <Link
+                    to="/profile"
+                    className="text-sm px-3 py-2 rounded-lg flex items-center justify-center bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <FaUser className="mr-1" />
+                    Profile
+                  </Link>
+                  <button
+                    onClick={() => {
+                      handleLogout();
+                      setMobileMenuOpen(false);
+                    }}
+                    className="text-sm px-3 py-2 rounded-lg flex items-center justify-center bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-800/30 text-red-600 dark:text-red-400 transition-colors"
+                  >
+                    <FaSignOutAlt className="mr-1" />
+                    Sign Out
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="mb-6 grid grid-cols-2 gap-2">
+                <Link
+                  to="/login"
+                  className="py-2 rounded-lg flex items-center justify-center bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-gray-900 dark:text-gray-100"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Sign In
+                </Link>
+                <Link
+                  to="/signup"
+                  className="py-2 rounded-lg flex items-center justify-center bg-blue-600 hover:bg-blue-700 transition-colors text-white"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Sign Up
+                </Link>
+              </div>
+            )}
+
+            {/* Mobile menu accordion sections */}
+            <div className="space-y-3">
+              <MobileAccordion 
+                title="Workouts" 
+                icon={<FaDumbbell className="mr-2" />}
+                items={NAVIGATION_ITEMS.workout}
+                onItemClick={() => setMobileMenuOpen(false)}
+              />
+              
+              <MobileAccordion 
+                title="Tools" 
+                icon={<FaTools className="mr-2" />}
+                items={NAVIGATION_ITEMS.tools}
+                onItemClick={() => setMobileMenuOpen(false)}
+              />
+              
+              <MobileAccordion 
+                title="Help" 
+                icon={<FaInfoCircle className="mr-2" />}
+                items={NAVIGATION_ITEMS.help}
+                onItemClick={() => setMobileMenuOpen(false)}
+              />
+            </div>
+          </div>
+
+          {/* Mobile footer */}
+          <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
+            <div className="text-sm text-gray-500 dark:text-gray-400">
+              © {new Date().getFullYear()} FitExplorer
+            </div>
+            <div className="flex items-center space-x-3">
+              <ThemeToggle />
+              
+              {isAuthenticated && (
+                <button
+                  onClick={() => {
+                    setShowNotifications(!showNotifications);
+                    setMobileMenuOpen(false);
+                  }}
+                  className="relative p-2 rounded-full text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                  aria-label="Notifications"
+                >
+                  <FaBell className="w-5 h-5" />
+                  {unreadCount > 0 && (
+                    <span className="notification-badge bg-red-500 text-white w-5 h-5 min-w-[1.25rem]">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  )}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
     </>
   );
 }
