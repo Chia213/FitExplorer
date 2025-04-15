@@ -1634,7 +1634,7 @@ function Profile() {
                             <select
                               value={preferences.workoutFrequencyGoal || ""}
                               onChange={(e) => handlePreferenceChange({ ...preferences, workoutFrequencyGoal: e.target.value })}
-                              className="w-full mt-1 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                              className="w-full mt-1 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-black dark:bg-gray-700 dark:text-white"
                             >
                               <option value="">Daily Streak</option>
                               <option value="1">1 workout/week</option>

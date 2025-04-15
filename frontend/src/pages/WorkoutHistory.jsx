@@ -940,7 +940,7 @@ function WorkoutHistory() {
         {/* Action Bar */}
         <div className="bg-white dark:bg-gray-800 rounded-lg p-4 mb-4 shadow">
           <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3">
-            <div className="flex space-x-2 items-center">
+            <div className="flex flex-wrap gap-2 items-center">
               <button
                 onClick={handleSelectAllWorkouts}
                 className="flex items-center text-sm bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 px-2 py-1 rounded"
@@ -974,7 +974,7 @@ function WorkoutHistory() {
               
               <button
                 onClick={() => navigate('/personal-records')}
-                className="flex items-center text-sm bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded ml-2"
+                className="flex items-center text-sm bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded"
               >
                 <FaTrophy className="mr-1" />
                 Personal Records
@@ -984,63 +984,66 @@ function WorkoutHistory() {
             <div className="flex items-center">
               <button
                 onClick={toggleWeightUnit}
-                className="flex items-center text-sm bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded"
+                className="flex items-center text-sm bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded font-medium"
               >
                 <FaBalanceScale className="mr-1" />
-                {weightUnit === "kg" ? "Switch to LBS" : "Switch to KG"}
+                Switch to {weightUnit === "kg" ? "LBS" : "KG"}
               </button>
             </div>
           </div>
           
           {/* Filters */}
-          <div className="mt-4 flex flex-col md:flex-row md:items-center space-y-2 md:space-y-0 md:space-x-4">
-            <div className="flex-1 flex items-center">
-              <label htmlFor="search-query" className="mr-2 text-gray-700 dark:text-gray-300 text-sm">
+          <div className="mt-4 flex flex-col space-y-3">
+            <div className="flex flex-col">
+              <label htmlFor="search-query" className="text-gray-700 dark:text-gray-300 text-sm font-medium mb-1">
                 Search:
               </label>
-              <div className="relative flex-1">
+              <div className="relative">
                 <input
                   type="text"
                   id="search-query"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search by workout name..."
-                  className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white px-3 py-2 text-sm focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full rounded-lg border border-gray-300 dark:border-gray-500 bg-white dark:bg-gray-800 text-gray-800 dark:text-white px-3 py-2.5 text-sm focus:ring-blue-500 focus:border-blue-500 shadow-sm"
                 />
-                <FaSearch className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                <FaSearch className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-300" />
               </div>
             </div>
             
-            <div className="flex items-center">
-              <label htmlFor="filter-date" className="mr-2 text-gray-700 dark:text-gray-300 text-sm">
-                Date:
-              </label>
-              <input
-                type="date"
-                id="filter-date"
-                value={filterDate}
-                onChange={(e) => setFilterDate(e.target.value)}
-                className="rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white px-3 py-2 text-sm focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
-            
-            <div className="flex items-center">
-              <label htmlFor="filter-exercise" className="mr-2 text-gray-700 dark:text-gray-300 text-sm">
-                Exercise:
-              </label>
-              <select
-                id="filter-exercise"
-                value={filterExercise}
-                onChange={(e) => setFilterExercise(e.target.value)}
-                className="rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white px-3 py-2 text-sm focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="">All Exercises</option>
-                {getAllExerciseNames().map((name) => (
-                  <option key={name} value={name}>
-                    {name}
-                  </option>
-                ))}
-              </select>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col">
+                <label htmlFor="filter-date" className="text-gray-700 dark:text-gray-300 text-sm font-medium mb-1">
+                  Date:
+                </label>
+                <input
+                  type="date"
+                  id="filter-date"
+                  value={filterDate}
+                  onChange={(e) => setFilterDate(e.target.value)}
+                  className="w-full rounded-lg border border-gray-300 dark:border-gray-500 bg-white dark:bg-gray-800 text-gray-800 dark:text-white px-3 py-2.5 text-sm focus:ring-blue-500 focus:border-blue-500 shadow-sm"
+                />
+              </div>
+              
+              <div className="flex flex-col">
+                <label htmlFor="filter-exercise" className="text-gray-700 dark:text-gray-300 text-sm font-medium mb-1">
+                  Exercise:
+                </label>
+                <select
+                  id="filter-exercise"
+                  value={filterExercise}
+                  onChange={(e) => setFilterExercise(e.target.value)}
+                  className="w-full rounded-lg border border-gray-300 dark:border-gray-500 bg-white dark:bg-gray-800 text-gray-800 dark:text-white px-3 py-2.5 text-sm focus:ring-blue-500 focus:border-blue-500 shadow-sm appearance-none bg-no-repeat bg-right pr-8"
+                  style={{ backgroundImage: 'url("data:image/svg+xml,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 fill=%27none%27 viewBox=%270 0 20 20%27%3e%3cpath stroke=%27%236b7280%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27 stroke-width=%271.5%27 d=%27M6 8l4 4 4-4%27/%3e%3c/svg%3e")' }}
+                >
+                  <option value="">All Exercises</option>
+                  {getAllExerciseNames().map((name) => (
+                    <option key={name} value={name}>
+                      {name}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
         </div>
@@ -1093,8 +1096,8 @@ function WorkoutHistory() {
             )}
 
             {viewMode === "calendar" && (
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
-                <div className="mb-4 flex justify-between items-center">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 mb-4 overflow-auto">
+                <div className="mb-3 flex justify-between items-center">
                   <button
                     onClick={() => {
                       const newDate = new Date(currentMonth);
@@ -1106,7 +1109,7 @@ function WorkoutHistory() {
                     <FaChevronLeft />
                   </button>
 
-                  <h3 className="text-lg font-medium">
+                  <h3 className="text-base font-medium">
                     {new Date(currentMonth).toLocaleDateString("en-GB", {
                       month: "long",
                       year: "numeric",
@@ -1125,9 +1128,9 @@ function WorkoutHistory() {
                   </button>
                 </div>
 
-                <div className="grid grid-cols-7 gap-1">
-                  {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-                    <div key={day} className="text-center font-medium p-2">
+                <div className="grid grid-cols-7 gap-1 min-w-[500px]">
+                  {["S", "M", "T", "W", "T", "F", "S"].map((day) => (
+                    <div key={day} className="text-center font-medium p-1 text-xs">
                       {day}
                     </div>
                   ))}
@@ -1136,7 +1139,7 @@ function WorkoutHistory() {
                   {generateCalendarDays().map((day, i) => (
                     <div
                       key={i}
-                      className={`p-2 min-h-[80px] border rounded ${
+                      className={`p-1 min-h-[60px] border rounded text-xs ${
                         day.isCurrentMonth
                           ? "border-gray-200 dark:border-gray-700"
                           : "border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 text-gray-400"
@@ -1161,7 +1164,7 @@ function WorkoutHistory() {
             {viewMode === "list" && (
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
                 {filteredWorkouts.length === 0 ? (
-                  <div className="p-6 text-center text-gray-500 dark:text-gray-400">
+                  <div className="p-4 text-center text-gray-500 dark:text-gray-400">
                     No workouts found matching your criteria.
                   </div>
                 ) : (
@@ -1172,288 +1175,269 @@ function WorkoutHistory() {
                         className="border-b dark:border-gray-700 last:border-b-0"
                       >
                         <div
-                          className="p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center"
+                          className="p-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
                           onClick={() => toggleWorkoutExpansion(workout.id)}
                         >
-                          <div className="flex items-center mr-2">
-                            <input
-                              type="checkbox"
-                              checked={selectedWorkouts.includes(workout.id)}
-                              onChange={(e) => {
-                                e.stopPropagation();
-                                handleSelectWorkout(workout.id);
-                              }}
-                              className="h-4 w-4 text-blue-600 focus:ring-blue-500 dark:focus:ring-blue-600 rounded"
-                            />
-                          </div>
-                          
-                          <div className="flex-1">
-                            <div className="flex items-center">
-                              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                                {workout.name}
-                              </h3>
-                              {expandedWorkouts[workout.id] ? (
-                                <FaChevronUp className="ml-2 text-gray-500 dark:text-gray-400" />
-                              ) : (
-                                <FaChevronDown className="ml-2 text-gray-500 dark:text-gray-400" />
-                              )}
+                          <div className="flex items-start">
+                            <div className="flex items-center mr-2 mt-1">
+                              <input
+                                type="checkbox"
+                                checked={selectedWorkouts.includes(workout.id)}
+                                onChange={(e) => {
+                                  e.stopPropagation();
+                                  handleSelectWorkout(workout.id);
+                                }}
+                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 dark:focus:ring-blue-600 rounded"
+                              />
                             </div>
-                            <div className="flex flex-wrap text-sm text-gray-600 dark:text-gray-300 mt-1">
-                              <span className="flex items-center mr-4 mb-1">
-                                <FaCalendarAlt className="mr-1" />
-                                {formatDate(workout.date || workout.start_time)}
-                              </span>
-                              {workout.start_time && workout.end_time && (
-                                <span className="flex items-center mr-4 mb-1">
-                                  <FaClock className="mr-1" />
-                                  {calculateDuration(
-                                    workout.start_time,
-                                    workout.end_time
-                                  )}
+                            
+                            <div className="flex-1">
+                              <div className="flex items-center justify-between">
+                                <h3 className="text-base font-semibold text-gray-900 dark:text-white truncate pr-2">
+                                  {workout.name}
+                                </h3>
+                                <div className="flex flex-shrink-0 space-x-1">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleDeleteWorkout(workout.id);
+                                    }}
+                                    className="text-red-500 hover:text-red-700 dark:hover:text-red-400 p-1"
+                                    title="Delete workout"
+                                  >
+                                    <FaTrash className="text-sm" />
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleSaveAsRoutine(workout);
+                                    }}
+                                    className="text-blue-500 hover:text-blue-700 dark:hover:text-blue-400 p-1"
+                                    title="Save as Routine"
+                                  >
+                                    <FaSave className="text-sm" />
+                                  </button>
+                                </div>
+                              </div>
+                              <div className="flex flex-wrap text-xs text-gray-600 dark:text-gray-300 mt-1">
+                                <span className="flex items-center mr-2 mb-1">
+                                  <FaCalendarAlt className="mr-1" />
+                                  {formatDate(workout.date || workout.start_time)}
                                 </span>
-                              )}
-                              {workout.bodyweight && (
-                                <span className="flex items-center mr-4 mb-1">
-                                  <FaWeight className="mr-1" />
-                                  {formatWeight(
-                                    workout.bodyweight,
-                                    workout.weight_unit
-                                  )}
+                                {workout.start_time && workout.end_time && (
+                                  <span className="flex items-center mr-2 mb-1">
+                                    <FaClock className="mr-1" />
+                                    {calculateDuration(
+                                      workout.start_time,
+                                      workout.end_time
+                                    )}
+                                  </span>
+                                )}
+                                {workout.bodyweight && (
+                                  <span className="flex items-center mr-2 mb-1">
+                                    <FaWeight className="mr-1" />
+                                    {formatWeight(
+                                      workout.bodyweight,
+                                      workout.weight_unit
+                                    )}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center justify-between mt-1">
+                                <span className="text-xs text-gray-600 dark:text-gray-400">
+                                  {workout.exercises && workout.exercises.length > 0 
+                                    ? `${workout.exercises.length} exercise${workout.exercises.length > 1 ? "s" : ""}`
+                                    : "No exercises"}
                                 </span>
-                              )}
+                                {expandedWorkouts[workout.id] ? (
+                                  <FaChevronUp className="text-gray-500 dark:text-gray-400" />
+                                ) : (
+                                  <FaChevronDown className="text-gray-500 dark:text-gray-400" />
+                                )}
+                              </div>
                             </div>
-                          </div>
-
-                          <div className="flex items-center space-x-2">
-                            {workout.exercises && workout.exercises.length > 0 && (
-                              <span className="text-sm text-gray-600 dark:text-gray-400">
-                                {workout.exercises.length} exercise
-                                {workout.exercises.length > 1 ? "s" : ""}
-                              </span>
-                            )}
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteWorkout(workout.id);
-                              }}
-                              className="text-red-500 hover:text-red-700 dark:hover:text-red-400"
-                              title="Delete workout"
-                            >
-                              <FaTrash />
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleViewWorkout(workout);
-                              }}
-                              className="text-blue-500 hover:text-blue-700 dark:hover:text-blue-400"
-                              title="View workout"
-                            >
-                              <FaEye />
-                            </button>
                           </div>
                         </div>
                         {expandedWorkouts[workout.id] && (
-                          <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+                          <div className="p-3 border-t border-gray-200 dark:border-gray-700 text-sm">
                             {workout.notes && (
-                              <div className="mb-4 bg-gray-50 dark:bg-gray-700 p-3 rounded">
-                                <p className="text-gray-600 dark:text-gray-300">
+                              <div className="mb-3 bg-gray-50 dark:bg-gray-700 p-2 rounded">
+                                <p className="text-gray-600 dark:text-gray-300 text-xs">
                                   {workout.notes}
                                 </p>
                               </div>
                             )}
 
-                            <div className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                              <div className="grid grid-cols-2 gap-4">
+                            <div className="text-xs text-gray-600 dark:text-gray-400 mb-3">
+                              <div className="grid grid-cols-2 gap-2">
                                 <div>
-                                  <span className="font-medium">Started Workout:</span>{" "}
+                                  <span className="font-medium">Started:</span>{" "}
                                   {formatTime(workout.start_time)}
                                 </div>
-                                <div></div>
                                 <div>
-                                  <span className="font-medium">Ended Workout:</span>{" "}
+                                  <span className="font-medium">Ended:</span>{" "}
                                   {workout.end_time
                                     ? formatTime(workout.end_time)
                                     : "N/A"}
                                 </div>
-                                <div></div>
                               </div>
                             </div>
 
-                            <div className="flex justify-end mb-4">
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleSaveAsRoutine(workout);
-                                }}
-                                className="flex items-center space-x-2 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg"
-                              >
-                                <FaSave className="mr-2" />
-                                <span>Save as Routine</span>
-                              </button>
-                            </div>
-
-                            <h3 className="font-medium text-lg text-gray-800 dark:text-gray-200 mb-3">
+                            <h3 className="font-medium text-base text-gray-800 dark:text-gray-200 mb-2">
                               Exercises
                             </h3>
 
                             {workout.exercises &&
                               Array.isArray(workout.exercises) &&
                               workout.exercises.length > 0 ? (
-                              <div className="space-y-6">
+                              <div className="space-y-4">
                                 {workout.exercises.map((exercise, eIndex) => (
                                   <div
                                     key={eIndex}
-                                    className="bg-gray-50 dark:bg-gray-700 p-4 rounded"
+                                    className="bg-gray-50 dark:bg-gray-700 p-3 rounded"
                                   >
-                                    <h4 className="font-medium text-gray-800 dark:text-gray-200 mb-2">
+                                    <h4 className="font-medium text-gray-800 dark:text-gray-200 mb-2 text-sm">
                                       {exercise.name}{" "}
                                       {exercise.is_cardio ? "(Cardio)" : ""}
                                     </h4>
 
-                                    <div className="overflow-x-auto">
-                                      <table className="min-w-full text-sm">
-                                        <thead>
-                                          <tr className="border-b border-gray-200 dark:border-gray-600">
-                                            <th className="text-left py-2 pr-4">Set</th>
-                                            {exercise.is_cardio ? (
-                                              <>
-                                                <th className="text-left py-2 pr-4">
-                                                  Distance
-                                                </th>
-                                                <th className="text-left py-2 pr-4">
-                                                  Duration
-                                                </th>
-                                                <th className="text-left py-2 pr-4">
-                                                  Intensity
-                                                </th>
-                                              </>
-                                            ) : (
-                                              <>
-                                                <th className="text-left py-2 pr-4">
-                                                  Weight (kg)
-                                                </th>
-                                                <th className="text-left py-2 pr-4">
-                                                  Reps
-                                                </th>
-                                              </>
-                                            )}
-                                            <th className="text-left py-2 pr-4">Set Type</th>
-                                            <th className="text-left py-2">Notes</th>
-                                          </tr>
-                                        </thead>
-                                        <tbody>
-                                          {exercise.sets &&
-                                          Array.isArray(exercise.sets) ? (
-                                            exercise.sets.map((set, sIndex) => (
-                                              <tr
-                                                key={sIndex}
-                                                className="border-b border-gray-200 dark:border-gray-600"
-                                              >
-                                                <td className="py-2 pr-4">
-                                                  {sIndex + 1}
-                                                </td>
-                                                {exercise.is_cardio ? (
-                                                  <>
-                                                    <td className="py-2 pr-4">
-                                                      {set.distance
-                                                        ? `${set.distance} km`
-                                                        : "-"}
-                                                    </td>
-                                                    <td className="py-2 pr-4">
-                                                      {set.duration
-                                                        ? `${set.duration} min`
-                                                        : "-"}
-                                                    </td>
-                                                    <td className="py-2 pr-4">
-                                                      {set.intensity !== undefined
-                                                        ? getIntensityName(
-                                                            set.intensity
-                                                          )
-                                                        : "-"}
-                                                    </td>
-                                                  </>
-                                                ) : (
-                                                  <>
-                                                    <td className="py-2 pr-4">
-                                                      {set.weight
-                                                        ? formatWeight(
-                                                            set.weight,
-                                                            workout.weight_unit || "kg"
-                                                          )
-                                                        : "-"}
-                                                    </td>
-                                                    <td className="py-2 pr-4">
-                                                      {set.reps || "-"}
-                                                    </td>
-                                                  </>
-                                                )}
-                                                <td className="py-2 pr-4">
-                                                  {set.is_warmup ? (
-                                                    <span className="px-2 py-1 rounded-full text-xs bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200">
-                                                      Warm-up
-                                                    </span>
-                                                  ) : set.is_drop_set ? (
-                                                    <span className="px-2 py-1 rounded-full text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
-                                                      Drop Set {set.drop_number ? `#${set.drop_number}` : ""}
-                                                      {set.original_weight ? ` (${formatWeight(set.original_weight, workout.weight_unit)})` : ""}
-                                                    </span>
-                                                  ) : set.is_superset ? (
-                                                    <span className="px-2 py-1 rounded-full text-xs bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200">
-                                                      Superset
-                                                      {set.superset_with ? ` with ${set.superset_with}` : ""}
-                                                    </span>
-                                                  ) : set.is_amrap ? (
-                                                    <span className="px-2 py-1 rounded-full text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">
-                                                      AMRAP
-                                                    </span>
-                                                  ) : set.is_restpause ? (
-                                                    <span className="px-2 py-1 rounded-full text-xs bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200">
-                                                      Rest-Pause
-                                                      {set.rest_pauses ? ` (${set.rest_pauses})` : ""}
-                                                    </span>
-                                                  ) : set.is_pyramid ? (
-                                                    <span className="px-2 py-1 rounded-full text-xs bg-pink-100 dark:bg-pink-900 text-pink-800 dark:text-pink-200">
-                                                      Pyramid
-                                                      {set.pyramid_type ? ` (${set.pyramid_type})` : ""}
-                                                      {set.pyramid_step ? ` Step ${set.pyramid_step}` : ""}
-                                                    </span>
-                                                  ) : set.is_giant ? (
-                                                    <span className="px-2 py-1 rounded-full text-xs bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200">
-                                                      Giant Set
-                                                      {Array.isArray(set.giant_with) && set.giant_with.length > 0 
-                                                        ? ` with ${set.giant_with.join(", ")}` 
-                                                        : ""}
-                                                    </span>
+                                    <div className="overflow-x-auto -mx-3">
+                                      <div className="inline-block min-w-full align-middle px-3">
+                                        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-600 text-xs">
+                                          <thead className="bg-gray-100 dark:bg-gray-800">
+                                            <tr>
+                                              <th scope="col" className="py-1 pl-1 pr-2 text-left font-medium text-gray-600 dark:text-gray-300 tracking-wider">#</th>
+                                              {exercise.is_cardio ? (
+                                                <>
+                                                  <th scope="col" className="py-1 px-2 text-left font-medium text-gray-600 dark:text-gray-300 tracking-wider">Dist</th>
+                                                  <th scope="col" className="py-1 px-2 text-left font-medium text-gray-600 dark:text-gray-300 tracking-wider">Time</th>
+                                                  <th scope="col" className="py-1 px-2 text-left font-medium text-gray-600 dark:text-gray-300 tracking-wider">Level</th>
+                                                </>
+                                              ) : (
+                                                <>
+                                                  <th scope="col" className="py-1 px-2 text-left font-medium text-gray-600 dark:text-gray-300 tracking-wider">Weight</th>
+                                                  <th scope="col" className="py-1 px-2 text-left font-medium text-gray-600 dark:text-gray-300 tracking-wider">Reps</th>
+                                                </>
+                                              )}
+                                              <th scope="col" className="py-1 px-2 text-left font-medium text-gray-600 dark:text-gray-300 tracking-wider">Type</th>
+                                            </tr>
+                                          </thead>
+                                          <tbody className="bg-white dark:bg-gray-700 divide-y divide-gray-200 dark:divide-gray-600">
+                                            {exercise.sets &&
+                                            Array.isArray(exercise.sets) ? (
+                                              exercise.sets.map((set, sIndex) => (
+                                                <tr
+                                                  key={sIndex}
+                                                  className={sIndex % 2 === 0 ? "bg-white dark:bg-gray-700" : "bg-gray-50 dark:bg-gray-650"}
+                                                >
+                                                  <td className="py-1 pl-1 pr-2 whitespace-nowrap">{sIndex + 1}</td>
+                                                  {exercise.is_cardio ? (
+                                                    <>
+                                                      <td className="py-1 px-2 whitespace-nowrap">
+                                                        {set.distance
+                                                          ? `${set.distance} km`
+                                                          : "-"}
+                                                      </td>
+                                                      <td className="py-1 px-2 whitespace-nowrap">
+                                                        {set.duration
+                                                          ? `${set.duration} min`
+                                                          : "-"}
+                                                      </td>
+                                                      <td className="py-1 px-2 whitespace-nowrap">
+                                                        {set.intensity !== undefined
+                                                          ? getIntensityName(
+                                                              set.intensity
+                                                            )
+                                                          : "-"}
+                                                      </td>
+                                                    </>
                                                   ) : (
-                                                    <span className="px-2 py-1 rounded-full text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
-                                                      Normal Set
-                                                    </span>
+                                                    <>
+                                                      <td className="py-1 px-2 whitespace-nowrap">
+                                                        {set.weight
+                                                          ? formatWeight(
+                                                              set.weight,
+                                                              workout.weight_unit || "kg"
+                                                            )
+                                                          : "-"}
+                                                      </td>
+                                                      <td className="py-1 px-2 whitespace-nowrap">
+                                                        {set.reps || "-"}
+                                                      </td>
+                                                    </>
                                                   )}
-                                                </td>
-                                                <td className="py-2 text-gray-600 dark:text-gray-400">
-                                                  {set.notes || "-"}
+                                                  <td className="py-1 px-2 whitespace-nowrap">
+                                                    {set.is_warmup ? (
+                                                      <span className="inline-flex px-1 text-[10px] rounded-full bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200">
+                                                        Warm
+                                                      </span>
+                                                    ) : set.is_drop_set ? (
+                                                      <span className="inline-flex px-1 text-[10px] rounded-full bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
+                                                        Drop
+                                                      </span>
+                                                    ) : set.is_superset ? (
+                                                      <span className="inline-flex px-1 text-[10px] rounded-full bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200">
+                                                        Super
+                                                      </span>
+                                                    ) : set.is_amrap ? (
+                                                      <span className="inline-flex px-1 text-[10px] rounded-full bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">
+                                                        AMRAP
+                                                      </span>
+                                                    ) : set.is_restpause ? (
+                                                      <span className="inline-flex px-1 text-[10px] rounded-full bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200">
+                                                        Rest-P
+                                                      </span>
+                                                    ) : set.is_pyramid ? (
+                                                      <span className="inline-flex px-1 text-[10px] rounded-full bg-pink-100 dark:bg-pink-900 text-pink-800 dark:text-pink-200">
+                                                        Pyra
+                                                      </span>
+                                                    ) : set.is_giant ? (
+                                                      <span className="inline-flex px-1 text-[10px] rounded-full bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200">
+                                                        Giant
+                                                      </span>
+                                                    ) : (
+                                                      <span className="inline-flex px-1 text-[10px] rounded-full bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-300">
+                                                        Normal
+                                                      </span>
+                                                    )}
+                                                  </td>
+                                                </tr>
+                                              ))
+                                            ) : (
+                                              <tr>
+                                                <td
+                                                  colSpan="5"
+                                                  className="py-2 text-center text-gray-500"
+                                                >
+                                                  No sets recorded
                                                 </td>
                                               </tr>
-                                            ))
-                                          ) : (
-                                            <tr>
-                                              <td
-                                                colSpan="5"
-                                                className="py-2 text-center text-gray-500"
-                                              >
-                                                No sets recorded for this exercise.
-                                              </td>
-                                            </tr>
-                                          )}
-                                        </tbody>
-                                      </table>
+                                            )}
+                                          </tbody>
+                                        </table>
+                                      </div>
                                     </div>
+                                    
+                                    {/* Show notes in a collapsible section */}
+                                    {exercise.sets?.some(set => set.notes) && (
+                                      <div className="mt-2">
+                                        <details className="text-xs">
+                                          <summary className="cursor-pointer text-blue-500">Show Set Notes</summary>
+                                          <div className="mt-1 pl-2 border-l-2 border-gray-300 dark:border-gray-600">
+                                            {exercise.sets.map((set, idx) => set.notes && (
+                                              <div key={idx} className="mb-1">
+                                                <span className="font-medium">Set {idx + 1}:</span> {set.notes}
+                                              </div>
+                                            ))}
+                                          </div>
+                                        </details>
+                                      </div>
+                                    )}
                                   </div>
                                 ))}
                               </div>
                             ) : (
-                              <p className="text-gray-500 dark:text-gray-400">
+                              <p className="text-gray-500 dark:text-gray-400 text-xs">
                                 No exercises recorded for this workout.
                               </p>
                             )}
@@ -1471,32 +1455,32 @@ function WorkoutHistory() {
 
       {showSaveRoutineModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
-            <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-4">
+            <h2 className="text-lg font-bold mb-3 text-gray-900 dark:text-white">
               Save as Routine
             </h2>
-            <p className="text-gray-600 dark:text-gray-400 mb-4">
+            <p className="text-gray-600 dark:text-gray-400 mb-3 text-sm">
               Save this workout as a reusable routine template. You can access
               and start this routine from the Routines page.
             </p>
 
-            <div className="mb-4">
-              <label className="block text-gray-700 dark:text-gray-300 mb-2">
+            <div className="mb-3">
+              <label className="block text-gray-700 dark:text-gray-300 mb-1 text-sm">
                 Routine Name
               </label>
               <input
                 type="text"
                 value={routineName}
                 onChange={(e) => setRoutineName(e.target.value)}
-                className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
+                className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white text-sm"
                 placeholder="Enter routine name"
               />
             </div>
 
-            <div className="flex space-x-3">
+            <div className="flex space-x-2">
               <button
                 onClick={handleSaveRoutine}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg flex items-center justify-center"
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg flex items-center justify-center text-sm"
                 disabled={savingRoutine}
               >
                 {savingRoutine ? (
@@ -1510,7 +1494,7 @@ function WorkoutHistory() {
               </button>
               <button
                 onClick={() => setShowSaveRoutineModal(false)}
-                className="flex-1 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-white py-2 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500"
+                className="flex-1 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-white py-2 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500 text-sm"
                 disabled={savingRoutine}
               >
                 Cancel
@@ -1522,27 +1506,27 @@ function WorkoutHistory() {
 
       {showDeleteAllConfirmation && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
-            <h2 className="text-xl font-bold mb-4 text-red-600 dark:text-red-500">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-4">
+            <h2 className="text-lg font-bold mb-3 text-red-600 dark:text-red-500">
               Delete All Workouts
             </h2>
-            <p className="text-gray-600 dark:text-gray-400 mb-4">
+            <p className="text-gray-600 dark:text-gray-400 mb-3 text-sm">
               Are you sure you want to delete all workouts? This action cannot
               be undone.
             </p>
 
-            <div className="flex space-x-3">
+            <div className="flex space-x-2">
               <button
-                onClick={confirmDeleteAllWorkouts}
-                className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg"
+                onClick={confirmDeleteWorkout}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg text-sm"
               >
-                Delete
+                Delete All
               </button>
               <button
                 onClick={() => {
                   setShowDeleteAllConfirmation(false);
                 }}
-                className="flex-1 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-white py-2 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500"
+                className="flex-1 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-white py-2 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500 text-sm"
               >
                 Cancel
               </button>
@@ -1553,26 +1537,26 @@ function WorkoutHistory() {
 
       {/* Delete Selected Confirmation Modal */}
       {showDeleteSelectedConfirmation && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full">
-            <div className="flex items-center text-red-500 mb-4">
-              <FaExclamationTriangle className="text-2xl mr-2" />
-              <h3 className="text-xl font-bold">Delete Selected Workouts</h3>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 max-w-md w-full">
+            <div className="flex items-center text-red-500 mb-3">
+              <FaExclamationTriangle className="text-xl mr-2" />
+              <h3 className="text-lg font-bold">Delete Selected</h3>
             </div>
-            <p className="text-gray-700 dark:text-gray-300 mb-6">
+            <p className="text-gray-700 dark:text-gray-300 mb-4 text-sm">
               Are you sure you want to delete {selectedWorkouts.length} selected workout{selectedWorkouts.length === 1 ? '' : 's'}? This action cannot be undone.
             </p>
-            <div className="flex justify-end space-x-3">
+            <div className="flex justify-end space-x-2">
               <button
                 onClick={() => setShowDeleteSelectedConfirmation(false)}
-                className="px-4 py-2 bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-600"
+                className="px-4 py-2 bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-600 text-sm"
                 disabled={deletingSelected}
               >
                 Cancel
               </button>
               <button
                 onClick={confirmDeleteSelectedWorkouts}
-                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 flex items-center"
+                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 flex items-center text-sm"
                 disabled={deletingSelected}
               >
                 {deletingSelected ? (

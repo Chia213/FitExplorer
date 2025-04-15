@@ -236,6 +236,68 @@ body {
     transform: scale(1.2);
     margin: 0.2rem;
   }
+  
+  /* Mobile-specific Routines page adjustments */
+  .routines-page {
+    padding: 0.5rem !important;
+  }
+  
+  .routines-header {
+    margin-bottom: 0.75rem !important;
+  }
+  
+  .routines-card {
+    margin-bottom: 0.75rem !important;
+    border-radius: 0.5rem !important;
+  }
+  
+  .routines-action-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  
+  .routines-action-buttons button {
+    flex: 1 0 auto;
+    min-width: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  /* Adjust filter and search controls for mobile */
+  .routines-filters {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .routines-search-input {
+    width: 100%;
+  }
+  
+  /* Ensure exercise sets are readable on small screens */
+  .routines-exercise-sets {
+    font-size: 0.875rem;
+    overflow-x: auto;
+  }
+  
+  /* Add space at bottom for mobile navigation */
+  .routines-container {
+    padding-bottom: 5rem !important;
+  }
+  
+  /* Fix for routine buttons on mobile */
+  .routine-buttons {
+    display: flex;
+    gap: 0.25rem;
+  }
+  
+  .routine-buttons button {
+    padding: 0.5rem !important;
+    height: 2.5rem;
+    width: 2.5rem;
+  }
 }
 
 /* iOS specific styles for home screen app */
@@ -256,6 +318,36 @@ body {
   /* Fix for iOS bottom navigation area */
   .bottom-nav {
     padding-bottom: env(safe-area-inset-bottom);
+  }
+  
+  /* Fix for input fields on mobile homescreen */
+  input[type="password"] {
+    -webkit-appearance: none;
+    appearance: none;
+    background-color: #ffffff !important;
+    color: #000000 !important;
+  }
+  
+  /* Dark mode specific override for input fields */
+  .dark input[type="password"] {
+    background-color: #374151 !important;
+    color: #ffffff !important;
+    border-color: #4B5563 !important;
+  }
+  
+  /* Fix for select elements on mobile homescreen */
+  select {
+    -webkit-appearance: menulist;
+    appearance: menulist;
+    background-color: #ffffff !important;
+    color: #000000 !important;
+  }
+  
+  /* Dark mode specific override for select elements */
+  .dark select {
+    background-color: #374151 !important;
+    color: #ffffff !important;
+    border-color: #4B5563 !important;
   }
 }
 
@@ -381,5 +473,49 @@ body {
     .bottom-nav {
       border-top: none !important;
     }
+  }
+}
+
+/* Mobile-friendly styles for Routines page */
+@media (max-width: 768px) {
+  .routines-container {
+    padding: 0.5rem;
+  }
+  
+  .routines-page {
+    padding: 0.75rem;
+  }
+  
+  .routines-header {
+    gap: 0.5rem;
+  }
+  
+  .routines-filters {
+    padding: 0.75rem;
+  }
+  
+  .routines-search-input {
+    height: 2.5rem;
+    font-size: 1rem;
+  }
+  
+  .routines-action-buttons button {
+    padding: 0.5rem 0.75rem;
+    min-height: 2.5rem;
+    min-width: 2.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .routines-card {
+    margin-bottom: 0.75rem;
+  }
+
+  /* Make buttons larger and more touch-friendly */
+  button, 
+  .btn,
+  select {
+    min-height: 2.5rem;
   }
 }

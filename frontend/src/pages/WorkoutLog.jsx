@@ -2147,107 +2147,109 @@ const WorkoutLog = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center p-6 bg-gray-100 dark:bg-gray-900">
-      <div className="w-full max-w-lg p-4 flex justify-between items-center">
+    <div className="min-h-screen flex flex-col items-center p-2 sm:p-6 pb-24 bg-gray-100 dark:bg-gray-900">
+      <div className="w-full max-w-lg p-4 flex flex-col sm:flex-row justify-between items-center">
         <input
           type="text"
           value={workoutName}
           onChange={(e) => setWorkoutName(e.target.value)}
           placeholder="What are we training today?"
-          className="bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-semibold text-lg px-3 py-2 rounded-lg flex-grow mr-2"
+          className="bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-semibold text-lg px-3 py-2 rounded-lg w-full sm:flex-grow sm:mr-2 mb-2 sm:mb-0"
         />
-        <div className="flex space-x-2">
+        <div className="flex space-x-2 w-full sm:w-auto justify-center">
           <button
             onClick={() => setShowRoutinesSelector(true)}
-            className="bg-blue-500 text-white p-2 rounded-lg hover:bg-blue-400"
+            className="bg-blue-500 text-white p-2 rounded-lg hover:bg-blue-400 flex-1 sm:flex-none"
             title="Select Routine"
           >
-            <LuCalendarClock className="text-xl" />
+            <LuCalendarClock className="text-xl mx-auto" />
           </button>
           <button
             onClick={() => setShowExerciseSelection(true)}
-            className="bg-teal-500 text-white p-2 rounded-lg hover:bg-teal-400"
+            className="bg-teal-500 text-white p-2 rounded-lg hover:bg-teal-400 flex-1 sm:flex-none"
             title="Add Exercise"
           >
-            <FaDumbbell className="text-xl" />
+            <FaDumbbell className="text-xl mx-auto" />
           </button>
           <button
             onClick={() => navigate("/workout-history")}
-            className="bg-teal-500 text-white p-2 rounded-lg hover:bg-teal-400"
+            className="bg-teal-500 text-white p-2 rounded-lg hover:bg-teal-400 flex-1 sm:flex-none"
             title="View Workout History"
           >
-            <FaHistory className="text-xl" />
+            <FaHistory className="text-xl mx-auto" />
           </button>
         </div>
       </div>
 
       <div className="w-full max-w-lg bg-white dark:bg-gray-800 p-4 rounded-lg mt-4 space-y-4">
-        <div className="flex justify-between items-center">
-          <p className="text-gray-700 dark:text-gray-300">Start Time</p>
-          <div className="relative">
-            <input
-              type="text"
-              value={startTime ? formatDateTimeForDisplay(startTime) : ""}
-              readOnly
-              className="bg-gray-200 dark:bg-gray-600 p-2 rounded-lg cursor-pointer pr-10"
-              onClick={() => document.getElementById('start-time-picker').showPicker()}
-            />
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center">
+          <p className="text-gray-700 dark:text-gray-300 mb-1 sm:mb-0">Start Time</p>
+          <div className="relative w-full sm:w-auto">
+            <div 
+              className="bg-gray-200 dark:bg-gray-600 p-2 rounded-lg cursor-pointer pr-10 flex items-center"
+              onClick={() => {
+                try {
+                  document.getElementById('start-time-picker').showPicker();
+                } catch (error) {
+                  // Fallback for browsers/PWAs that don't support showPicker()
+                  document.getElementById('start-time-picker').focus();
+                }
+              }}
+            >
+              <span>{startTime ? formatDateTimeForDisplay(startTime) : "Select date & time"}</span>
+              <FaCalendarAlt className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500" />
+            </div>
             <input
               id="start-time-picker"
               type="datetime-local"
               value={startTime}
               onChange={(e) => setStartTime(e.target.value)}
-              className="absolute opacity-0 w-0 h-0"
+              className="absolute inset-0 opacity-0 cursor-pointer"
             />
-            <button 
-              onClick={() => document.getElementById('start-time-picker').showPicker()}
-              className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500"
-            >
-              <FaCalendarAlt />
-            </button>
           </div>
         </div>
 
-        <div className="flex justify-between items-center">
-          <p className="text-gray-700 dark:text-gray-300">End Time</p>
-          <div className="relative">
-            <input
-              type="text"
-              value={endTime ? formatDateTimeForDisplay(endTime) : ""}
-              readOnly
-              className="bg-gray-200 dark:bg-gray-600 p-2 rounded-lg cursor-pointer pr-10"
-              onClick={() => document.getElementById('end-time-picker').showPicker()}
-            />
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center">
+          <p className="text-gray-700 dark:text-gray-300 mb-1 sm:mb-0">End Time</p>
+          <div className="relative w-full sm:w-auto">
+            <div 
+              className="bg-gray-200 dark:bg-gray-600 p-2 rounded-lg cursor-pointer pr-10 flex items-center"
+              onClick={() => {
+                try {
+                  document.getElementById('end-time-picker').showPicker();
+                } catch (error) {
+                  // Fallback for browsers/PWAs that don't support showPicker()
+                  document.getElementById('end-time-picker').focus();
+                }
+              }}
+            >
+              <span>{endTime ? formatDateTimeForDisplay(endTime) : "Select date & time"}</span>
+              <FaCalendarAlt className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500" />
+            </div>
             <input
               id="end-time-picker"
               type="datetime-local"
               value={endTime}
               onChange={(e) => setEndTime(e.target.value)}
-              className="absolute opacity-0 w-0 h-0"
+              className="absolute inset-0 opacity-0 cursor-pointer"
             />
-            <button 
-              onClick={() => document.getElementById('end-time-picker').showPicker()}
-              className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500"
-            >
-              <FaCalendarAlt />
-            </button>
           </div>
         </div>
 
-        <div className="flex justify-between items-center">
-          <p className="text-gray-700 dark:text-gray-300">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center">
+          <p className="text-gray-700 dark:text-gray-300 mb-1 sm:mb-0">
             Bodyweight ({weightUnit})
           </p>
           <input
             type="number"
             value={bodyweight}
             onChange={(e) => setBodyweight(e.target.value)}
-            className="bg-gray-200 dark:bg-gray-600 p-2 rounded-lg"
+            className="bg-gray-200 dark:bg-gray-600 p-2 rounded-lg w-full sm:w-auto"
           />
         </div>
 
-        <div className="flex justify-between items-center">
-          <p className="text-gray-700 dark:text-gray-300">Weight Unit</p>
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center">
+          <p className="text-gray-700 dark:text-gray-300 mb-1 sm:mb-0">Weight Unit</p>
           <button
             onClick={toggleWeightUnit}
             className="flex items-center bg-gray-200 dark:bg-gray-600 px-3 py-2 rounded-lg text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors"
@@ -2260,53 +2262,45 @@ const WorkoutLog = () => {
         <textarea
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          className="bg-gray-200 dark:bg-gray-600 p-2 rounded-lg w-full"
           placeholder="Add any notes..."
-        ></textarea>
+          className="w-full h-24 p-2 bg-gray-200 dark:bg-gray-600 rounded-lg resize-none"
+        />
       </div>
 
       {workoutExercises.map((exercise, exerciseIndex) => (
         <div
           key={exerciseIndex}
-          className="bg-white dark:bg-gray-700 p-4 rounded-lg mt-4 w-full max-w-lg"
+          className="bg-white dark:bg-gray-800 p-3 sm:p-4 rounded-lg shadow-sm my-2"
         >
-          <div className="flex justify-between items-center">
-            <div className="flex items-center">
-              <h3 className="text-black dark:text-white font-semibold">
+          {/* Exercise header */}
+          <div className="flex flex-wrap items-center mb-2">
+            <div className="flex-grow mr-2 mb-2 sm:mb-0">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                 {exercise.name}
               </h3>
-              <span className="ml-2 text-sm text-gray-500 dark:text-gray-400 bg-gray-200 dark:bg-gray-600 px-2 py-1 rounded-full">
-                {exercise.sets.length}{" "}
-                {exercise.sets.length === 1 ? "set" : "sets"}
+              <span className="text-sm text-gray-600 dark:text-gray-400">
+                {exercise.muscle_group}
               </span>
             </div>
-            <div className="flex items-center space-x-3">
-              <div className="flex space-x-1">
-                <button
-                  onClick={() => handleMoveExercise(exerciseIndex, "up")}
-                  disabled={exerciseIndex === 0}
-                  className={`text-teal-500 hover:text-teal-400 ${
-                    exerciseIndex === 0 ? "opacity-50 cursor-not-allowed" : ""
-                  }`}
-                >
-                  <FaArrowUp />
-                </button>
-                <button
-                  onClick={() => handleMoveExercise(exerciseIndex, "down")}
-                  disabled={exerciseIndex === workoutExercises.length - 1}
-                  className={`text-teal-500 hover:text-teal-400 ${
-                    exerciseIndex === workoutExercises.length - 1
-                      ? "opacity-50 cursor-not-allowed"
-                      : ""
-                  }`}
-                >
-                  <FaArrowDown />
-                </button>
-              </div>
-
+            {/* Exercise control buttons */}
+            <div className="flex flex-wrap gap-1">
+              <button
+                onClick={() => handleMoveExercise(exerciseIndex, "up")}
+                className="text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white bg-gray-200 dark:bg-gray-700 p-2 rounded"
+                disabled={exerciseIndex === 0}
+              >
+                <FaArrowUp />
+              </button>
+              <button
+                onClick={() => handleMoveExercise(exerciseIndex, "down")}
+                className="text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white bg-gray-200 dark:bg-gray-700 p-2 rounded"
+                disabled={exerciseIndex === workoutExercises.length - 1}
+              >
+                <FaArrowDown />
+              </button>
               <button
                 onClick={() => toggleExerciseCollapse(exerciseIndex)}
-                className="text-gray-500 hover:text-gray-400"
+                className="text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white bg-gray-200 dark:bg-gray-700 p-2 rounded"
               >
                 {collapsedExercises[exerciseIndex] ? (
                   <FaChevronDown />
@@ -2314,67 +2308,56 @@ const WorkoutLog = () => {
                   <FaChevronUp />
                 )}
               </button>
-
               <button
                 onClick={() => handleDeleteExercise(exerciseIndex)}
-                className="text-red-400 hover:text-red-300"
+                className="text-red-500 hover:text-red-600 bg-gray-200 dark:bg-gray-700 p-2 rounded"
               >
                 <FaTrash />
               </button>
-
               <button
                 onClick={() => handleStartRestTimer(exercise)}
-                className="text-teal-500 hover:text-teal-400"
-                title="Start Rest Timer"
+                className="text-teal-500 hover:text-teal-600 bg-gray-200 dark:bg-gray-700 p-2 rounded"
               >
                 <FaClock />
               </button>
-
-              <div className="flex space-x-2">
-                <div className="flex flex-col items-center">
-                  <button
-                    onClick={() => handleShowExerciseHistory(exercise)}
-                    className="text-indigo-500 hover:text-indigo-400 mb-1"
-                    title="Exercise History"
-                  >
-                    <FaHistory className="text-lg" />
-                  </button>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">History</span>
-                </div>
+              
+              <div className="flex gap-1 mt-1 w-full justify-center flex-wrap">
+                <button
+                  onClick={() => handleShowExerciseHistory(exercise)}
+                  className="text-indigo-500 hover:text-indigo-600 bg-gray-200 dark:bg-gray-700 p-2 rounded flex items-center"
+                  title="Exercise History"
+                >
+                  <FaHistory className="mr-1" />
+                  <span className="text-xs">History</span>
+                </button>
                 
-                <div className="flex flex-col items-center">
-                  <button
-                    onClick={() => handleShowExerciseCharts(exercise)}
-                    className="text-green-500 hover:text-green-400 mb-1"
-                    title="Progress Charts"
-                  >
-                    <FaChartBar className="text-lg" />
-                  </button>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">Charts</span>
-                </div>
+                <button
+                  onClick={() => handleShowExerciseCharts(exercise)}
+                  className="text-green-500 hover:text-green-600 bg-gray-200 dark:bg-gray-700 p-2 rounded flex items-center"
+                  title="Progress Charts"
+                >
+                  <FaChartBar className="mr-1" />
+                  <span className="text-xs">Charts</span>
+                </button>
                 
-                <div className="flex flex-col items-center">
-                  <button
-                    onClick={() => handleShowPersonalRecords(exercise)}
-                    className="text-yellow-500 hover:text-yellow-400 mb-1"
-                    title="Personal Records"
-                  >
-                    <FaTrophy className="text-lg" />
-                  </button>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">Records</span>
-                </div>
+                <button
+                  onClick={() => handleShowPersonalRecords(exercise)}
+                  className="text-yellow-500 hover:text-yellow-600 bg-gray-200 dark:bg-gray-700 p-2 rounded flex items-center"
+                  title="Personal Records"
+                >
+                  <FaTrophy className="mr-1" />
+                  <span className="text-xs">Records</span>
+                </button>
                 
                 {!exercise.is_cardio && (
-                  <div className="flex flex-col items-center">
-                    <button
-                      onClick={() => handleShowSetTypeModal(exercise)}
-                      className="text-blue-500 hover:text-blue-400 mb-1"
-                      title="Add Set Type (Drop Set, Warm-up, Working)"
-                    >
-                      <FaListUl className="text-lg" />
-                    </button>
-                    <span className="text-xs text-gray-500 dark:text-gray-400">Set Type</span>
-                  </div>
+                  <button
+                    onClick={() => handleShowSetTypeModal(exercise)}
+                    className="text-blue-500 hover:text-blue-600 bg-gray-200 dark:bg-gray-700 p-2 rounded flex items-center"
+                    title="Add Set Type (Drop Set, Warm-up, Working)"
+                  >
+                    <FaListUl className="mr-1" />
+                    <span className="text-xs">Set Type</span>
+                  </button>
                 )}
               </div>
             </div>
@@ -2382,196 +2365,38 @@ const WorkoutLog = () => {
 
           {!collapsedExercises[exerciseIndex] && (
             <>
-              {exercise.sets.map((set, setIndex) => (
-                <div
-                  key={setIndex}
-                  className={`mt-4 border-t border-gray-200 dark:border-gray-600 pt-3 ${
-                    set.is_drop_set ? "bg-blue-50 dark:bg-blue-900/20" : 
-                    set.is_warmup ? "bg-yellow-50 dark:bg-yellow-900/20" : 
-                    set.is_superset ? "bg-purple-50 dark:bg-purple-900/20" : 
-                    set.is_amrap ? "bg-green-50 dark:bg-green-900/20" : 
-                    set.is_restpause ? "bg-orange-50 dark:bg-orange-900/20" :
-                    set.is_pyramid ? "bg-pink-50 dark:bg-pink-900/20" : 
-                    set.is_giant ? "bg-indigo-50 dark:bg-indigo-900/20" : ""
-                  }`}
-                >
-                  <div className="flex justify-between items-center mb-2">
-                    <div className="flex items-center space-x-2">
-                      <span className="font-medium text-gray-700 dark:text-gray-300">
-                        Set {setIndex + 1}
-                      </span>
-                      {set.is_drop_set ? (
-                        <div className="flex items-center space-x-2">
-                          <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded-full">
-                            Drop Set {set.drop_number}
-                          </span>
-                          <span className="text-xs text-gray-500 dark:text-gray-400">
-                            ({set.original_weight} {weightUnit} → {set.weight} {weightUnit})
-                          </span>
-                        </div>
-                      ) : set.is_warmup ? (
-                        <span className="text-xs bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 px-2 py-1 rounded-full">
-                          Warm-up Set
-                        </span>
-                      ) : set.is_superset ? (
-                        <span className="text-xs bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 px-2 py-1 rounded-full">
-                          Superset with {workoutExercises[set.superset_with]?.name || "Deleted Exercise"}
-                        </span>
-                      ) : set.is_amrap ? (
-                        <span className="text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-1 rounded-full">
-                          AMRAP Set
-                        </span>
-                      ) : set.is_restpause ? (
-                        <span className="text-xs bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 px-2 py-1 rounded-full">
-                          Rest-Pause Set ({set.rest_pauses} pauses)
-                        </span>
-                      ) : set.is_pyramid ? (
-                        <span className="text-xs bg-pink-100 dark:bg-pink-900 text-pink-800 dark:text-pink-200 px-2 py-1 rounded-full">
-                          Pyramid Set {set.pyramid_type === "descending" ? "(Descending)" : ""}
-                        </span>
-                      ) : set.is_giant ? (
-                        <span className="text-xs bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 px-2 py-1 rounded-full">
-                          Giant Set
-                        </span>
-                      ) : (
-                        <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-1 rounded-full">
-                          Normal Set
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      {!set.is_drop_set && !set.is_superset && !set.is_amrap && !set.is_restpause && !set.is_pyramid && !set.is_giant && (
-                        <button
-                          onClick={() => {
-                            setWorkoutExercises((prev) =>
-                              prev.map((ex, eIndex) => {
-                                if (eIndex === exerciseIndex) {
-                                  return {
-                                    ...ex,
-                                    sets: ex.sets.map((s, sIndex) => {
-                                      if (sIndex === setIndex) {
-                                        return { ...s, is_warmup: !s.is_warmup };
-                                      }
-                                      return s;
-                                    }),
-                                  };
-                                }
-                                return ex;
-                              })
-                            );
-                          }}
-                          className={`text-sm px-2 py-1 rounded ${
-                            set.is_warmup
-                              ? "bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200"
-                              : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
-                          }`}
-                        >
-                          {set.is_warmup ? "Mark as Normal Set" : "Mark as Warm-up"}
-                        </button>
-                      )}
-                      <button
-                        onClick={() => handleDeleteSet(exerciseIndex, setIndex)}
-                        className="text-red-500 hover:text-red-400"
-                        disabled={exercise.sets.length === 1}
-                      >
-                        <FaTrash />
-                      </button>
-                    </div>
-                  </div>
-
-                  {exercise.is_cardio ? (
-                    <div className="space-y-2">
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <label className="text-sm text-gray-600 dark:text-gray-400">
-                            Distance (km)
-                          </label>
-                          <input
-                            type="number"
-                            step="0.01"
-                            value={set.distance}
-                            onChange={(e) =>
-                              handleEditSet(
-                                exerciseIndex,
-                                setIndex,
-                                "distance",
-                                e.target.value
-                              )
-                            }
-                            className="bg-gray-200 dark:bg-gray-600 p-2 rounded-lg w-full"
-                            placeholder="Distance"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-sm text-gray-600 dark:text-gray-400">
-                            Duration (min)
-                          </label>
-                          <input
-                            type="number"
-                            value={set.duration}
-                            onChange={(e) =>
-                              handleEditSet(
-                                exerciseIndex,
-                                setIndex,
-                                "duration",
-                                e.target.value
-                              )
-                            }
-                            className="bg-gray-200 dark:bg-gray-600 p-2 rounded-lg w-full"
-                            placeholder="Minutes"
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <label className="text-sm text-gray-600 dark:text-gray-400">
-                          Intensity
-                        </label>
-                        <select
-                          value={set.intensity}
-                          onChange={(e) =>
-                            handleEditSet(
-                              exerciseIndex,
-                              setIndex,
-                              "intensity",
-                              e.target.value
-                            )
-                          }
-                          className="bg-gray-200 dark:bg-gray-600 p-2 rounded-lg w-full"
-                        >
-                          <option value="">Select Intensity</option>
-                          <option value="Low">Low</option>
-                          <option value="Medium">Medium</option>
-                          <option value="High">High</option>
-                          <option value="Very High">Very High</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="text-sm text-gray-600 dark:text-gray-400">
-                          Notes
-                        </label>
-                        <input
-                          type="text"
-                          value={set.notes}
-                          onChange={(e) =>
-                            handleEditSet(
-                              exerciseIndex,
-                              setIndex,
-                              "notes",
-                              e.target.value
-                            )
-                          }
-                          className="bg-gray-200 dark:bg-gray-600 p-2 rounded-lg w-full"
-                          placeholder="Notes (optional)"
-                        />
-                      </div>
-                    </div>
+              {/* Exercise sets section */}
+              <div className="mt-3">
+                {/* Set headers for each column */}
+                <div className={`grid ${exercise.is_cardio ? 'grid-cols-4' : 'grid-cols-4'} gap-1 text-sm font-semibold mb-1 text-gray-600 dark:text-gray-300 items-center px-1`}>
+                  {!exercise.is_cardio ? (
+                    <>
+                      <div>Weight ({weightUnit})</div>
+                      <div>Reps</div>
+                      <div className="col-span-1 text-center">Type</div>
+                      <div className="text-right">Action</div>
+                    </>
                   ) : (
                     <>
-                      <div className="grid grid-cols-2 gap-2">
+                      <div>Distance (km)</div>
+                      <div>Duration (min)</div>
+                      <div>Intensity</div>
+                      <div className="text-right">Action</div>
+                    </>
+                  )}
+                </div>
+
+                {/* Exercise sets */}
+                {exercise.sets.map((set, setIndex) => (
+                  <div 
+                    key={setIndex}
+                    className={`grid ${exercise.is_cardio ? 'grid-cols-4' : 'grid-cols-4'} gap-1 py-1 items-center ${
+                      setIndex % 2 === 0 ? "bg-gray-50 dark:bg-gray-750" : ""
+                    } rounded`}
+                  >
+                    {!exercise.is_cardio ? (
+                      <>
                         <div>
-                          <label className="text-sm text-gray-600 dark:text-gray-400">
-                            Weight ({weightUnit})
-                          </label>
                           <input
                             type="number"
                             value={set.weight}
@@ -2583,14 +2408,11 @@ const WorkoutLog = () => {
                                 e.target.value
                               )
                             }
-                            className="bg-gray-200 dark:bg-gray-600 p-2 rounded-lg w-full"
-                            placeholder="Weight"
+                            placeholder="0"
+                            className="w-full p-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm"
                           />
                         </div>
                         <div>
-                          <label className="text-sm text-gray-600 dark:text-gray-400">
-                            Reps
-                          </label>
                           <input
                             type="number"
                             value={set.reps}
@@ -2602,18 +2424,126 @@ const WorkoutLog = () => {
                                 e.target.value
                               )
                             }
-                            className="bg-gray-200 dark:bg-gray-600 p-2 rounded-lg w-full"
-                            placeholder="Reps"
+                            placeholder="0"
+                            className="w-full p-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm"
                           />
                         </div>
-                      </div>
-                      <div className="mt-2">
-                        <label className="text-sm text-gray-600 dark:text-gray-400">
-                          Notes
-                        </label>
+                        
+                        <div className="flex-col text-center">
+                          {/* Set type indicators */}
+                          <div className="flex flex-wrap gap-1 justify-center">
+                            {set.is_warmup && (
+                              <span className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100 text-xs px-1 py-0.5 rounded">
+                                Warm
+                              </span>
+                            )}
+                            {set.is_drop_set && (
+                              <span className="bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-100 text-xs px-1 py-0.5 rounded">
+                                Drop
+                              </span>
+                            )}
+                            {set.is_superset && (
+                              <span className="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100 text-xs px-1 py-0.5 rounded">
+                                Super
+                              </span>
+                            )}
+                            {set.is_amrap && (
+                              <span className="bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-100 text-xs px-1 py-0.5 rounded">
+                                AMRAP
+                              </span>
+                            )}
+                            {set.is_restpause && (
+                              <span className="bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-100 text-xs px-1 py-0.5 rounded">
+                                Rest-P
+                              </span>
+                            )}
+                            {set.is_pyramid && (
+                              <span className="bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-100 text-xs px-1 py-0.5 rounded">
+                                Pyra
+                              </span>
+                            )}
+                            {set.is_giant && (
+                              <span className="bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-100 text-xs px-1 py-0.5 rounded">
+                                Giant
+                              </span>
+                            )}
+                            {!set.is_warmup && 
+                              !set.is_drop_set && 
+                              !set.is_superset && 
+                              !set.is_amrap && 
+                              !set.is_restpause && 
+                              !set.is_pyramid && 
+                              !set.is_giant && (
+                              <span className="bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300 text-xs px-1 py-0.5 rounded">
+                                Working
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div>
+                          <input
+                            type="number"
+                            value={set.distance}
+                            onChange={(e) =>
+                              handleEditSet(
+                                exerciseIndex,
+                                setIndex,
+                                "distance",
+                                e.target.value
+                              )
+                            }
+                            placeholder="0"
+                            className="w-full p-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm"
+                          />
+                        </div>
+                        <div>
+                          <input
+                            type="number"
+                            value={set.duration}
+                            onChange={(e) =>
+                              handleEditSet(
+                                exerciseIndex,
+                                setIndex,
+                                "duration",
+                                e.target.value
+                              )
+                            }
+                            placeholder="0"
+                            className="w-full p-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm"
+                          />
+                        </div>
+                        <div>
+                          <select
+                            value={set.intensity}
+                            onChange={(e) =>
+                              handleEditSet(
+                                exerciseIndex,
+                                setIndex,
+                                "intensity",
+                                e.target.value
+                              )
+                            }
+                            className="w-full p-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm"
+                          >
+                            <option value="">-</option>
+                            <option value="Low">Low</option>
+                            <option value="Medium">Medium</option>
+                            <option value="High">High</option>
+                            <option value="Very High">Very High</option>
+                          </select>
+                        </div>
+                      </>
+                    )}
+                    
+                    {/* Set actions that are common for both cardio and strength */}
+                    <div className="flex justify-end space-x-1">
+                      <div className="flex">
                         <input
                           type="text"
-                          value={set.notes}
+                          value={set.notes || ""}
                           onChange={(e) =>
                             handleEditSet(
                               exerciseIndex,
@@ -2622,40 +2552,48 @@ const WorkoutLog = () => {
                               e.target.value
                             )
                           }
-                          className="bg-gray-200 dark:bg-gray-600 p-2 rounded-lg w-full"
-                          placeholder="Notes (optional)"
+                          placeholder="Notes"
+                          className="p-1 text-xs bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md w-16 sm:w-20"
                         />
+                        <button
+                          onClick={() => handleDeleteSet(exerciseIndex, setIndex)}
+                          className="ml-1 text-red-500 hover:text-red-600 bg-gray-200 dark:bg-gray-700 p-1 rounded"
+                        >
+                          <FaTrash className="text-xs" />
+                        </button>
                       </div>
-                    </>
-                  )}
-                </div>
-              ))}
+                    </div>
+                  </div>
+                ))}
 
-              <button
-                onClick={() => handleAddSet(exerciseIndex)}
-                className="w-full text-teal-500 hover:text-teal-400 mt-4 flex items-center justify-center"
-              >
-                <FaPlus className="mr-2" /> Add Set
-              </button>
+                {/* Add set button */}
+                <button
+                  onClick={() => handleAddSet(exerciseIndex)}
+                  className="mt-3 w-full bg-teal-500 hover:bg-teal-400 text-white py-2 px-4 rounded-md flex items-center justify-center font-medium"
+                >
+                  <FaPlus className="mr-2" />
+                  Add Set
+                </button>
+              </div>
             </>
           )}
         </div>
       ))}
 
-      <div className="w-full max-w-lg flex space-x-4 mt-6">
+      <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 p-3 flex justify-center space-x-3 shadow-lg">
         <button
           onClick={handleFinishWorkout}
-          className="flex-1 text-white font-semibold text-lg p-4 bg-teal-500 hover:bg-teal-400 rounded-lg"
-          disabled={workoutExercises.length === 0}
+          className="flex-1 max-w-xs bg-teal-500 hover:bg-teal-400 text-white py-3 px-6 rounded-lg font-medium flex items-center justify-center"
         >
+          <FaCheck className="mr-2" />
           Finish Workout
         </button>
-
         <button
-          onClick={handleSaveAsRoutine}
-          className="flex-1 text-white font-semibold text-lg p-4 bg-blue-500 hover:bg-blue-400 rounded-lg flex items-center justify-center"
+          onClick={() => setShowSaveRoutineModal(true)}
+          className="flex-1 max-w-xs bg-blue-500 hover:bg-blue-400 text-white py-3 px-6 rounded-lg font-medium flex items-center justify-center"
         >
-          <FaSave className="mr-2" /> Save as Routine
+          <FaSave className="mr-2" />
+          Save as Routine
         </button>
       </div>
 

@@ -504,7 +504,8 @@ function Navbar() {
         return a.label.localeCompare(b.label);
       });
 
-      setSearchResults(filtered);
+      // Limit to 8 results for better mobile experience
+      setSearchResults(filtered.slice(0, 8));
     } else {
       setSearchResults([]);
     }
@@ -697,20 +698,22 @@ function Navbar() {
                   placeholder="Search..."
                   value={searchQuery}
                   onChange={handleSearch}
-                  className="w-full py-2 pl-10 pr-4 rounded-full border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-all"
+                  className="w-full py-2 pl-10 pr-4 rounded-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-all desktop-search-input"
+                  autoComplete="off"
                 />
               </div>
               
               {/* Search Results Dropdown */}
               {searchResults.length > 0 && (
-                <div className="search-results">
+                <div className="search-results desktop-search-results">
+                  <p className="text-xs p-2 font-medium border-b border-gray-200 dark:border-gray-700">Search Results</p>
                   {searchResults.map((result) => (
                     <div
                       key={result.path}
-                      className="search-result-item flex items-center"
+                      className="search-result-item flex items-center gap-2"
                       onClick={() => handleResultClick(result.path)}
                     >
-                      {result.icon}
+                      <span className="text-blue-500 dark:text-blue-400">{result.icon}</span>
                       <span>{result.label}</span>
                     </div>
                   ))}
@@ -1122,21 +1125,23 @@ function Navbar() {
                 placeholder="Search..."
                 value={searchQuery}
                 onChange={handleSearch}
-                className="w-full py-2 pl-10 pr-4 rounded-full border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full py-2 pl-10 pr-4 rounded-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 mobile-search-input"
+                autoComplete="off"
               />
             </div>
             {searchResults.length > 0 && (
-              <div className="search-results mt-2">
+              <div className="search-results mt-2 mobile-search-results">
+                <p className="text-xs p-2 font-medium border-b border-gray-200 dark:border-gray-700">Search Results</p>
                 {searchResults.map((result) => (
                   <div
                     key={result.path}
-                    className="search-result-item flex items-center"
+                    className="search-result-item flex items-center gap-2"
                     onClick={() => {
                       handleResultClick(result.path);
                       setMobileMenuOpen(false);
                     }}
                   >
-                    {result.icon}
+                    <span className="text-blue-500 dark:text-blue-400">{result.icon}</span>
                     <span>{result.label}</span>
                   </div>
                 ))}
