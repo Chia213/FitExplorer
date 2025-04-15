@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { FaEye, FaEyeSlash, FaCheckCircle, FaGoogle } from "react-icons/fa";
 import { loginUser, checkAdminStatus } from "../api/auth";
 import { useWelcome } from "../contexts/WelcomeContext";
+import { useTheme } from "../hooks/useTheme";
 
 function Login() {
   const [formData, setFormData] = useState({
@@ -21,6 +22,7 @@ function Login() {
   const [resendStatus, setResendStatus] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
+  const { theme } = useTheme();
 
   // Get welcome modal trigger function from context
   const { triggerWelcomeModal } = useWelcome();
@@ -398,9 +400,9 @@ function Login() {
                 setError("Could not initiate Google login. Please try again.");
               }}
               useOneTap
-              theme={theme === "dark" ? "filled_black" : "outline"}
-              shape="pill"
-              text="continue_with"
+              theme={theme === "dark" ? "filled_black" : "filled_blue"}
+              shape="circle"
+              text="signin_with"
               width={300}
               locale="en"
               context="signin"
@@ -413,7 +415,17 @@ function Login() {
               type="button"
               onClick={() => {
                 // Manually trigger Google login UI
-                document.querySelector('[aria-labelledby="button-label"]')?.click();
+                try {
+                  const googleButton = document.querySelector('[aria-labelledby="button-label"]');
+                  if (googleButton) {
+                    googleButton.click();
+                  } else {
+                    console.error("Google button not found");
+                    setError("Please try email login instead");
+                  }
+                } catch (err) {
+                  console.error("Error clicking Google button:", err);
+                }
               }}
               className="text-blue-500 text-sm hover:underline"
             >
