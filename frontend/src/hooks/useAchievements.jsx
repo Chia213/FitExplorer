@@ -5,7 +5,7 @@ import { debounce } from 'lodash';
 const backendURL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 export const useAchievements = () => {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const [achievements, setAchievements] = useState([]);
   const [newAchievements, setNewAchievements] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -160,9 +160,28 @@ export const useAchievements = () => {
       
       const data = await response.json();
       
+      // If user is admin, mark all achievements as achieved and set progress to requirement
+      if (isAdmin) {
+        data.achievements = data.achievements.map(achievement => ({
+          ...achievement,
+          is_achieved: true,
+          progress: achievement.requirement,
+          achieved_at: achievement.achieved_at || new Date().toISOString()
+        }));
+        
+        // Notify about admin achievement status
+        notifyAchievementEarned(
+          "Admin Achievements Unlocked",
+          "All achievements have been automatically unlocked for your admin account",
+          "trophy"
+        );
+      }
+      
+      setAchievements(data.achievements);
+      
       // If new achievements were earned, refresh the achievements list
       if (data.newly_achieved > 0) {
-        // Instead of calling fetchAchievementsWithProgress, do the fetch here
+        // Get fresh achievement data with progress
         const progressResponse = await fetch(`${backendURL}/user/achievements/progress`, {
           headers: {
             Authorization: `Bearer ${token}`
@@ -172,10 +191,19 @@ export const useAchievements = () => {
         if (progressResponse.ok) {
           const progressData = await progressResponse.json();
           setAchievements(progressData);
+          
+          // Notify about new achievements
+          if (data.newly_achieved > 0) {
+            notifyAchievementEarned(
+              `You earned ${data.newly_achieved} new achievement${data.newly_achieved > 1 ? 's' : ''}!`,
+              "Check your achievements page to see what you've earned",
+              "trophy"
+            );
+          }
         }
       }
       
-      return data;
+      return data.achievements;
     } catch (err) {
       console.error("Error checking achievements:", err);
       return null;
@@ -185,7 +213,7 @@ export const useAchievements = () => {
         isChecking.current = false;
       }, 2000);
     }
-  }, []);
+  }, [isAdmin]);
   
   // Create a debounced version of the check function to prevent too many calls
   const debouncedCheckAchievements = useCallback(
@@ -194,6 +222,31 @@ export const useAchievements = () => {
     }, 1000),
     [checkAchievements]
   );
+
+  // Add a function to check achievements after task completion
+  const checkAchievementsAfterTask = useCallback(async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+      
+      // Check for new achievements
+      const newAchievementsResponse = await fetch(`${backendURL}/api/achievements/new`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      
+      if (newAchievementsResponse.ok) {
+        const newAchievements = await newAchievementsResponse.json();
+        if (newAchievements.length > 0) {
+          // If there are new achievements, check progress
+          await debouncedCheckAchievements();
+        }
+      }
+    } catch (err) {
+      console.error("Error checking achievements after task:", err);
+    }
+  }, [debouncedCheckAchievements]);
 
   // Create a new achievement
   const createAchievement = useCallback(async (achievementData) => {
@@ -276,8 +329,20 @@ export const useAchievements = () => {
       // Just fetch achievements without checking or getting new ones
       const loadAchievements = async () => {
         try {
-          // Only get achievements, don't check progress
-          await fetchAchievements();
+          const token = localStorage.getItem("token");
+          if (!token) return;
+          
+          // Get achievements with progress
+          const response = await fetch(`${backendURL}/user/achievements/progress`, {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            setAchievements(data);
+          }
         } catch (err) {
           console.error("Error in achievement loading:", err);
         }
@@ -285,7 +350,7 @@ export const useAchievements = () => {
 
       loadAchievements();
     }
-  }, [user, fetchAchievements]);
+  }, [user]);
 
   return {
     achievements,
@@ -296,6 +361,7 @@ export const useAchievements = () => {
     fetchAchievementsWithProgress,
     getNewAchievements,
     checkAchievements,
+    checkAchievementsAfterTask,
     createAchievement,
     updateAchievementProgress
   };

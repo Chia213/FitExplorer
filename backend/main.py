@@ -719,7 +719,10 @@ def profile(user: User = Depends(get_current_user), db: Session = Depends(get_db
                 email_notifications=True,
                 summary_frequency=None,
                 summary_day=None,
-                card_color="#dbeafe"
+                card_color="#dbeafe",
+                show_profile_emoji=True,
+                profile_emoji="🏋️‍♂️",
+                emoji_animation="lift"
             )
             db.add(user_profile)
             db.commit()
@@ -741,7 +744,10 @@ def profile(user: User = Depends(get_current_user), db: Session = Depends(get_db
                 "email_notifications": user_profile.email_notifications,
                 "summary_frequency": user_profile.summary_frequency,
                 "summary_day": user_profile.summary_day,
-                "card_color": user_profile.card_color
+                "card_color": user_profile.card_color,
+                "show_profile_emoji": user_profile.show_profile_emoji,
+                "profile_emoji": user_profile.profile_emoji,
+                "emoji_animation": user_profile.emoji_animation
             }
         }
     except Exception as e:
@@ -828,7 +834,10 @@ def update_notification_preferences(
         "goal_weight": user_preferences.goal_weight,
         "email_notifications": user_preferences.email_notifications,
         "summary_frequency": user_preferences.summary_frequency,
-        "card_color": user_preferences.card_color
+        "card_color": user_preferences.card_color,
+        "show_profile_emoji": user_preferences.show_profile_emoji,
+        "profile_emoji": user_preferences.profile_emoji,
+        "emoji_animation": user_preferences.emoji_animation
     }
 
 
@@ -864,18 +873,18 @@ def update_user_settings(
             user_profile.card_color = settings_data["card_color"]
             
         if "use_custom_card_color" in settings_data:
-            # This might not exist in older model versions, handle with try-except
-            try:
-                user_profile.use_custom_card_color = bool(settings_data["use_custom_card_color"])
-            except Exception:
-                # Field might not exist in database yet
-                pass
+            user_profile.use_custom_card_color = bool(settings_data["use_custom_card_color"])
                 
         if "summary_frequency" in settings_data:
             user_profile.summary_frequency = settings_data["summary_frequency"]
             
         if "summary_day" in settings_data:
             user_profile.summary_day = settings_data["summary_day"]
+            
+        # Handle clear_premium_theme parameter
+        if "clear_premium_theme" in settings_data and settings_data["clear_premium_theme"]:
+            # Clear the premium theme by setting it to default
+            user.premium_theme = "default"
         
         # Commit changes
         db.commit()
@@ -2027,16 +2036,22 @@ def get_user_achievements_with_progress(
         for achievement in achievements:
             user_achievement = user_achievements.get(achievement.id)
             
-            # Set default values
-            progress = 0
-            is_achieved = False
-            achieved_at = None
-            
-            # Update with actual values if user has this achievement
-            if user_achievement:
-                progress = user_achievement.progress
-                is_achieved = user_achievement.achieved_at is not None
-                achieved_at = user_achievement.achieved_at
+            # For admin users, automatically mark all achievements as completed
+            if user.is_admin:
+                progress = achievement.requirement
+                is_achieved = True
+                achieved_at = user_achievement.achieved_at if user_achievement else datetime.now(timezone.utc)
+            else:
+                # Set default values
+                progress = 0
+                is_achieved = False
+                achieved_at = None
+                
+                # Update with actual values if user has this achievement
+                if user_achievement:
+                    progress = user_achievement.progress
+                    is_achieved = user_achievement.achieved_at is not None
+                    achieved_at = user_achievement.achieved_at
             
             # Create response object with achievement details and progress
             achievement_data = {
@@ -2061,7 +2076,7 @@ def get_user_achievements_with_progress(
         if not isinstance(e, HTTPException):
             import traceback
             traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Error fetching achievements with progress: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error getting achievements progress: {str(e)}")
 
 
 @app.post("/achievements/check")
@@ -2104,55 +2119,60 @@ async def check_achievements(
             else:
                 was_achieved = user_achievement.achieved_at is not None
             
-            # Check different achievement types
-            if achievement.category == "profile":
-                # Profile completion achievements
-                profile_fields = [
-                    user.height is not None,
-                    user.weight is not None,
-                    user.age is not None,
-                    user.gender is not None and user.gender.strip() != "",
-                    user.fitness_goals is not None and user.fitness_goals.strip() != "",
-                    user.bio is not None and user.bio.strip() != ""
-                ]
-                progress = sum(1 for field in profile_fields if field)
-                is_achieved = progress >= achievement.requirement
-            
-            elif achievement.category == "workout":
-                # Workout related achievements
-                total_workouts = db.query(Workout).filter(
-                    Workout.user_id == user.id,
-                    Workout.is_template.is_(False)
-                ).count()
-                progress = total_workouts
-                is_achieved = progress >= achievement.requirement
-            
-            elif achievement.category == "variety":
-                # Exercise variety achievements
-                unique_exercises = db.query(Exercise.name).distinct().join(
-                    Workout, Exercise.workout_id == Workout.id
-                ).filter(
-                    Workout.user_id == user.id,
-                    Workout.is_template.is_(False)
-                ).count()
-                progress = unique_exercises
-                is_achieved = progress >= achievement.requirement
-            
-            elif achievement.category == "streak":
-                # Get the user's current streak from the streak endpoint
-                current_streak = 0
-                try:
-                    streak_data = db.query(UserProfile).filter(
-                        UserProfile.user_id == user.id
-                ).first()
-                    if streak_data and streak_data.current_streak:
-                        current_streak = streak_data.current_streak
-                except Exception:
-                    # Suppress error logging for streak data
-                    pass
+            # For admin users, automatically mark all achievements as completed
+            if user.is_admin:
+                progress = achievement.requirement
+                is_achieved = True
+            else:
+                # Check different achievement types
+                if achievement.category == "profile":
+                    # Profile completion achievements
+                    profile_fields = [
+                        user.height is not None,
+                        user.weight is not None,
+                        user.age is not None,
+                        user.gender is not None and user.gender.strip() != "",
+                        user.fitness_goals is not None and user.fitness_goals.strip() != "",
+                        user.bio is not None and user.bio.strip() != ""
+                    ]
+                    progress = sum(1 for field in profile_fields if field)
+                    is_achieved = progress >= achievement.requirement
                 
-                progress = current_streak
-                is_achieved = progress >= achievement.requirement
+                elif achievement.category == "workout":
+                    # Workout related achievements
+                    total_workouts = db.query(Workout).filter(
+                        Workout.user_id == user.id,
+                        Workout.is_template.is_(False)
+                    ).count()
+                    progress = total_workouts
+                    is_achieved = progress >= achievement.requirement
+                
+                elif achievement.category == "variety":
+                    # Exercise variety achievements
+                    unique_exercises = db.query(Exercise.name).distinct().join(
+                        Workout, Exercise.workout_id == Workout.id
+                    ).filter(
+                        Workout.user_id == user.id,
+                        Workout.is_template.is_(False)
+                    ).count()
+                    progress = unique_exercises
+                    is_achieved = progress >= achievement.requirement
+                
+                elif achievement.category == "streak":
+                    # Get the user's current streak from the streak endpoint
+                    current_streak = 0
+                    try:
+                        streak_data = db.query(UserProfile).filter(
+                            UserProfile.user_id == user.id
+                    ).first()
+                        if streak_data and streak_data.current_streak:
+                            current_streak = streak_data.current_streak
+                    except Exception:
+                        # Suppress error logging for streak data
+                        pass
+                    
+                    progress = current_streak
+                    is_achieved = progress >= achievement.requirement
             
             # Update user achievement
             user_achievement.progress = progress
@@ -2182,16 +2202,32 @@ async def check_achievements(
                     pass
             
             updated_count += 1
+        
+        # Commit all changes
         db.commit()
         
+        # Return updated achievements
         return {
-            "message": f"Checked {updated_count} achievements. {newly_achieved} newly achieved!",
-            "updated_count": updated_count,
-            "newly_achieved": newly_achieved
+            "message": f"Updated {updated_count} achievements, {newly_achieved} newly achieved",
+            "updated": updated_count,
+            "newly_achieved": newly_achieved,
+            "achievements": [
+                {
+                    "id": achievement.id,
+                    "name": achievement.name,
+                    "description": achievement.description,
+                    "category": achievement.category,
+                    "requirement": achievement.requirement,
+                    "icon": achievement.icon,
+                    "progress": user_achievements[achievement.id].progress if achievement.id in user_achievements else 0,
+                    "is_achieved": user_achievements[achievement.id].achieved_at is not None if achievement.id in user_achievements else False,
+                    "achieved_at": user_achievements[achievement.id].achieved_at if achievement.id in user_achievements else None
+                }
+                for achievement in achievements
+            ]
         }
     except Exception as e:
         db.rollback()
-        # Only log unexpected errors
         if not isinstance(e, HTTPException):
             import traceback
             traceback.print_exc()

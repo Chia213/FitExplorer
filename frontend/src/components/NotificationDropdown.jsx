@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { FaBell, FaCheck, FaTrash, FaDumbbell, FaUser, FaCalendarAlt, FaLock, FaEllipsisH, FaSync, FaBellSlash, FaTrophy } from 'react-icons/fa';
 import { useNotifications } from '../contexts/NotificationContext';
 import { useTheme } from '../hooks/useTheme';
 
 const NotificationDropdown = ({ isOpen, toggleDropdown }) => {
+  const navigate = useNavigate();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const { 
     notifications, 
@@ -25,6 +26,12 @@ const NotificationDropdown = ({ isOpen, toggleDropdown }) => {
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
+      // Check if the click was on the notification button itself
+      const notificationButton = document.querySelector('[aria-label^="Notifications"]');
+      if (notificationButton && notificationButton.contains(event.target)) {
+        return;
+      }
+      
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         toggleDropdown(false);
       }
@@ -47,7 +54,11 @@ const NotificationDropdown = ({ isOpen, toggleDropdown }) => {
   }, [isOpen]);
 
   // Handle refresh
-  const handleRefresh = async () => {
+  const handleRefresh = async (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     setIsRefreshing(true);
     await refreshNotifications();
     setTimeout(() => setIsRefreshing(false), 500);
@@ -55,14 +66,43 @@ const NotificationDropdown = ({ isOpen, toggleDropdown }) => {
 
   // Handle mark as read
   const handleMarkAsRead = (e, id) => {
+    e.preventDefault();
     e.stopPropagation();
     markAsRead(id);
   };
 
   // Handle delete
   const handleDelete = (e, id) => {
+    e.preventDefault();
     e.stopPropagation();
     deleteNotification(id);
+  };
+
+  // Handle toggle all notifications
+  const handleToggleAllNotifications = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleAllNotifications();
+  };
+
+  // Handle toggle achievement alerts
+  const handleToggleAchievementAlerts = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleAchievementAlerts();
+  };
+
+  // Handle mark all as read
+  const handleMarkAllAsRead = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    markAllAsRead();
+  };
+
+  // Handle navigation
+  const handleNavigation = () => {
+    toggleDropdown(false);
+    navigate('/notifications');
   };
 
   // Format relative time
@@ -110,9 +150,12 @@ const NotificationDropdown = ({ isOpen, toggleDropdown }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="relative notification-dropdown" ref={dropdownRef}>
       {/* Dropdown menu */}
-      <div className={`absolute right-0 mt-1 w-80 ${theme === 'dark' ? 'bg-gray-800 text-white' : 'bg-white text-gray-800'} shadow-lg rounded-md overflow-hidden z-50`}>
+      <div 
+        className={`absolute right-0 mt-1 w-80 ${theme === 'dark' ? 'bg-gray-800 text-white' : 'bg-white text-gray-800'} shadow-lg rounded-md overflow-hidden z-50`}
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="flex justify-between items-center px-4 py-2 border-b border-gray-200 dark:border-gray-700">
           <h3 className="font-semibold">Notifications</h3>
@@ -127,7 +170,7 @@ const NotificationDropdown = ({ isOpen, toggleDropdown }) => {
             </button>
             {unreadCount > 0 && (
               <button
-                onClick={markAllAsRead}
+                onClick={handleMarkAllAsRead}
                 className="text-xs text-blue-500 hover:text-blue-700"
                 title="Mark all as read"
               >
@@ -141,7 +184,7 @@ const NotificationDropdown = ({ isOpen, toggleDropdown }) => {
         <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
           <div className="text-sm">All Notifications</div>
           <div 
-            onClick={toggleAllNotifications}
+            onClick={handleToggleAllNotifications}
             className="flex items-center gap-2 cursor-pointer"
             title={allNotificationsEnabled ? "Disable all notifications" : "Enable all notifications"}
           >
@@ -155,7 +198,7 @@ const NotificationDropdown = ({ isOpen, toggleDropdown }) => {
                 type="checkbox" 
                 className="opacity-0 absolute w-full h-full cursor-pointer z-10" 
                 checked={allNotificationsEnabled}
-                onChange={toggleAllNotifications}
+                onChange={handleToggleAllNotifications}
               />
               <span className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform duration-200 ease-in-out ${allNotificationsEnabled ? 'transform translate-x-4' : ''}`}></span>
             </div>
@@ -166,7 +209,7 @@ const NotificationDropdown = ({ isOpen, toggleDropdown }) => {
         <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
           <div className="text-sm">Achievement Alerts</div>
           <div 
-            onClick={toggleAchievementAlerts}
+            onClick={handleToggleAchievementAlerts}
             className="flex items-center gap-2 cursor-pointer"
             title={achievementAlertsEnabled ? "Disable achievement alerts" : "Enable achievement alerts"}
           >
@@ -180,7 +223,7 @@ const NotificationDropdown = ({ isOpen, toggleDropdown }) => {
                 type="checkbox" 
                 className="opacity-0 absolute w-full h-full cursor-pointer z-10" 
                 checked={achievementAlertsEnabled}
-                onChange={toggleAchievementAlerts}
+                onChange={handleToggleAchievementAlerts}
               />
               <span className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform duration-200 ease-in-out ${achievementAlertsEnabled ? 'transform translate-x-4' : ''}`}></span>
             </div>
@@ -244,7 +287,12 @@ const NotificationDropdown = ({ isOpen, toggleDropdown }) => {
                   <Link
                     to="/notifications"
                     className="text-sm text-blue-500 hover:text-blue-700 flex items-center justify-center"
-                    onClick={() => toggleDropdown(false)}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      toggleDropdown(false);
+                      window.location.href = '/notifications';
+                    }}
                   >
                     <FaEllipsisH className="mr-1" size={12} />
                     View all notifications
@@ -257,13 +305,12 @@ const NotificationDropdown = ({ isOpen, toggleDropdown }) => {
 
         {/* Footer */}
         <div className="border-t border-gray-200 dark:border-gray-700 p-2">
-          <Link
-            to="/notifications"
+          <button
+            onClick={handleNavigation}
             className="block w-full text-center text-sm text-blue-500 hover:text-blue-700 py-1"
-            onClick={() => toggleDropdown(false)}
           >
             Manage Notifications
-          </Link>
+          </button>
         </div>
       </div>
     </div>

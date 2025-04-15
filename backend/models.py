@@ -87,6 +87,11 @@ class UserProfile(Base):
     unlocked_themes = Column(JSON, default=lambda: ["default"])  # list of unlocked theme keys
     selected_badges = Column(JSON, default=lambda: [])  # IDs of selected achievement badges for profile display
     
+    # Emoji preferences
+    show_profile_emoji = Column(Boolean, default=True)  # Whether to show emoji next to username
+    profile_emoji = Column(String, default="🏋️‍♂️")  # Default emoji
+    emoji_animation = Column(String, default="lift")  # Animation style: lift, bounce, spin, etc.
+    
     # Add these missing fields
     current_streak = Column(Integer, default=0)
     best_streak = Column(Integer, default=0)

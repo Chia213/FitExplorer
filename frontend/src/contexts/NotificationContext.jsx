@@ -183,13 +183,32 @@ export const NotificationProvider = ({ children }) => {
     }
   };
 
+  // Add token change listener
   useEffect(() => {
-    fetchNotifications();
-    fetchAchievementAlertsSetting();
-    fetchAllNotificationsSetting();
+    const handleTokenChange = () => {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        // Reset to defaults when logged out
+        setNotifications([]);
+        setAchievementAlertsEnabled(true);
+        setAllNotificationsEnabled(true);
+      } else {
+        // Fetch new user's notifications when logged in
+        fetchNotifications();
+        fetchAchievementAlertsSetting();
+        fetchAllNotificationsSetting();
+      }
+    };
+
+    // Listen for storage events to detect token changes
+    window.addEventListener('storage', handleTokenChange);
     
-    // We fetch once on mount, but don't set up a background timer
-    // that would keep the app running when not in use
+    // Also run once on mount
+    handleTokenChange();
+    
+    return () => {
+      window.removeEventListener('storage', handleTokenChange);
+    };
   }, []);
 
   // Mark a notification as read
@@ -390,7 +409,30 @@ export const NotificationProvider = ({ children }) => {
 export const useNotifications = () => {
   const context = useContext(NotificationContext);
   if (!context) {
-    throw new Error('useNotifications must be used within a NotificationProvider');
+    // Return default values when NotificationContext is not available
+    return {
+      notifications: [],
+      loading: false,
+      error: null,
+      unreadCount: 0,
+      markAsRead: () => {},
+      markAllAsRead: () => {},
+      deleteNotification: () => {},
+      clearAll: () => {},
+      addNotification: () => {},
+      achievementAlertsEnabled: true,
+      allNotificationsEnabled: true,
+      toggleAchievementAlerts: () => {},
+      toggleAllNotifications: () => {},
+      settingsLoading: false
+    };
   }
-  return context;
+  
+  // Calculate unread count from the notifications array
+  const unreadCount = context.notifications.filter(notification => !notification.read).length;
+  
+  return {
+    ...context,
+    unreadCount
+  };
 };

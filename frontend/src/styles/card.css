@@ -65,6 +65,232 @@
     border-top: 1px solid rgba(0, 0, 0, 0.05);
 }
 
+/* Profile Emoji Animations */
+.profile-emoji {
+    width: 24px;
+    height: 24px;
+    position: relative;
+    display: inline-block;
+    margin-left: 8px;
+    vertical-align: middle;
+}
+
+.profile-emoji::before {
+    position: absolute;
+    content: attr(data-emoji);
+}
+
+/* Animation styles */
+.profile-emoji.lift::before {
+    animation: lift 1.5s infinite;
+}
+
+.profile-emoji.bounce::before {
+    animation: bounce 1s infinite;
+}
+
+.profile-emoji.spin::before {
+    animation: spin 1.5s infinite;
+}
+
+.profile-emoji.pulse::before {
+    animation: pulse 2s infinite;
+}
+
+.profile-emoji.wave::before {
+    animation: wave 1.5s infinite;
+}
+
+.profile-emoji.shake::before {
+    animation: shake 0.8s infinite;
+}
+
+.profile-emoji.flip::before {
+    animation: flip 2s infinite;
+}
+
+.profile-emoji.rotate::before {
+    animation: rotate 3s infinite linear;
+}
+
+.profile-emoji.sparkle::before {
+    animation: sparkle 1.5s infinite;
+}
+
+.profile-emoji.float::before {
+    animation: float 3s infinite;
+}
+
+.profile-emoji.wiggle::before {
+    animation: wiggle 1s infinite;
+}
+
+.profile-emoji.zoom::before {
+    animation: zoom 2s infinite;
+}
+
+.profile-emoji.heartbeat::before {
+    animation: heartbeat 1.5s infinite;
+}
+
+.profile-emoji.glitch::before {
+    animation: glitch 2s infinite;
+}
+
+.profile-emoji.orbit::before {
+    animation: orbit 3s infinite linear;
+}
+
+.profile-emoji.rainbow::before {
+    animation: rainbow 4s infinite linear;
+}
+
+.profile-emoji.typewriter::before {
+    animation: typewriter 2s steps(3) infinite;
+}
+
+.profile-emoji.ninja::before {
+    animation: ninja 5s infinite;
+}
+
+/* Custom workout animation */
+.profile-emoji.workout::before {
+    animation: workout 3s ease-in-out infinite;
+    transform-origin: bottom center;
+}
+
+/* Animation keyframes */
+@keyframes lift {
+    0% { transform: translateY(0); }
+    25% { transform: translateY(-3px); }
+    50% { transform: translateY(0); }
+    75% { transform: translateY(-3px); }
+    100% { transform: translateY(0); }
+}
+
+@keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+}
+
+@keyframes wave {
+    0% { transform: rotate(0deg); }
+    25% { transform: rotate(-10deg); }
+    50% { transform: rotate(0deg); }
+    75% { transform: rotate(10deg); }
+    100% { transform: rotate(0deg); }
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-2px); }
+    50% { transform: translateX(0); }
+    75% { transform: translateX(2px); }
+}
+
+@keyframes flip {
+    0%, 100% { transform: perspective(400px) rotateY(0); }
+    50% { transform: perspective(400px) rotateY(180deg); }
+}
+
+@keyframes rotate {
+    0% { transform: rotate(0deg); }
+    33% { transform: rotate(120deg); }
+    66% { transform: rotate(240deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes sparkle {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.3); opacity: 0.8; filter: brightness(1.2); }
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    25% { transform: translateY(-3px) rotate(-3deg); }
+    50% { transform: translateY(0) rotate(0deg); }
+    75% { transform: translateY(-3px) rotate(3deg); }
+}
+
+@keyframes wiggle {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(-10deg); }
+    50% { transform: rotate(0deg); }
+    75% { transform: rotate(10deg); }
+}
+
+@keyframes zoom {
+    0%, 100% { transform: scale(1); }
+    15% { transform: scale(1.1); }
+    30% { transform: scale(1); }
+    45% { transform: scale(1.1); }
+    60% { transform: scale(1); }
+}
+
+@keyframes heartbeat {
+    0%, 100% { transform: scale(1); }
+    10% { transform: scale(1.2); }
+    20% { transform: scale(1); }
+    30% { transform: scale(1.3); }
+    40% { transform: scale(1); }
+}
+
+@keyframes glitch {
+    0%, 100% { transform: translate(0); opacity: 1; }
+    10% { transform: translate(-2px, 2px); opacity: 0.9; filter: hue-rotate(90deg); }
+    20% { transform: translate(0); opacity: 1; }
+    30% { transform: translate(2px, -2px); opacity: 0.9; filter: hue-rotate(180deg); }
+    40% { transform: translate(0); opacity: 1; }
+    50% { transform: translate(-1px, 1px); opacity: 0.9; filter: hue-rotate(270deg); }
+    60% { transform: translate(0); opacity: 1; }
+}
+
+@keyframes orbit {
+    0% { transform: rotate(0) translateX(3px) rotate(0); }
+    100% { transform: rotate(360deg) translateX(3px) rotate(-360deg); }
+}
+
+@keyframes rainbow {
+    0% { filter: hue-rotate(0deg); }
+    100% { filter: hue-rotate(360deg); }
+}
+
+@keyframes typewriter {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+}
+
+@keyframes ninja {
+    0%, 15%, 85%, 100% { opacity: 1; transform: translateX(0); }
+    20% { opacity: 0; transform: translateX(-10px); }
+    80% { opacity: 0; transform: translateX(10px); }
+}
+
+/* Custom workout animation keyframes */
+@keyframes workout {
+    0%, 100% { transform: scale(1); }
+    10% { transform: scale(1.1) translateY(-1px); }
+    20% { transform: scale(0.9) translateY(1px); }
+    30% { transform: scale(1.15) translateY(-2px); filter: brightness(1.2); }
+    40% { transform: scale(0.95) translateY(1px); }
+    50% { transform: rotate(-10deg) scale(1.1); }
+    60% { transform: rotate(10deg) scale(1.1); }
+    70% { transform: rotate(-5deg) scale(1.05); }
+    80% { transform: rotate(5deg) scale(1.05); }
+    90% { transform: scale(1.05) translateY(-1px); }
+}
+
 /* Dark mode */
 .dark .fe-card {
     background-color: #1f2937;

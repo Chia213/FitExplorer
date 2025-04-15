@@ -35,6 +35,7 @@ import MobileInstallQR from "./MobileInstallQR";
 import "../styles/navHover.css";
 import "../styles/navbar.css";
 import { notifyWorkoutCompleted } from '../utils/notificationsHelpers';
+import { SunIcon, MoonIcon } from "lucide-react";
 
 // Mobile Accordion component for the mobile menu
 const MobileAccordion = ({ title, icon, items, onItemClick }) => {
@@ -134,6 +135,11 @@ function Navbar() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
+  const [emojiPrefs, setEmojiPrefs] = useState({
+    show: true,
+    emoji: "🏋️‍♂️",
+    animation: "lift"
+  });
   
   // Dropdowns state
   const [workoutDropdownOpen, setWorkoutDropdownOpen] = useState(false);
@@ -150,12 +156,23 @@ function Navbar() {
   const authDropdownRef = useRef(null);
   const searchRef = useRef(null);
   
-  const { theme, toggleTheme } = useTheme();
+  // Custom hooks
+  const { theme, toggleTheme } = useTheme() || { theme: 'light', toggleTheme: () => {} };
   const navigate = useNavigate();
   const location = useLocation();
-  const { unreadCount, addNotification } = useNotifications();
+  
+  // Get notification context with safe fallback
+  const notifications = useNotifications();
+  const unreadCount = notifications?.unreadCount || 0;
+  const addNotification = notifications?.addNotification || (() => {});
+  
+  // State hooks
   const [showNotifications, setShowNotifications] = useState(false);
   const notificationsRef = useRef(null);
+  const [showProfile, setShowProfile] = useState(false);
+  const [showTheme, setShowTheme] = useState(false);
+  const [showEmojiSettings, setShowEmojiSettings] = useState(false);
+  const emojiSettingsRef = useRef(null);
 
   // Track scroll position for navbar styling
   useEffect(() => {
@@ -203,6 +220,9 @@ function Navbar() {
         const adminStatus = decodedToken.is_admin === true;
         setIsAdmin(adminStatus);
         localStorage.setItem("isAdmin", adminStatus ? "true" : "false");
+        
+        // Fetch emoji preferences
+        fetchEmojiPreferences();
       } catch (error) {
         // Handle token parsing errors
         console.error("Error parsing token:", error);
@@ -212,6 +232,31 @@ function Navbar() {
         localStorage.removeItem("token");
         localStorage.removeItem("access_token");
         localStorage.setItem("isAdmin", "false");
+      }
+    };
+    
+    // Fetch emoji preferences
+    const fetchEmojiPreferences = async () => {
+      try {
+        const token = localStorage.getItem("token") || localStorage.getItem("access_token");
+        if (!token) return;
+        
+        const response = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:8000"}/user-profile`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        if (response.ok) {
+          const userData = await response.json();
+          if (userData.preferences) {
+            setEmojiPrefs({
+              show: userData.preferences.show_profile_emoji || true,
+              emoji: userData.preferences.profile_emoji || "🏋️‍♂️",
+              animation: userData.preferences.emoji_animation || "lift"
+            });
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching emoji preferences:", error);
       }
     };
     
@@ -291,43 +336,81 @@ function Navbar() {
     setAuthDropdownOpen(false);
   };
 
-  // Handle outside clicks to close dropdowns
+  // Handle click outside for all dropdowns
   useEffect(() => {
     const handleClickOutside = (event) => {
-      // Check if click was outside workout dropdown
-      if (workoutDropdownRef.current && !workoutDropdownRef.current.contains(event.target)) {
-        setWorkoutDropdownOpen(false);
-      }
+      // Check if the click was on any dropdown button
+      const notificationButton = document.querySelector('[aria-label^="Notifications"]');
+      const profileButton = document.querySelector('[aria-label^="Profile"]');
+      const themeButton = document.querySelector('[aria-label^="Theme"]');
       
-      // Check if click was outside tools dropdown
-      if (toolsDropdownRef.current && !toolsDropdownRef.current.contains(event.target)) {
-        setToolsDropdownOpen(false);
+      if (notificationButton && notificationButton.contains(event.target)) {
+        return;
       }
-      
-      // Check if click was outside help dropdown
-      if (helpDropdownRef.current && !helpDropdownRef.current.contains(event.target)) {
-        setHelpDropdownOpen(false);
+      if (profileButton && profileButton.contains(event.target)) {
+        return;
       }
-      
-      // Check if click was outside auth dropdown
-      if (authDropdownRef.current && !authDropdownRef.current.contains(event.target)) {
-        setAuthDropdownOpen(false);
+      if (themeButton && themeButton.contains(event.target)) {
+        return;
       }
-      
-      // Check if click was outside search
-      if (searchRef.current && !searchRef.current.contains(event.target)) {
-        setSearchResults([]);
+
+      // Check if the click was inside any dropdown
+      const notificationDropdown = document.querySelector('.notification-dropdown');
+      const profileDropdown = document.querySelector('.profile-dropdown');
+      const themeDropdown = document.querySelector('.theme-dropdown');
+
+      if (notificationDropdown && notificationDropdown.contains(event.target)) {
+        // Don't close the dropdown if clicking inside it
+        return;
       }
-      
-      // Check if click was outside notifications
-      if (notificationsRef.current && !notificationsRef.current.contains(event.target)) {
-        setShowNotifications(false);
+      if (profileDropdown && profileDropdown.contains(event.target)) {
+        return;
       }
+      if (themeDropdown && themeDropdown.contains(event.target)) {
+        return;
+      }
+
+      // Close all dropdowns if click was outside
+      setShowNotifications(false);
+      setShowProfile(false);
+      setShowTheme(false);
     };
-    
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
   }, []);
+
+  // Toggle notification dropdown
+  const toggleNotifications = (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    setShowNotifications(!showNotifications);
+    setShowProfile(false);
+    setShowTheme(false);
+  };
+
+  // Toggle profile dropdown
+  const toggleProfile = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setShowProfile(!showProfile);
+    setShowNotifications(false);
+    setShowTheme(false);
+  };
+
+  // Handle theme toggle with dropdown
+  const handleThemeToggle = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setShowTheme(!showTheme);
+    setShowNotifications(false);
+    setShowProfile(false);
+    toggleTheme(); // Call the imported toggleTheme function
+  };
 
   // Handle logout
   const handleLogout = async () => {
@@ -418,6 +501,85 @@ function Navbar() {
       type: "info",
       icon: "dumbbell" // Available icons: dumbbell, user, calendar
     });
+  };
+
+  // Add an event listener to handle clicks outside the emoji settings dropdown
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (emojiSettingsRef.current && !emojiSettingsRef.current.contains(event.target)) {
+        setShowEmojiSettings(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  // Listen for preferences changes
+  useEffect(() => {
+    const handlePreferencesChange = () => {
+      fetchEmojiPreferences();
+    };
+    
+    window.addEventListener('preferences-change', handlePreferencesChange);
+    return () => {
+      window.removeEventListener('preferences-change', handlePreferencesChange);
+    };
+  }, []);
+
+  // Toggle emoji setting
+  const toggleEmojiSetting = async (setting, value) => {
+    try {
+      const token = localStorage.getItem("token") || localStorage.getItem("access_token");
+      if (!token) return;
+
+      // Get current preferences first
+      const response = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:8000"}/user-profile`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (!response.ok) return;
+      
+      const userData = await response.json();
+      const currentPrefs = userData.preferences || {};
+      
+      // Update appropriate setting
+      let updatedPrefs = {
+        email_notifications: currentPrefs.email_notifications || true,
+        summary_frequency: currentPrefs.summary_frequency || null,
+        summary_day: currentPrefs.summary_day || null,
+        use_custom_card_color: currentPrefs.use_custom_card_color || false,
+        card_color: currentPrefs.card_color || "#dbeafe"
+      };
+      
+      if (setting === 'show') {
+        updatedPrefs.show_profile_emoji = value;
+        setEmojiPrefs(prev => ({...prev, show: value}));
+      } else if (setting === 'emoji') {
+        updatedPrefs.profile_emoji = value;
+        setEmojiPrefs(prev => ({...prev, emoji: value}));
+      } else if (setting === 'animation') {
+        updatedPrefs.emoji_animation = value;
+        setEmojiPrefs(prev => ({...prev, animation: value}));
+      }
+      
+      // Save updated preferences
+      await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:8000"}/user/settings/notifications`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(updatedPrefs)
+      });
+      
+      // Refetch emoji preferences to ensure UI is up to date
+      fetchEmojiPreferences();
+    } catch (error) {
+      console.error("Error updating emoji preferences:", error);
+    }
   };
 
   return (
@@ -559,13 +721,23 @@ function Navbar() {
               </button>
               
               {/* Theme toggle */}
-              <ThemeToggle />
+              <button
+                onClick={handleThemeToggle}
+                className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
+                aria-label="Toggle theme"
+              >
+                {theme === 'dark' ? (
+                  <SunIcon className="h-6 w-6 text-yellow-500" />
+                ) : (
+                  <MoonIcon className="h-6 w-6 text-gray-600" />
+                )}
+              </button>
 
               {/* Notifications */}
               {isAuthenticated && (
                 <div className="relative">
                   <button
-                    onClick={() => setShowNotifications(!showNotifications)}
+                    onClick={toggleNotifications}
                     className="nav-item flex flex-col items-center p-3 hover:bg-sky-700/20 dark:hover:bg-sky-700/40 rounded-md transition-all"
                     aria-label={`Notifications - ${unreadCount} unread`}
                     ref={notificationsRef}
@@ -582,7 +754,7 @@ function Navbar() {
                   </button>
                   <NotificationDropdown 
                     isOpen={showNotifications} 
-                    toggleDropdown={setShowNotifications} 
+                    toggleDropdown={toggleNotifications} 
                   />
                 </div>
               )}
@@ -591,23 +763,137 @@ function Navbar() {
               <div className="hidden md:block">
                 {isAuthenticated ? (
                   <div className="relative" ref={authDropdownRef}>
-                    <button
-                      onClick={toggleAuthDropdown}
-                      className={`flex items-center px-3 py-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${
-                        authDropdownOpen ? 'bg-gray-100 dark:bg-gray-800' : ''
-                      }`}
-                      aria-expanded={authDropdownOpen}
-                    >
-                      <div className="w-7 h-7 rounded-full bg-blue-500 text-white flex items-center justify-center font-medium mr-2">
-                        {username ? username.charAt(0).toUpperCase() : 'U'}
+                    <div className="flex items-center space-x-2">
+                      {/* Emoji Settings Button */}
+                      <div className="relative" ref={emojiSettingsRef}>
+                        <button
+                          onClick={() => setShowEmojiSettings(!showEmojiSettings)}
+                          className="text-gray-500 hover:text-blue-500 dark:text-gray-400 dark:hover:text-blue-400 text-lg p-2 rounded-lg"
+                          title="Emoji Settings"
+                        >
+                          {emojiPrefs.show ? emojiPrefs.emoji : "😶"}
+                        </button>
+                        
+                        {/* Emoji Settings Dropdown */}
+                        {showEmojiSettings && (
+                          <div className="absolute right-0 mt-1 w-64 bg-white dark:bg-gray-800 shadow-lg rounded-lg overflow-hidden z-50 border border-gray-200 dark:border-gray-700">
+                            <div className="p-3 border-b border-gray-200 dark:border-gray-700">
+                              <div className="flex items-center justify-between">
+                                <span className="font-medium text-gray-800 dark:text-gray-200">Emoji Settings</span>
+                                <div className="flex items-center space-x-1">
+                                  <span className="text-xs text-gray-500 dark:text-gray-400">Show</span>
+                                  <label className="relative inline-flex items-center cursor-pointer">
+                                    <input
+                                      type="checkbox"
+                                      checked={emojiPrefs.show}
+                                      onChange={(e) => toggleEmojiSetting('show', e.target.checked)}
+                                      className="sr-only peer"
+                                    />
+                                    <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                                  </label>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            {emojiPrefs.show && (
+                              <>
+                                <div className="p-2 border-b border-gray-200 dark:border-gray-700">
+                                  <div className="mb-1 text-xs font-medium text-gray-700 dark:text-gray-300">
+                                    Choose Emoji
+                                  </div>
+                                  <div className="grid grid-cols-6 gap-1">
+                                    {["🏋️‍♂️", "💪", "🏃‍♂️", "🏃‍♀️", "🚴", "🏊‍♂️", "⚽", "🏀", "🎯", "🥊", "🐻", "🦁"].map(emoji => (
+                                      <button
+                                        key={emoji}
+                                        onClick={() => toggleEmojiSetting('emoji', emoji)}
+                                        className={`w-8 h-8 flex items-center justify-center text-lg rounded ${
+                                          emojiPrefs.emoji === emoji 
+                                            ? "bg-blue-100 dark:bg-blue-900/30" 
+                                            : "hover:bg-gray-100 dark:hover:bg-gray-700"
+                                        }`}
+                                      >
+                                        {emoji}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                                
+                                <div className="p-2">
+                                  <div className="mb-1 text-xs font-medium text-gray-700 dark:text-gray-300">
+                                    Animation Style
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-1">
+                                    {[
+                                      { id: "lift", label: "Lift" },
+                                      { id: "bounce", label: "Bounce" },
+                                      { id: "spin", label: "Spin" },
+                                      { id: "pulse", label: "Pulse" },
+                                      { id: "wave", label: "Wave" },
+                                      { id: "shake", label: "Shake" },
+                                      { id: "flip", label: "Flip" },
+                                      { id: "rotate", label: "Rotate" },
+                                      { id: "sparkle", label: "Sparkle" },
+                                      { id: "float", label: "Float" },
+                                      { id: "wiggle", label: "Wiggle" },
+                                      { id: "zoom", label: "Zoom" },
+                                      { id: "workout", label: "Workout" }
+                                    ].map(animation => (
+                                      <button
+                                        key={animation.id}
+                                        onClick={() => toggleEmojiSetting('animation', animation.id)}
+                                        className={`px-2 py-1 text-xs rounded flex items-center ${
+                                          emojiPrefs.animation === animation.id
+                                            ? "bg-blue-100 dark:bg-blue-900/30 font-medium"
+                                            : "hover:bg-gray-100 dark:hover:bg-gray-700"
+                                        }`}
+                                      >
+                                        <span className="mr-1">{animation.label}</span>
+                                        <span 
+                                          className={`profile-emoji ${animation.id}`}
+                                          data-emoji={emojiPrefs.emoji}
+                                        ></span>
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                                
+                                <div className="p-2 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-500 dark:text-gray-400">
+                                  More options in <a href="/settings?tab=appearance" className="text-blue-500 hover:underline">Settings</a>
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        )}
                       </div>
-                      <span className="max-w-[100px] truncate">{username || 'Account'}</span>
-                      <FaChevronDown className={`ml-1 w-3 h-3 transform transition-transform ${authDropdownOpen ? 'rotate-180' : ''}`} />
-                    </button>
+                      
+                      <button
+                        onClick={toggleAuthDropdown}
+                        className={`flex items-center px-3 py-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${
+                          authDropdownOpen ? 'bg-gray-100 dark:bg-gray-800' : ''
+                        }`}
+                        aria-expanded={authDropdownOpen}
+                      >
+                        <div className="w-7 h-7 rounded-full bg-blue-500 text-white flex items-center justify-center font-medium mr-2">
+                          {username ? username.charAt(0).toUpperCase() : 'U'}
+                        </div>
+                        <div className="font-medium text-sm flex items-center">
+                          {username}
+                        </div>
+                        <FaChevronDown className={`ml-1 w-3 h-3 transform transition-transform ${authDropdownOpen ? 'rotate-180' : ''}`} />
+                      </button>
+                    </div>
                     
                     <NavDropdown isOpen={authDropdownOpen}>
                       <div className="p-3 border-b border-gray-200 dark:border-gray-700">
-                        <div className="font-medium text-sm">{username}</div>
+                        <div className="font-medium text-sm flex items-center">
+                          {username}
+                          {emojiPrefs.show && (
+                            <span 
+                              className={`profile-emoji ${emojiPrefs.animation}`}
+                              data-emoji={emojiPrefs.emoji}
+                            ></span>
+                          )}
+                        </div>
                         {isAdmin && (
                           <div className="admin-badge mt-1 inline-block">ADMIN</div>
                         )}
@@ -759,10 +1045,98 @@ function Navbar() {
                     {username ? username.charAt(0).toUpperCase() : 'U'}
                   </div>
                   <div>
-                    <div className="font-medium">{username}</div>
+                    <div className="font-medium flex items-center">
+                      {username}
+                      {emojiPrefs.show && (
+                        <span 
+                          className={`profile-emoji ${emojiPrefs.animation}`}
+                          data-emoji={emojiPrefs.emoji}
+                        ></span>
+                      )}
+                    </div>
                     {isAdmin && <div className="admin-badge mt-1">ADMIN</div>}
                   </div>
                 </div>
+                
+                {/* Quick Emoji Settings in Mobile View */}
+                <div className="mb-3 p-2 bg-white dark:bg-gray-700 rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium">Profile Emoji</span>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-xs text-gray-500 dark:text-gray-400">Show</span>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={emojiPrefs.show}
+                          onChange={(e) => toggleEmojiSetting('show', e.target.checked)}
+                          className="sr-only peer"
+                        />
+                        <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                      </label>
+                    </div>
+                  </div>
+                  
+                  {emojiPrefs.show && (
+                    <>
+                      <div className="mb-2">
+                        <div className="mb-1 text-xs font-medium text-gray-700 dark:text-gray-300">
+                          Choose Emoji
+                        </div>
+                        <div className="flex flex-wrap gap-1">
+                          {["🏋️‍♂️", "💪", "🏃‍♂️", "🏃‍♀️", "🚴", "🏊‍♂️", "⚽", "🏀", "🐻", "🦁"].map(emoji => (
+                            <button
+                              key={emoji}
+                              onClick={() => toggleEmojiSetting('emoji', emoji)}
+                              className={`w-8 h-8 flex items-center justify-center text-lg rounded ${
+                                emojiPrefs.emoji === emoji 
+                                  ? "bg-blue-100 dark:bg-blue-900/30" 
+                                  : "bg-gray-100 dark:bg-gray-600 hover:bg-gray-200 dark:hover:bg-gray-500"
+                              }`}
+                            >
+                              {emoji}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <div className="mb-1 text-xs font-medium text-gray-700 dark:text-gray-300">
+                          Animation
+                        </div>
+                        <div className="flex flex-wrap gap-1">
+                          {[
+                            { id: "lift", label: "Lift" },
+                            { id: "bounce", label: "Bounce" },
+                            { id: "spin", label: "Spin" },
+                            { id: "pulse", label: "Pulse" },
+                            { id: "wave", label: "Wave" },
+                            { id: "shake", label: "Shake" },
+                            { id: "flip", label: "Flip" },
+                            { id: "rotate", label: "Rotate" },
+                            { id: "sparkle", label: "Sparkle" },
+                            { id: "float", label: "Float" },
+                            { id: "wiggle", label: "Wiggle" },
+                            { id: "zoom", label: "Zoom" },
+                            { id: "workout", label: "Workout" }
+                          ].map(animation => (
+                            <button
+                              key={animation.id}
+                              onClick={() => toggleEmojiSetting('animation', animation.id)}
+                              className={`px-2 py-1 text-xs rounded ${
+                                emojiPrefs.animation === animation.id
+                                  ? "bg-blue-100 dark:bg-blue-900/30 font-medium"
+                                  : "bg-gray-100 dark:bg-gray-600 hover:bg-gray-200 dark:hover:bg-gray-500"
+                              }`}
+                            >
+                              {animation.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+                
                 <div className="grid grid-cols-2 gap-2">
                   <Link
                     to="/profile"
@@ -857,7 +1231,17 @@ function Navbar() {
                 <FaQrcode className="w-5 h-5" />
               </button>
             
-              <ThemeToggle />
+              <button
+                onClick={handleThemeToggle}
+                className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
+                aria-label="Toggle theme"
+              >
+                {theme === 'dark' ? (
+                  <SunIcon className="h-6 w-6 text-yellow-500" />
+                ) : (
+                  <MoonIcon className="h-6 w-6 text-gray-600" />
+                )}
+              </button>
             
               {isAuthenticated && (
                 <button

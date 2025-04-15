@@ -83,7 +83,7 @@ function Profile() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [cardColor, setCardColor] = useState("#f0f4ff"); // Default color until we get backend data
+  const [cardColor, setCardColor] = useState(null); // Initialize as null to prevent default color flash
   const [isEditing, setIsEditing] = useState(false);
   const [editedUsername, setEditedUsername] = useState("");
   const [workoutStats, setWorkoutStats] = useState(null);
@@ -100,7 +100,7 @@ function Profile() {
   });
   const [personalInfoError, setPersonalInfoError] = useState("");
   const [preferences, setPreferences] = useState({
-    cardColor: "#dbeafe",
+    cardColor: null, // Initialize as null to prevent default color flash
     workoutFrequencyGoal: null,
     goalWeight: null,
     useCustomCardColor: false
@@ -114,7 +114,7 @@ function Profile() {
   const [lastUpdated, setLastUpdated] = useState(Date.now()); // Track last update time for achievements
 
   const navigate = useNavigate();
-  const { theme, premiumTheme, premiumThemes, isAdmin } = useTheme();
+  const { theme, premiumTheme, premiumThemes, isAdmin, changePremiumTheme } = useTheme();
   const { allNotificationsEnabled } = useNotifications();
 
   // Function to fetch user data - extracted for reuse
@@ -342,10 +342,20 @@ function Profile() {
       } else if (premiumTheme && premiumThemes[premiumTheme]) {
         // Custom color not enabled, but premium theme is active
         setCardColor(premiumThemes[premiumTheme].primary);
+        setPreferences(prev => ({
+          ...prev,
+          useCustomCardColor: false,
+          cardColor: premiumThemes[premiumTheme].primary
+        }));
       } else {
-        // No premium theme, use default color
-        const savedColor = "#f0f4ff";
+        // No premium theme, use backend card color or default
+        const savedColor = user.preferences.card_color || "#f0f4ff";
         setCardColor(savedColor);
+        setPreferences(prev => ({
+          ...prev,
+          useCustomCardColor: false,
+          cardColor: savedColor
+        }));
       }
     };
     
@@ -359,6 +369,36 @@ function Profile() {
       updateCardColor(themeColor);
     }
   }, [premiumTheme, premiumThemes, preferences.useCustomCardColor]);
+
+  // Listen for card color changes from Settings page
+  useEffect(() => {
+    const handleCardColorChange = (event) => {
+      console.log('Card color changed:', event.detail);
+      const { useCustomColor, color } = event.detail;
+      
+      // Update local state
+      setPreferences(prev => ({
+        ...prev,
+        useCustomCardColor: useCustomColor,
+        cardColor: color
+      }));
+      
+      // Update card color display
+      if (useCustomColor) {
+        setCardColor(color);
+      } else if (premiumTheme && premiumThemes[premiumTheme]) {
+        setCardColor(premiumThemes[premiumTheme].primary);
+      }
+    };
+    
+    // Add event listener
+    window.addEventListener('cardColorChanged', handleCardColorChange);
+    
+    // Clean up
+    return () => {
+      window.removeEventListener('cardColorChanged', handleCardColorChange);
+    };
+  }, [premiumTheme, premiumThemes]);
 
   // Function to update card color in both state and preferences
   const updateCardColor = (newColor) => {
@@ -576,218 +616,39 @@ function Profile() {
   };
 
   const handlePreferenceUpdate = async () => {
-    // Prevent duplicate calls
-    if (isSaving) return;
-    
+    setIsSaving(true);
     try {
-      setIsSaving(true);
-      // Show loading toast
-      const updateToastId = toast.loading("Updating preferences...");
-      
       const token = localStorage.getItem("token");
-      
-      // Store old values for comparison
-      const oldGoalWeight = user?.preferences?.goal_weight;
-      const oldFrequencyGoal = preferences.workoutFrequencyGoal;
-      
-      let frequencyUpdateSuccessful = false;
-      let weightUpdateSuccessful = false;
-      let errorMessage = null;
-      
-      // Validate frequency goal before sending
-      const frequencyGoal = preferences.workoutFrequencyGoal ? parseInt(preferences.workoutFrequencyGoal) : null;
-      if (frequencyGoal !== null && (frequencyGoal < 1 || frequencyGoal > 7)) {
-        errorMessage = "Workout frequency goal must be between 1 and 7";
-        toast.error(errorMessage, { id: updateToastId });
-        return;
-      }
-      
-      // Try the dedicated workout frequency endpoint first
-      try {
-        const frequencyResponse = await fetch(`${backendURL}/user/workout-frequency`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            frequency_goal: frequencyGoal
-          }),
-        });
-        
-        if (frequencyResponse.ok) {
-          frequencyUpdateSuccessful = true;
-          const data = await frequencyResponse.json();
-          // Update local state with the new frequency goal
-          setPreferences(prev => ({
-            ...prev,
-            workoutFrequencyGoal: data.workout_frequency_goal
-          }));
-          
-          // Show success message
-          toast.success(
-            data.workout_frequency_goal 
-              ? `Updated workout goal to ${data.workout_frequency_goal} times per week`
-              : "Cleared workout frequency goal", 
-            { id: updateToastId }
-          );
-          
-          // Send notification if enabled
-          if (allNotificationsEnabled && oldFrequencyGoal !== data.workout_frequency_goal) {
-            await notifyWorkoutFrequencyGoalUpdated(data.workout_frequency_goal);
-          }
-        } else {
-          const errorData = await frequencyResponse.json();
-          errorMessage = errorData.detail || "Failed to update workout frequency goal";
+      const response = await fetch(`${backendURL}/user/settings`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          use_custom_card_color: preferences.useCustomCardColor,
+          card_color: preferences.cardColor,
+          clear_premium_theme: preferences.useCustomCardColor
+        }),
+      });
+
+      if (response.ok) {
+        setSuccessMessage("Changes saved successfully!");
+        // If using custom color, we need to clear the premium theme locally
+        if (preferences.useCustomCardColor && premiumTheme !== 'default') {
+          changePremiumTheme('default');
         }
-      } catch (err) {
-        console.error("Error updating workout frequency:", err);
-        errorMessage = "Error connecting to server";
+        setTimeout(() => setSuccessMessage(""), 3000);
+      } else {
+        const data = await response.json();
+        setError(data.detail || "Failed to save changes");
       }
-      
-      // If frequency update failed, try the notifications endpoint as fallback
-      if (!frequencyUpdateSuccessful) {
-        try {
-          const fallbackResponse = await fetch(`${backendURL}/user/settings/notifications`, {
-            method: "PATCH",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-              workout_frequency_goal: frequencyGoal
-            }),
-          });
-          
-          if (fallbackResponse.ok) {
-            frequencyUpdateSuccessful = true;
-            // Show success message for fallback
-            toast.success(
-              frequencyGoal 
-                ? `Updated workout goal to ${frequencyGoal} times per week (via fallback)`
-                : "Cleared workout frequency goal (via fallback)", 
-              { id: updateToastId }
-            );
-            
-            // Send notification if enabled via fallback too
-            if (allNotificationsEnabled && oldFrequencyGoal !== frequencyGoal) {
-              await notifyWorkoutFrequencyGoalUpdated(frequencyGoal);
-            }
-          } else {
-            const errorData = await fallbackResponse.json();
-            errorMessage = errorData.detail || "Failed to update workout frequency goal via fallback";
-          }
-        } catch (fallbackErr) {
-          console.error("Error during fallback frequency update:", fallbackErr);
-          errorMessage = "Error connecting to server during fallback";
-        }
-      }
-      
-      // Show error message if both attempts failed
-      if (!frequencyUpdateSuccessful && errorMessage) {
-        toast.error(errorMessage, { id: updateToastId });
-      }
-      
-      // Update other user settings including weight goal
-      try {
-        const userProfileResponse = await fetch(`${backendURL}/user/settings`, {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            email_notifications: true,
-            workout_reminders: true,
-            progress_reports: true,
-            language: "en",
-            card_color: preferences.cardColor,
-            goal_weight: preferences.goalWeight,
-            use_custom_card_color: preferences.useCustomCardColor,
-            summary_frequency: "weekly",
-            summary_day: "monday"
-          }),
-        });
-        
-        if (userProfileResponse.ok) {
-          const profileData = await userProfileResponse.json();
-          
-          // Update local state with returned values
-          setPreferences(prev => ({
-            ...prev,
-            goalWeight: profileData.goal_weight,
-            cardColor: profileData.card_color
-          }));
-          
-          // Update user object with the new preferences
-          if (user && user.preferences) {
-            setUser(prev => ({
-              ...prev,
-              preferences: {
-                ...prev.preferences,
-                goal_weight: profileData.goal_weight,
-                card_color: profileData.card_color,
-                use_custom_card_color: preferences.useCustomCardColor
-              }
-            }));
-          }
-          
-          weightUpdateSuccessful = true;
-          
-          // If weight changed, show a success message
-          if (oldGoalWeight !== profileData.goal_weight) {
-            if (profileData.goal_weight) {
-              toast.success(`Weight goal updated to ${profileData.goal_weight} kg`, {
-                id: updateToastId,
-                duration: 4000
-              });
-              
-              // Send notification for weight goal update if enabled
-              if (allNotificationsEnabled) {
-                await notifyWeightGoalUpdated(profileData.goal_weight);
-              }
-            } else {
-              toast.success("Weight goal cleared", {
-                id: updateToastId,
-                duration: 4000
-              });
-            }
-          } else {
-            toast.success("Preferences updated successfully", {
-              id: updateToastId,
-              duration: 4000
-            });
-          }
-        } else {
-          console.error("Failed to update other user settings");
-          try {
-            const errorData = await userProfileResponse.json();
-            toast.error(errorData.detail || "Failed to update settings", {
-              id: updateToastId
-            });
-          } catch (e) {
-            toast.error("Failed to update settings", {
-              id: updateToastId
-            });
-          }
-        }
-      } catch (err) {
-        console.error("Error updating other user settings:", err);
-        toast.error("Error updating settings", {
-          id: updateToastId
-        });
-      }
-      
-      // Update local state
-      setPreferencesChanged(false);
-      setSuccessMessage("Preferences updated successfully");
-      setTimeout(() => setSuccessMessage(""), 3000);
-      
-    } catch (error) {
-      console.error("Error updating preferences:", error);
-      toast.error("Error updating preferences");
+    } catch (err) {
+      console.error("Error saving preferences:", err);
+      setError("Failed to save changes");
     } finally {
       setIsSaving(false);
+      setPreferencesChanged(false);
     }
   };
 
@@ -1044,25 +905,12 @@ function Profile() {
   ];
 
   // Function to toggle custom color mode
-  const toggleCustomColorMode = (checked) => {
-    if (checked) {
-      // Enabling custom color
-      setCardColor(preferences.cardColor);
-    } else {
-      // Disabling custom color, switch to theme color if available
-      if (premiumTheme && premiumThemes[premiumTheme]) {
-        const themeColor = premiumThemes[premiumTheme].primary;
-        setCardColor(themeColor);
-      }
-    }
-    
-    // Update the preferences state
+  const toggleCustomColorMode = (enabled) => {
     setPreferences(prev => ({
       ...prev,
-      useCustomCardColor: checked
+      useCustomCardColor: enabled,
+      cardColor: enabled ? prev.cardColor : "#f0f4ff"
     }));
-    
-    // Make sure to trigger a save
     setPreferencesChanged(true);
   };
 
@@ -1191,7 +1039,9 @@ function Profile() {
                     </div>
                   ) : (
                     <>
-                      <h1 className="text-2xl font-bold">{user?.username}</h1>
+                      <h1 className="text-2xl font-bold flex items-center">
+                        {user?.username}
+                      </h1>
                       <button
                         onClick={() => setIsEditing(true)}
                         className="text-blue-500 hover:text-blue-600"

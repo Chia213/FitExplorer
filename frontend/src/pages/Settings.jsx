@@ -5,8 +5,24 @@ import { getTranslation } from "../utils/translations";
 import { useLanguage } from "../contexts/LanguageContext";
 import { useTheme, premiumThemes } from "../hooks/useTheme";
 import SessionsManager from "../components/SessionsManager";
+import axios from "axios";
+import { toast } from "react-hot-toast";
+import { BiPalette, BiColorFill, BiGlobe, BiBell, BiUser, BiDevices } from "react-icons/bi";
+import { useTranslation } from "react-i18next";
+import { BsCheck2 } from "react-icons/bs";
 
 const backendURL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+
+// Custom event for notifying other components about card color changes
+export const notifyCardColorChanged = (useCustomColor, color) => {
+  const event = new CustomEvent('cardColorChanged', { 
+    detail: { 
+      useCustomColor, 
+      color 
+    } 
+  });
+  window.dispatchEvent(event);
+};
 
 function Settings() {
   const navigate = useNavigate();
@@ -32,11 +48,8 @@ function Settings() {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState(() => {
-    // Check if "tab" query param is set
-    const urlParams = new URLSearchParams(window.location.search);
-    return urlParams.get('tab') || "account";
-  });
+  const [username, setUsername] = useState("");
+  const [activeTab, setActiveTab] = useState("appearance");
   const [userPreferences, setUserPreferences] = useState({
     emailNotifications: true,
     workoutReminders: true,
@@ -45,7 +58,10 @@ function Settings() {
     summary_frequency: "weekly",
     summary_day: "monday",
     useCustomCardColor: false,
-    cardColor: "#f0f4ff"
+    cardColor: "#f0f4ff",
+    showProfileEmoji: true,
+    profileEmoji: "🏋️‍♂️",
+    emojiAnimation: "lift"
   });
   const [isSavingPreferences, setIsSavingPreferences] = useState(false);
   const [showColorOptions, setShowColorOptions] = useState(false);
@@ -119,8 +135,15 @@ function Settings() {
               summary_frequency: userData.preferences.summary_frequency || "weekly",
               summary_day: userData.preferences.summary_day || "monday",
               useCustomCardColor: userData.preferences.use_custom_card_color || false,
-              cardColor: userData.preferences.card_color || "#f0f4ff"
+              cardColor: userData.preferences.card_color || "#f0f4ff",
+              showProfileEmoji: userData.preferences.show_profile_emoji || true,
+              profileEmoji: userData.preferences.profile_emoji || "🏋️‍♂️",
+              emojiAnimation: userData.preferences.emoji_animation || "lift"
             });
+          }
+          // Add the username
+          if (userData.username) {
+            setUsername(userData.username);
           }
         }
       } catch (err) {
@@ -138,17 +161,17 @@ function Settings() {
 
     // Validation
     if (newPassword.length < 8) {
-      setError("New password must be at least 8 characters long");
+      setError(t("passwordTooShort"));
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      setError("New passwords do not match");
+      setError(t("passwordsDoNotMatch"));
       return;
     }
 
     if (newPassword === currentPassword) {
-      setError("New password must be different from current password");
+      setError(t("newPasswordMustBeDifferent"));
       return;
     }
 
@@ -170,15 +193,25 @@ function Settings() {
       const data = await response.json();
 
       if (response.ok) {
-        setSuccess("Password changed successfully");
+        setSuccess(t("passwordChanged"));
         setCurrentPassword("");
         setNewPassword("");
         setConfirmPassword("");
+        
+        // Reset password field visibility
+        setShowCurrentPassword(false);
+        setShowNewPassword(false);
+        setShowConfirmPassword(false);
+        
+        // Display a success message that automatically dismisses after 3 seconds
+        setTimeout(() => {
+          setSuccess(null);
+        }, 3000);
       } else {
-        setError(data.detail || "Failed to change password");
+        setError(data.detail || t("failedToChangePassword"));
       }
     } catch (err) {
-      setError("Something went wrong. Please try again.");
+      setError(t("somethingWentWrong"));
     } finally {
       setIsLoading(false);
     }
@@ -203,41 +236,99 @@ function Settings() {
 
   const savePreferences = async () => {
     setIsSavingPreferences(true);
+    
     try {
-      console.log("Saving preferences to backend from Settings page:", userPreferences);
+      const toastMessage = activeTab === "language" 
+        ? "Language preferences saved!" 
+        : activeTab === "appearance" 
+          ? "Appearance settings saved!" 
+          : activeTab === "colorappearance"
+            ? "Color appearance settings saved!"
+            : "Preferences saved!";
       
+      // Get the token
       const token = localStorage.getItem("token");
-      const response = await fetch(`${backendURL}/user/settings/notifications`, {
-        method: "PATCH",
+      if (!token) {
+        toast.error("You must be logged in to save preferences");
+        return;
+      }
+      
+      // Convert userPreferences to backend format
+      const backendPreferences = {
+        email_notifications: userPreferences.emailNotifications,
+        workout_reminders: userPreferences.workoutReminders,
+        progress_reports: userPreferences.progressReports,
+        language: userPreferences.language,
+        summary_frequency: userPreferences.summary_frequency,
+        summary_day: userPreferences.summary_day,
+        use_custom_card_color: userPreferences.useCustomCardColor,
+        card_color: userPreferences.cardColor,
+        show_profile_emoji: userPreferences.showProfileEmoji,
+        profile_emoji: userPreferences.profileEmoji,
+        emoji_animation: userPreferences.emojiAnimation
+      };
+      
+      // Send to backend
+      const response = await fetch(`${backendURL}/user-profile`, {
+        method: "PUT", 
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          "Authorization": `Bearer ${token}`
         },
         body: JSON.stringify({
-          email_notifications: userPreferences.emailNotifications,
-          workout_reminders: userPreferences.workoutReminders,
-          progress_reports: userPreferences.progressReports,
-          language: language,
-          summary_frequency: userPreferences.summary_frequency,
-          summary_day: userPreferences.summary_day,
-          use_custom_card_color: userPreferences.useCustomCardColor,
-          card_color: userPreferences.cardColor
-        }),
+          preferences: backendPreferences
+        })
       });
-
+      
       if (response.ok) {
-        setSuccess(t("preferencesSaved"));
-        setTimeout(() => setSuccess(null), 3000);
+        // Create prominent toast with appropriate message
+        if (activeTab === "colorappearance") {
+          if (userPreferences.useCustomCardColor) {
+            toast.success(`Custom card color applied: ${userPreferences.cardColor}`, {
+              duration: 3000,
+              position: 'top-center',
+              icon: '🎨',
+              style: {
+                border: `2px solid ${userPreferences.cardColor}`,
+                padding: '16px',
+                color: '#713200',
+              },
+            });
+            
+            // Also set local success message
+            setSuccess(`Custom color ${userPreferences.cardColor} applied to profile!`);
+            setTimeout(() => setSuccess(null), 3000);
+          } else {
+            toast.success(`Using theme colors for profile`, {
+              duration: 3000,
+              position: 'top-center',
+              icon: '🎨'
+            });
+            
+            // Also set local success message
+            setSuccess(`Using theme colors for profile`);
+            setTimeout(() => setSuccess(null), 3000);
+          }
+          
+          // Dispatch a custom event to notify other components
+          notifyCardColorChanged(
+            userPreferences.useCustomCardColor, 
+            userPreferences.cardColor
+          );
+        } else {
+          toast.success(toastMessage);
+        }
         
-        console.log("Preferences saved successfully to backend");
+        // Apply the color immediately to see the effect
+        if (userPreferences.useCustomCardColor) {
+          document.documentElement.style.setProperty('--custom-card-color', userPreferences.cardColor);
+        }
       } else {
-        const data = await response.json();
-        console.error("Failed to save preferences:", data);
-        setError(data.detail || t("failedToSavePreferences"));
+        toast.error("Failed to save preferences. Please try again.");
       }
-    } catch (err) {
-      console.error("Error saving preferences:", err);
-      setError(t("somethingWentWrong"));
+    } catch (error) {
+      console.error("Error saving preferences:", error);
+      toast.error("An error occurred. Please try again.");
     } finally {
       setIsSavingPreferences(false);
     }
@@ -263,609 +354,631 @@ function Settings() {
     }));
   };
 
-  const tabs = [
-    { id: "account", label: getTranslation("account", userPreferences.language), icon: <FaUser className="w-5 h-5" /> },
-    { id: "notifications", label: getTranslation("notifications", userPreferences.language), icon: <FaBell className="w-5 h-5" /> },
-    { id: "language", label: getTranslation("language", userPreferences.language), icon: <FaLanguage className="w-5 h-5" /> },
-    { id: "appearance", label: getTranslation("appearance", userPreferences.language) || "Appearance", icon: <FaPalette className="w-5 h-5" /> },
-    { id: "sessions", label: "Sessions", icon: <FaShieldAlt className="w-5 h-5" /> }
-  ];
+  const renderTabButton = (tabName, label, icon) => {
+    return (
+      <button
+        onClick={() => setActiveTab(tabName)}
+        className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${
+          activeTab === tabName 
+            ? "bg-primary/10 dark:bg-primary/20 text-primary" 
+            : "hover:bg-gray-100 dark:hover:bg-gray-800"
+        }`}
+      >
+        {icon}
+        <span>{label}</span>
+      </button>
+    );
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
-          {/* Header */}
-          <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-              {getTranslation("settings", userPreferences.language)}
-            </h1>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              {getTranslation("manageSettings", userPreferences.language)}
-            </p>
-          </div>
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-2xl font-bold mb-6">{t("settings")}</h1>
+      
+      <div className="grid grid-cols-1 md:grid-cols-[250px_1fr] gap-6">
+        {/* Sidebar Navigation */}
+        <div className="bg-white dark:bg-gray-900 p-4 rounded-lg shadow-sm flex flex-col gap-2">
+          {renderTabButton("appearance", t("appearance"), <BiPalette className="text-xl" />)}
+          {renderTabButton("colorappearance", t("colorAppearance"), <BiColorFill className="text-xl" />)}
+          {renderTabButton("language", t("language"), <BiGlobe className="text-xl" />)}
+          {renderTabButton("notifications", t("notifications"), <BiBell className="text-xl" />)}
+          {renderTabButton("account", t("changePassword"), <BiUser className="text-xl" />)}
+          {renderTabButton("sessions", t("sessions"), <BiDevices className="text-xl" />)}
+        </div>
+        
+        {/* Tab Content */}
+        <div className="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-sm">
+          {/* Error and Success Messages */}
+          {error && (
+            <div className="mb-4 p-4 bg-red-100 border border-red-200 text-red-700 rounded-lg">
+              {error}
+            </div>
+          )}
+          {success && (
+            <div className="mb-4 p-4 bg-green-100 border border-green-200 text-green-700 rounded-lg">
+              {success}
+            </div>
+          )}
 
-          {/* Tabs */}
-          <div className="border-b border-gray-200 dark:border-gray-700">
-            <nav className="flex -mb-px overflow-x-auto">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center px-4 py-3 text-sm font-medium ${
-                    activeTab === tab.id
-                      ? "border-b-2 border-blue-500 text-blue-600 dark:text-blue-400"
-                      : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-                  }`}
-                >
-                  {tab.icon}
-                  <span className="ml-2">{tab.label}</span>
-                </button>
-              ))}
-            </nav>
-          </div>
-
-          {/* Content */}
-          <div className="p-6">
-            {/* Error and Success Messages */}
-            {error && (
-              <div className="mb-4 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-200 p-3 rounded-lg">
-                {error}
+          {/* Appearance Tab */}
+          {activeTab === "appearance" && (
+            <div>
+              <h2 className="text-xl font-semibold mb-4">{t("appearance")}</h2>
+              <div className="mb-6">
+                <label className="block text-sm font-medium mb-2">{t("theme")}</label>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setThemeMode("light")}
+                    className={`px-4 py-2 rounded-lg border ${
+                      theme === "light"
+                        ? "bg-primary/10 border-primary text-primary"
+                        : "border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
+                    }`}
+                  >
+                    {t("light")}
+                  </button>
+                  <button
+                    onClick={() => setThemeMode("dark")}
+                    className={`px-4 py-2 rounded-lg border ${
+                      theme === "dark"
+                        ? "bg-primary/10 border-primary text-primary"
+                        : "border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
+                    }`}
+                  >
+                    {t("dark")}
+                  </button>
+                  <button
+                    onClick={() => setThemeMode("system")}
+                    className={`px-4 py-2 rounded-lg border ${
+                      theme === "system"
+                        ? "bg-primary/10 border-primary text-primary"
+                        : "border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
+                    }`}
+                  >
+                    {t("system")}
+                  </button>
+                </div>
               </div>
-            )}
-            {success && (
-              <div className="mb-4 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-200 p-3 rounded-lg">
-                {success}
-              </div>
-            )}
 
-            {/* Account Tab */}
-            {activeTab === "account" && (
-              <div className="space-y-6">
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                  Change Password
-                </h2>
-                <form onSubmit={handlePasswordChange} className="space-y-4">
-                  {/* Current Password */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Current Password
-                    </label>
-                    <div className="relative">
-                      <input
-                        type={showCurrentPassword ? "text" : "password"}
-                        value={currentPassword}
-                        onChange={(e) => setCurrentPassword(e.target.value)}
-                        className="w-full p-2 pr-10 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-blue-500"
-                        required
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                        className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                      >
-                        {showCurrentPassword ? (
-                          <FaEyeSlash className="w-5 h-5" />
-                        ) : (
-                          <FaEye className="w-5 h-5" />
-                        )}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* New Password */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      New Password
-                    </label>
-                    <div className="relative">
-                      <input
-                        type={showNewPassword ? "text" : "password"}
-                        value={newPassword}
-                        onChange={(e) => setNewPassword(e.target.value)}
-                        className="w-full p-2 pr-10 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-blue-500"
-                        required
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowNewPassword(!showNewPassword)}
-                        className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                      >
-                        {showNewPassword ? (
-                          <FaEyeSlash className="w-5 h-5" />
-                        ) : (
-                          <FaEye className="w-5 h-5" />
-                        )}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Confirm New Password */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Confirm New Password
-                    </label>
-                    <div className="relative">
-                      <input
-                        type={showConfirmPassword ? "text" : "password"}
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        className="w-full p-2 pr-10 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-blue-500"
-                        required
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                      >
-                        {showConfirmPassword ? (
-                          <FaEyeSlash className="w-5 h-5" />
-                        ) : (
-                          <FaEye className="w-5 h-5" />
-                        )}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Submit Button */}
-                  <div className="flex justify-end space-x-4">
-                    <button
-                      type="submit"
-                      disabled={isLoading}
-                      className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 flex items-center space-x-2 disabled:opacity-50"
-                    >
-                      {isLoading ? (
-                        <>
-                          <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                          <span>Changing...</span>
-                        </>
-                      ) : (
-                        <>
-                          <FaLock className="w-5 h-5" />
-                          <span>Change Password</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </form>
-              </div>
-            )}
-
-            {/* Notifications Tab */}
-            {activeTab === "notifications" && (
-              <div className="space-y-6">
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                  Notification Preferences
-                </h2>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-lg font-medium text-gray-900 dark:text-white">Email Notifications</h3>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Receive notifications via email</p>
-                    </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={userPreferences.emailNotifications}
-                        onChange={(e) => handlePreferenceChange("emailNotifications", e.target.checked)}
-                        className="sr-only peer"
-                      />
-                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-                    </label>
-                  </div>
-
-                  {userPreferences.emailNotifications && (
-                    <div className="ml-4 pl-4 border-l-2 border-gray-200 dark:border-gray-700">
-                      <div className="space-y-2">
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                          Summary Frequency
-                        </label>
-                        <select
-                          value={userPreferences.summary_frequency}
-                          onChange={(e) => handlePreferenceChange("summary_frequency", e.target.value)}
-                          className="w-full p-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-blue-500"
-                        >
-                          <option value="weekly">Weekly Summary</option>
-                          <option value="monthly">Monthly Summary</option>
-                        </select>
-                        {userPreferences.summary_frequency === "weekly" && (
-                          <div className="mt-2">
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                              Summary Day
-                            </label>
-                            <select
-                              value={userPreferences.summary_day}
-                              onChange={(e) => handlePreferenceChange("summary_day", e.target.value)}
-                              className="w-full p-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-blue-500"
-                            >
-                              <option value="monday">Monday</option>
-                              <option value="tuesday">Tuesday</option>
-                              <option value="wednesday">Wednesday</option>
-                              <option value="thursday">Thursday</option>
-                              <option value="friday">Friday</option>
-                              <option value="saturday">Saturday</option>
-                              <option value="sunday">Sunday</option>
-                            </select>
-                          </div>
-                        )}
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          Choose how often and when you'd like to receive your workout summaries
-                        </p>
+              {/* Emoji preferences */}
+              <div className="mt-6 border-t pt-6 dark:border-gray-700">
+                <h3 className="text-lg font-medium mb-4">{t("emojiPreferences")}</h3>
+                
+                {/* Show profile emoji toggle */}
+                <div className="mb-4">
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={userPreferences.showProfileEmoji}
+                      onChange={(e) => handlePreferenceChange("showProfileEmoji", e.target.checked)}
+                      className="form-checkbox rounded text-primary"
+                    />
+                    <span className="ml-2">{t("showEmojiNextToUsername")}</span>
+                  </label>
+                </div>
+                
+                {/* Emoji selection */}
+                {userPreferences.showProfileEmoji && (
+                  <>
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium mb-2">{t("selectEmoji")}</label>
+                      <div className="grid grid-cols-5 gap-2 max-w-xs">
+                        {["😀", "😎", "🚀", "💪", "🔥", "✨", "💯", "🏆", "🎯", "💡"].map((emoji) => (
+                          <button
+                            key={emoji}
+                            onClick={() => handlePreferenceChange("profileEmoji", emoji)}
+                            className={`text-2xl p-2 rounded-lg ${
+                              userPreferences.profileEmoji === emoji
+                                ? "bg-primary/10 border border-primary"
+                                : "border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
+                            }`}
+                          >
+                            {emoji}
+                          </button>
+                        ))}
                       </div>
+                    </div>
+                    
+                    {/* Animation style */}
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium mb-2">{t("animationStyle")}</label>
+                      <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                        {["none", "lift", "bounce", "spin", "pulse", "wave"].map((animation) => (
+                          <button
+                            key={animation}
+                            onClick={() => handlePreferenceChange("emojiAnimation", animation)}
+                            className={`px-3 py-2 capitalize rounded-lg border ${
+                              userPreferences.emojiAnimation === animation
+                                ? "bg-primary/10 border-primary text-primary"
+                                : "border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
+                            }`}
+                          >
+                            {animation}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    {/* Preview */}
+                    <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">{t("preview")}:</p>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-xl ${userPreferences.emojiAnimation !== "none" ? `animate-${userPreferences.emojiAnimation}` : ""}`}>
+                          {userPreferences.profileEmoji}
+                        </span>
+                        <span className="font-medium">Username</span>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              <div className="mt-6 flex justify-end">
+                <button
+                  onClick={() => savePreferences("appearance")}
+                  disabled={isLoading}
+                  className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50"
+                >
+                  {isLoading ? t("saving") : t("saveChanges")}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Color Appearance Tab */}
+          {activeTab === "colorappearance" && (
+            <div>
+              <h2 className="text-xl font-semibold mb-4">{t("colorAppearance")}</h2>
+              
+              {/* Premium Themes Section */}
+              <div className="border-gray-200 dark:border-gray-700 pt-2">
+                <div className="flex items-center mb-4">
+                  <h3 className="text-lg font-medium">{t("premiumThemes")}</h3>
+                  <div className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                    <FaCrown className="w-3 h-3 mr-1" />
+                    {t("premium")}
+                  </div>
+                  {isAdmin && (
+                    <div className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
+                      {t("admin")}
                     </div>
                   )}
-
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-lg font-medium text-gray-900 dark:text-white">Workout Reminders</h3>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Get reminded about your scheduled workouts</p>
-                    </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={userPreferences.workoutReminders}
-                        onChange={(e) => handlePreferenceChange("workoutReminders", e.target.checked)}
-                        className="sr-only peer"
-                      />
-                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-                    </label>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-lg font-medium text-gray-900 dark:text-white">Progress Reports</h3>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Receive weekly progress reports</p>
-                    </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={userPreferences.progressReports}
-                        onChange={(e) => handlePreferenceChange("progressReports", e.target.checked)}
-                        className="sr-only peer"
-                      />
-                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-                    </label>
-                  </div>
-
-                  <div className="pt-4">
-                    <button
-                      onClick={savePreferences}
-                      disabled={isSavingPreferences}
-                      className="w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 flex items-center justify-center space-x-2 disabled:opacity-50"
-                    >
-                      {isSavingPreferences ? (
-                        <>
-                          <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                          <span>{getTranslation("saving", userPreferences.language)}</span>
-                        </>
-                      ) : (
-                        <>
-                          <FaSave className="w-5 h-5" />
-                          <span>{getTranslation("savePreferences", userPreferences.language)}</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Language Tab */}
-            {activeTab === "language" && (
-              <div className="space-y-6">
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                  {getTranslation("languageSettings", userPreferences.language)}
-                </h2>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      {getTranslation("selectLanguage", userPreferences.language)}
-                    </label>
-                    <select
-                      value={userPreferences.language}
-                      onChange={(e) => handlePreferenceChange("language", e.target.value)}
-                      className="w-full p-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="en">English</option>
-                      <option value="sv">Svenska</option>
-                      <option value="es">Español</option>
-                      <option value="fr">Français</option>
-                      <option value="de">Deutsch</option>
-                      <option value="it">Italiano</option>
-                      <option value="pt">Português</option>
-                      <option value="ru">Русский</option>
-                      <option value="ja">日本語</option>
-                      <option value="zh">中文</option>
-                    </select>
-                  </div>
-
-                  <div className="pt-4">
-                    <button
-                      onClick={savePreferences}
-                      disabled={isSavingPreferences}
-                      className="w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 flex items-center justify-center space-x-2 disabled:opacity-50"
-                    >
-                      {isSavingPreferences ? (
-                        <>
-                          <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                          <span>{getTranslation("saving", userPreferences.language)}</span>
-                        </>
-                      ) : (
-                        <>
-                          <FaSave className="w-5 h-5" />
-                          <span>{getTranslation("savePreferences", userPreferences.language)}</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Appearance Tab */}
-            {activeTab === "appearance" && (
-              <div className="space-y-6">
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                  Appearance Settings
-                </h2>
-                
-                {/* Dark/Light Mode Toggle */}
-                <div className="mb-6">
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                    Color Mode
-                  </h3>
-                  <div className="flex space-x-4">
-                    <button
-                      onClick={() => setThemeMode("light")}
-                      className={`px-4 py-2 rounded-md ${
-                        theme === "light" 
-                          ? "bg-blue-500 text-white" 
-                          : "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
-                      }`}
-                    >
-                      Light
-                    </button>
-                    <button
-                      onClick={() => setThemeMode("dark")}
-                      className={`px-4 py-2 rounded-md ${
-                        theme === "dark" 
-                          ? "bg-blue-500 text-white" 
-                          : "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
-                      }`}
-                    >
-                      Dark
-                    </button>
-                  </div>
                 </div>
                 
-                {/* Premium Themes */}
-                <div>
-                  <div className="flex items-center mb-4">
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                      Premium Themes
-                    </h3>
-                    <div className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
-                      <FaCrown className="w-3 h-3 mr-1" />
-                      Premium
-                    </div>
-                    {isAdmin && (
-                      <div className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
-                        Admin
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+                  {t("premiumThemesDescription")}
+                  {isAdmin ? (
+                    <span className="block mt-2 text-purple-600 dark:text-purple-400">
+                      {t("adminThemesAccess")}
+                    </span>
+                  ) : (
+                    unlockedThemes.filter(t => premiumThemes[t]?.isPremium).length === 0 && (
+                      <span className="block mt-2 text-amber-600 dark:text-amber-400">
+                        <FaLock className="inline-block mr-1" size={12} />
+                        {t("unlockPremiumThemes")}
+                      </span>
+                    )
+                  )}
+                </p>
+                
+                {/* Premium Theme Selection Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {Object.keys(premiumThemes).map(themeKey => (
+                    <div 
+                      key={themeKey}
+                      className={`p-4 rounded-lg border ${
+                        premiumTheme === themeKey 
+                          ? 'border-primary bg-primary/5' 
+                          : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800'
+                      }`}
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <h4 className="font-medium">{premiumThemes[themeKey].name}</h4>
+                        {premiumThemes[themeKey].isPremium && !isAdmin && !unlockedThemes.includes(themeKey) && (
+                          <FaLock className="text-amber-500" size={14} />
+                        )}
                       </div>
-                    )}
+
+                      <div 
+                        className="h-20 mb-3 rounded-md overflow-hidden"
+                        style={{ 
+                          background: `linear-gradient(to right, ${premiumThemes[themeKey].primary}, ${premiumThemes[themeKey].secondary})` 
+                        }}
+                      ></div>
+                      
+                      <button
+                        onClick={() => handleApplyTheme(themeKey)}
+                        disabled={premiumThemes[themeKey].isPremium && !isAdmin && !unlockedThemes.includes(themeKey)}
+                        className={`w-full py-2 px-3 rounded-lg font-medium ${
+                          premiumTheme === themeKey
+                            ? 'bg-green-500 dark:bg-green-600 text-white hover:bg-green-600 dark:hover:bg-green-700 flex items-center justify-center gap-2'
+                            : premiumThemes[themeKey].isPremium && !isAdmin && !unlockedThemes.includes(themeKey)
+                              ? 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                              : 'bg-blue-500 hover:bg-blue-600 text-white shadow-sm'
+                        }`}
+                      >
+                        {premiumTheme === themeKey ? (
+                          <>
+                            <BsCheck2 size={18} />
+                            <span>{t("applied")}</span>
+                          </>
+                        ) : (
+                          t("applyTheme")
+                        )}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Custom Card Color Option */}
+              <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <div className="flex flex-col">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{t("cardColorOptions")}</span>
+                    <button 
+                      onClick={() => setShowColorOptions(!showColorOptions)}
+                      className="text-xs bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 px-2 py-1 rounded"
+                    >
+                      {showColorOptions ? t("hideOptions") : t("showOptions")}
+                    </button>
                   </div>
                   
-                  <div className="text-sm text-gray-600 dark:text-gray-400 mb-6">
-                    <p>Customize the look and feel of your app with premium themes. Your profile card will automatically use your theme's colors.</p>
-                    {isAdmin ? (
-                      <p className="mt-2 text-purple-600 dark:text-purple-400">
-                        As an admin, you have access to all premium themes without needing to unlock them.
-                      </p>
-                    ) : (
-                      unlockedThemes.filter(t => premiumThemes[t].isPremium).length === 0 && (
-                        <p className="mt-2 text-amber-600 dark:text-amber-400">
-                          <FaLock className="inline-block mr-1" size={12} />
-                          Unlock premium themes by earning achievements in the app!
-                        </p>
-                      )
-                    )}
-                  </div>
-                  
-                  {/* Custom Card Color Option */}
-                  <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                    <div className="flex flex-col">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Card Color Options</span>
-                        <button 
-                          onClick={() => setShowColorOptions(!showColorOptions)}
-                          className="text-xs bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 px-2 py-1 rounded"
-                        >
-                          {showColorOptions ? "Hide Options" : "Show Options"}
-                        </button>
+                  {showColorOptions && (
+                    <div className="mt-3 border-t pt-3 border-gray-200 dark:border-gray-600">
+                      <div className="flex items-center mb-2">
+                        <input
+                          type="checkbox" 
+                          id="useCustomCardColor"
+                          checked={userPreferences.useCustomCardColor}
+                          onChange={(e) => toggleCustomCardColor(e.target.checked)}
+                          className="mr-2 h-4 w-4"
+                        />
+                        <label htmlFor="useCustomCardColor" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                          {t("useCustomCardColor")}
+                        </label>
                       </div>
                       
-                      {showColorOptions && (
-                        <div className="mt-3 border-t pt-3 border-gray-200 dark:border-gray-600">
-                          <div className="flex items-center mb-2">
-                            <input
-                              type="checkbox" 
-                              id="useCustomCardColor"
-                              checked={userPreferences.useCustomCardColor}
-                              onChange={(e) => toggleCustomCardColor(e.target.checked)}
-                              className="mr-2 h-4 w-4"
-                            />
-                            <label htmlFor="useCustomCardColor" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                              Use custom card color instead of theme colors
-                            </label>
-                          </div>
-                          
-                          {userPreferences.useCustomCardColor && (
-                            <div className="flex items-center mt-2">
-                              <label className="text-sm text-gray-600 dark:text-gray-400 mr-3">
-                                Custom Card Color:
-                              </label>
-                              <input
-                                type="color"
-                                value={userPreferences.cardColor}
-                                onChange={(e) => handleColorChange(e.target.value)}
-                                className="w-8 h-8 rounded cursor-pointer"
-                              />
-                            </div>
-                          )}
-                          
-                          <div className="mt-3 text-xs text-gray-500 dark:text-gray-400">
-                            This option overrides any theme colors on your profile card with your custom color.
-                          </div>
+                      {userPreferences.useCustomCardColor && (
+                        <div className="flex items-center mt-2">
+                          <label className="text-sm text-gray-600 dark:text-gray-400 mr-3">
+                            {t("customCardColor")}:
+                          </label>
+                          <input
+                            type="color"
+                            value={userPreferences.cardColor}
+                            onChange={(e) => handleColorChange(e.target.value)}
+                            className="w-8 h-8 rounded cursor-pointer"
+                          />
                         </div>
                       )}
                       
-                      <div className="mt-4">
+                      <div className="mt-3 text-xs text-gray-500 dark:text-gray-400">
+                        {t("cardColorDescription")}
+                      </div>
+
+                      <div className="mt-4 flex justify-end">
                         <button
-                          onClick={savePreferences}
-                          disabled={isSavingPreferences}
-                          className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center space-x-1 disabled:opacity-50"
+                          onClick={() => {
+                            savePreferences();
+                            // Success message is now handled in the savePreferences function
+                          }}
+                          className="px-3 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 font-medium border border-blue-700 shadow-sm"
                         >
                           {isSavingPreferences ? (
-                            <>
-                              <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                              <span>Saving...</span>
-                            </>
+                            <span className="flex items-center">
+                              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                              Saving...
+                            </span>
                           ) : (
-                            <>
-                              <FaSave className="w-3 h-3" />
-                              <span>Save Changes</span>
-                            </>
+                            "Save Card Colors"
                           )}
                         </button>
                       </div>
                     </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {Object.entries(premiumThemes).map(([key, theme]) => {
-                      const isUnlocked = unlockedThemes.includes(key);
-                      const isActive = premiumTheme === key;
-                      
-                      return (
-                        <div
-                          key={key}
-                          className={`border rounded-lg overflow-hidden card ${
-                            isActive 
-                              ? "border-accent shadow-md" 
-                              : "border-gray-200 dark:border-gray-700"
-                          } ${isUnlocked && theme.isPremium ? "premium" : ""}`}
-                        >
-                          {/* Theme preview */}
-                          <div 
-                            className="h-24 w-full relative"
-                            style={{
-                              background: theme.isPremium 
-                                ? `linear-gradient(135deg, ${theme.primary}, ${theme.secondary}, ${theme.accent})`
-                                : `linear-gradient(to right, ${theme.primary}, ${theme.secondary})`
-                            }}
-                          >
-                            {theme.isPremium && (
-                              <div className="absolute top-2 right-2">
-                                <FaCrown className="text-yellow-300 drop-shadow-md h-4 w-4" />
-                              </div>
-                            )}
-                          </div>
-                          
-                          <div className="p-4">
-                            <div className="flex items-center justify-between mb-2">
-                              <h4 className="font-medium text-gray-900 dark:text-white flex items-center">
-                                {theme.name}
-                                {theme.isPremium && (
-                                  <div className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
-                                    Premium
-                                  </div>
-                                )}
-                              </h4>
-                              {theme.isPremium && !isUnlocked && !isAdmin && (
-                                <div className="text-gray-500 dark:text-gray-400">
-                                  <FaLock className="w-4 h-4" />
-                                </div>
-                              )}
-                              {isActive && (
-                                <div className="text-green-500">
-                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                  </svg>
-                                </div>
-                              )}
-                            </div>
-                            
-                            <div className="flex mt-2 space-x-1">
-                              <div className="w-6 h-6 rounded-full" style={{ backgroundColor: theme.primary }}></div>
-                              <div className="w-6 h-6 rounded-full" style={{ backgroundColor: theme.secondary }}></div>
-                              <div className="w-6 h-6 rounded-full" style={{ backgroundColor: theme.accent }}></div>
-                            </div>
-                            
-                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 mb-3">
-                              {theme.description}
-                            </p>
-                            
-                            <button
-                              onClick={() => handleApplyTheme(key)}
-                              disabled={!isUnlocked && !isAdmin}
-                              className={`w-full py-1.5 rounded-md text-center text-sm ${
-                                isUnlocked || isAdmin
-                                  ? isActive
-                                    ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                                    : "btn-primary"
-                                  : "bg-gray-200 text-gray-400 cursor-not-allowed dark:bg-gray-700"
-                              }`}
-                            >
-                              {isActive ? "Active" : isUnlocked || isAdmin ? "Apply" : "Locked"}
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  
-                  {!isAdmin && unlockedThemes.filter(t => premiumThemes[t].isPremium).length === 0 && (
-                    <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200 rounded-lg">
-                      <p className="text-sm">
-                        <span className="font-medium">No premium themes unlocked yet.</span>{" "}
-                        Complete achievements to unlock premium themes. Visit the Achievements page to track your progress.
-                      </p>
-                      <button 
-                        onClick={() => navigate("/achievements")}
-                        className="mt-2 text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline"
-                      >
-                        Go to Achievements
-                      </button>
-                    </div>
                   )}
                 </div>
               </div>
-            )}
 
-            {/* Sessions Tab */}
-            {activeTab === "sessions" && (
-              <div className="space-y-6">
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                  Session Management
-                </h2>
-                <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">
-                  Manage your active sessions and control where you're logged in.
-                </p>
-                <SessionsManager />
+              <div className="mt-6 flex justify-end">
+                <button
+                  onClick={() => savePreferences("colorappearance")}
+                  disabled={isLoading}
+                  className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50"
+                >
+                  {isLoading ? t("saving") : t("saveChanges")}
+                </button>
               </div>
-            )}
-          </div>
+            </div>
+          )}
 
-          {/* Footer */}
-          <div className="px-6 py-4 bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600 flex justify-between">
-            <button
-              onClick={() => navigate("/profile")}
-              className="px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white flex items-center"
-            >
-              <FaTimes className="w-5 h-5 mr-2" />
-              <span>{getTranslation("back", userPreferences.language)}</span>
-            </button>
-          </div>
+          {/* Language Tab */}
+          {activeTab === "language" && (
+            <div>
+              <h2 className="text-xl font-semibold mb-4">{t("language")}</h2>
+              <div className="mb-6">
+                <label className="block text-sm font-medium mb-2">{t("selectLanguage")}</label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <button
+                    onClick={() => changeLanguage("en")}
+                    className={`px-4 py-2 flex items-center justify-between rounded-lg border ${
+                      language === "en"
+                        ? "bg-primary/10 border-primary text-primary"
+                        : "border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
+                    }`}
+                  >
+                    <span>English</span>
+                    {language === "en" && <BsCheck2 className="text-lg" />}
+                  </button>
+                  <button
+                    onClick={() => changeLanguage("es")}
+                    className={`px-4 py-2 flex items-center justify-between rounded-lg border ${
+                      language === "es"
+                        ? "bg-primary/10 border-primary text-primary"
+                        : "border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
+                    }`}
+                  >
+                    <span>Español</span>
+                    {language === "es" && <BsCheck2 className="text-lg" />}
+                  </button>
+                  <button
+                    onClick={() => changeLanguage("fr")}
+                    className={`px-4 py-2 flex items-center justify-between rounded-lg border ${
+                      language === "fr"
+                        ? "bg-primary/10 border-primary text-primary"
+                        : "border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
+                    }`}
+                  >
+                    <span>Français</span>
+                    {language === "fr" && <BsCheck2 className="text-lg" />}
+                  </button>
+                  <button
+                    onClick={() => changeLanguage("de")}
+                    className={`px-4 py-2 flex items-center justify-between rounded-lg border ${
+                      language === "de"
+                        ? "bg-primary/10 border-primary text-primary"
+                        : "border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
+                    }`}
+                  >
+                    <span>Deutsch</span>
+                    {language === "de" && <BsCheck2 className="text-lg" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="mt-6 flex justify-end">
+                <button
+                  onClick={() => savePreferences("language")}
+                  disabled={isLoading}
+                  className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50"
+                >
+                  {isLoading ? t("saving") : t("saveChanges")}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Notifications Tab */}
+          {activeTab === "notifications" && (
+            <div>
+              <h2 className="text-xl font-semibold mb-4">{t("notifications")}</h2>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-medium">{t("emailNotifications")}</h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t("emailNotificationsDesc")}</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={userPreferences.emailNotifications}
+                      onChange={(e) => 
+                        handlePreferenceChange("emailNotifications", e.target.checked)
+                      }
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+                  </label>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-medium">{t("pushNotifications")}</h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t("pushNotificationsDesc")}</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={userPreferences.pushNotifications}
+                      onChange={(e) => 
+                        handlePreferenceChange("pushNotifications", e.target.checked)
+                      }
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+                  </label>
+                </div>
+              </div>
+
+              <div className="mt-6 flex justify-end">
+                <button
+                  onClick={() => savePreferences("notifications")}
+                  disabled={isLoading}
+                  className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50"
+                >
+                  {isLoading ? t("saving") : t("saveChanges")}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Account Tab */}
+          {activeTab === "account" && (
+            <div>
+              <h2 className="text-xl font-semibold mb-4">{t("changePassword")}</h2>
+              <form onSubmit={handlePasswordChange} className="space-y-4">
+                {/* Current Password */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    {t("currentPassword")}
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showCurrentPassword ? "text" : "password"}
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      className="w-full p-2 pr-10 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                    >
+                      {showCurrentPassword ? (
+                        <FaEyeSlash className="w-5 h-5" />
+                      ) : (
+                        <FaEye className="w-5 h-5" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* New Password */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    {t("newPassword")}
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showNewPassword ? "text" : "password"}
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      className="w-full p-2 pr-10 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                    >
+                      {showNewPassword ? (
+                        <FaEyeSlash className="w-5 h-5" />
+                      ) : (
+                        <FaEye className="w-5 h-5" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Confirm New Password */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    {t("confirmPassword")}
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showConfirmPassword ? "text" : "password"}
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      className="w-full p-2 pr-10 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                    >
+                      {showConfirmPassword ? (
+                        <FaEyeSlash className="w-5 h-5" />
+                      ) : (
+                        <FaEye className="w-5 h-5" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Submit Button */}
+                <div className="mt-8 border-t pt-6 dark:border-gray-700">
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full py-4 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center text-lg font-medium shadow-lg border-2 border-blue-400"
+                  >
+                    {isLoading ? (
+                      <>
+                        <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin mr-3"></div>
+                        <span className="text-xl">{t("changing")}</span>
+                      </>
+                    ) : (
+                      <>
+                        <FaLock className="w-6 h-6 mr-3" />
+                        <span className="text-xl">{t("savePassword")}</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+          
+          {/* Sessions Tab */}
+          {activeTab === "sessions" && (
+            <div>
+              <h2 className="text-xl font-semibold mb-4">{t("sessions")}</h2>
+              <p className="text-gray-600 dark:text-gray-400 mb-4">
+                {t("activeSessions")}
+              </p>
+              
+              <div className="space-y-4 mb-6">
+                <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <div className="p-2 bg-green-100 text-green-600 rounded-full mr-3">
+                        <BiDevices className="text-xl" />
+                      </div>
+                      <div>
+                        <h3 className="font-medium">Current Session</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                          Chrome on Windows • {new Date().toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                    <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">
+                      Active
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <div className="p-2 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded-full mr-3">
+                        <BiDevices className="text-xl" />
+                      </div>
+                      <div>
+                        <h3 className="font-medium">Mobile App</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                          iPhone • {new Date(Date.now() - 86400000).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                    <button className="text-sm text-red-600 hover:text-red-700">
+                      Revoke
+                    </button>
+                  </div>
+                </div>
+              </div>
+              
+              <button
+                onClick={() => {/* Handle revoke all sessions */}}
+                className="px-4 py-2 text-red-600 border border-red-200 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/10"
+              >
+                {t("revokeAllSessions")}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

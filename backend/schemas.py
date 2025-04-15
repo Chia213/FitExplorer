@@ -119,6 +119,10 @@ class UserProfileBase(BaseModel):
     summary_frequency: Optional[str] = None
     summary_day: Optional[str] = None
     card_color: str = "#dbeafe"
+    use_custom_card_color: bool = False
+    show_profile_emoji: bool = True
+    profile_emoji: str = "🏋️‍♂️"
+    emoji_animation: str = "lift"
 
 
 class UserProfileCreate(UserProfileBase):
@@ -398,7 +402,10 @@ class UserProfileResponse(BaseModel):
     profile_picture: Optional[str] = None
     preferences: Optional[dict] = {
         "goal_weight": Optional[float],
-        "email_notifications": bool
+        "email_notifications": bool,
+        "show_profile_emoji": bool,
+        "profile_emoji": str,
+        "emoji_animation": str
     }
 
     class Config:

@@ -397,35 +397,15 @@ function Achievements() {
       
       if (response.ok) {
         const data = await response.json();
-        // Update local state with backend data - data is an array directly
+        // Update local state with backend data
         setClaimedRewards(data || []);
-        
-        // Update localStorage for offline access
-        localStorage.setItem('claimedRewards', JSON.stringify(data || []));
       } else {
-        // If backend request fails, fall back to localStorage
-        const storedClaimedRewards = localStorage.getItem('claimedRewards');
-        if (storedClaimedRewards) {
-          try {
-            setClaimedRewards(JSON.parse(storedClaimedRewards));
-          } catch (error) {
-            console.error("Error parsing claimed rewards:", error);
-            setClaimedRewards([]);
-          }
-        }
+        console.error("Failed to fetch claimed rewards from backend");
+        setClaimedRewards([]);
       }
     } catch (error) {
       console.error("Error syncing claimed rewards:", error);
-      // Fall back to localStorage in case of error
-      const storedClaimedRewards = localStorage.getItem('claimedRewards');
-      if (storedClaimedRewards) {
-        try {
-          setClaimedRewards(JSON.parse(storedClaimedRewards));
-        } catch (error) {
-          console.error("Error parsing claimed rewards:", error);
-          setClaimedRewards([]);
-        }
-      }
+      setClaimedRewards([]);
     }
   }, []);
 
@@ -754,11 +734,8 @@ function Achievements() {
         await updateClaimedRewardInBackend(reward.id);
       }
       
-      // Update local state
-      setClaimedRewards(achievementRewards.map(r => r.id));
-      
-      // Save to localStorage
-      localStorage.setItem('claimedRewards', JSON.stringify(achievementRewards.map(r => r.id)));
+      // Sync claimed rewards from backend
+      await syncClaimedRewards();
       
       // Unlock all themes
       if (unlockAllThemes) {
@@ -1036,9 +1013,8 @@ function Achievements() {
   };
 
   // Function to claim a reward
-  const claimReward = (reward) => {
+  const claimReward = async (reward) => {
     if (isRewardClaimed(reward.id)) {
-      // If the reward is already claimed, show info notification
       setNotification({
         show: true,
         message: `You've already claimed the ${reward.title} reward.`,
@@ -1047,125 +1023,97 @@ function Achievements() {
       return;
     }
     
-    // Check if user has enough achievements
-    const achievedCount = achievements?.filter(a => a.is_achieved)?.length || 0;
-    if (!isAdmin && achievedCount < reward.requiredAchievements) {
-      setNotification({
-        show: true,
-        message: `You need ${reward.requiredAchievements - achievedCount} more achievements to claim this reward.`,
-        type: "error"
-      });
-      return;
-    }
-    
-    // Special handling for theme rewards if user is admin
-    if (reward.feature === 'themes' && isAdmin) {
-      setNotification({
-        show: true,
-        message: "As an admin, you already have access to all premium themes. No need to claim this reward.",
-        type: "info"
-      });
-      return;
+    // Admin users can claim any reward without achievement requirements
+    if (!isAdmin) {
+      const achievedCount = achievements?.filter(a => a.is_achieved)?.length || 0;
+      if (achievedCount < reward.requiredAchievements) {
+        setNotification({
+          show: true,
+          message: `You need ${reward.requiredAchievements - achievedCount} more achievements to claim this reward.`,
+          type: "error"
+        });
+        return;
+      }
     }
 
-    // For non-admin users or non-theme rewards, proceed with claiming
     setLoading(true);
     
-    // Immediately update UI to show reward as claimed for better UX
-    const updatedClaimedRewards = [...claimedRewards, reward.id];
-    setClaimedRewards(updatedClaimedRewards);
-    localStorage.setItem('claimedRewards', JSON.stringify(updatedClaimedRewards));
-    
-    const processReward = async () => {
+    try {
       let description = '';
       let success = true;
       
-      try {
-        // Handle based on feature type
-        switch(reward.feature) {
-          case 'themes':
-            // Only for non-admin users
-            if (!isAdmin) {
-              // Instead of trying to unlock a specific theme, unlock all premium themes
+      // Handle based on feature type
+      switch(reward.feature) {
+        case 'themes':
+          if (!isAdmin) {
+            if (typeof unlockAllThemes === 'function') {
               await unlockAllThemes();
-              
-              // Then update the description
               description = `You've unlocked premium themes! Go to Settings to apply them!`;
+            } else {
+              throw new Error("Theme unlocking functionality not available");
             }
-            break;
-            
-          case 'workouts':
-            // Logic for unlocking workout templates would go here
-            description = `You've unlocked expert workout templates! Check them out in My Routines.`;
-            break;
-            
-          case 'stats':
-            // Logic for unlocking advanced statistics
-            description = `You've unlocked advanced statistics and progress analysis!`;
-            break;
-            
-          case 'boostStreak':
-            // Logic for boosting streak would go here
-            description = `You've boosted your streak by 5 days!`;
-            break;
-            
-          default:
-            description = `You've claimed the ${reward.title} reward.`;
-        }
-        
-        // Update claimed rewards in backend if successful
-        if (success) {
-          // Update backend as well for persistence
-          await updateClaimedRewardInBackend(reward.id);
-          
-          // Refresh achievements to update the UI
-          if (hookFetchAchievements) {
-            await hookFetchAchievements();
+          } else {
+            description = "As an admin, you already have access to all premium themes.";
           }
+          break;
           
-          // Show success notification
-          setNotification({
-            show: true,
-            message: description,
-            type: "success"
-          });
+        case 'workouts':
+          description = `You've unlocked expert workout templates! Check them out in My Routines.`;
+          break;
           
-          // Also update the modal information
-          setRewardModalInfo({
-            show: true,
-            title: "Reward Claimed!",
-            message: description,
-            reward: reward
-          });
-        } else {
-          // Show error notification
-          setNotification({
-            show: true,
-            message: "Failed to claim reward. Please try again later.",
-            type: "error"
-          });
-        }
-      } catch (err) {
-        console.error("Error processing reward:", err);
+        case 'stats':
+          description = `You've unlocked advanced statistics and progress analysis!`;
+          break;
+          
+        default:
+          description = `You've claimed the ${reward.title} reward.`;
+      }
+      
+      // Update claimed rewards in backend
+      const backendSuccess = await updateClaimedRewardInBackend(reward.id);
+      
+      if (backendSuccess) {
+        setClaimedRewards(prev => [...prev, reward.id]);
+        
         setNotification({
           show: true,
-          message: "Error claiming reward. Please try again later.",
+          message: description,
+          type: "success"
+        });
+        
+        setRewardModalInfo({
+          show: true,
+          title: "Reward Claimed!",
+          message: description,
+          reward: reward
+        });
+      } else {
+        setNotification({
+          show: true,
+          message: "Failed to claim reward. Please try again.",
           type: "error"
         });
-      } finally {
-        setLoading(false);
       }
-    };
-
-    // Execute the reward processing
-    processReward();
+    } catch (err) {
+      console.error("Error claiming reward:", err);
+      setNotification({
+        show: true,
+        message: "Error claiming reward. Please try again.",
+        type: "error"
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Function to update claimed reward in backend
   const updateClaimedRewardInBackend = async (rewardId) => {
     try {
       const token = localStorage.getItem("token");
-      if (!token) return false;
+      if (!token) {
+        console.error("No token found");
+        return false;
+      }
       
       const response = await fetch(`${backendURL}/user/rewards/claim`, {
         method: "POST",
@@ -1177,11 +1125,12 @@ function Achievements() {
       });
       
       if (!response.ok) {
-        console.error("Failed to update claimed reward in backend");
+        const errorData = await response.json();
+        console.error("Failed to update claimed reward in backend:", errorData);
         return false;
       }
       
-      // Update local state to ensure UI is in sync with backend
+      // Sync claimed rewards after successful claim
       await syncClaimedRewards();
       
       return true;
@@ -1302,6 +1251,26 @@ function Achievements() {
       checkRewardAvailability();
     }
   }, [user, loading, checkRewardAvailability]);
+
+  // Add this effect to handle initial achievement check for admin
+  useEffect(() => {
+    if (isAdmin && !loading) {
+      const checkAdminAchievements = async () => {
+        try {
+          await checkAchievements();
+          setNotification({
+            show: true,
+            message: "All achievements have been automatically unlocked for your admin account",
+            type: "success"
+          });
+        } catch (error) {
+          console.error("Error checking admin achievements:", error);
+        }
+      };
+      
+      checkAdminAchievements();
+    }
+  }, [isAdmin, loading, checkAchievements]);
 
   if (loading) {
     return (

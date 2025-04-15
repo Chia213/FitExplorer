@@ -152,6 +152,367 @@ export const premiumThemes = {
     secondaryRgb: "161, 98, 7",
     accentRgb: "67, 56, 202",
     preview: "royal"
+  },
+  neon: {
+    name: "Neon",
+    isPremium: true,
+    description: "Vibrant neon colors inspired by cyberpunk aesthetics",
+    primary: "#06b6d4", // cyan-500
+    secondary: "#d946ef", // fuchsia-500
+    accent: "#22c55e", // green-500
+    primaryRgb: "6, 182, 212",
+    secondaryRgb: "217, 70, 239",
+    accentRgb: "34, 197, 94",
+    preview: "neon"
+  },
+  midnight: {
+    name: "Midnight",
+    isPremium: true,
+    description: "Dark and mysterious theme with deep blues and purples",
+    primary: "#312e81", // indigo-900
+    secondary: "#5b21b6", // purple-800
+    accent: "#1e3a8a", // blue-900
+    primaryRgb: "49, 46, 129",
+    secondaryRgb: "91, 33, 182",
+    accentRgb: "30, 58, 138",
+    preview: "midnight"
+  },
+  autumn: {
+    name: "Autumn",
+    isPremium: true,
+    description: "Warm autumn colors inspired by fall foliage",
+    primary: "#b45309", // amber-700
+    secondary: "#7c2d12", // red-800
+    accent: "#b91c1c", // red-700
+    primaryRgb: "180, 83, 9",
+    secondaryRgb: "124, 45, 18",
+    accentRgb: "185, 28, 28",
+    preview: "autumn"
+  },
+  pastel: {
+    name: "Pastel",
+    isPremium: true,
+    description: "Soft, calming pastel colors for a gentle experience",
+    primary: "#818cf8", // indigo-400
+    secondary: "#f9a8d4", // pink-300
+    accent: "#a5f3fc", // cyan-200
+    primaryRgb: "129, 140, 248",
+    secondaryRgb: "249, 168, 212",
+    accentRgb: "165, 243, 252",
+    preview: "pastel"
+  },
+  fitness: {
+    name: "Fitness",
+    isPremium: true,
+    description: "Energetic colors to motivate your fitness journey",
+    primary: "#16a34a", // green-600
+    secondary: "#fb923c", // orange-400
+    accent: "#2563eb", // blue-600
+    primaryRgb: "22, 163, 74",
+    secondaryRgb: "251, 146, 60",
+    accentRgb: "37, 99, 235",
+    preview: "fitness"
+  },
+  monochrome: {
+    name: "Monochrome",
+    isPremium: true,
+    description: "Classic black and white theme with subtle gray accents",
+    primary: "#18181b", // zinc-900
+    secondary: "#71717a", // zinc-500
+    accent: "#e4e4e7", // zinc-200
+    primaryRgb: "24, 24, 27",
+    secondaryRgb: "113, 113, 122",
+    accentRgb: "228, 228, 231",
+    preview: "monochrome"
+  },
+  tropical: {
+    name: "Tropical",
+    isPremium: true,
+    description: "Bright and vibrant colors inspired by tropical paradise",
+    primary: "#0ea5e9", // sky-500
+    secondary: "#f472b6", // pink-400
+    accent: "#facc15", // yellow-400
+    primaryRgb: "14, 165, 233",
+    secondaryRgb: "244, 114, 182",
+    accentRgb: "250, 204, 21",
+    preview: "tropical"
+  },
+  nordic: {
+    name: "Nordic",
+    isPremium: true,
+    description: "Minimalist Scandinavian design with cool, calm tones",
+    primary: "#475569", // slate-600
+    secondary: "#94a3b8", // slate-400
+    accent: "#cbd5e1", // slate-300
+    primaryRgb: "71, 85, 105",
+    secondaryRgb: "148, 163, 184",
+    accentRgb: "203, 213, 225",
+    preview: "nordic"
+  },
+  retro: {
+    name: "Retro",
+    isPremium: true,
+    description: "Vintage colors with a nostalgic 80s vibe",
+    primary: "#db2777", // pink-600
+    secondary: "#6366f1", // indigo-500
+    accent: "#fbbf24", // amber-400
+    primaryRgb: "219, 39, 119",
+    secondaryRgb: "99, 102, 241",
+    accentRgb: "251, 191, 36",
+    preview: "retro"
+  },
+  earth: {
+    name: "Earth",
+    isPremium: true,
+    description: "Natural earth tones for a grounded, organic feel",
+    primary: "#65a30d", // lime-600
+    secondary: "#92400e", // amber-800
+    accent: "#166534", // green-800
+    primaryRgb: "101, 163, 13",
+    secondaryRgb: "146, 64, 14",
+    accentRgb: "22, 101, 52",
+    preview: "earth"
+  },
+  galaxy: {
+    name: "Galaxy",
+    isPremium: true,
+    description: "Deep space colors inspired by celestial imagery",
+    primary: "#1e1b4b", // indigo-950
+    secondary: "#7e22ce", // purple-700
+    accent: "#3b82f6", // blue-500
+    primaryRgb: "30, 27, 75",
+    secondaryRgb: "126, 34, 206",
+    accentRgb: "59, 130, 246",
+    preview: "galaxy"
+  },
+  cherry: {
+    name: "Cherry",
+    isPremium: true,
+    description: "Rich red and pink tones inspired by cherry blossoms",
+    primary: "#be123c", // rose-700
+    secondary: "#e11d48", // rose-600
+    accent: "#fb7185", // rose-400
+    primaryRgb: "190, 18, 60",
+    secondaryRgb: "225, 29, 72",
+    accentRgb: "251, 113, 133",
+    preview: "cherry"
+  },
+  mint: {
+    name: "Mint",
+    isPremium: true,
+    description: "Refreshing mint greens for a clean, cool aesthetic",
+    primary: "#059669", // emerald-600
+    secondary: "#10b981", // emerald-500
+    accent: "#a7f3d0", // emerald-200
+    primaryRgb: "5, 150, 105",
+    secondaryRgb: "16, 185, 129",
+    accentRgb: "167, 243, 208",
+    preview: "mint"
+  },
+  coffee: {
+    name: "Coffee",
+    isPremium: true,
+    description: "Warm, rich coffee tones for a cozy experience",
+    primary: "#78350f", // amber-900
+    secondary: "#92400e", // amber-800
+    accent: "#d97706", // amber-600
+    primaryRgb: "120, 53, 15",
+    secondaryRgb: "146, 64, 14",
+    accentRgb: "217, 119, 6",
+    preview: "coffee"
+  },
+  electric: {
+    name: "Electric",
+    isPremium: true,
+    description: "High-energy electric blue and purple tones",
+    primary: "#2563eb", // blue-600
+    secondary: "#4f46e5", // indigo-600
+    accent: "#06b6d4", // cyan-500
+    primaryRgb: "37, 99, 235",
+    secondaryRgb: "79, 70, 229",
+    accentRgb: "6, 182, 212",
+    preview: "electric"
+  },
+  coral: {
+    name: "Coral",
+    isPremium: true,
+    description: "Vibrant coral and teal inspired by tropical reefs",
+    primary: "#f43f5e", // rose-500
+    secondary: "#0d9488", // teal-600
+    accent: "#fda4af", // rose-300
+    primaryRgb: "244, 63, 94",
+    secondaryRgb: "13, 148, 136",
+    accentRgb: "253, 164, 175",
+    preview: "coral"
+  },
+  lavender: {
+    name: "Lavender",
+    isPremium: true,
+    description: "Soft purple hues inspired by lavender fields",
+    primary: "#8b5cf6", // violet-500
+    secondary: "#a78bfa", // violet-400
+    accent: "#ddd6fe", // violet-200
+    primaryRgb: "139, 92, 246",
+    secondaryRgb: "167, 139, 250",
+    accentRgb: "221, 214, 254",
+    preview: "lavender"
+  },
+  ruby: {
+    name: "Ruby",
+    isPremium: true,
+    description: "Deep and rich red gemstone colors",
+    primary: "#b91c1c", // red-700
+    secondary: "#dc2626", // red-600
+    accent: "#fca5a5", // red-300
+    primaryRgb: "185, 28, 28",
+    secondaryRgb: "220, 38, 38",
+    accentRgb: "252, 165, 165",
+    preview: "ruby"
+  },
+  aqua: {
+    name: "Aqua",
+    isPremium: true,
+    description: "Refreshing aquatic blues and greens",
+    primary: "#0891b2", // cyan-600
+    secondary: "#0ea5e9", // sky-500
+    accent: "#67e8f9", // cyan-300
+    primaryRgb: "8, 145, 178",
+    secondaryRgb: "14, 165, 233",
+    accentRgb: "103, 232, 249",
+    preview: "aqua"
+  },
+  citrus: {
+    name: "Citrus",
+    isPremium: true,
+    description: "Energizing lemon and lime colors",
+    primary: "#ca8a04", // yellow-600
+    secondary: "#65a30d", // lime-600
+    accent: "#fef08a", // yellow-200
+    primaryRgb: "202, 138, 4",
+    secondaryRgb: "101, 163, 13",
+    accentRgb: "254, 240, 138",
+    preview: "citrus"
+  },
+  // Add 10 new premium themes here
+  neonPink: {
+    name: "Neon Pink",
+    isPremium: true,
+    description: "Bold neon pink with vibrant accents",
+    primary: "#ec4899", // pink-500
+    secondary: "#8b5cf6", // violet-500
+    accent: "#10b981", // emerald-500
+    primaryRgb: "236, 72, 153",
+    secondaryRgb: "139, 92, 246",
+    accentRgb: "16, 185, 129",
+    preview: "neonPink"
+  },
+  deepOcean: {
+    name: "Deep Ocean",
+    isPremium: true,
+    description: "Dark blue hues inspired by the depths of the ocean",
+    primary: "#1e3a8a", // blue-900
+    secondary: "#0f766e", // teal-700
+    accent: "#0c4a6e", // sky-900
+    primaryRgb: "30, 58, 138",
+    secondaryRgb: "15, 118, 110",
+    accentRgb: "12, 74, 110",
+    preview: "deepOcean"
+  },
+  goldRush: {
+    name: "Gold Rush",
+    isPremium: true,
+    description: "Luxurious gold and brown tones for elegance",
+    primary: "#b45309", // amber-700
+    secondary: "#92400e", // amber-800
+    accent: "#fbbf24", // amber-400
+    primaryRgb: "180, 83, 9",
+    secondaryRgb: "146, 64, 14",
+    accentRgb: "251, 191, 36",
+    preview: "goldRush"
+  },
+  ultraViolet: {
+    name: "Ultra Violet",
+    isPremium: true,
+    description: "Rich purple and violet shades with cosmic vibes",
+    primary: "#7e22ce", // purple-700
+    secondary: "#4c1d95", // purple-900
+    accent: "#a78bfa", // violet-400
+    primaryRgb: "126, 34, 206",
+    secondaryRgb: "76, 29, 149",
+    accentRgb: "167, 139, 250",
+    preview: "ultraViolet"
+  },
+  matcha: {
+    name: "Matcha",
+    isPremium: true,
+    description: "Soothing green tones inspired by Japanese tea culture",
+    primary: "#15803d", // green-700
+    secondary: "#4d7c0f", // lime-700
+    accent: "#a3e635", // lime-400
+    primaryRgb: "21, 128, 61",
+    secondaryRgb: "77, 124, 15",
+    accentRgb: "163, 230, 53",
+    preview: "matcha"
+  },
+  iceCream: {
+    name: "Ice Cream",
+    isPremium: true,
+    description: "Sweet pastel colors reminiscent of dessert treats",
+    primary: "#f472b6", // pink-400
+    secondary: "#a78bfa", // violet-400
+    accent: "#93c5fd", // blue-300
+    primaryRgb: "244, 114, 182",
+    secondaryRgb: "167, 139, 250",
+    accentRgb: "147, 197, 253",
+    preview: "iceCream"
+  },
+  cyberpunk: {
+    name: "Cyberpunk",
+    isPremium: true,
+    description: "Futuristic neon colors inspired by cyberpunk aesthetics",
+    primary: "#f43f5e", // rose-500
+    secondary: "#6366f1", // indigo-500
+    accent: "#22d3ee", // cyan-400
+    primaryRgb: "244, 63, 94",
+    secondaryRgb: "99, 102, 241",
+    accentRgb: "34, 211, 238",
+    preview: "cyberpunk"
+  },
+  desert: {
+    name: "Desert",
+    isPremium: true,
+    description: "Warm sand tones and sunset hues of arid landscapes",
+    primary: "#d97706", // amber-600
+    secondary: "#b45309", // amber-700
+    accent: "#f97316", // orange-500
+    primaryRgb: "217, 119, 6",
+    secondaryRgb: "180, 83, 9",
+    accentRgb: "249, 115, 22",
+    preview: "desert"
+  },
+  moonlight: {
+    name: "Moonlight",
+    isPremium: true,
+    description: "Ethereal silver and blue tones inspired by moonlit nights",
+    primary: "#64748b", // slate-500
+    secondary: "#475569", // slate-600
+    accent: "#94a3b8", // slate-400
+    primaryRgb: "100, 116, 139",
+    secondaryRgb: "71, 85, 105",
+    accentRgb: "148, 163, 184",
+    preview: "moonlight"
+  },
+  fireTech: {
+    name: "Fire Tech",
+    isPremium: true,
+    description: "Bold red and orange with high contrast for tech intensity",
+    primary: "#dc2626", // red-600
+    secondary: "#ea580c", // orange-600
+    accent: "#fbbf24", // amber-400
+    primaryRgb: "220, 38, 38",
+    secondaryRgb: "234, 88, 12",
+    accentRgb: "251, 191, 36",
+    preview: "fireTech"
   }
 };
 
@@ -220,23 +581,13 @@ export function ThemeProvider({ children }) {
 
   // Load theme settings from backend on component mount
   useEffect(() => {
-    // Only fetch themes if user is logged in
     const token = localStorage.getItem("token");
+    
     if (!token) {
-      // If not logged in, use localStorage for theme settings
-      const savedTheme = localStorage.getItem("theme") || "light";
-      const savedPremiumTheme = localStorage.getItem("premiumTheme") || "default";
-      
-      try {
-        const savedUnlockedThemes = JSON.parse(localStorage.getItem("unlockedThemes") || '["default"]');
-        setUnlockedThemes(savedUnlockedThemes);
-      } catch (err) {
-        console.error("Error parsing unlocked themes from localStorage:", err);
-        setUnlockedThemes(["default"]);
-      }
-      
-      setTheme(savedTheme);
-      setPremiumTheme(savedPremiumTheme);
+      // Set default theme when not logged in
+      setTheme("light");
+      setPremiumTheme("default");
+      setUnlockedThemes(["default"]);
       setLoading(false);
       return;
     }
@@ -250,8 +601,7 @@ export function ThemeProvider({ children }) {
         if (response.ok) {
           const data = await response.json();
           
-          // Always prioritize the backed theme settings over localStorage
-          // to ensure user gets their own themes, not the previous user's
+          // Get theme settings from backend
           const backendThemeMode = data.theme || "light";
           const backendPremiumTheme = data.premium_theme || "default";
           const backendUnlockedThemes = data.unlocked_themes || ["default"];
@@ -261,37 +611,36 @@ export function ThemeProvider({ children }) {
           setPremiumTheme(backendPremiumTheme);
           setUnlockedThemes(backendUnlockedThemes);
           
-          // Update localStorage with backend data
-          localStorage.setItem("theme", backendThemeMode);
-          localStorage.setItem("premiumTheme", backendPremiumTheme);
-          localStorage.setItem("unlockedThemes", JSON.stringify(backendUnlockedThemes));
+          // Apply the theme immediately
+          const root = window.document.documentElement;
+          root.classList.remove("light", "dark");
+          root.classList.add(backendThemeMode);
           
-          console.log("Theme settings synchronized from backend:", {
+          const currentTheme = premiumThemes[backendPremiumTheme] || premiumThemes.default;
+          root.style.setProperty('--color-primary', currentTheme.primary);
+          root.style.setProperty('--color-secondary', currentTheme.secondary);
+          root.style.setProperty('--color-accent', currentTheme.accent);
+          root.style.setProperty('--color-primary-rgb', currentTheme.primaryRgb);
+          root.style.setProperty('--color-secondary-rgb', currentTheme.secondaryRgb);
+          root.style.setProperty('--color-accent-rgb', currentTheme.accentRgb);
+          
+          console.log("Theme settings loaded from backend:", {
             mode: backendThemeMode,
             premiumTheme: backendPremiumTheme,
             unlockedThemes: backendUnlockedThemes
           });
         } else {
-          // If API fails, use localStorage
-          const savedTheme = localStorage.getItem("theme") || "light";
-          const savedPremiumTheme = localStorage.getItem("premiumTheme") || "default";
-          const savedUnlockedThemes = JSON.parse(localStorage.getItem("unlockedThemes") || '["default"]');
-          
-          setTheme(savedTheme);
-          setPremiumTheme(savedPremiumTheme);
-          setUnlockedThemes(savedUnlockedThemes);
+          // If API fails, use defaults
+          setTheme("light");
+          setPremiumTheme("default");
+          setUnlockedThemes(["default"]);
         }
       } catch (err) {
         console.error("Error fetching theme settings:", err);
-        
-        // Use localStorage as fallback
-        const savedTheme = localStorage.getItem("theme") || "light";
-        const savedPremiumTheme = localStorage.getItem("premiumTheme") || "default";
-        const savedUnlockedThemes = JSON.parse(localStorage.getItem("unlockedThemes") || '["default"]');
-        
-        setTheme(savedTheme);
-        setPremiumTheme(savedPremiumTheme);
-        setUnlockedThemes(savedUnlockedThemes);
+        // Use defaults
+        setTheme("light");
+        setPremiumTheme("default");
+        setUnlockedThemes(["default"]);
       } finally {
         setLoading(false);
       }
@@ -342,58 +691,87 @@ export function ThemeProvider({ children }) {
     }
   }, [isAdmin, loading]);
 
-  const toggleTheme = async () => {
-    const newTheme = theme === "light" ? "dark" : "light";
-    setTheme(newTheme); // Update local state immediately for responsive UI
-    
-    // Only update backend if user is logged in
-    const token = localStorage.getItem("token");
-    if (token) {
-      try {
-        const response = await fetchWithTokenRefresh("/user/themes/mode", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ theme_mode: newTheme }),
-        });
-        
-        if (!response.ok) {
-          console.error("Failed to update theme mode in backend");
-          // We don't revert the UI since it's not critical
-        }
-      } catch (error) {
-        console.error("Error updating theme mode:", error);
-      }
-    }
-  };
-
-  const setThemeMode = async (mode) => {
-    if (mode === "light" || mode === "dark") {
-      setTheme(mode); // Update local state immediately
-      
-      // Only update backend if user is logged in
+  // Add token change listener
+  useEffect(() => {
+    const handleTokenChange = () => {
       const token = localStorage.getItem("token");
-      if (token) {
-        try {
-          const response = await fetchWithTokenRefresh("/user/themes/mode", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ theme_mode: mode }),
-          });
-          
-          if (!response.ok) {
-            console.error("Failed to update theme mode in backend");
+      if (!token) {
+        // Reset to defaults when logged out
+        setTheme("light");
+        setPremiumTheme("default");
+        setUnlockedThemes(["default"]);
+        
+        // Apply default theme
+        const root = window.document.documentElement;
+        root.classList.remove("light", "dark");
+        root.classList.add("light");
+        
+        const defaultTheme = premiumThemes.default;
+        root.style.setProperty('--color-primary', defaultTheme.primary);
+        root.style.setProperty('--color-secondary', defaultTheme.secondary);
+        root.style.setProperty('--color-accent', defaultTheme.accent);
+        root.style.setProperty('--color-primary-rgb', defaultTheme.primaryRgb);
+        root.style.setProperty('--color-secondary-rgb', defaultTheme.secondaryRgb);
+        root.style.setProperty('--color-accent-rgb', defaultTheme.accentRgb);
+      } else {
+        // Fetch new user's theme settings when logged in
+        const fetchThemeSettings = async () => {
+          try {
+            setLoading(true);
+            const response = await fetchWithTokenRefresh("/user/themes");
+            
+            if (response.ok) {
+              const data = await response.json();
+              
+              // Get theme settings from backend
+              const backendThemeMode = data.theme || "light";
+              const backendPremiumTheme = data.premium_theme || "default";
+              const backendUnlockedThemes = data.unlocked_themes || ["default"];
+              
+              // Set the state with backend data
+              setTheme(backendThemeMode);
+              setPremiumTheme(backendPremiumTheme);
+              setUnlockedThemes(backendUnlockedThemes);
+              
+              // Apply the theme immediately
+              const root = window.document.documentElement;
+              root.classList.remove("light", "dark");
+              root.classList.add(backendThemeMode);
+              
+              const currentTheme = premiumThemes[backendPremiumTheme] || premiumThemes.default;
+              root.style.setProperty('--color-primary', currentTheme.primary);
+              root.style.setProperty('--color-secondary', currentTheme.secondary);
+              root.style.setProperty('--color-accent', currentTheme.accent);
+              root.style.setProperty('--color-primary-rgb', currentTheme.primaryRgb);
+              root.style.setProperty('--color-secondary-rgb', currentTheme.secondaryRgb);
+              root.style.setProperty('--color-accent-rgb', currentTheme.accentRgb);
+            }
+          } catch (err) {
+            console.error("Error fetching theme settings:", err);
+            // Reset to defaults on error
+            setTheme("light");
+            setPremiumTheme("default");
+            setUnlockedThemes(["default"]);
+          } finally {
+            setLoading(false);
           }
-        } catch (error) {
-          console.error("Error updating theme mode:", error);
-        }
+        };
+        
+        fetchThemeSettings();
       }
-    }
-  };
-  
+    };
+
+    // Listen for storage events to detect token changes
+    window.addEventListener('storage', handleTokenChange);
+    
+    // Also run once on mount
+    handleTokenChange();
+    
+    return () => {
+      window.removeEventListener('storage', handleTokenChange);
+    };
+  }, []);
+
   // Function to change the premium theme
   const changePremiumTheme = async (themeKey) => {
     // Check if theme exists
@@ -426,6 +804,16 @@ export function ThemeProvider({ children }) {
             toast.error(data.detail || "Failed to update premium theme");
             return false;
           }
+          
+          // Apply the theme immediately after successful backend update
+          const currentTheme = premiumThemes[themeKey] || premiumThemes.default;
+          const root = window.document.documentElement;
+          root.style.setProperty('--color-primary', currentTheme.primary);
+          root.style.setProperty('--color-secondary', currentTheme.secondary);
+          root.style.setProperty('--color-accent', currentTheme.accent);
+          root.style.setProperty('--color-primary-rgb', currentTheme.primaryRgb);
+          root.style.setProperty('--color-secondary-rgb', currentTheme.secondaryRgb);
+          root.style.setProperty('--color-accent-rgb', currentTheme.accentRgb);
         } catch (error) {
           console.error("Error updating premium theme:", error);
           return false;
@@ -436,6 +824,63 @@ export function ThemeProvider({ children }) {
     
     toast.error("You must unlock this theme first");
     return false;
+  };
+
+  // Function to toggle theme mode
+  const toggleTheme = async () => {
+    const newTheme = theme === "light" ? "dark" : "light";
+    setTheme(newTheme); // Update local state immediately
+    
+    // Only update backend if user is logged in
+    const token = localStorage.getItem("token");
+    if (token) {
+      try {
+        const response = await fetchWithTokenRefresh("/user/themes/mode", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ theme_mode: newTheme }),
+        });
+        
+        if (!response.ok) {
+          console.error("Failed to update theme mode in backend");
+        } else {
+          // Apply the theme immediately after successful backend update
+          const root = window.document.documentElement;
+          root.classList.remove("light", "dark");
+          root.classList.add(newTheme);
+        }
+      } catch (error) {
+        console.error("Error updating theme mode:", error);
+      }
+    }
+  };
+
+  const setThemeMode = async (mode) => {
+    if (mode === "light" || mode === "dark") {
+      setTheme(mode); // Update local state immediately
+      
+      // Only update backend if user is logged in
+      const token = localStorage.getItem("token");
+      if (token) {
+        try {
+          const response = await fetchWithTokenRefresh("/user/themes/mode", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ theme_mode: mode }),
+          });
+          
+          if (!response.ok) {
+            console.error("Failed to update theme mode in backend");
+          }
+        } catch (error) {
+          console.error("Error updating theme mode:", error);
+        }
+      }
+    }
   };
   
   // Function to unlock a premium theme
@@ -606,15 +1051,29 @@ export function ThemeProvider({ children }) {
 
   // Add a function to clear theme storage on logout
   const clearThemeStorage = useCallback(() => {
-    // Reset to defaults in localStorage
-    localStorage.setItem("theme", "light");
-    localStorage.setItem("premiumTheme", "default");
-    localStorage.setItem("unlockedThemes", JSON.stringify(["default"]));
+    // Clear all theme-related items from localStorage
+    localStorage.removeItem("theme");
+    localStorage.removeItem("premiumTheme");
+    localStorage.removeItem("unlockedThemes");
     
-    // Update state
+    // Reset to defaults
     setTheme("light");
     setPremiumTheme("default");
     setUnlockedThemes(["default"]);
+    
+    // Apply default theme immediately
+    const root = window.document.documentElement;
+    root.classList.remove("light", "dark");
+    root.classList.add("light");
+    
+    // Reset CSS variables to default theme
+    const defaultTheme = premiumThemes.default;
+    root.style.setProperty('--color-primary', defaultTheme.primary);
+    root.style.setProperty('--color-secondary', defaultTheme.secondary);
+    root.style.setProperty('--color-accent', defaultTheme.accent);
+    root.style.setProperty('--color-primary-rgb', defaultTheme.primaryRgb);
+    root.style.setProperty('--color-secondary-rgb', defaultTheme.secondaryRgb);
+    root.style.setProperty('--color-accent-rgb', defaultTheme.accentRgb);
     
     console.log("Theme settings reset to defaults");
   }, []);
@@ -623,106 +1082,10 @@ export function ThemeProvider({ children }) {
     <ThemeContext.Provider
       value={{
         theme,
-        toggleTheme: () => {
-          const newTheme = theme === "light" ? "dark" : "light";
-          setTheme(newTheme);
-          localStorage.setItem("theme", newTheme);
-        },
-        setThemeMode: (mode) => {
-          setTheme(mode);
-          localStorage.setItem("theme", mode);
-        },
+        toggleTheme,
+        setThemeMode,
         premiumTheme,
-        changePremiumTheme: (newTheme) => {
-          setPremiumTheme(newTheme);
-          localStorage.setItem("premiumTheme", newTheme);
-        },
-        unlockTheme: async (themeKey) => {
-          if (!premiumThemes[themeKey]) {
-            console.error(`Theme ${themeKey} not found`);
-            return false;
-          }
-          
-          try {
-            // Update backend if user is logged in
-            const token = localStorage.getItem("token");
-            if (token) {
-              const response = await fetchWithTokenRefresh("/user/themes/unlock", {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json"
-                },
-                body: JSON.stringify({ theme_key: themeKey })
-              });
-              
-              if (!response.ok) {
-                console.error("Failed to unlock theme in backend");
-                return false;
-              }
-              
-              // Get updated unlocked themes from response
-              const data = await response.json();
-              const updatedUnlockedThemes = data.unlocked_themes || [];
-              setUnlockedThemes(updatedUnlockedThemes);
-              
-              // Save to localStorage
-              localStorage.setItem("unlockedThemes", JSON.stringify(updatedUnlockedThemes));
-              return true;
-            }
-            
-            // Handle unlocking theme locally if not logged in
-            if (!unlockedThemes.includes(themeKey)) {
-              const updatedUnlockedThemes = [...unlockedThemes, themeKey];
-              setUnlockedThemes(updatedUnlockedThemes);
-              localStorage.setItem("unlockedThemes", JSON.stringify(updatedUnlockedThemes));
-            }
-            
-            return true;
-          } catch (error) {
-            console.error("Error unlocking theme:", error);
-            return false;
-          }
-        },
-        unlockAllThemes: async () => {
-          try {
-            // Get all premium theme keys
-            const allThemeKeys = Object.keys(premiumThemes);
-            
-            // Update backend if user is logged in
-            const token = localStorage.getItem("token");
-            if (token) {
-              const response = await fetchWithTokenRefresh("/user/themes/unlock-all", {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json"
-                }
-              });
-              
-              if (!response.ok) {
-                console.error("Failed to unlock all themes in backend");
-                return false;
-              }
-              
-              // Get updated unlocked themes from response
-              const data = await response.json();
-              const updatedUnlockedThemes = data.unlocked_themes || [];
-              setUnlockedThemes(updatedUnlockedThemes);
-              
-              // Save to localStorage
-              localStorage.setItem("unlockedThemes", JSON.stringify(updatedUnlockedThemes));
-              return true;
-            }
-            
-            // Handle unlocking all themes locally if not logged in
-            setUnlockedThemes(allThemeKeys);
-            localStorage.setItem("unlockedThemes", JSON.stringify(allThemeKeys));
-            
-            return true;
-          } catch (error) {
-            console.error("Error unlocking all themes:", error);
-            return false;
-          }
-        },
+        changePremiumTheme,
         unlockedThemes,
         premiumThemes,
         isAdmin,
@@ -730,7 +1093,9 @@ export function ThemeProvider({ children }) {
         applyTheme,
         synchronizeThemes,
         checkThemeAccess,
-        clearThemeStorage
+        clearThemeStorage,
+        unlockTheme,
+        unlockAllThemes
       }}
     >
       {children}
