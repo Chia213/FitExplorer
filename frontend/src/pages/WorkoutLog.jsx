@@ -4227,6 +4227,98 @@ const WorkoutLog = () => {
           }}
         />
       )}
+
+      {/* Workout History Modal */}
+      {showHistory && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-4xl w-full p-6 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                Workout History
+              </h2>
+              <button
+                onClick={() => setShowHistory(false)}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
+              >
+                <FaTimes />
+              </button>
+            </div>
+            
+            <div className="mb-4">
+              <div className="overflow-x-auto">
+                <table className="min-w-full bg-white dark:bg-gray-800 rounded-lg">
+                  <thead className="bg-gray-100 dark:bg-gray-700">
+                    <tr>
+                      <th className="py-2 px-4 text-left">Date</th>
+                      <th className="py-2 px-4 text-left">Workout</th>
+                      <th className="py-2 px-4 text-center">Duration</th>
+                      <th className="py-2 px-4 text-center">Exercises</th>
+                      <th className="py-2 px-4 text-center">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {workoutHistory.length > 0 ? (
+                      workoutHistory
+                        .sort((a, b) => new Date(b.start_time) - new Date(a.start_time))
+                        .slice(0, 10)
+                        .map((workout, idx) => {
+                          const duration = workout.end_time ? 
+                            ((new Date(workout.end_time) - new Date(workout.start_time)) / (1000 * 60)).toFixed(0) + " min" : 
+                            "--";
+                          
+                          return (
+                            <tr key={idx} className="border-b border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700">
+                              <td className="py-3 px-4">{formatDateForDisplay(workout.start_time)}</td>
+                              <td className="py-3 px-4">{workout.name || "Unnamed Workout"}</td>
+                              <td className="py-3 px-4 text-center">{duration}</td>
+                              <td className="py-3 px-4 text-center">{workout.exercises?.length || 0}</td>
+                              <td className="py-3 px-4 text-center">
+                                <button
+                                  onClick={() => {
+                                    // Reuse routine feature to load the workout as a new workout
+                                    handleSelectRoutine({
+                                      name: workout.name,
+                                      workout: {
+                                        exercises: workout.exercises || []
+                                      }
+                                    });
+                                    setShowHistory(false);
+                                  }}
+                                  className="bg-blue-500 hover:bg-blue-600 text-white py-1 px-2 rounded mr-2 text-sm"
+                                >
+                                  Load
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })
+                    ) : (
+                      <tr>
+                        <td colSpan="5" className="py-4 text-center text-gray-500 dark:text-gray-400">
+                          No workout history found.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            
+            <div className="text-center">
+              <button
+                onClick={() => {
+                  setShowHistory(false);
+                  navigate("/workout-history");
+                }}
+                className="bg-indigo-500 hover:bg-indigo-600 text-white py-2 px-4 rounded-lg inline-flex items-center"
+              >
+                <FaHistory className="mr-2" />
+                View Full History
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

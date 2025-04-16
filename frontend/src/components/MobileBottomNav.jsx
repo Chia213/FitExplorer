@@ -10,6 +10,8 @@ const MobileBottomNav = () => {
   const [isMobile, setIsMobile] = React.useState(false);
   // Track iOS specifically
   const [isIOS, setIsIOS] = React.useState(false);
+  // Check if in standalone mode
+  const [isStandalone, setIsStandalone] = React.useState(false);
   
   React.useEffect(() => {
     // Check if device is mobile
@@ -21,6 +23,11 @@ const MobileBottomNav = () => {
     const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
                (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     setIsIOS(iOS);
+    
+    // Check if we're in standalone/PWA mode
+    const standalone = window.matchMedia('(display-mode: standalone)').matches ||
+                       window.navigator.standalone === true;
+    setIsStandalone(standalone);
     
     // Initial check
     checkMobile();
@@ -37,9 +44,25 @@ const MobileBottomNav = () => {
     return null;
   }
   
-  // Check if the app is running in standalone mode (installed PWA)
-  const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
-                      window.navigator.standalone === true;
+  // Styling for the bottom navigation based on device
+  const navStyles = {
+    // Base styling with safe area padding
+    paddingBottom: `calc(0.5rem + env(safe-area-inset-bottom, 0px))`,
+    // Add height that accommodates iOS home indicator
+    height: isStandalone ? `calc(4rem + env(safe-area-inset-bottom, 0px))` : '4rem',
+    // Special iOS styling
+    backdropFilter: isIOS ? 'blur(10px)' : 'none',
+    WebkitBackdropFilter: isIOS ? 'blur(10px)' : 'none',
+    backgroundColor: isIOS 
+      ? (document.documentElement.classList.contains('dark') 
+          ? 'rgba(31, 41, 55, 0.8)' 
+          : 'rgba(255, 255, 255, 0.8)')
+      : '',
+    borderTop: isIOS ? 'none' : '1px solid',
+    borderTopColor: document.documentElement.classList.contains('dark') 
+      ? 'rgba(75, 85, 99, 0.4)' 
+      : 'rgba(229, 231, 235, 0.8)'
+  };
   
   // Navigation items for the bottom nav
   const navItems = [
@@ -50,37 +73,13 @@ const MobileBottomNav = () => {
     { path: '/profile', icon: <FaUser className="w-6 h-6" />, label: 'Profile' }
   ];
   
-  // Consistent styles for iOS and Android
-  const safeAreaStyles = {
-    paddingBottom: 'env(safe-area-inset-bottom, 0px)',
-    height: isStandalone ? 'calc(5rem + env(safe-area-inset-bottom, 0px))' : '5rem',
-  };
-  
-  // Add iOS-specific styles
-  const iosStyles = isIOS ? {
-    backdropFilter: 'blur(10px)',
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    dark: {
-      backgroundColor: 'rgba(31, 41, 55, 0.8)'
-    }
-  } : {};
-  
   return (
     <motion.nav 
       initial={{ y: 100 }}
       animate={{ y: 0 }}
       transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-      className={`fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-gray-800 border-t border-gray-300 dark:border-gray-600 flex justify-around items-center px-2 md:hidden shadow-lg ${isStandalone ? 'bottom-nav' : ''}`}
-      style={{ 
-        paddingBottom: safeAreaStyles.paddingBottom,
-        height: safeAreaStyles.height,
-        backdropFilter: isIOS ? iosStyles.backdropFilter : 'none',
-        backgroundColor: isIOS 
-          ? (document.documentElement.classList.contains('dark') 
-            ? iosStyles.dark.backgroundColor 
-            : iosStyles.backgroundColor)
-          : ''
-      }}
+      className={`fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-gray-800 flex justify-around items-center px-2 md:hidden shadow-lg ${isStandalone ? 'pwa-bottom-nav' : ''}`}
+      style={navStyles}
     >
       {navItems.map((item) => {
         const isActive = location.pathname === item.path || 
@@ -90,7 +89,7 @@ const MobileBottomNav = () => {
           <Link
             key={item.path}
             to={item.path}
-            className={`flex flex-col items-center justify-center w-full h-full`}
+            className={`flex flex-col items-center justify-center w-full h-full py-2`}
             onClick={() => {
               // Trigger haptic feedback on navigation if available
               if (navigator.vibrate) {
@@ -99,7 +98,7 @@ const MobileBottomNav = () => {
             }}
           >
             <div className="relative flex flex-col items-center">
-              <div className={`p-1.5 rounded-full transition-colors ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-gray-600 dark:text-gray-400'}`}>
+              <div className={`rounded-full transition-colors ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-gray-600 dark:text-gray-400'}`}>
                 {item.icon}
                 
                 {isActive && (

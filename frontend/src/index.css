@@ -532,19 +532,26 @@ body {
 
 /* Special styles for standalone PWA mode */
 body.pwa-standalone-mode {
-  /* Ensure the app takes up the full screen */
-  position: fixed;
-  width: 100%;
+  /* Remove fixed position that prevents scrolling */
+  position: relative;
   height: 100%;
-  overflow: auto;
+  width: 100%;
+  overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  overscroll-behavior-y: none;
+  overscroll-behavior-y: contain;
+  /* Add padding for safe areas */
+  padding-top: env(safe-area-inset-top, 0);
+  padding-bottom: env(safe-area-inset-bottom, 0);
+  padding-left: env(safe-area-inset-left, 0);
+  padding-right: env(safe-area-inset-right, 0);
 }
 
 /* Tweak layout in standalone mode */
 body.pwa-standalone-mode .workout-log-container {
   padding-top: env(safe-area-inset-top, 0);
   padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0));
+  height: auto;
+  overflow-y: auto;
 }
 
 /* Fix height for workout items in standalone mode */
@@ -602,5 +609,70 @@ body.pwa-standalone-mode .bottom-nav {
   
   body.pwa-standalone-mode .exercise-card {
     background: #1f2937;
+  }
+}
+
+/* PWA-specific styles */
+@media (display-mode: standalone), (display-mode: fullscreen), (display-mode: minimal-ui) {
+  html {
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+  }
+  
+  body {
+    position: relative; /* Allow scrolling behavior */
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow-y: auto; /* Enable vertical scrolling */
+    -webkit-overflow-scrolling: touch; /* For smooth iOS scrolling */
+    
+    /* Add safe area insets for devices with notches */
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding-left: env(safe-area-inset-left, 0px);
+  }
+
+  /* Adjust main content area to account for bottom navigation */
+  main, .content-container, #root > div {
+    padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
+    min-height: 100%;
+    overflow-y: auto;
+  }
+  
+  /* Class for the PWA bottom nav */
+  .pwa-bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+  }
+}
+
+/* Extra iOS-specific fixes for PWA mode */
+@supports (-webkit-touch-callout: none) {
+  /* iOS devices */
+  @media (display-mode: standalone) {
+    /* Fix for iOS safari bottom bar in PWA mode */
+    body {
+      /* Prevent unnecessary bounce/rubber-band effect */
+      overscroll-behavior-y: none;
+    }
+    
+    /* Ensure content fills the screen properly */
+    #root {
+      height: 100vh;
+      height: -webkit-fill-available;
+    }
+    
+    /* Fix for workout log and other pages with lots of content */
+    .workout-log-container, .exercise-list, .history-container {
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: calc(5rem + env(safe-area-inset-bottom, 20px));
+    }
   }
 }
