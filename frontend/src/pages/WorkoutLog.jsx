@@ -2150,16 +2150,50 @@ const WorkoutLog = () => {
 
   return (
     <div className="workout-log-container p-4 md:p-6 pb-32">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Workout Log</h1>
-        <div className="flex space-x-2">
+      <div className="flex flex-col sm:flex-row justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4 sm:mb-0">Workout Log</h1>
+        <div className="flex space-x-2 w-full sm:w-auto">
+          <button
+            onClick={() => setShowHistory(true)}
+            className="bg-indigo-500 hover:bg-indigo-400 text-white py-2 px-4 rounded-lg text-sm md:text-base flex items-center justify-center"
+            title="View Workout History"
+          >
+            <FaHistory className="sm:mr-1" />
+            <span className="hidden sm:inline">History</span>
+          </button>
+          
+          <button
+            onClick={() => {
+              fetchRoutines();
+              setShowRoutinesSelector(true);
+            }}
+            className="bg-blue-500 hover:bg-blue-400 text-white py-2 px-4 rounded-lg text-sm md:text-base flex items-center justify-center"
+            title="Select Routine"
+          >
+            <FaListAlt className="sm:mr-1" />
+            <span className="hidden sm:inline">Routines</span>
+          </button>
+          
           <button
             onClick={() => setShowExerciseSelection(true)}
-            className="bg-teal-500 hover:bg-teal-400 text-white py-2 px-4 rounded-lg text-sm md:text-base flex items-center"
+            className="bg-teal-500 hover:bg-teal-400 text-white py-2 px-4 rounded-lg text-sm md:text-base flex items-center justify-center"
+            title="Add Exercise"
           >
-            <FaDumbbell className="mr-1 text-xs" /> Add Exercise
+            <FaDumbbell className="sm:mr-1" />
+            <span className="hidden sm:inline">Add Exercise</span>
           </button>
         </div>
+      </div>
+
+      {/* Workout name input */}
+      <div className="mb-4">
+        <input
+          type="text"
+          value={workoutName}
+          onChange={(e) => setWorkoutName(e.target.value)}
+          placeholder="Workout Name"
+          className="w-full p-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-lg font-semibold"
+        />
       </div>
 
       <div className="w-full max-w-lg bg-white dark:bg-gray-800 p-4 rounded-lg mt-4 space-y-4">
@@ -2256,7 +2290,7 @@ const WorkoutLog = () => {
           {/* Exercise header */}
           <div className="flex flex-wrap items-center mb-2">
             <div className="flex-grow mr-2 mb-2 sm:mb-0">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white" data-sets={`${exercise.sets.length} set${exercise.sets.length !== 1 ? 's' : ''}`}>
                 {exercise.name}
               </h3>
               <span className="text-sm text-gray-600 dark:text-gray-400">
@@ -2347,9 +2381,9 @@ const WorkoutLog = () => {
           {!collapsedExercises[exerciseIndex] && (
             <>
               {/* Exercise sets section */}
-              <div className="mt-3">
+              <div className="mt-3 exercise-set-container">
                 {/* Set headers for each column */}
-                <div className={`grid ${exercise.is_cardio ? 'grid-cols-4' : 'grid-cols-4'} gap-1 text-sm font-semibold mb-1 text-gray-600 dark:text-gray-300 items-center px-1`}>
+                <div className={`grid ${exercise.is_cardio ? 'grid-cols-4' : 'grid-cols-4'} gap-1 text-sm font-semibold mb-1 text-gray-600 dark:text-gray-300 items-center px-1 set-headers`}>
                   {!exercise.is_cardio ? (
                     <>
                       <div>Weight ({weightUnit})</div>
@@ -2368,200 +2402,134 @@ const WorkoutLog = () => {
                 </div>
 
                 {/* Exercise sets */}
-                {exercise.sets.map((set, setIndex) => (
-                  <div 
-                    key={`${exercise.name}-${exerciseIndex}-${setIndex}`}
-                    className={`set-row ${
-                      set.is_warmup ? "border-l-4 border-yellow-500" : ""
-                    } ${
-                      set.is_drop_set ? "border-l-4 border-purple-500" : ""
-                    } ${
-                      set.is_superset ? "border-l-4 border-blue-500" : ""
-                    } ${
-                      set.is_amrap ? "border-l-4 border-green-500" : ""
-                    } ${
-                      set.is_restpause ? "border-l-4 border-red-500" : ""
-                    }`}
-                  >
-                    {!exercise.is_cardio ? (
-                      <>
-                        <div>
-                          <input
-                            type="number"
-                            value={set.weight}
-                            onChange={(e) =>
-                              handleEditSet(
-                                exerciseIndex,
-                                setIndex,
-                                "weight",
-                                e.target.value
-                              )
-                            }
-                            placeholder="0"
-                            className="w-full p-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm"
-                          />
-                        </div>
-                        <div>
-                          <input
-                            type="number"
-                            value={set.reps}
-                            onChange={(e) =>
-                              handleEditSet(
-                                exerciseIndex,
-                                setIndex,
-                                "reps",
-                                e.target.value
-                              )
-                            }
-                            placeholder="0"
-                            className="w-full p-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm"
-                          />
-                        </div>
-                        
-                        <div className="flex-col text-center">
-                          {/* Set type indicators */}
-                          <div className="flex flex-wrap gap-1 justify-center">
+                <div className="exercise-sets">
+                  {exercise.sets.map((set, setIndex) => (
+                    <div key={setIndex} className="set-row">
+                      {!exercise.is_cardio ? (
+                        <>
+                          <div>
+                            <input
+                              type="number"
+                              value={set.weight}
+                              onChange={(e) =>
+                                handleEditSet(
+                                  exerciseIndex,
+                                  setIndex,
+                                  "weight",
+                                  e.target.value
+                                )
+                              }
+                              placeholder="0"
+                              className="w-full p-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm weight-input"
+                            />
+                          </div>
+                          <div>
+                            <input
+                              type="number"
+                              value={set.reps}
+                              onChange={(e) =>
+                                handleEditSet(
+                                  exerciseIndex,
+                                  setIndex,
+                                  "reps",
+                                  e.target.value
+                                )
+                              }
+                              placeholder="0"
+                              className="w-full p-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm reps-input"
+                            />
+                          </div>
+                          <div className="text-center">
                             {set.is_warmup && (
-                              <span className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100 text-xs px-1 py-0.5 rounded">
-                                Warm
+                              <span className="bg-yellow-200 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 text-xs py-1 px-2 rounded-full">
+                                Warm-up
                               </span>
                             )}
                             {set.is_drop_set && (
-                              <span className="bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-100 text-xs px-1 py-0.5 rounded">
-                                Drop
+                              <span className="bg-red-200 text-red-800 dark:bg-red-900 dark:text-red-200 text-xs py-1 px-2 rounded-full">
+                                Drop {set.drop_number}
                               </span>
                             )}
-                            {set.is_superset && (
-                              <span className="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100 text-xs px-1 py-0.5 rounded">
-                                Super
-                              </span>
-                            )}
-                            {set.is_amrap && (
-                              <span className="bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-100 text-xs px-1 py-0.5 rounded">
-                                AMRAP
-                              </span>
-                            )}
-                            {set.is_restpause && (
-                              <span className="bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-100 text-xs px-1 py-0.5 rounded">
-                                Rest-P
-                              </span>
-                            )}
-                            {set.is_pyramid && (
-                              <span className="bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-100 text-xs px-1 py-0.5 rounded">
-                                Pyra
-                              </span>
-                            )}
-                            {set.is_giant && (
-                              <span className="bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-100 text-xs px-1 py-0.5 rounded">
-                                Giant
-                              </span>
-                            )}
-                            {!set.is_warmup && 
-                              !set.is_drop_set && 
-                              !set.is_superset && 
-                              !set.is_amrap && 
-                              !set.is_restpause && 
-                              !set.is_pyramid && 
-                              !set.is_giant && (
-                              <span className="bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300 text-xs px-1 py-0.5 rounded">
+                            {!set.is_warmup && !set.is_drop_set && (
+                              <span className="bg-blue-200 text-blue-800 dark:bg-blue-900 dark:text-blue-200 text-xs py-1 px-2 rounded-full">
                                 Working
                               </span>
                             )}
                           </div>
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <div>
-                          <input
-                            type="number"
-                            value={set.distance}
-                            onChange={(e) =>
-                              handleEditSet(
-                                exerciseIndex,
-                                setIndex,
-                                "distance",
-                                e.target.value
-                              )
-                            }
-                            placeholder="0"
-                            className="w-full p-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm"
-                          />
-                        </div>
-                        <div>
-                          <input
-                            type="number"
-                            value={set.duration}
-                            onChange={(e) =>
-                              handleEditSet(
-                                exerciseIndex,
-                                setIndex,
-                                "duration",
-                                e.target.value
-                              )
-                            }
-                            placeholder="0"
-                            className="w-full p-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm"
-                          />
-                        </div>
-                        <div>
-                          <select
-                            value={set.intensity}
-                            onChange={(e) =>
-                              handleEditSet(
-                                exerciseIndex,
-                                setIndex,
-                                "intensity",
-                                e.target.value
-                              )
-                            }
-                            className="w-full p-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm"
-                          >
-                            <option value="">-</option>
-                            <option value="Low">Low</option>
-                            <option value="Medium">Medium</option>
-                            <option value="High">High</option>
-                            <option value="Very High">Very High</option>
-                          </select>
-                        </div>
-                      </>
-                    )}
-                    
-                    {/* Set actions that are common for both cardio and strength */}
-                    <div className="flex justify-end space-x-1">
-                      <div className="flex">
-                        <input
-                          type="text"
-                          value={set.notes || ""}
-                          onChange={(e) =>
-                            handleEditSet(
-                              exerciseIndex,
-                              setIndex,
-                              "notes",
-                              e.target.value
-                            )
-                          }
-                          placeholder="Notes"
-                          className="p-1 text-xs bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md w-16 sm:w-20"
-                        />
+                        </>
+                      ) : (
+                        <>
+                          <div>
+                            <input
+                              type="number"
+                              value={set.distance}
+                              onChange={(e) =>
+                                handleEditSet(
+                                  exerciseIndex,
+                                  setIndex,
+                                  "distance",
+                                  e.target.value
+                                )
+                              }
+                              placeholder="0"
+                              className="w-full p-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm"
+                            />
+                          </div>
+                          <div>
+                            <input
+                              type="number"
+                              value={set.duration}
+                              onChange={(e) =>
+                                handleEditSet(
+                                  exerciseIndex,
+                                  setIndex,
+                                  "duration",
+                                  e.target.value
+                                )
+                              }
+                              placeholder="0"
+                              className="w-full p-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm"
+                            />
+                          </div>
+                          <div>
+                            <select
+                              value={set.intensity}
+                              onChange={(e) =>
+                                handleEditSet(
+                                  exerciseIndex,
+                                  setIndex,
+                                  "intensity",
+                                  e.target.value
+                                )
+                              }
+                              className="w-full p-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm"
+                            >
+                              <option value="">-</option>
+                              <option value="Low">Low</option>
+                              <option value="Medium">Medium</option>
+                              <option value="High">High</option>
+                              <option value="Very High">Very High</option>
+                            </select>
+                          </div>
+                        </>
+                      )}
+                      <div className="text-right">
                         <button
                           onClick={() => handleDeleteSet(exerciseIndex, setIndex)}
-                          className="ml-1 text-red-500 hover:text-red-600 bg-gray-200 dark:bg-gray-700 p-1 rounded"
+                          className="text-red-500 hover:text-red-700 p-1 rounded"
                         >
-                          <FaTrash className="text-xs" />
+                          <FaTrash />
                         </button>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
 
-                {/* Add set button */}
                 <button
                   onClick={() => handleAddSet(exerciseIndex)}
-                  className="mt-3 w-full bg-teal-500 hover:bg-teal-400 text-white py-2 px-4 rounded-md flex items-center justify-center font-medium"
+                  className="mt-2 w-full bg-teal-500 hover:bg-teal-600 text-white py-2 px-4 rounded-lg flex items-center justify-center"
                 >
-                  <FaPlus className="mr-2" />
-                  Add Set
+                  <FaPlus className="mr-1" /> Add Set
                 </button>
               </div>
             </>

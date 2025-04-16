@@ -529,3 +529,78 @@ body {
     min-height: 2.5rem;
   }
 }
+
+/* Special styles for standalone PWA mode */
+body.pwa-standalone-mode {
+  /* Ensure the app takes up the full screen */
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: none;
+}
+
+/* Tweak layout in standalone mode */
+body.pwa-standalone-mode .workout-log-container {
+  padding-top: env(safe-area-inset-top, 0);
+  padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0));
+}
+
+/* Fix height for workout items in standalone mode */
+body.pwa-standalone-mode .workout-log-container .exercise-card {
+  background: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-bottom: 1rem;
+}
+
+/* Improve input styling in standalone mode */
+body.pwa-standalone-mode input, 
+body.pwa-standalone-mode select, 
+body.pwa-standalone-mode textarea {
+  font-size: 16px !important; /* Prevents iOS zoom */
+  -webkit-appearance: none; /* Removes default styling */
+  appearance: none;
+  border-radius: 0.375rem;
+  border: 1px solid #e5e7eb;
+}
+
+/* Style set buttons in standalone mode */
+body.pwa-standalone-mode .exercise-card button {
+  min-height: 44px;
+}
+
+/* Add set button with icon */
+body.pwa-standalone-mode .exercise-set-container button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+}
+
+/* Fix standalone header */
+body.pwa-standalone-mode .workout-log-container h1 {
+  margin-top: env(safe-area-inset-top, 0);
+}
+
+/* Make bottom nav bar match native apps */
+body.pwa-standalone-mode .bottom-nav {
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  background-color: rgba(255, 255, 255, 0.8);
+  border-top: none;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Dark mode for standalone */
+@media (prefers-color-scheme: dark) {
+  body.pwa-standalone-mode .bottom-nav {
+    background-color: rgba(31, 41, 55, 0.8);
+  }
+  
+  body.pwa-standalone-mode .exercise-card {
+    background: #1f2937;
+  }
+}

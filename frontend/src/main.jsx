@@ -1,9 +1,9 @@
-import { StrictMode } from "react";
-import { createRoot } from "react-dom/client";
-import "./index.css";
-import App from "./App.jsx";
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import App from './App.jsx'
+import './index.css'
+import { BrowserRouter } from 'react-router-dom'
 import { GoogleOAuthProvider } from "@react-oauth/google";
-import { BrowserRouter } from "react-router-dom";
 import { AuthProvider } from "./hooks/useAuth.jsx";
 
 const clientId =
@@ -28,16 +28,59 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker
       .register('/sw.js')
       .then(registration => {
-        console.log('ServiceWorker registration successful with scope: ', registration.scope);
+        console.log('Service Worker registered with scope:', registration.scope);
+        
+        // Check if we're in standalone mode (installed PWA)
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
+                            window.navigator.standalone === true;
+        
+        if (isStandalone) {
+          // Apply special classes for standalone mode
+          document.body.classList.add('pwa-standalone-mode');
+          
+          // Inform the service worker we're in standalone mode
+          if (registration.active) {
+            registration.active.postMessage({
+              type: 'STANDALONE_MODE'
+            });
+          }
+          
+          // Set a small timeout to ensure styles are applied after render
+          setTimeout(() => {
+            const workoutLogContainer = document.querySelector('.workout-log-container');
+            if (workoutLogContainer) {
+              workoutLogContainer.classList.add('standalone-layout');
+            }
+          }, 100);
+        }
+        
+        // Listen for messages from service worker
+        navigator.serviceWorker.addEventListener('message', event => {
+          if (event.data && event.data.type === 'APPLY_STANDALONE_STYLES') {
+            document.body.classList.add('pwa-standalone-mode');
+          }
+        });
       })
       .catch(error => {
-        console.log('ServiceWorker registration failed: ', error);
+        console.error('Service Worker registration failed:', error);
       });
   });
 }
 
-createRoot(document.getElementById("root")).render(
-  <StrictMode>
+// Add CSS media query listener for standalone mode
+const standaloneMediaQuery = window.matchMedia('(display-mode: standalone)');
+const handleStandaloneChange = (event) => {
+  if (event.matches) {
+    document.body.classList.add('pwa-standalone-mode');
+  } else {
+    document.body.classList.remove('pwa-standalone-mode');
+  }
+};
+standaloneMediaQuery.addListener(handleStandaloneChange);
+handleStandaloneChange(standaloneMediaQuery);
+
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
     <GoogleOAuthProvider 
       clientId={clientId}
       onScriptLoadError={() => console.error("Google API script failed to load")}
@@ -49,5 +92,5 @@ createRoot(document.getElementById("root")).render(
         </AuthProvider>
       </BrowserRouter>
     </GoogleOAuthProvider>
-  </StrictMode>
-);
+  </React.StrictMode>,
+)

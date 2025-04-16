@@ -1,5 +1,5 @@
 // Service Worker for FitExplorer PWA
-const CACHE_NAME = 'fitexplorer-v4';
+const CACHE_NAME = 'fitexplorer-v5';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -16,6 +16,9 @@ const urlsToCache = [
   '/icons/splash-750x1334.png',
   '/icons/splash-1242x2208.png',
   '/icons/splash-1125x2436.png',
+  '/icons/splash-1536x2048.png',
+  '/src/styles/workout-log-mobile.css',
+  '/src/index.css',
 ];
 
 // Allow third-party cookies (especially for Google OAuth)
@@ -89,6 +92,32 @@ self.addEventListener('fetch', event => {
     return;
   }
   
+  // Check if this is a CSS request for workout-log or standalone mode
+  if (event.request.url.includes('workout-log-mobile.css') || 
+      event.request.url.includes('index.css')) {
+    // Important styles that we need to prioritize loading from network first
+    event.respondWith(
+      fetch(event.request)
+        .then(response => {
+          // Clone the response
+          const responseToCache = response.clone();
+          
+          // Cache the new response
+          caches.open(CACHE_NAME)
+            .then(cache => {
+              cache.put(event.request, responseToCache);
+            });
+          
+          return response;
+        })
+        .catch(() => {
+          // If network fails, try the cache
+          return caches.match(event.request);
+        })
+    );
+    return;
+  }
+  
   event.respondWith(
     caches.match(event.request)
       .then(response => {
@@ -136,6 +165,18 @@ self.addEventListener('message', event => {
       clients.forEach(client => {
         client.postMessage({
           type: 'SHOW_INSTALL_PROMPT'
+        });
+      });
+    });
+  }
+  
+  // Specifically for workout-log interface in standalone mode
+  if (event.data && event.data.type === 'STANDALONE_MODE') {
+    // Inform all clients that we're in standalone mode
+    self.clients.matchAll().then(clients => {
+      clients.forEach(client => {
+        client.postMessage({
+          type: 'APPLY_STANDALONE_STYLES'
         });
       });
     });
