@@ -181,8 +181,8 @@ a, button, input[type="button"], input[type="submit"], input[type="reset"] {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Disable pull-to-refresh on iOS Safari */
-html {
+/* Disable pull-to-refresh on iOS Safari - REMOVING THIS CODE */
+/* html {
   overflow: hidden;
   position: fixed;
   width: 100%;
@@ -193,6 +193,16 @@ body {
   overflow: auto;
   -webkit-overflow-scrolling: touch;
   height: 100%;
+} */
+
+/* Instead, use this approach for controlling overflow behavior */
+@media (display-mode: standalone) {
+  html, body {
+    overscroll-behavior-y: contain;
+    overscroll-behavior-x: none;
+    height: 100%;
+    width: 100%;
+  }
 }
 
 /* Mobile optimizations - make touch targets bigger */

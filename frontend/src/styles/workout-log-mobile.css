@@ -39,6 +39,17 @@
     .workout-log-container {
       padding-bottom: calc(5rem + 80px) !important;
     }
+    
+    /* Ensure proper full-height layout in standalone mode */
+    body, #root, .min-h-screen {
+      min-height: 100vh !important;
+      min-height: -webkit-fill-available !important;
+    }
+    
+    /* Fix for iOS home indicator area */
+    .bottom-nav {
+      padding-bottom: env(safe-area-inset-bottom, 20px) !important;
+    }
   }
 
   /* Landscape orientation optimizations */
@@ -80,4 +91,19 @@
 
 .workout-modal {
   @apply bg-white dark:bg-gray-800 rounded-lg shadow-xl overflow-auto;
+}
+
+/* Additional styles to ensure consistent display in standalone mode */
+@media (display-mode: standalone) {
+  /* Ensure the content area is properly positioned */
+  .workout-log-container {
+    margin-top: env(safe-area-inset-top, 0);
+    margin-bottom: env(safe-area-inset-bottom, 0);
+  }
+  
+  /* Fix for iOS notch and home indicator */
+  .container {
+    padding-left: env(safe-area-inset-left, 1rem);
+    padding-right: env(safe-area-inset-right, 1rem);
+  }
 } 

@@ -50,14 +50,14 @@ const MobileBottomNav = () => {
     { path: '/profile', icon: <FaUser className="w-6 h-6" />, label: 'Profile' }
   ];
   
-  // Determine additional styles for iOS
+  // Consistent styles for iOS and Android
+  const safeAreaStyles = {
+    paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+    height: isStandalone ? 'calc(5rem + env(safe-area-inset-bottom, 0px))' : '5rem',
+  };
+  
+  // Add iOS-specific styles
   const iosStyles = isIOS ? {
-    // Add more space for home indicator on iOS
-    paddingBottom: isStandalone ? 'env(safe-area-inset-bottom, 20px)' : '20px',
-    height: isStandalone ? 'calc(5rem + env(safe-area-inset-bottom, 20px))' : '5rem',
-    // Remove border for cleaner look on iOS
-    borderTopWidth: '1px',
-    // Add backdrop blur effect that matches iOS style
     backdropFilter: 'blur(10px)',
     backgroundColor: 'rgba(255, 255, 255, 0.8)',
     dark: {
@@ -70,11 +70,10 @@ const MobileBottomNav = () => {
       initial={{ y: 100 }}
       animate={{ y: 0 }}
       transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-      className={`fixed bottom-0 left-0 right-0 z-50 h-20 bg-white dark:bg-gray-800 border-t border-gray-300 dark:border-gray-600 flex justify-around items-center px-2 md:hidden shadow-lg ${isStandalone ? 'bottom-nav' : ''}`}
+      className={`fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-gray-800 border-t border-gray-300 dark:border-gray-600 flex justify-around items-center px-2 md:hidden shadow-lg ${isStandalone ? 'bottom-nav' : ''}`}
       style={{ 
-        paddingBottom: isIOS ? iosStyles.paddingBottom : 'env(safe-area-inset-bottom, 0px)',
-        height: isIOS ? iosStyles.height : '5rem',
-        borderTopWidth: isIOS ? iosStyles.borderTopWidth : '2px',
+        paddingBottom: safeAreaStyles.paddingBottom,
+        height: safeAreaStyles.height,
         backdropFilter: isIOS ? iosStyles.backdropFilter : 'none',
         backgroundColor: isIOS 
           ? (document.documentElement.classList.contains('dark') 
