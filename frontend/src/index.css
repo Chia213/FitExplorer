@@ -443,13 +443,14 @@ body {
 /* Fix for iOS bottom navigation area */
 .bottom-nav {
   padding-bottom: env(safe-area-inset-bottom);
-  border-radius: 1rem;
-  margin: 0 auto 0.5rem;
-  bottom: 8px;
-  width: auto;
-  max-width: 85%;
-  left: 50%;
-  transform: translateX(-50%);
+  border-radius: 0;
+  margin: 0;
+  bottom: 0;
+  width: 100%;
+  left: 0;
+  right: 0;
+  transform: none;
+  max-width: 100%;
 }
 
 /* Add specific fixes for iOS bottom navigation */
@@ -457,16 +458,16 @@ body {
   /* iOS specific styles */
   .bottom-nav {
     border-top-width: 1px !important;
-    background-color: rgba(255, 255, 255, 0.8);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+    background-color: rgba(243, 244, 246, 1);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    box-shadow: none;
   }
 
   /* Dark mode for iOS */
   .dark .bottom-nav {
-    background-color: rgba(31, 41, 55, 0.8);
-    box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+    background-color: rgba(31, 41, 55, 1);
+    box-shadow: none;
   }
 
   /* Extra padding for bottom nav to ensure content isn't hidden */
@@ -603,18 +604,18 @@ body.pwa-standalone-mode .workout-log-container h1 {
 
 /* Make bottom nav bar match native apps */
 body.pwa-standalone-mode .bottom-nav {
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  background-color: rgba(255, 255, 255, 0.8);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background-color: rgba(243, 244, 246, 1);
   border-top: none;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
-  border-radius: 1rem;
-  margin: 0 auto 0.5rem;
-  bottom: 8px;
-  width: auto;
-  max-width: 85%;
-  left: 50%;
-  transform: translateX(-50%);
+  box-shadow: none;
+  border-radius: 0;
+  margin: 0;
+  bottom: 0;
+  width: 100%;
+  left: 0;
+  right: 0;
+  transform: none;
 }
 
 /* Dark mode for standalone */
@@ -653,7 +654,7 @@ body.pwa-standalone-mode .bottom-nav {
 
   /* Adjust main content area to account for bottom navigation */
   main, .content-container, #root > div {
-    padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px) + 16px);
+    padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
     min-height: 100%;
     overflow-y: auto;
   }
@@ -661,16 +662,16 @@ body.pwa-standalone-mode .bottom-nav {
   /* Class for the PWA bottom nav */
   .pwa-bottom-nav {
     position: fixed;
-    bottom: 8px !important;
-    left: 50% !important;
-    right: auto !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
     z-index: 1000;
-    margin: 0 auto;
-    border-radius: 1rem;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    transform: translateX(-50%) !important;
-    width: auto !important;
-    max-width: 85% !important;
+    margin: 0;
+    border-radius: 0;
+    box-shadow: none;
+    transform: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
   }
 }
 
@@ -701,14 +702,15 @@ body.pwa-standalone-mode .bottom-nav {
 
 /* Mobile navbar dropdown styling */
 .navbar-dropdown {
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  box-shadow: 0 -8px 20px rgba(0, 0, 0, 0.12);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: 0 -4px 8px rgba(0, 0, 0, 0.1);
   border: 1px solid rgba(229, 231, 235, 0.2);
 }
 
 .dark .navbar-dropdown {
   border: 1px solid rgba(75, 85, 99, 0.2);
+  background-color: rgba(31, 41, 55, 1) !important;
 }
 
 /* Custom animation for dropdown items */
@@ -737,16 +739,4 @@ body.pwa-standalone-mode .bottom-nav {
 .dropdown-item:hover {
   transform: translateX(3px);
   transition: transform 0.2s ease;
-}
-
-/* Fix for iOS bottom navigation area */
-.bottom-nav {
-  padding-bottom: env(safe-area-inset-bottom);
-  border-radius: 1rem;
-  margin: 0 auto 0.5rem;
-  bottom: 8px;
-  width: auto;
-  max-width: 85%;
-  left: 50%;
-  transform: translateX(-50%);
 }

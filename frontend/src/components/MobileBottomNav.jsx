@@ -100,12 +100,14 @@ const MobileBottomNav = () => {
       ? 'rgba(75, 85, 99, 0.4)' 
       : 'rgba(229, 231, 235, 0.8)',
     // Add bottom offset to move the navbar down a bit
-    bottom: '8px',
-    // Make navbar width fit content better without being too compact
-    width: 'auto',
-    left: '50%',
-    transform: 'translateX(-50%)',
-    maxWidth: '85%' // Slightly reduced from 95%
+    bottom: '0',
+    // Full width to remove side gaps
+    width: '100%',
+    left: '0',
+    right: '0',
+    transform: 'none',
+    maxWidth: '100%',
+    borderRadius: '0'
   };
   
   // Navigation items for the bottom nav
@@ -166,11 +168,11 @@ const MobileBottomNav = () => {
             transition={{ duration: 0.2 }}
             className="fixed z-50 bg-white dark:bg-gray-800 rounded-xl shadow-xl navbar-dropdown"
             style={{
-              bottom: '80px',
+              bottom: '60px',
               left: '50%',
               transform: 'translateX(-50%)',
-              maxWidth: '250px',
-              width: '90%'
+              width: '90%',
+              backgroundColor: 'white'
             }}
           >
             <div className="p-2 space-y-1">
@@ -196,16 +198,6 @@ const MobileBottomNav = () => {
                 </Link>
               ))}
             </div>
-            {/* Arrow pointing to the workouts icon */}
-            <div 
-              className="absolute w-4 h-4 bg-white dark:bg-gray-800 rotate-45"
-              style={{
-                bottom: '-8px',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                zIndex: -1
-              }}
-            ></div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -215,7 +207,7 @@ const MobileBottomNav = () => {
         initial={{ y: 100 }}
         animate={{ y: 0 }}
         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-        className={`fixed z-50 bg-white dark:bg-gray-800 flex justify-around items-center px-2 md:hidden shadow-lg rounded-xl ${isStandalone ? 'pwa-bottom-nav' : ''}`}
+        className={`fixed z-40 bg-gray-100 dark:bg-gray-800 flex justify-around items-center px-2 md:hidden ${isStandalone ? 'pwa-bottom-nav' : ''}`}
         style={navStyles}
       >
         {navItems.map((item) => {
@@ -228,7 +220,7 @@ const MobileBottomNav = () => {
             <div 
               key={item.path}
               ref={item.hasDropdown ? workoutsButtonRef : null}
-              className={`flex flex-col items-center justify-center w-full h-full py-2 px-2 ${item.hasDropdown ? 'cursor-pointer' : ''}`}
+              className={`flex flex-col items-center justify-center w-full h-full py-1 ${item.hasDropdown ? 'cursor-pointer' : ''}`}
               onClick={(e) => item.hasDropdown ? handleNavItemClick(e, item) : null}
             >
               <Link
@@ -254,7 +246,7 @@ const MobileBottomNav = () => {
                       />
                     )}
                   </div>
-                  <span className={`text-sm mt-1 flex items-center ${isActive ? 'text-blue-600 dark:text-blue-400 font-medium' : 'text-gray-600 dark:text-gray-400'}`}>
+                  <span className={`text-xs mt-0.5 flex items-center ${isActive ? 'text-blue-600 dark:text-blue-400 font-medium' : 'text-gray-600 dark:text-gray-400'}`}>
                     {item.label}
                     {item.hasDropdown && (
                       <FaChevronUp 
