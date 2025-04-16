@@ -84,9 +84,9 @@ const MobileBottomNav = () => {
   // Styling for the bottom navigation based on device
   const navStyles = {
     // Base styling with safe area padding
-    paddingBottom: `calc(0.25rem + env(safe-area-inset-bottom, 0px))`,
-    // Use a more compact height
-    height: isStandalone ? `calc(3.5rem + env(safe-area-inset-bottom, 0px))` : '3.5rem',
+    paddingBottom: `calc(0.5rem + env(safe-area-inset-bottom, 0px))`,
+    // Use original height
+    height: isStandalone ? `calc(4rem + env(safe-area-inset-bottom, 0px))` : '4rem',
     // Special iOS styling
     backdropFilter: isIOS ? 'blur(10px)' : 'none',
     WebkitBackdropFilter: isIOS ? 'blur(10px)' : 'none',
@@ -101,19 +101,19 @@ const MobileBottomNav = () => {
       : 'rgba(229, 231, 235, 0.8)',
     // Add bottom offset to move the navbar down a bit
     bottom: '8px',
-    // Make navbar width fit content better
+    // Make navbar width fit content better without being too compact
     width: 'auto',
     left: '50%',
     transform: 'translateX(-50%)',
-    maxWidth: '95%'
+    maxWidth: '85%' // Slightly reduced from 95%
   };
   
   // Navigation items for the bottom nav
   const navItems = [
-    { path: '/', icon: <FaHome className="w-5 h-5" />, label: 'Home' },
+    { path: '/', icon: <FaHome className="w-6 h-6" />, label: 'Home' },
     { 
       path: '/workout-generator', 
-      icon: <FaDumbbell className="w-5 h-5" />, 
+      icon: <FaDumbbell className="w-6 h-6" />, 
       label: 'Workouts',
       hasDropdown: true,
       dropdownItems: [
@@ -124,9 +124,9 @@ const MobileBottomNav = () => {
         { path: '/routines', icon: <FaBook />, label: 'My Routines' },
       ]
     },
-    { path: '/nutrition', icon: <FaAppleAlt className="w-5 h-5" />, label: 'Nutrition' },
-    { path: '/progress-tracker', icon: <FaChartLine className="w-5 h-5" />, label: 'Progress' },
-    { path: '/profile', icon: <FaUser className="w-5 h-5" />, label: 'Profile' }
+    { path: '/nutrition', icon: <FaAppleAlt className="w-6 h-6" />, label: 'Nutrition' },
+    { path: '/progress-tracker', icon: <FaChartLine className="w-6 h-6" />, label: 'Progress' },
+    { path: '/profile', icon: <FaUser className="w-6 h-6" />, label: 'Profile' }
   ];
   
   // Check if a workout route is active
@@ -215,7 +215,7 @@ const MobileBottomNav = () => {
         initial={{ y: 100 }}
         animate={{ y: 0 }}
         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-        className={`fixed z-50 bg-white dark:bg-gray-800 flex justify-around items-center px-1 md:hidden shadow-lg rounded-xl ${isStandalone ? 'pwa-bottom-nav' : ''}`}
+        className={`fixed z-50 bg-white dark:bg-gray-800 flex justify-around items-center px-2 md:hidden shadow-lg rounded-xl ${isStandalone ? 'pwa-bottom-nav' : ''}`}
         style={navStyles}
       >
         {navItems.map((item) => {
@@ -228,7 +228,7 @@ const MobileBottomNav = () => {
             <div 
               key={item.path}
               ref={item.hasDropdown ? workoutsButtonRef : null}
-              className={`flex flex-col items-center justify-center w-full h-full py-1.5 px-2 ${item.hasDropdown ? 'cursor-pointer' : ''}`}
+              className={`flex flex-col items-center justify-center w-full h-full py-2 px-2 ${item.hasDropdown ? 'cursor-pointer' : ''}`}
               onClick={(e) => item.hasDropdown ? handleNavItemClick(e, item) : null}
             >
               <Link
@@ -249,12 +249,12 @@ const MobileBottomNav = () => {
                     {isActive && (
                       <motion.div
                         layoutId="bottomNavIndicator"
-                        className="absolute -bottom-1 w-5 h-1 bg-blue-600 dark:bg-blue-400 rounded-full"
+                        className="absolute -bottom-1 w-6 h-1 bg-blue-600 dark:bg-blue-400 rounded-full"
                         transition={{ type: 'spring', stiffness: 500, damping: 30 }}
                       />
                     )}
                   </div>
-                  <span className={`text-xs mt-0.5 flex items-center ${isActive ? 'text-blue-600 dark:text-blue-400 font-medium' : 'text-gray-600 dark:text-gray-400'}`}>
+                  <span className={`text-sm mt-1 flex items-center ${isActive ? 'text-blue-600 dark:text-blue-400 font-medium' : 'text-gray-600 dark:text-gray-400'}`}>
                     {item.label}
                     {item.hasDropdown && (
                       <FaChevronUp 
