@@ -61,7 +61,9 @@ const MobileBottomNav = () => {
     borderTop: isIOS ? 'none' : '1px solid',
     borderTopColor: document.documentElement.classList.contains('dark') 
       ? 'rgba(75, 85, 99, 0.4)' 
-      : 'rgba(229, 231, 235, 0.8)'
+      : 'rgba(229, 231, 235, 0.8)',
+    // Add bottom offset to move the navbar down a bit
+    bottom: '8px'
   };
   
   // Navigation items for the bottom nav
@@ -78,7 +80,7 @@ const MobileBottomNav = () => {
       initial={{ y: 100 }}
       animate={{ y: 0 }}
       transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-      className={`fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-gray-800 flex justify-around items-center px-2 md:hidden shadow-lg ${isStandalone ? 'pwa-bottom-nav' : ''}`}
+      className={`fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-gray-800 flex justify-around items-center px-2 md:hidden shadow-lg rounded-xl mx-2 ${isStandalone ? 'pwa-bottom-nav' : ''}`}
       style={navStyles}
     >
       {navItems.map((item) => {
