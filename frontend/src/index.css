@@ -443,22 +443,20 @@ body {
 /* Fix for iOS bottom navigation area */
 .bottom-nav {
   padding-bottom: env(safe-area-inset-bottom);
-  border-radius: 0;
-  margin: 0;
+  background-color: transparent;
   bottom: 0;
   width: 100%;
   left: 0;
   right: 0;
   transform: none;
-  max-width: 100%;
 }
 
 /* Add specific fixes for iOS bottom navigation */
 @supports (-webkit-touch-callout: none) {
   /* iOS specific styles */
   .bottom-nav {
-    border-top-width: 1px !important;
-    background-color: rgba(243, 244, 246, 1);
+    border-top-width: 0 !important;
+    background-color: transparent;
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
     box-shadow: none;
@@ -466,14 +464,14 @@ body {
 
   /* Dark mode for iOS */
   .dark .bottom-nav {
-    background-color: rgba(31, 41, 55, 1);
+    background-color: transparent;
     box-shadow: none;
   }
 
   /* Extra padding for bottom nav to ensure content isn't hidden */
   body {
     /* Add padding to ensure content isn't hidden behind the navigation */
-    padding-bottom: calc(4rem + env(safe-area-inset-bottom, 20px));
+    padding-bottom: calc(3rem + env(safe-area-inset-bottom, 0px));
   }
 
   /* Fix for iOS standalone mode (PWA) */
@@ -486,7 +484,7 @@ body {
     
     /* Ensure the bottom nav doesn't block content */
     main {
-      margin-bottom: calc(4rem + env(safe-area-inset-bottom, 20px));
+      margin-bottom: calc(3rem + env(safe-area-inset-bottom, 0px));
     }
     
     /* Remove any borders that might cause visual issues */
@@ -606,10 +604,9 @@ body.pwa-standalone-mode .workout-log-container h1 {
 body.pwa-standalone-mode .bottom-nav {
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
-  background-color: rgba(243, 244, 246, 1);
+  background-color: transparent;
   border-top: none;
   box-shadow: none;
-  border-radius: 0;
   margin: 0;
   bottom: 0;
   width: 100%;
@@ -654,7 +651,7 @@ body.pwa-standalone-mode .bottom-nav {
 
   /* Adjust main content area to account for bottom navigation */
   main, .content-container, #root > div {
-    padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(3rem + env(safe-area-inset-bottom, 0px));
     min-height: 100%;
     overflow-y: auto;
   }
@@ -667,11 +664,10 @@ body.pwa-standalone-mode .bottom-nav {
     right: 0 !important;
     z-index: 1000;
     margin: 0;
-    border-radius: 0;
+    background-color: transparent !important;
     box-shadow: none;
     transform: none !important;
     width: 100% !important;
-    max-width: 100% !important;
   }
 }
 
@@ -704,12 +700,13 @@ body.pwa-standalone-mode .bottom-nav {
 .navbar-dropdown {
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
-  box-shadow: 0 -4px 8px rgba(0, 0, 0, 0.1);
-  border: 1px solid rgba(229, 231, 235, 0.2);
+  box-shadow: 0 -1px 4px rgba(0, 0, 0, 0.05);
+  border-top: 1px solid rgba(229, 231, 235, 0.5);
+  margin-bottom: 0;
 }
 
 .dark .navbar-dropdown {
-  border: 1px solid rgba(75, 85, 99, 0.2);
+  border-top: 1px solid rgba(75, 85, 99, 0.2);
   background-color: rgba(31, 41, 55, 1) !important;
 }
 
@@ -717,7 +714,7 @@ body.pwa-standalone-mode .bottom-nav {
 @keyframes dropdown-item-appear {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(5px);
   }
   to {
     opacity: 1;
@@ -726,17 +723,11 @@ body.pwa-standalone-mode .bottom-nav {
 }
 
 .dropdown-item {
-  animation: dropdown-item-appear 0.3s ease forwards;
+  animation: dropdown-item-appear 0.2s ease forwards;
 }
 
-.dropdown-item:nth-child(1) { animation-delay: 0.05s; }
-.dropdown-item:nth-child(2) { animation-delay: 0.1s; }
-.dropdown-item:nth-child(3) { animation-delay: 0.15s; }
-.dropdown-item:nth-child(4) { animation-delay: 0.2s; }
-.dropdown-item:nth-child(5) { animation-delay: 0.25s; }
-
-/* Add subtle hover effect for dropdown items */
-.dropdown-item:hover {
-  transform: translateX(3px);
-  transition: transform 0.2s ease;
-}
+.dropdown-item:nth-child(1) { animation-delay: 0.03s; }
+.dropdown-item:nth-child(2) { animation-delay: 0.06s; }
+.dropdown-item:nth-child(3) { animation-delay: 0.09s; }
+.dropdown-item:nth-child(4) { animation-delay: 0.12s; }
+.dropdown-item:nth-child(5) { animation-delay: 0.15s; }

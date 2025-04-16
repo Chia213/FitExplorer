@@ -81,41 +81,12 @@ const MobileBottomNav = () => {
     return null;
   }
   
-  // Styling for the bottom navigation based on device
-  const navStyles = {
-    // Base styling with safe area padding
-    paddingBottom: `calc(0.5rem + env(safe-area-inset-bottom, 0px))`,
-    // Use original height
-    height: isStandalone ? `calc(4rem + env(safe-area-inset-bottom, 0px))` : '4rem',
-    // Special iOS styling
-    backdropFilter: isIOS ? 'blur(10px)' : 'none',
-    WebkitBackdropFilter: isIOS ? 'blur(10px)' : 'none',
-    backgroundColor: isIOS 
-      ? (document.documentElement.classList.contains('dark') 
-          ? 'rgba(31, 41, 55, 0.8)' 
-          : 'rgba(255, 255, 255, 0.8)')
-      : '',
-    borderTop: isIOS ? 'none' : '1px solid',
-    borderTopColor: document.documentElement.classList.contains('dark') 
-      ? 'rgba(75, 85, 99, 0.4)' 
-      : 'rgba(229, 231, 235, 0.8)',
-    // Add bottom offset to move the navbar down a bit
-    bottom: '0',
-    // Full width to remove side gaps
-    width: '100%',
-    left: '0',
-    right: '0',
-    transform: 'none',
-    maxWidth: '100%',
-    borderRadius: '0'
-  };
-  
   // Navigation items for the bottom nav
   const navItems = [
-    { path: '/', icon: <FaHome className="w-6 h-6" />, label: 'Home' },
+    { path: '/', icon: <FaHome className="w-5 h-5" />, label: 'Home' },
     { 
       path: '/workout-generator', 
-      icon: <FaDumbbell className="w-6 h-6" />, 
+      icon: <FaDumbbell className="w-5 h-5" />, 
       label: 'Workouts',
       hasDropdown: true,
       dropdownItems: [
@@ -126,9 +97,9 @@ const MobileBottomNav = () => {
         { path: '/routines', icon: <FaBook />, label: 'My Routines' },
       ]
     },
-    { path: '/nutrition', icon: <FaAppleAlt className="w-6 h-6" />, label: 'Nutrition' },
-    { path: '/progress-tracker', icon: <FaChartLine className="w-6 h-6" />, label: 'Progress' },
-    { path: '/profile', icon: <FaUser className="w-6 h-6" />, label: 'Profile' }
+    { path: '/nutrition', icon: <FaAppleAlt className="w-5 h-5" />, label: 'Nutrition' },
+    { path: '/progress-tracker', icon: <FaChartLine className="w-5 h-5" />, label: 'Progress' },
+    { path: '/profile', icon: <FaUser className="w-5 h-5" />, label: 'Profile' }
   ];
   
   // Check if a workout route is active
@@ -162,28 +133,29 @@ const MobileBottomNav = () => {
       <AnimatePresence>
         {showWorkoutsDropdown && (
           <motion.div 
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
+            exit={{ opacity: 0, y: 10 }}
             transition={{ duration: 0.2 }}
-            className="fixed z-50 bg-white dark:bg-gray-800 rounded-xl shadow-xl navbar-dropdown"
+            className="fixed z-50 bg-white dark:bg-gray-800 rounded-lg shadow-xl navbar-dropdown"
             style={{
-              bottom: '60px',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              width: '90%',
-              backgroundColor: 'white'
+              bottom: '55px',
+              left: '0',
+              right: '0',
+              backgroundColor: 'white',
+              maxHeight: '300px',
+              overflowY: 'auto'
             }}
           >
-            <div className="p-2 space-y-1">
+            <div className="p-1">
               {navItems[1].dropdownItems.map((dropdownItem) => (
                 <Link 
                   key={dropdownItem.path}
                   to={dropdownItem.path}
-                  className={`dropdown-item flex items-center p-2 rounded-lg ${
+                  className={`dropdown-item flex items-center p-3 ${
                     location.pathname === dropdownItem.path 
                       ? 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400' 
-                      : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200'
+                      : 'text-gray-800 dark:text-gray-200 border-b border-gray-100 dark:border-gray-700'
                   }`}
                   onClick={() => {
                     setShowWorkoutsDropdown(false);
@@ -203,63 +175,73 @@ const MobileBottomNav = () => {
       </AnimatePresence>
       
       {/* Bottom navbar */}
-      <motion.nav 
-        initial={{ y: 100 }}
-        animate={{ y: 0 }}
-        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-        className={`fixed z-40 bg-gray-100 dark:bg-gray-800 flex justify-around items-center px-2 md:hidden ${isStandalone ? 'pwa-bottom-nav' : ''}`}
-        style={navStyles}
-      >
-        {navItems.map((item) => {
-          const isActive = item.hasDropdown
-            ? isWorkoutActive
-            : location.pathname === item.path || 
-              (item.path !== '/' && location.pathname.startsWith(item.path));
-            
-          return (
-            <div 
-              key={item.path}
-              ref={item.hasDropdown ? workoutsButtonRef : null}
-              className={`flex flex-col items-center justify-center w-full h-full py-1 ${item.hasDropdown ? 'cursor-pointer' : ''}`}
-              onClick={(e) => item.hasDropdown ? handleNavItemClick(e, item) : null}
-            >
-              <Link
-                to={item.path}
-                className="flex flex-col items-center w-full"
-                onClick={(e) => {
-                  if (item.hasDropdown) {
-                    handleNavItemClick(e, item);
-                  } else if (navigator.vibrate) {
-                    navigator.vibrate(10);
-                  }
-                }}
-              >
-                <div className="relative flex flex-col items-center">
-                  <div className={`rounded-full transition-colors ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-gray-600 dark:text-gray-400'}`}>
-                    {item.icon}
-                    
-                    {isActive && (
-                      <motion.div
-                        layoutId="bottomNavIndicator"
-                        className="absolute -bottom-1 w-6 h-1 bg-blue-600 dark:bg-blue-400 rounded-full"
-                        transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                      />
-                    )}
-                  </div>
-                  <span className={`text-xs mt-0.5 flex items-center ${isActive ? 'text-blue-600 dark:text-blue-400 font-medium' : 'text-gray-600 dark:text-gray-400'}`}>
-                    {item.label}
-                    {item.hasDropdown && (
-                      <FaChevronUp 
-                        className={`ml-0.5 text-[8px] transform transition-transform ${showWorkoutsDropdown ? 'rotate-180' : 'rotate-0'}`}
-                      />
-                    )}
-                  </span>
+      <div className="fixed bottom-0 left-0 right-0 h-14 bg-transparent z-40">
+        <div className="absolute bottom-0 left-0 right-0 h-full pointer-events-none">
+          {/* Lines for the arrow positions - debug only */}
+          <div className="flex h-full justify-between">
+            <div className="border-l border-transparent h-full flex-1"></div>
+            <div className="border-l border-transparent h-full flex-1"></div>
+            <div className="border-l border-transparent h-full flex-1"></div>
+            <div className="border-l border-transparent h-full flex-1"></div>
+            <div className="border-l border-transparent h-full flex-1"></div>
+          </div>
+        </div>
+        
+        <div className="h-full flex items-end">
+          <div className="flex justify-between items-center w-full h-auto bg-transparent">
+            {navItems.map((item, index) => {
+              const isActive = item.hasDropdown
+                ? isWorkoutActive
+                : location.pathname === item.path || 
+                  (item.path !== '/' && location.pathname.startsWith(item.path));
+                
+              return (
+                <div 
+                  key={item.path}
+                  ref={item.hasDropdown ? workoutsButtonRef : null}
+                  className={`flex flex-col items-center justify-center h-12 ${item.hasDropdown ? 'cursor-pointer' : ''}`}
+                  style={{ width: '20%' }}
+                  onClick={(e) => item.hasDropdown ? handleNavItemClick(e, item) : null}
+                >
+                  <Link
+                    to={item.path}
+                    className="flex flex-col items-center w-full"
+                    onClick={(e) => {
+                      if (item.hasDropdown) {
+                        handleNavItemClick(e, item);
+                      } else if (navigator.vibrate) {
+                        navigator.vibrate(10);
+                      }
+                    }}
+                  >
+                    <div className="relative flex flex-col items-center">
+                      <div className={`rounded-full transition-colors ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-gray-600 dark:text-gray-400'}`}>
+                        {item.icon}
+                        
+                        {isActive && (
+                          <motion.div
+                            layoutId="bottomNavIndicator"
+                            className="absolute -bottom-1 w-4 h-0.5 bg-blue-600 dark:bg-blue-400 rounded-full"
+                            transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                          />
+                        )}
+                      </div>
+                      <span className={`text-xs mt-0.5 flex items-center ${isActive ? 'text-blue-600 dark:text-blue-400 font-medium' : 'text-gray-600 dark:text-gray-400'}`}>
+                        {item.label}
+                        {item.hasDropdown && (
+                          <FaChevronUp 
+                            className={`ml-0.5 text-[8px] transform transition-transform ${showWorkoutsDropdown ? 'rotate-180' : 'rotate-0'}`}
+                          />
+                        )}
+                      </span>
+                    </div>
+                  </Link>
                 </div>
-              </Link>
-            </div>
-          );
-        })}
-      </motion.nav>
+              );
+            })}
+          </div>
+        </div>
+      </div>
     </>
   );
 };
