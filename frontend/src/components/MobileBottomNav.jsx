@@ -5,7 +5,6 @@ import {
   FaDumbbell, 
   FaHome, 
   FaUser, 
-  FaAppleAlt, 
   FaChartLine, 
   FaChevronUp, 
   FaHistory, 
@@ -13,6 +12,7 @@ import {
   FaRobot,
   FaClock
 } from 'react-icons/fa';
+import { LuBicepsFlexed} from "react-icons/lu";
 
 const MobileBottomNav = () => {
   const location = useLocation();
@@ -97,7 +97,7 @@ const MobileBottomNav = () => {
         { path: '/routines', icon: <FaBook />, label: 'My Routines' },
       ]
     },
-    { path: '/nutrition', icon: <FaAppleAlt className="w-5 h-5" />, label: 'Nutrition' },
+    { path: 'explore-muscle-guide', icon: <LuBicepsFlexed className="w-5 h-5" />, label: 'Training Library' },
     { path: '/progress-tracker', icon: <FaChartLine className="w-5 h-5" />, label: 'Progress' },
     { path: '/profile', icon: <FaUser className="w-5 h-5" />, label: 'Profile' }
   ];
