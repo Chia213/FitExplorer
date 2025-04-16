@@ -324,19 +324,22 @@ function WorkoutHistory() {
     // Set the workout to be saved as a routine
     setSelectedWorkout(workout);
     
-    // Default routine name is workout date + first exercise name
+    // Use workout name if available, otherwise use first exercise name
     let defaultName = "";
-    if (workout.date) {
-      defaultName += formatDate(workout.date) + " ";
-    }
-    if (
+    
+    if (workout.name && workout.name.trim() !== "") {
+      // Use the workout name if it exists
+      defaultName = workout.name;
+    } else if (
       workout.exercises &&
       workout.exercises.length > 0 &&
       workout.exercises[0].name
     ) {
-      defaultName += workout.exercises[0].name;
+      // Fallback to first exercise name
+      defaultName = workout.exercises[0].name;
     } else {
-      defaultName += "Workout";
+      // Default fallback
+      defaultName = "Workout";
     }
     
     setRoutineName(defaultName);
