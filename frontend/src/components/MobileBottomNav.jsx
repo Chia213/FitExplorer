@@ -10,7 +10,10 @@ import {
   FaHistory, 
   FaBook, 
   FaRobot,
-  FaClock
+  FaClock,
+  FaCalculator,
+  FaAppleAlt,
+  FaTools
 } from 'react-icons/fa';
 import { LuBicepsFlexed} from "react-icons/lu";
 
@@ -24,11 +27,13 @@ const MobileBottomNav = () => {
   const [isIOS, setIsIOS] = React.useState(false);
   // Check if in standalone mode
   const [isStandalone, setIsStandalone] = React.useState(false);
-  // Dropdown state
+  // Dropdown states
   const [showWorkoutsDropdown, setShowWorkoutsDropdown] = React.useState(false);
+  const [showToolsDropdown, setShowToolsDropdown] = React.useState(false);
   
-  // Ref for the workouts button
+  // Refs for dropdown buttons
   const workoutsButtonRef = React.useRef(null);
+  const toolsButtonRef = React.useRef(null);
   
   React.useEffect(() => {
     // Check if device is mobile
@@ -52,18 +57,22 @@ const MobileBottomNav = () => {
     // Listen for window resize
     window.addEventListener('resize', checkMobile);
 
-    // Close dropdown when clicking outside
+    // Close dropdowns when clicking outside
     const handleClickOutside = (event) => {
       if (workoutsButtonRef.current && !workoutsButtonRef.current.contains(event.target)) {
         setShowWorkoutsDropdown(false);
+      }
+      if (toolsButtonRef.current && !toolsButtonRef.current.contains(event.target)) {
+        setShowToolsDropdown(false);
       }
     };
 
     document.addEventListener('click', handleClickOutside);
     
-    // Close dropdown when navigating
+    // Close dropdowns when navigating
     const handleRouteChange = () => {
       setShowWorkoutsDropdown(false);
+      setShowToolsDropdown(false);
     };
     
     window.addEventListener('popstate', handleRouteChange);
@@ -89,6 +98,7 @@ const MobileBottomNav = () => {
       icon: <FaDumbbell className="w-5 h-5" />, 
       label: 'Workouts',
       hasDropdown: true,
+      dropdownType: 'workouts',
       dropdownItems: [
         { path: '/workout-generator', icon: <FaDumbbell />, label: 'Workout Generator' },
         { path: '/ai-workout-generator', icon: <FaRobot />, label: 'AI Generator' },
@@ -97,20 +107,42 @@ const MobileBottomNav = () => {
         { path: '/routines', icon: <FaBook />, label: 'My Routines' },
       ]
     },
+    
     { path: 'explore-muscle-guide', icon: <LuBicepsFlexed className="w-5 h-5" />, label: 'Training Library' },
-    { path: '/progress-tracker', icon: <FaChartLine className="w-5 h-5" />, label: 'Progress' },
+    { 
+      path: '/fitness-tools', 
+      icon: <FaTools className="w-5 h-5" />, 
+      label: 'Tools',
+      hasDropdown: true,
+      dropdownType: 'tools',
+      dropdownItems: [
+        { path: '/fitness-calculator', icon: <FaCalculator />, label: 'Fitness Calculator' },
+        { path: '/nutrition', icon: <FaAppleAlt />, label: 'Nutrition' },
+        { path: '/progress-tracker', icon: <FaChartLine />, label: 'Progress Tracker' },
+      ]
+    },
     { path: '/profile', icon: <FaUser className="w-5 h-5" />, label: 'Profile' }
   ];
   
-  // Check if a workout route is active
+  // Check if a route is active
   const isWorkoutActive = location.pathname.includes('workout') || location.pathname.includes('routines');
+  const isToolsActive = location.pathname.includes('fitness-') || 
+                        location.pathname.includes('nutrition') || 
+                        location.pathname.includes('progress-tracker');
 
   // Handle nav item click with dropdown
   const handleNavItemClick = (e, item) => {
     if (item.hasDropdown) {
       e.preventDefault();
       e.stopPropagation();
-      setShowWorkoutsDropdown(!showWorkoutsDropdown);
+      
+      if (item.dropdownType === 'workouts') {
+        setShowWorkoutsDropdown(!showWorkoutsDropdown);
+        setShowToolsDropdown(false);
+      } else if (item.dropdownType === 'tools') {
+        setShowToolsDropdown(!showToolsDropdown);
+        setShowWorkoutsDropdown(false);
+      }
       
       // Trigger haptic feedback
       if (navigator.vibrate) {
@@ -174,32 +206,70 @@ const MobileBottomNav = () => {
         )}
       </AnimatePresence>
       
+      {/* Tools dropdown menu */}
+      <AnimatePresence>
+        {showToolsDropdown && (
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            transition={{ duration: 0.2 }}
+            className="fixed z-50 bg-white dark:bg-gray-800 rounded-lg shadow-xl navbar-dropdown"
+            style={{
+              bottom: '55px',
+              left: '0',
+              right: '0',
+              backgroundColor: 'white',
+              maxHeight: '300px',
+              overflowY: 'auto'
+            }}
+          >
+            <div className="p-1">
+              {navItems[3].dropdownItems.map((dropdownItem) => (
+                <Link 
+                  key={dropdownItem.path}
+                  to={dropdownItem.path}
+                  className={`dropdown-item flex items-center p-3 ${
+                    location.pathname === dropdownItem.path 
+                      ? 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400' 
+                      : 'text-gray-800 dark:text-gray-200 border-b border-gray-100 dark:border-gray-700'
+                  }`}
+                  onClick={() => {
+                    setShowToolsDropdown(false);
+                    // Trigger haptic feedback on selection
+                    if (navigator.vibrate) {
+                      navigator.vibrate(15);
+                    }
+                  }}
+                >
+                  <span className="mr-3 text-lg">{dropdownItem.icon}</span>
+                  <span className="text-sm font-medium">{dropdownItem.label}</span>
+                </Link>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      
       {/* Bottom navbar */}
-      <div className="fixed bottom-0 left-0 right-0 h-14 bg-transparent z-40">
-        <div className="absolute bottom-0 left-0 right-0 h-full pointer-events-none">
-          {/* Lines for the arrow positions - debug only */}
-          <div className="flex h-full justify-between">
-            <div className="border-l border-transparent h-full flex-1"></div>
-            <div className="border-l border-transparent h-full flex-1"></div>
-            <div className="border-l border-transparent h-full flex-1"></div>
-            <div className="border-l border-transparent h-full flex-1"></div>
-            <div className="border-l border-transparent h-full flex-1"></div>
-          </div>
-        </div>
-        
+      <div className="fixed bottom-0 left-0 right-0 h-14 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 z-40">
         <div className="h-full flex items-end">
-          <div className="flex justify-between items-center w-full h-auto bg-transparent">
+          <div className="flex justify-between items-center w-full h-full bg-white dark:bg-gray-800">
             {navItems.map((item, index) => {
               const isActive = item.hasDropdown
-                ? isWorkoutActive
+                ? (item.dropdownType === 'workouts' ? isWorkoutActive : 
+                   item.dropdownType === 'tools' ? isToolsActive : false)
                 : location.pathname === item.path || 
                   (item.path !== '/' && location.pathname.startsWith(item.path));
                 
               return (
                 <div 
                   key={item.path}
-                  ref={item.hasDropdown ? workoutsButtonRef : null}
-                  className={`flex flex-col items-center justify-center h-12 ${item.hasDropdown ? 'cursor-pointer' : ''}`}
+                  ref={item.hasDropdown ? 
+                    (item.dropdownType === 'workouts' ? workoutsButtonRef : 
+                     item.dropdownType === 'tools' ? toolsButtonRef : null) 
+                    : null}
+                  className={`flex flex-col items-center justify-center h-full ${item.hasDropdown ? 'cursor-pointer' : ''}`}
                   style={{ width: '20%' }}
                   onClick={(e) => item.hasDropdown ? handleNavItemClick(e, item) : null}
                 >
@@ -230,7 +300,12 @@ const MobileBottomNav = () => {
                         {item.label}
                         {item.hasDropdown && (
                           <FaChevronUp 
-                            className={`ml-0.5 text-[8px] transform transition-transform ${showWorkoutsDropdown ? 'rotate-180' : 'rotate-0'}`}
+                            className={`ml-0.5 text-[8px] transform transition-transform ${
+                              (item.dropdownType === 'workouts' && showWorkoutsDropdown) || 
+                              (item.dropdownType === 'tools' && showToolsDropdown) 
+                                ? 'rotate-180' 
+                                : 'rotate-0'
+                            }`}
                           />
                         )}
                       </span>

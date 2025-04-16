@@ -443,29 +443,36 @@ body {
 /* Fix for iOS bottom navigation area */
 .bottom-nav {
   padding-bottom: env(safe-area-inset-bottom);
-  background-color: transparent;
+  background-color: white;
   bottom: 0;
   width: 100%;
   left: 0;
   right: 0;
   transform: none;
+  border-top: 1px solid rgba(229, 231, 235, 0.8);
+  box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.dark .bottom-nav {
+  background-color: #1f2937;
+  border-top: 1px solid rgba(75, 85, 99, 0.5);
+  box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.1);
 }
 
 /* Add specific fixes for iOS bottom navigation */
 @supports (-webkit-touch-callout: none) {
   /* iOS specific styles */
   .bottom-nav {
-    border-top-width: 0 !important;
-    background-color: transparent;
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-    box-shadow: none;
+    background-color: white;
+    border-top: 1px solid rgba(229, 231, 235, 0.8) !important;
+    box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.05);
   }
 
   /* Dark mode for iOS */
   .dark .bottom-nav {
-    background-color: transparent;
-    box-shadow: none;
+    background-color: #1f2937;
+    border-top: 1px solid rgba(75, 85, 99, 0.5) !important;
+    box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.1);
   }
 
   /* Extra padding for bottom nav to ensure content isn't hidden */
@@ -487,9 +494,15 @@ body {
       margin-bottom: calc(3rem + env(safe-area-inset-bottom, 0px));
     }
     
-    /* Remove any borders that might cause visual issues */
+    /* Styles for the bottom nav */
     .bottom-nav {
-      border-top: none !important;
+      background-color: white;
+      border-top: 1px solid rgba(229, 231, 235, 0.8) !important;
+    }
+    
+    .dark .bottom-nav {
+      background-color: #1f2937;
+      border-top: 1px solid rgba(75, 85, 99, 0.5) !important;
     }
   }
 }
@@ -602,11 +615,9 @@ body.pwa-standalone-mode .workout-log-container h1 {
 
 /* Make bottom nav bar match native apps */
 body.pwa-standalone-mode .bottom-nav {
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  background-color: transparent;
-  border-top: none;
-  box-shadow: none;
+  background-color: white;
+  border-top: 1px solid rgba(229, 231, 235, 0.8);
+  box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.05);
   margin: 0;
   bottom: 0;
   width: 100%;
@@ -618,7 +629,9 @@ body.pwa-standalone-mode .bottom-nav {
 /* Dark mode for standalone */
 @media (prefers-color-scheme: dark) {
   body.pwa-standalone-mode .bottom-nav {
-    background-color: rgba(31, 41, 55, 0.8);
+    background-color: #1f2937;
+    border-top: 1px solid rgba(75, 85, 99, 0.5);
+    box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.1);
   }
   
   body.pwa-standalone-mode .exercise-card {
@@ -664,10 +677,17 @@ body.pwa-standalone-mode .bottom-nav {
     right: 0 !important;
     z-index: 1000;
     margin: 0;
-    background-color: transparent !important;
-    box-shadow: none;
+    background-color: white !important;
+    border-top: 1px solid rgba(229, 231, 235, 0.8);
+    box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.05);
     transform: none !important;
     width: 100% !important;
+  }
+
+  .dark .pwa-bottom-nav {
+    background-color: #1f2937 !important;
+    border-top: 1px solid rgba(75, 85, 99, 0.5);
+    box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.1);
   }
 }
 
@@ -698,16 +718,16 @@ body.pwa-standalone-mode .bottom-nav {
 
 /* Mobile navbar dropdown styling */
 .navbar-dropdown {
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  box-shadow: 0 -1px 4px rgba(0, 0, 0, 0.05);
-  border-top: 1px solid rgba(229, 231, 235, 0.5);
+  background-color: white;
+  box-shadow: 0 -1px 4px rgba(0, 0, 0, 0.1);
+  border-top: 1px solid rgba(229, 231, 235, 0.8);
   margin-bottom: 0;
 }
 
 .dark .navbar-dropdown {
-  border-top: 1px solid rgba(75, 85, 99, 0.2);
-  background-color: rgba(31, 41, 55, 1) !important;
+  background-color: #1f2937;
+  border-top: 1px solid rgba(75, 85, 99, 0.5);
+  box-shadow: 0 -1px 4px rgba(0, 0, 0, 0.2);
 }
 
 /* Custom animation for dropdown items */
