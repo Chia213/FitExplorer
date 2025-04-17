@@ -94,7 +94,7 @@ const WorkoutLog = () => {
   const [dropSetWeight, setDropSetWeight] = useState("");
   const [dropSetReps, setDropSetReps] = useState("");
   const [dropSetPercentage, setDropSetPercentage] = useState(20); // Default 20% reduction
-  const [dropSetCount, setDropSetCount] = useState(1); // Number of drops to perform
+  const [dropSetCount, setDropSetCount] = useState(2); // Default: top set + 1 drop
   const [supersetExerciseId, setSupersetExerciseId] = useState(null);
   const [supersetReps, setSupersetReps] = useState("");
   const [supersetWeight, setSupersetWeight] = useState("");
@@ -528,26 +528,38 @@ const WorkoutLog = () => {
   };
 
   const validateExerciseSets = (exercise) => {
+    // Check if data is filled in properly
+    let hasValidData = false;
+    
     if (exercise.is_cardio) {
       // For cardio exercises, check if distance, duration and intensity are filled
-      return exercise.sets.every(set => 
+      hasValidData = exercise.sets.every(set => 
         (set.distance && String(set.distance).trim() !== "") && 
         (set.duration && String(set.duration).trim() !== "") &&
         (set.intensity && String(set.intensity).trim() !== "")
       );
     } else {
       // For strength exercises, check if both weight and reps are filled
-      return exercise.sets.every(set => 
+      hasValidData = exercise.sets.every(set => 
         set.weight && String(set.weight).trim() !== "" && 
         set.reps && String(set.reps).trim() !== ""
       );
     }
+    
+    // Check if all sets are marked as completed
+    const allSetsCompleted = exercise.sets.every(set => set.completed === true);
+    
+    return { 
+      hasValidData,
+      allSetsCompleted 
+    };
   };
   
   // Validate the entire workout before finishing or saving
-  const validateWorkout = (isFromRoutine = false) => {
+  const validateWorkout = (isFromRoutine = false, bypassCompletionCheck = false) => {
     let isValid = true;
     let missingFields = [];
+    let incompleteExercises = [];
     
     // Validate workout name
     if (!workoutName.trim()) {
@@ -607,8 +619,9 @@ const WorkoutLog = () => {
     // Validate all sets in all exercises
     for (let i = 0; i < workoutExercises.length; i++) {
       const exercise = workoutExercises[i];
+      const { hasValidData, allSetsCompleted } = validateExerciseSets(exercise);
       
-      if (!validateExerciseSets(exercise)) {
+      if (!hasValidData) {
         if (!isFromRoutine) {
           if (exercise.is_cardio) {
             alert(`Please fill in all distance, duration, and intensity fields for ${exercise.name}`);
@@ -623,6 +636,35 @@ const WorkoutLog = () => {
           isValid = false;
         }
       }
+      
+      // Check for completed sets if we're not bypassing the completion check
+      if (!bypassCompletionCheck && !allSetsCompleted) {
+        incompleteExercises.push(exercise.name);
+        isValid = false;
+      }
+    }
+    
+    // If there are incomplete exercises and we're not bypassing the check
+    if (!bypassCompletionCheck && incompleteExercises.length > 0) {
+      const confirmSave = window.confirm(
+        `The following exercises have uncompleted sets:\n• ${incompleteExercises.join('\n• ')}\n\nDo you want to mark all sets as completed and continue?`
+      );
+      
+      if (confirmSave) {
+        // Mark all sets as completed
+        setWorkoutExercises(prev => prev.map(exercise => ({
+          ...exercise,
+          sets: exercise.sets.map(set => ({
+            ...set,
+            completed: true
+          }))
+        })));
+        
+        // Run validation again but bypass completion check
+        return validateWorkout(isFromRoutine, true);
+      } else {
+        return false;
+      }
     }
     
     // If coming from a routine and there are missing fields, show a consolidated warning
@@ -635,7 +677,37 @@ const WorkoutLog = () => {
 
   // Check if we're working from a routine when finalizing workout
   const handleFinishWorkout = async () => {
-    // Validate workout data before proceeding
+    // First check if all sets are completed
+    const incompleteExercises = [];
+    
+    for (const exercise of workoutExercises) {
+      const hasIncompleteSet = exercise.sets.some(set => set.completed !== true);
+      if (hasIncompleteSet) {
+        incompleteExercises.push(exercise.name);
+      }
+    }
+    
+    // If there are incomplete sets, ask user if they want to continue anyway
+    if (incompleteExercises.length > 0) {
+      const confirmSave = window.confirm(
+        `The following exercises have uncompleted sets:\n• ${incompleteExercises.join('\n• ')}\n\nDo you want to mark all sets as completed and continue?`
+      );
+      
+      if (confirmSave) {
+        // Mark all sets as completed
+        setWorkoutExercises(prev => prev.map(exercise => ({
+          ...exercise,
+          sets: exercise.sets.map(set => ({
+            ...set,
+            completed: true
+          }))
+        })));
+      } else {
+        return; // Stop the workout finishing process
+      }
+    }
+    
+    // Validate other workout data before proceeding
     if (!validateWorkout()) {
       return;
     }
@@ -751,12 +823,50 @@ const WorkoutLog = () => {
   };
 
   const handleSaveAsRoutine = () => {
+    // First check if all sets are completed
+    const incompleteExercises = [];
+    
+    for (const exercise of workoutExercises) {
+      const hasIncompleteSet = exercise.sets.some(set => set.completed !== true);
+      if (hasIncompleteSet) {
+        incompleteExercises.push(exercise.name);
+      }
+    }
+    
+    // If there are incomplete sets, ask user if they want to continue anyway
+    if (incompleteExercises.length > 0) {
+      const confirmSave = window.confirm(
+        `The following exercises have uncompleted sets:\n• ${incompleteExercises.join('\n• ')}\n\nDo you want to mark all sets as completed and continue?`
+      );
+      
+      if (confirmSave) {
+        // Mark all sets as completed
+        setWorkoutExercises(prev => prev.map(exercise => ({
+          ...exercise,
+          sets: exercise.sets.map(set => ({
+            ...set,
+            completed: true
+          }))
+        })));
+      } else {
+        return; // Stop the routine saving process
+      }
+    }
+    
     // Always use strict validation for saving as routine
     if (!validateWorkout(false)) {
       return;
     }
 
-    setRoutineName(workoutName);
+    // Set routine name to the current workout name (if available)
+    if (workoutName && workoutName.trim() !== "") {
+      setRoutineName(workoutName);
+    } else {
+      // Default name if workout name is empty
+      setRoutineName(`Routine ${new Date().toLocaleDateString()}`);
+    }
+    
+    // Show the save routine modal
     setShowSaveRoutineModal(true);
   };
 
@@ -1024,7 +1134,8 @@ const WorkoutLog = () => {
                 is_amrap: false,
                 is_restpause: false,
                 is_pyramid: false,
-                is_giant: false
+                is_giant: false,
+                completed: false
               }
             : { 
                 weight: "", 
@@ -1036,7 +1147,8 @@ const WorkoutLog = () => {
                 is_amrap: false,
                 is_restpause: false,
                 is_pyramid: false,
-                is_giant: false
+                is_giant: false,
+                completed: false
               };
 
           return {
@@ -1297,7 +1409,7 @@ const WorkoutLog = () => {
   const getButtonText = () => {
     switch (selectedSetType) {
       case "drop":
-        return `Add ${dropSetCount} Drop Set${dropSetCount > 1 ? 's' : ''}`;
+        return `Add ${dropSetCount} Set Drop Series`;
       case "warmup":
         return "Add Warm-up Set";
       case "working":
@@ -1338,23 +1450,26 @@ const WorkoutLog = () => {
 
       // Calculate all weights first
       const weights = [];
-      for (let i = 0; i < dropSetCount; i++) {
+      // Add the original (heaviest) weight first
+      weights.push(currentWeight);
+      
+      // Then add the progressively lighter weights
+      // We subtract 1 because dropSetCount should represent the TOTAL number of sets including the top set
+      for (let i = 0; i < dropSetCount - 1; i++) {
         const reducedWeight = calculateNextWeight(currentWeight, dropSetPercentage * (i + 1));
         weights.push(reducedWeight);
       }
-      weights.push(currentWeight); // Add the original (heaviest) weight
 
-      // Sort weights in ascending order (lightest to heaviest)
-      weights.sort((a, b) => parseFloat(a) - parseFloat(b));
-
-      // Create sets in ascending order
+      // No need to sort - already in descending order (heaviest to lightest)
+      
+      // Create sets in descending order (proper drop set)
       weights.forEach((weight, index) => {
         newSets.push({
           weight: weight,
           reps: dropSetReps,
-          notes: index < weights.length - 1 ? 
-            `Drop Set #${index + 1} (Build-up)` : 
-            `Drop Set #${index + 1} (Top Set)`,
+          notes: index === 0 ? 
+            `Drop Set #${index + 1} (Top Set)` : 
+            `Drop Set #${index + 1} (Drop)`,
           is_drop_set: true,
           is_warmup: false,
           is_superset: false,
@@ -1364,6 +1479,7 @@ const WorkoutLog = () => {
           is_giant: false,
           original_weight: originalWeight,
           drop_number: index + 1,
+          completed: false
         });
       });
 
@@ -1756,7 +1872,7 @@ const WorkoutLog = () => {
     setShowSupersetExerciseSelector(false);
     setFullPyramidChecked(false);
     // Reset drop set count and percentage to defaults
-    setDropSetCount(1);
+    setDropSetCount(2);
     setDropSetPercentage(20);
   };
 
@@ -2382,20 +2498,20 @@ const WorkoutLog = () => {
             <>
               {/* Exercise sets section */}
               <div className="mt-3 exercise-set-container">
-                {/* Set headers for each column */}
-                <div className={`grid ${exercise.is_cardio ? 'grid-cols-4' : 'grid-cols-4'} gap-1 text-sm font-semibold mb-1 text-gray-600 dark:text-gray-300 items-center px-1 set-headers`}>
+                {/* Set headers for each column - these will be hidden on mobile but visible on desktop */}
+                <div className={`grid ${exercise.is_cardio ? 'grid-cols-4' : 'grid-cols-4'} gap-1 text-sm font-semibold mb-1 text-gray-600 dark:text-gray-300 items-center px-1 set-headers desktop-only`}>
                   {!exercise.is_cardio ? (
                     <>
+                      <div>Set</div>
                       <div>Weight ({weightUnit})</div>
                       <div>Reps</div>
-                      <div className="col-span-1 text-center">Type</div>
                       <div className="text-right">Action</div>
                     </>
                   ) : (
                     <>
+                      <div>Set</div>
                       <div>Distance (km)</div>
                       <div>Duration (min)</div>
-                      <div>Intensity</div>
                       <div className="text-right">Action</div>
                     </>
                   )}
@@ -2405,9 +2521,38 @@ const WorkoutLog = () => {
                 <div className="exercise-sets">
                   {exercise.sets.map((set, setIndex) => (
                     <div key={setIndex} className="set-row">
+                      {/* Set header showing set number and type */}
+                      <div className="set-number-heading w-full mb-2 flex justify-between items-center">
+                        <span className="font-medium">Set {setIndex + 1}</span>
+                        <div>
+                          {set.is_warmup ? (
+                            <span className="bg-yellow-200 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 text-xs py-1 px-2 rounded-full">
+                              Warm-up
+                            </span>
+                          ) : set.is_drop_set ? (
+                            <span className="bg-red-200 text-red-800 dark:bg-red-900 dark:text-red-200 text-xs py-1 px-2 rounded-full">
+                              Drop {set.drop_number}
+                            </span>
+                          ) : (
+                            <span className="bg-blue-200 text-blue-800 dark:bg-blue-900 dark:text-blue-200 text-xs py-1 px-2 rounded-full">
+                              Normal Set
+                            </span>
+                          )}
+                          <button
+                            onClick={() => handleEditSet(exerciseIndex, setIndex, "is_warmup", !set.is_warmup)}
+                            className="ml-2 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200 text-xs"
+                          >
+                            {set.is_warmup ? "Mark as Normal" : "Mark as Warm-up"}
+                          </button>
+                        </div>
+                      </div>
+                      
                       {!exercise.is_cardio ? (
                         <>
                           <div>
+                            <label className="block text-gray-700 dark:text-gray-300 text-sm font-medium mb-1">
+                              Weight ({weightUnit})
+                            </label>
                             <input
                               type="number"
                               value={set.weight}
@@ -2424,6 +2569,9 @@ const WorkoutLog = () => {
                             />
                           </div>
                           <div>
+                            <label className="block text-gray-700 dark:text-gray-300 text-sm font-medium mb-1">
+                              Reps
+                            </label>
                             <input
                               type="number"
                               value={set.reps}
@@ -2439,27 +2587,32 @@ const WorkoutLog = () => {
                               className="w-full p-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm reps-input"
                             />
                           </div>
-                          <div className="text-center">
-                            {set.is_warmup && (
-                              <span className="bg-yellow-200 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 text-xs py-1 px-2 rounded-full">
-                                Warm-up
-                              </span>
-                            )}
-                            {set.is_drop_set && (
-                              <span className="bg-red-200 text-red-800 dark:bg-red-900 dark:text-red-200 text-xs py-1 px-2 rounded-full">
-                                Drop {set.drop_number}
-                              </span>
-                            )}
-                            {!set.is_warmup && !set.is_drop_set && (
-                              <span className="bg-blue-200 text-blue-800 dark:bg-blue-900 dark:text-blue-200 text-xs py-1 px-2 rounded-full">
-                                Working
-                              </span>
-                            )}
+                          <div>
+                            <label className="block text-gray-700 dark:text-gray-300 text-sm font-medium mb-1">
+                              Notes
+                            </label>
+                            <input
+                              type="text"
+                              value={set.notes || ""}
+                              onChange={(e) =>
+                                handleEditSet(
+                                  exerciseIndex,
+                                  setIndex,
+                                  "notes",
+                                  e.target.value
+                                )
+                              }
+                              placeholder="Notes (optional)"
+                              className="w-full p-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm"
+                            />
                           </div>
                         </>
                       ) : (
                         <>
                           <div>
+                            <label className="block text-gray-700 dark:text-gray-300 text-sm font-medium mb-1">
+                              Distance (km)
+                            </label>
                             <input
                               type="number"
                               value={set.distance}
@@ -2476,6 +2629,9 @@ const WorkoutLog = () => {
                             />
                           </div>
                           <div>
+                            <label className="block text-gray-700 dark:text-gray-300 text-sm font-medium mb-1">
+                              Duration (min)
+                            </label>
                             <input
                               type="number"
                               value={set.duration}
@@ -2492,6 +2648,9 @@ const WorkoutLog = () => {
                             />
                           </div>
                           <div>
+                            <label className="block text-gray-700 dark:text-gray-300 text-sm font-medium mb-1">
+                              Intensity
+                            </label>
                             <select
                               value={set.intensity}
                               onChange={(e) =>
@@ -2511,9 +2670,50 @@ const WorkoutLog = () => {
                               <option value="Very High">Very High</option>
                             </select>
                           </div>
+                          <div>
+                            <label className="block text-gray-700 dark:text-gray-300 text-sm font-medium mb-1">
+                              Notes
+                            </label>
+                            <input
+                              type="text"
+                              value={set.notes || ""}
+                              onChange={(e) =>
+                                handleEditSet(
+                                  exerciseIndex,
+                                  setIndex,
+                                  "notes",
+                                  e.target.value
+                                )
+                              }
+                              placeholder="Notes (optional)"
+                              className="w-full p-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm"
+                            />
+                          </div>
                         </>
                       )}
-                      <div className="text-right">
+                      <div className="flex justify-between items-center mt-2">
+                        <div className="flex items-center">
+                          <input
+                            type="checkbox"
+                            id={`set-completed-${exerciseIndex}-${setIndex}`}
+                            checked={set.completed || false}
+                            onChange={(e) =>
+                              handleEditSet(
+                                exerciseIndex,
+                                setIndex,
+                                "completed",
+                                e.target.checked
+                              )
+                            }
+                            className="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                          />
+                          <label
+                            htmlFor={`set-completed-${exerciseIndex}-${setIndex}`}
+                            className="ml-2 text-sm text-gray-700 dark:text-gray-300"
+                          >
+                            Completed
+                          </label>
+                        </div>
                         <button
                           onClick={() => handleDeleteSet(exerciseIndex, setIndex)}
                           className="text-red-500 hover:text-red-700 p-1 rounded"
@@ -2541,7 +2741,7 @@ const WorkoutLog = () => {
       {/* Action buttons at the bottom */}
       <WorkoutActionButtons 
         onFinishWorkout={handleFinishWorkout}
-        onSaveRoutine={() => setShowSaveRoutineModal(true)}
+        onSaveRoutine={handleSaveAsRoutine}
       />
 
       {showExerciseSelection && (
@@ -2706,7 +2906,6 @@ const WorkoutLog = () => {
                 <FaTimes />
               </button>
             </div>
-
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Rest Duration (seconds)
@@ -2834,16 +3033,19 @@ const WorkoutLog = () => {
                 
             <div className="mb-4">
               <label className="block text-gray-700 dark:text-gray-300 mb-2">
-                Number of Drops
+                Total Sets in Drop Series
               </label>
               <input
                 type="number"
                 value={dropSetCount}
                 onChange={(e) => setDropSetCount(parseInt(e.target.value))}
                 className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
-                min="1"
+                min="2"
                 max="5"
               />
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                Includes top set + drop sets (min: 2, meaning top set + 1 drop)
+              </p>
             </div>
                 
             <div className="mb-4">
@@ -2863,7 +3065,10 @@ const WorkoutLog = () => {
               <div className="mb-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
                 <h3 className="font-medium mb-2">Drop Set Preview:</h3>
                 <div className="space-y-1">
-                  {Array.from({ length: dropSetCount }).map((_, i) => {
+                  <div className="text-sm font-medium mb-1">
+                    Top Set: {originalWeight} {weightUnit}
+                  </div>
+                  {Array.from({ length: dropSetCount - 1 }).map((_, i) => {
                     const weight = calculateNextWeight(
                       parseFloat(originalWeight),
                       dropSetPercentage * (i + 1)
@@ -4324,3 +4529,4 @@ const WorkoutLog = () => {
 }
 
 export default WorkoutLog;
+

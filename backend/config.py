@@ -41,6 +41,9 @@ class Settings:
     # Frontend URL for email verification links - use environment-specific URL
     FRONTEND_URL: str = os.getenv("FRONTEND_BASE_URL", 
                                  "https://fitexplorer.se" if ENV == "production" else "http://localhost:5173")
+    # Always ensure the correct domain is used based on environment
+    if ENV == "production" and "localhost" in FRONTEND_URL:
+        FRONTEND_URL = "https://fitexplorer.se"
     DEFAULT_ADMIN_EMAIL: str = os.getenv(
         "DEFAULT_ADMIN_EMAIL", "fitexplorer.fitnessapp@gmail.com")
 

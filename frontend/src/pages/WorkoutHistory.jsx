@@ -1322,7 +1322,8 @@ function WorkoutHistory() {
                                                   <th scope="col" className="py-1 px-2 text-left font-medium text-gray-600 dark:text-gray-300 tracking-wider">Reps</th>
                                                 </>
                                               )}
-                                              <th scope="col" className="py-1 px-2 text-left font-medium text-gray-600 dark:text-gray-300 tracking-wider">Type</th>
+                                              <th scope="col" className="py-1 px-2 text-left font-medium text-gray-600 dark:text-gray-300 tracking-wider">Set Type</th>
+                                              <th scope="col" className="py-1 px-2 text-left font-medium text-gray-600 dark:text-gray-300 tracking-wider">Notes</th>
                                             </tr>
                                           </thead>
                                           <tbody className="bg-white dark:bg-gray-700 divide-y divide-gray-200 dark:divide-gray-600">
@@ -1404,6 +1405,9 @@ function WorkoutHistory() {
                                                       </span>
                                                     )}
                                                   </td>
+                                                  <td className="py-1 px-2 text-xs max-w-[150px] truncate">
+                                                    {set.notes || "-"}
+                                                  </td>
                                                 </tr>
                                               ))
                                             ) : (
@@ -1420,22 +1424,6 @@ function WorkoutHistory() {
                                         </table>
                                       </div>
                                     </div>
-                                    
-                                    {/* Show notes in a collapsible section */}
-                                    {exercise.sets?.some(set => set.notes) && (
-                                      <div className="mt-2">
-                                        <details className="text-xs">
-                                          <summary className="cursor-pointer text-blue-500">Show Set Notes</summary>
-                                          <div className="mt-1 pl-2 border-l-2 border-gray-300 dark:border-gray-600">
-                                            {exercise.sets.map((set, idx) => set.notes && (
-                                              <div key={idx} className="mb-1">
-                                                <span className="font-medium">Set {idx + 1}:</span> {set.notes}
-                                              </div>
-                                            ))}
-                                          </div>
-                                        </details>
-                                      </div>
-                                    )}
                                   </div>
                                 ))}
                               </div>
