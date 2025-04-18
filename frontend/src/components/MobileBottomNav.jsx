@@ -174,7 +174,6 @@ const MobileBottomNav = () => {
               bottom: '55px',
               left: '0',
               right: '0',
-              backgroundColor: 'white',
               maxHeight: '300px',
               overflowY: 'auto'
             }}
@@ -186,8 +185,8 @@ const MobileBottomNav = () => {
                   to={dropdownItem.path}
                   className={`dropdown-item flex items-center p-3 ${
                     location.pathname === dropdownItem.path 
-                      ? 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400' 
-                      : 'text-gray-800 dark:text-gray-200 border-b border-gray-100 dark:border-gray-700'
+                      ? 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300' 
+                      : 'text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 border-b border-gray-100 dark:border-gray-700'
                   }`}
                   onClick={() => {
                     setShowWorkoutsDropdown(false);
@@ -197,7 +196,7 @@ const MobileBottomNav = () => {
                     }
                   }}
                 >
-                  <span className="mr-3 text-lg">{dropdownItem.icon}</span>
+                  <span className="mr-3 text-lg text-blue-500 dark:text-blue-400">{dropdownItem.icon}</span>
                   <span className="text-sm font-medium">{dropdownItem.label}</span>
                 </Link>
               ))}
@@ -219,7 +218,6 @@ const MobileBottomNav = () => {
               bottom: '55px',
               left: '0',
               right: '0',
-              backgroundColor: 'white',
               maxHeight: '300px',
               overflowY: 'auto'
             }}
@@ -231,8 +229,8 @@ const MobileBottomNav = () => {
                   to={dropdownItem.path}
                   className={`dropdown-item flex items-center p-3 ${
                     location.pathname === dropdownItem.path 
-                      ? 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400' 
-                      : 'text-gray-800 dark:text-gray-200 border-b border-gray-100 dark:border-gray-700'
+                      ? 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300' 
+                      : 'text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 border-b border-gray-100 dark:border-gray-700'
                   }`}
                   onClick={() => {
                     setShowToolsDropdown(false);
@@ -242,7 +240,7 @@ const MobileBottomNav = () => {
                     }
                   }}
                 >
-                  <span className="mr-3 text-lg">{dropdownItem.icon}</span>
+                  <span className="mr-3 text-lg text-blue-500 dark:text-blue-400">{dropdownItem.icon}</span>
                   <span className="text-sm font-medium">{dropdownItem.label}</span>
                 </Link>
               ))}
@@ -285,18 +283,18 @@ const MobileBottomNav = () => {
                     }}
                   >
                     <div className="relative flex flex-col items-center">
-                      <div className={`rounded-full transition-colors ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-gray-600 dark:text-gray-400'}`}>
+                      <div className={`rounded-full transition-colors ${isActive ? 'text-blue-600 dark:text-blue-300' : 'text-gray-600 dark:text-gray-400'}`}>
                         {item.icon}
                         
                         {isActive && (
                           <motion.div
                             layoutId="bottomNavIndicator"
-                            className="absolute -bottom-1 w-4 h-0.5 bg-blue-600 dark:bg-blue-400 rounded-full"
+                            className="absolute -bottom-1 w-4 h-0.5 bg-blue-600 dark:bg-blue-300 rounded-full"
                             transition={{ type: 'spring', stiffness: 500, damping: 30 }}
                           />
                         )}
                       </div>
-                      <span className={`text-xs mt-0.5 flex items-center ${isActive ? 'text-blue-600 dark:text-blue-400 font-medium' : 'text-gray-600 dark:text-gray-400'}`}>
+                      <span className={`text-xs mt-0.5 flex items-center ${isActive ? 'text-blue-600 dark:text-blue-300 font-medium' : 'text-gray-600 dark:text-gray-400'}`}>
                         {item.label}
                         {item.hasDropdown && (
                           <FaChevronUp 

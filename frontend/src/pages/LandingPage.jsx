@@ -99,19 +99,19 @@ const ProgramCard = ({ program }) => (
     )}
     
     {/* Content */}
-    <div className="relative z-20 flex flex-col justify-between h-full p-8">
+    <div className="relative z-20 flex flex-col justify-between h-full p-4 sm:p-6 md:p-8">
       <div>
-        <h3 className="text-2xl font-bold text-white mb-2">
+        <h3 className="text-xl sm:text-2xl font-bold text-white mb-2">
           {program.title}
         </h3>
-        <p className="text-lg text-white/90">
+        <p className="text-base sm:text-lg text-white/90">
           {program.description}
         </p>
       </div>
       
       <Link
         to={program.link}
-        className="mt-6 w-full bg-white hover:bg-blue-50 text-blue-900 font-bold py-3 px-6 rounded-xl text-center transition-all duration-300 shadow-md"
+        className="mt-4 sm:mt-6 w-full bg-white hover:bg-blue-50 text-blue-900 font-bold py-2 sm:py-3 px-4 sm:px-6 rounded-xl text-center transition-all duration-300 shadow-md"
       >
         Get Started
       </Link>
@@ -125,13 +125,13 @@ const FeatureItem = ({ feature }) => (
     initial={{ opacity: 0, y: 10 }}
     whileInView={{ opacity: 1, y: 0 }}
     viewport={{ once: true }}
-    className="flex flex-col items-center text-center p-4"
+    className="flex flex-col items-center text-center p-3 sm:p-4"
   >
-    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500/30 to-purple-500/30 flex items-center justify-center text-2xl mb-4 shadow-md">
+    <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-blue-500/30 to-purple-500/30 flex items-center justify-center text-xl sm:text-2xl mb-3 sm:mb-4 shadow-md">
       {feature.icon}
     </div>
-    <h3 className="text-lg font-bold mb-2 text-blue-900 dark:text-white">{feature.title}</h3>
-    <p className="text-gray-700 dark:text-gray-300 text-sm">{feature.description}</p>
+    <h3 className="text-base sm:text-lg font-bold mb-1 sm:mb-2 text-blue-900 dark:text-white">{feature.title}</h3>
+    <p className="text-gray-700 dark:text-gray-300 text-xs sm:text-sm">{feature.description}</p>
   </motion.div>
 );
 
@@ -209,14 +209,14 @@ const BrightHero = () => {
       
       <div className="container mx-auto px-4 py-12 relative z-10">
         <div className="max-w-6xl mx-auto">
-          <div className="flex flex-row items-center gap-16 justify-center">
+          <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-16 justify-center">
             {/* Text content */}
             <div className="w-full max-w-xl">
               <motion.h1 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
-                className="text-4xl md:text-6xl font-bold mb-8"
+                className="text-3xl sm:text-4xl md:text-6xl font-bold mb-6 sm:mb-8"
               >
                 <span className="text-gray-900 dark:text-white drop-shadow-sm">
                   Fun & Simple Fitness
@@ -376,7 +376,7 @@ const ProgramShowcase = () => (
         </motion.p>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
         {featuredPrograms.map(program => (
           <ProgramCard key={program.id} program={program} />
         ))}
@@ -427,8 +427,8 @@ const QRCodeSection = () => {
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(79,70,229,0.1),transparent)] opacity-70"></div>
       
       <div className="container mx-auto px-4 relative z-10">
-        <div className="flex flex-col md:flex-row items-center gap-12">
-          <div className="md:w-1/2 text-center md:text-left">
+        <div className="flex flex-col md:flex-row items-center gap-8 md:gap-12">
+          <div className="w-full md:w-1/2 text-center md:text-left">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -437,7 +437,7 @@ const QRCodeSection = () => {
               <span className="inline-block mb-4 px-4 py-1.5 bg-blue-900/10 rounded-full backdrop-blur-sm border border-blue-700/20 text-sm font-medium text-blue-800">
                 Mobile App
               </span>
-              <h2 className="text-3xl md:text-4xl font-bold text-blue-900 mb-4">Install FitExplorer on Your Phone</h2>
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-blue-900 mb-4">Install FitExplorer on Your Phone</h2>
               <p className="text-lg text-gray-700 mb-6">
                 Get the same experience as a native app! Add FitExplorer to your home screen for quick access.
               </p>
@@ -470,7 +470,7 @@ const QRCodeSection = () => {
             </motion.div>
           </div>
           
-          <div className="md:w-1/2 flex justify-center">
+          <div className="w-full md:w-1/2 flex justify-center">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               whileInView={{ opacity: 1, scale: 1 }}
@@ -612,7 +612,7 @@ const MoreFeaturesSection = () => {
           </motion.h2>
         </div>
         
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
           {moreFeatures.map(feature => (
             <FeatureItem key={feature.id} feature={feature} />
           ))}
@@ -667,7 +667,7 @@ const CallToAction = () => (
             Get exclusive access to our AI-powered workout system, progress tracking, and nutrition plans in one seamless platform.
           </p>
           
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+          <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-10">
             {stats.map((stat, index) => (
               <motion.div 
                 key={index} 

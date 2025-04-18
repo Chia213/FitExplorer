@@ -169,6 +169,33 @@
   }
 }
 
+/* For iPhone and other small screens */
+@media (max-width: 480px) {
+  .feature-button {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+  }
+  
+  .feature-button span:first-child {
+    margin-right: 0.25rem;
+  }
+  
+  /* Adjust text sizes for better readability on small screens */
+  h1, h2, h3 {
+    word-wrap: break-word;
+  }
+  
+  .testimonial-card {
+    padding: 1rem;
+  }
+  
+  /* Ensure QR code fits on small screens */
+  .QRCodeSVG {
+    max-width: 100%;
+    height: auto;
+  }
+}
+
 /* For very small screens */
 @media (max-width: 360px) {
   .feature-button {

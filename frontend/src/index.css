@@ -725,9 +725,14 @@ body.pwa-standalone-mode .bottom-nav {
 }
 
 .dark .navbar-dropdown {
-  background-color: #1f2937;
+  background-color: #1f2937; /* dark gray-800 */
   border-top: 1px solid rgba(75, 85, 99, 0.5);
   box-shadow: 0 -1px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Add styles for dropdown item hover in dark mode */
+.dark .dropdown-item:hover:not(.bg-blue-900) {
+  background-color: #374151; /* dark gray-700 */
 }
 
 /* Custom animation for dropdown items */
