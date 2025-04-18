@@ -9,21 +9,20 @@
 
   /* Make exercise cards more compact */
   .exercise-card {
-    padding: 1rem !important;
-    margin-bottom: 1rem !important;
+    padding: 0.75rem !important;
+    margin-bottom: 0.75rem !important;
     border-radius: 0.5rem !important;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1) !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+    overflow: visible !important;
   }
 
   /* Better spacing for set rows */
   .set-row {
-    margin-bottom: 1rem !important;
-    padding: 0.75rem !important;
-    border-radius: 0.5rem !important;
+    margin-bottom: 0.5rem !important;
+    padding: 0.5rem !important;
+    border-radius: 0.375rem !important;
     background-color: #f9fafb !important;
     border: 1px solid #e5e7eb !important;
-    display: flex !important;
-    flex-direction: column !important;
   }
 
   /* Set number heading */
@@ -31,29 +30,66 @@
     display: flex !important;
     justify-content: space-between !important;
     align-items: center !important;
-    margin-bottom: 0.5rem !important;
-    padding-bottom: 0.5rem !important;
+    margin-bottom: 0.25rem !important;
+    padding-bottom: 0.25rem !important;
     border-bottom: 1px solid #e5e7eb !important;
     width: 100% !important;
+    font-size: 0.875rem !important;
   }
 
-  /* Ensure set inputs are touch-friendly */
+  /* Fix the buttons container to ensure proper layout */
+  .set-number-heading > div {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    flex-wrap: nowrap !important;
+    white-space: nowrap !important;
+    max-width: 75% !important;
+  }
+
+  /* Style the set type badge to fit better */
+  .set-number-heading span[class*="bg-"] {
+    font-size: 0.65rem !important;
+    padding: 0.25rem 0.5rem !important;
+    display: inline-block !important;
+    text-overflow: ellipsis !important;
+    max-width: 70px !important;
+    overflow: hidden !important;
+  }
+
+  /* Style the Mark as Warm-up button to fit better */
+  .set-number-heading button {
+    font-size: 0.65rem !important;
+    padding: 0.25rem 0.35rem !important;
+    white-space: nowrap !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    max-width: 100px !important;
+    margin-left: 0.25rem !important;
+    background-color: #f3f4f6 !important;
+    border-radius: 0.25rem !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  /* Ensure set inputs are touch-friendly but compact */
   .set-row input,
   .set-row select {
     font-size: 16px !important; /* Prevents iOS zoom */
-    min-height: 44px !important;
-    padding: 0.5rem !important;
-    border-radius: 0.375rem !important;
+    min-height: 36px !important;
+    padding: 0.25rem 0.5rem !important;
+    border-radius: 0.25rem !important;
     border: 1px solid #e5e7eb !important;
     width: 100% !important;
-    margin-bottom: 0.5rem !important;
+    margin-bottom: 0.25rem !important;
   }
 
   /* Input labels */
   .set-row label {
-    font-size: 0.875rem !important;
+    font-size: 0.75rem !important;
     font-weight: 500 !important;
-    margin-bottom: 0.25rem !important;
+    margin-bottom: 0.125rem !important;
     display: block !important;
   }
 
@@ -61,13 +97,19 @@
   .fixed-bottom-actions {
     bottom: env(safe-area-inset-bottom, 0);
     padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0));
-    z-index: 40;
+    z-index: 50 !important;
   }
 
   /* Improve exercise headers */
   .exercise-card h3 {
-    font-size: 1.125rem !important;
-    margin-bottom: 0.25rem !important;
+    display: inline-block !important;
+    margin-right: 2rem !important;
+    position: relative !important;
+    font-size: 1rem !important;
+    text-overflow: ellipsis !important;
+    overflow: hidden !important;
+    white-space: nowrap !important;
+    width: calc(100% - 50px) !important;
   }
 
   /* Exercise set headers */
@@ -78,15 +120,213 @@
     display: none !important; /* Hide the old headers as we now use per-set headers */
   }
 
+  /* Fix for exercise cards showing "1 set" */
+  .exercise-card h3[data-sets] {
+    position: relative !important;
+  }
+
+  .exercise-card h3[data-sets]::after {
+    display: none !important;
+  }
+  
+  /* Make sure parent containers properly display exercise info */
+  .exercise-card .flex-grow {
+    width: 100% !important;
+  }
+  
+  /* Workout container padding */
+  .workout-log-container {
+    padding: 0.75rem !important;
+  }
+
+  /* Exercise Action Buttons - Much smaller for mobile */
+  .exercise-card .exercise-actions button,
+  .exercise-card button[title],
+  .exercise-card .function-buttons button {
+    min-height: 28px !important;
+    min-width: 28px !important;
+    margin: 0.1rem !important;
+    padding: 0.25rem !important;
+    border-radius: 0.25rem !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background-color: #f3f4f6 !important;
+    font-size: 0.7rem !important;
+  }
+
+  /* Make button icons much smaller */
+  .exercise-card svg {
+    width: 0.75rem !important;
+    height: 0.75rem !important;
+  }
+
+  /* Specific buttons styling - extra small */
+  .exercise-card button[title="Move Up"],
+  .exercise-card button[title="Move Down"],
+  .exercise-card button[title="Delete Exercise"],
+  .exercise-card button[title="Add Set"],
+  .exercise-card button[title="Rest Timer"],
+  .exercise-card button[title="Exercise History"],
+  .exercise-card button[title="Exercise Charts"],
+  .exercise-card button[title="Personal Records"],
+  .exercise-card button[title="Set Type"] {
+    min-height: 28px !important;
+    min-width: 28px !important;
+    padding: 0.15rem !important;
+  }
+  
+  /* Make function button text smaller */
+  .exercise-card button span {
+    font-size: 0.65rem !important;
+    margin-left: 0.1rem !important;
+  }
+
+  /* Exercise actions container */
+  .exercise-card .exercise-actions,
+  .exercise-card .set-actions {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    justify-content: space-between !important;
+    margin-top: 0.5rem !important;
+    gap: 0.25rem !important;
+  }
+
+  /* Group buttons in a more touch-friendly way */
+  .exercise-card .action-group {
+    display: flex !important;
+    gap: 0.5rem !important;
+    margin-bottom: 0.5rem !important;
+  }
+
+  /* Row actions - delete buttons for sets */
+  .set-row .set-actions button {
+    min-height: 28px !important;
+    min-width: 28px !important;
+    padding: 0.2rem !important;
+    margin: 0.05rem !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  /* Make sure the trash icon is visible and clickable */
+  .set-row .set-actions button svg {
+    width: 0.75rem !important;
+    height: 0.75rem !important;
+    color: #ef4444 !important; /* Red color */
+  }
+
+  /* Move buttons to be more prominent */
+  .exercise-card .move-buttons {
+    display: flex !important;
+    gap: 0.25rem !important;
+  }
+
+  /* Optimize button grid layout for common iPhone sizes */
+  @media (max-width: 390px) {
+    /* iPhone 13/14 width */
+    .fixed {
+      padding: 0.5rem !important;
+    }
+    
+    /* Make the modal take up more of the screen on small devices */
+    .fixed > div {
+      max-width: 95% !important;
+      max-height: 90vh !important;
+    }
+    
+    /* Increase touch targets */
+    button {
+      min-height: 44px !important;  /* iOS minimum touch target size */
+    }
+    
+    /* Optimize exercise list for iPhone */
+    div[role="dialog"] .overflow-y-auto {
+      max-height: 60vh !important;
+    }
+    
+    /* Fix input fields to prevent zoom on iOS */
+    input, select, textarea {
+      font-size: 16px !important;
+    }
+    
+    /* Make sure text doesn't overflow on small screens */
+    .truncate {
+      max-width: 150px !important;
+    }
+    
+    /* Better spacing for iPhone */
+    .p-3 {
+      padding: 0.5rem !important;
+    }
+    
+    /* Ensure buttons are easily tappable */
+    .justify-between button {
+      padding: 0.5rem !important;
+    }
+
+    /* Optimize exercise action buttons - very compact grid */
+    .exercise-card .exercise-actions {
+      display: grid !important;
+      grid-template-columns: repeat(4, 1fr) !important;
+      gap: 0.15rem !important;
+      margin: 0.3rem 0 !important;
+    }
+
+    /* Ensure delete button is visually distinct */
+    .exercise-card button[title="Delete Exercise"] {
+      background-color: rgba(239, 68, 68, 0.1) !important;
+      color: rgb(239, 68, 68) !important;
+    }
+
+    /* Rest timer button styling */
+    .exercise-card button[title="Rest Timer"] {
+      background-color: rgba(59, 130, 246, 0.1) !important;
+      color: rgb(59, 130, 246) !important;
+    }
+
+    /* Add set button styling */
+    .exercise-card button[title="Add Set"] {
+      background-color: rgba(16, 185, 129, 0.1) !important;
+      color: rgb(16, 185, 129) !important;
+    }
+
+    /* Ensure bottom actions are visible */
+    .workout-log-container {
+      padding-bottom: 80px !important;
+    }
+
+    /* Make the set type badge smaller */
+    .set-number-heading span[class*="bg-"] {
+      font-size: 0.6rem !important;
+      padding: 0.2rem 0.4rem !important;
+      max-width: 60px !important;
+    }
+
+    /* Make the Mark as Warm-up button more compact */
+    .set-number-heading button {
+      font-size: 0.6rem !important;
+      padding: 0.2rem 0.3rem !important;
+      max-width: 90px !important;
+    }
+
+    /* Set number text */
+    .set-number-heading > span {
+      font-size: 0.8rem !important;
+      min-width: 45px !important;
+    }
+  }
+
   /* For standalone/PWA mode, add space for bottom nav */
   @media (display-mode: standalone) {
     .fixed-bottom-actions {
-      margin-bottom: 5rem;
+      margin-bottom: 64px !important; /* Match taller navbar */
     }
 
     /* Add padding to the bottom of the content to prevent it being hidden by the fixed bottom bar */
     .workout-log-container {
-      padding-bottom: calc(5rem + 80px) !important;
+      padding-bottom: calc(64px + 80px) !important; /* Taller navbar + space for action buttons */
     }
     
     /* Ensure proper full-height layout in standalone mode */
@@ -98,6 +338,7 @@
     /* Fix for iOS home indicator area */
     .bottom-nav {
       padding-bottom: env(safe-area-inset-bottom, 20px) !important;
+      height: calc(64px + env(safe-area-inset-bottom, 0px)) !important;
     }
   }
 
@@ -117,6 +358,13 @@
     .workout-modal {
       max-height: 80vh;
       max-width: 90vw;
+    }
+
+    /* Optimize action buttons for landscape */
+    .exercise-card .exercise-actions {
+      display: flex !important;
+      flex-wrap: wrap !important;
+      justify-content: flex-start !important;
     }
   }
   
@@ -185,6 +433,244 @@
     border-radius: 0.25rem !important;
     border: 1px solid #d1d5db !important;
   }
+
+  /* Fix for finish workout and save as routine buttons */
+  .fixed-bottom-actions,
+  [class*="fixed bottom-0"] {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important; 
+    right: 0 !important;
+    padding: 0.5rem !important;
+    padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px)) !important;
+    background-color: white !important;
+    background-color: var(--color-bg-primary, white) !important;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1) !important;
+    z-index: 50 !important;
+    display: flex !important;
+    justify-content: center !important;
+    gap: 0.5rem !important;
+  }
+
+  /* Ensure buttons have proper sizing */
+  .fixed-bottom-actions button,
+  [class*="fixed bottom-0"] button {
+    min-height: 36px !important;
+    font-size: 0.875rem !important;
+    padding: 0.5rem 0.75rem !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex: 1 !important;
+    border-radius: 0.375rem !important;
+    max-width: none !important;
+  }
+
+  /* Make icons smaller */
+  .fixed-bottom-actions button svg,
+  [class*="fixed bottom-0"] button svg {
+    width: 0.875rem !important;
+    height: 0.875rem !important;
+    margin-right: 0.25rem !important;
+  }
+
+  /* Specific adjustments for iPhone */
+  @media (max-width: 390px) {
+    .fixed-bottom-actions,
+    [class*="fixed bottom-0"] {
+      padding: 0.35rem !important;
+      padding-bottom: calc(0.35rem + env(safe-area-inset-bottom, 0px)) !important;
+    }
+
+    .fixed-bottom-actions button,
+    [class*="fixed bottom-0"] button {
+      padding: 0.4rem 0.5rem !important;
+      font-size: 0.8rem !important;
+    }
+  }
+
+  /* Force bottom buttons to be visible (CRITICAL FIX) */
+  .workout-bottom-buttons {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 9999 !important; /* Highest possible z-index */
+    background-color: white !important;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.15) !important;
+    padding: 0.5rem !important;
+    padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px)) !important;
+    display: flex !important;
+    justify-content: center !important;
+    gap: 0.5rem !important;
+    transform: translateZ(0) !important; /* Force hardware acceleration */
+    margin-bottom: 64px !important; /* Space for bottom navbar */
+    opacity: 1 !important; /* Ensure visibility */
+    visibility: visible !important;
+  }
+
+  /* Ensure buttons inside are properly sized and styled */
+  .workout-finish-btn,
+  .workout-save-btn {
+    min-height: 44px !important;
+    font-size: 0.875rem !important;
+    max-width: 45% !important;
+    flex: 1 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0.5rem 0.75rem !important;
+    border-radius: 0.375rem !important;
+    margin: 0 !important;
+    color: white !important;
+    font-weight: 500 !important;
+  }
+
+  /* Make sure text is visible */
+  .workout-finish-btn span,
+  .workout-save-btn span {
+    color: white !important;
+    font-weight: 500 !important;
+    white-space: nowrap !important;
+  }
+
+  /* Different colors for buttons */
+  .workout-finish-btn {
+    background-color: rgb(20, 184, 166) !important; /* teal-500 */
+  }
+
+  .workout-save-btn {
+    background-color: rgb(59, 130, 246) !important; /* blue-500 */
+  }
+
+  /* Add extra spacing below the workout content to prevent hiding content */
+  .workout-log-container {
+    padding-bottom: 160px !important; /* Increased to accommodate both action buttons and bottom navbar */
+  }
+
+  /* Adjust for taller bottom navbar */
+  .bottom-nav, 
+  div[class*="h-16"] {
+    height: 64px !important;
+  }
+
+  /* Specific adjustments for iPhone */
+  @media (max-width: 390px) {
+    .workout-bottom-buttons {
+      padding: 0.35rem !important;
+      padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px)) !important;
+    }
+
+    .workout-finish-btn,
+    .workout-save-btn {
+      padding: 0.3rem 0.5rem !important;
+      min-height: 40px !important;
+      font-size: 0.8rem !important;
+    }
+
+    .workout-finish-btn span,
+    .workout-save-btn span {
+      white-space: nowrap !important;
+    }
+  }
+
+  /* Full width bottom navbar */
+  div[class*="fixed bottom-0"][class*="h-16"] {
+    width: 100vw !important;
+    max-width: 100% !important;
+    left: 0 !important;
+    right: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+  }
+
+  /* Force the navbar container to be full width */
+  div[class*="fixed bottom-0"][class*="h-16"] > div {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Ensure each navbar item takes equal space */
+  div[class*="fixed bottom-0"][class*="h-16"] div[style*="width: 20%"] {
+    flex: 1 !important;
+    max-width: 20% !important;
+    width: 20% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+  }
+
+  /* Adjust for taller bottom navbar */
+  .bottom-nav, 
+  div[class*="h-16"] {
+    height: 64px !important;
+    width: 100% !important;
+  }
+
+  /* Add extra spacing below the workout content to prevent hiding content */
+  .workout-log-container {
+    padding-bottom: 160px !important; /* Increased to accommodate both action buttons and bottom navbar */
+  }
+
+  /* For standalone/PWA mode, adjust spacing for bottom nav */
+  @media (display-mode: standalone) {
+    /* Ensure the navbar extends to the edges */
+    div[class*="fixed bottom-0"][class*="h-16"] {
+      width: 100vw !important;
+      padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+    }
+    
+    /* Bottom navbar should respect safe area */
+    .bottom-nav {
+      padding-bottom: env(safe-area-inset-bottom, 20px) !important;
+      height: calc(64px + env(safe-area-inset-bottom, 0px)) !important;
+      width: 100% !important;
+    }
+    
+    /* Make space for iOS home indicator */
+    .workout-bottom-buttons {
+      margin-bottom: calc(64px + env(safe-area-inset-bottom, 0px)) !important;
+    }
+  }
+
+  /* Make sure the mobile exercise name is visible and stands out */
+  .exercise-set-container .block.md\:hidden {
+    display: block !important;
+    margin-bottom: 0.75rem !important;
+    padding: 0.5rem !important;
+    background-color: #f0f9ff !important; /* Light blue background */
+    border-radius: 0.375rem !important;
+    border: 1px solid #bae6fd !important;
+  }
+
+  .exercise-set-container .block.md\:hidden h4 {
+    font-size: 1.125rem !important;
+    font-weight: 600 !important;
+    color: #0284c7 !important; /* Bright blue text */
+    text-align: center !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+  }
+
+  /* Dark mode version */
+  .dark .exercise-set-container .block.md\:hidden {
+    background-color: rgba(3, 105, 161, 0.2) !important;
+    border-color: rgba(3, 105, 161, 0.4) !important;
+  }
+
+  .dark .exercise-set-container .block.md\:hidden h4 {
+    color: #38bdf8 !important;
+  }
 }
 
 /* Apply these classes to the WorkoutLog elements */
@@ -247,5 +733,623 @@
     padding: 0.75rem !important;
     width: 100% !important;
     border: none !important;
+  }
+}
+
+/* iPhone specific optimizations for Add Exercise modal */
+@media (max-width: 640px) {
+  /* AddExercise component optimizations */
+  .add-exercise-container {
+    padding: 8px 12px;
+  }
+  
+  .add-exercise-modal {
+    max-width: calc(100% - 20px);
+    max-height: calc(100vh - 80px);
+    width: 100%;
+    margin: 10px auto;
+  }
+  
+  .add-exercise-header {
+    padding: 12px;
+  }
+  
+  .add-exercise-header h2 {
+    font-size: 18px;
+  }
+  
+  .add-exercise-content {
+    padding: 12px;
+  }
+  
+  .add-exercise-category-button {
+    min-height: 44px;
+    min-width: 60px;
+    font-size: 14px;
+    padding: 8px 12px;
+  }
+  
+  .add-exercise-search {
+    margin-bottom: 12px;
+  }
+  
+  .add-exercise-search input {
+    min-height: 44px;
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+  
+  .add-exercise-list {
+    max-height: calc(100vh - 340px);
+    overflow-y: auto;
+    margin-bottom: 10px;
+  }
+  
+  .add-exercise-item {
+    min-height: 56px;
+    padding: 10px 12px;
+  }
+  
+  .add-exercise-button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Make exercise items more tap-friendly */
+  .add-exercise-item-text {
+    flex: 1;
+    font-size: 15px;
+    padding: 12px 8px;
+  }
+  
+  /* Increase action button hitareas */
+  .add-exercise-action-button {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 10px;
+  }
+}
+
+/* Specific iPhone optimizations */
+@media (max-width: 390px) {
+  .add-exercise-modal {
+    max-width: 95%;
+  }
+  
+  .add-exercise-list {
+    max-height: calc(100vh - 370px);
+  }
+  
+  .add-exercise-category-wrapper {
+    gap: 6px;
+  }
+  
+  .add-exercise-category-button {
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+}
+
+/* iPhone in standalone mode (PWA) */
+@media (display-mode: standalone) and (max-width: 640px) {
+  .add-exercise-container {
+    padding-bottom: env(safe-area-inset-bottom, 20px);
+  }
+  
+  .add-exercise-list {
+    max-height: calc(100vh - 370px - env(safe-area-inset-bottom, 0px));
+  }
+  
+  /* Handle landscape orientation */
+  @media (orientation: landscape) {
+    .add-exercise-list {
+      max-height: calc(100vh - 280px - env(safe-area-inset-bottom, 0px));
+    }
+    
+    .add-exercise-category-button {
+      min-height: 40px;
+    }
+  }
+}
+
+/* AddExercise component mobile styling */
+@media (max-width: 640px) {
+  /* AddExercise component optimizations */
+  .add-exercise-container {
+    padding: 0 !important;
+  }
+  
+  /* Enhanced modal appearance */
+  .fixed.inset-0.z-50 > div.bg-white {
+    max-width: 100% !important;
+    width: calc(100% - 24px) !important;
+    max-height: 90vh !important;
+    border-radius: 12px !important;
+    overflow: hidden !important;
+  }
+  
+  /* Category grid on mobile */
+  .grid.grid-cols-2 {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+  }
+  
+  .grid.grid-cols-2 button {
+    min-height: 100px !important;
+    padding: 10px !important;
+  }
+  
+  /* Exercise list items */
+  .reorder-modal-item, 
+  li[draggable],
+  .bg-gray-100.text-gray-700 {
+    min-height: 56px !important;
+    padding: 10px 14px !important;
+    margin-bottom: 8px !important;
+    border-radius: 8px !important;
+    display: flex !important;
+    align-items: center !important;
+  }
+  
+  /* Ensure all buttons have proper touch targets */
+  button[class*="rounded-lg"],
+  button[class*="text-blue-500"],
+  button[class*="bg-blue-500"] {
+    min-height: 44px !important;
+    font-size: 15px !important;
+  }
+  
+  /* Input styling for iOS */
+  input, select {
+    font-size: 16px !important; /* Prevents zoom on iOS */
+    min-height: 44px !important;
+  }
+  
+  /* Set counter controls */
+  .w-10.h-10 {
+    width: 44px !important;
+    height: 44px !important;
+    font-size: 18px !important;
+    font-weight: bold !important;
+  }
+  
+  /* Tab-specific styling */
+  .bg-blue-50 {
+    padding: 16px !important;
+    margin-bottom: 16px !important;
+    border-radius: 8px !important;
+  }
+  
+  /* Search field */
+  .relative input[type="text"] {
+    padding: 12px 16px !important;
+    padding-right: 40px !important;
+    border-radius: 8px !important;
+    border-color: rgb(209, 213, 219) !important;
+  }
+  
+  /* Fixed position modals */
+  .fixed.inset-0.z-50 {
+    padding: 12px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+  
+  /* Custom exercise form */
+  .fixed.inset-0.z-50 > div.p-5 {
+    border-radius: 12px !important;
+    padding: 16px !important;
+  }
+  
+  /* Result list items */
+  ul.space-y-2 li {
+    transition: background-color 0.2s ease !important;
+  }
+  
+  ul.space-y-2 li:active {
+    background-color: rgba(59, 130, 246, 0.2) !important;
+  }
+  
+  /* Proper header spacing */
+  .border-b {
+    border-bottom-width: 1px !important;
+    border-color: rgb(229, 231, 235) !important;
+  }
+  
+  /* Cancel button */
+  button.border-gray-300 {
+    border-color: rgb(209, 213, 219) !important;
+    background-color: rgb(249, 250, 251) !important;
+  }
+}
+
+/* iPhone specific adjustments */
+@media (max-width: 390px) {
+  /* Tighter fit for smaller screens */
+  .grid.grid-cols-2 {
+    gap: 6px !important;
+  }
+  
+  .grid.grid-cols-2 button {
+    min-height: 90px !important;
+    padding: 8px !important;
+  }
+  
+  .grid.grid-cols-2 button span.text-2xl {
+    font-size: 20px !important;
+  }
+  
+  /* Smaller text and icons */
+  .text-lg {
+    font-size: 1rem !important;
+  }
+  
+  /* Ensure max height fits smaller screens */
+  .max-h-\[400px\] {
+    max-height: 350px !important;
+  }
+  
+  /* More compact buttons */
+  button.py-3 {
+    padding-top: 10px !important;
+    padding-bottom: 10px !important;
+  }
+}
+
+/* Fix for standalone mode (PWA) */
+@media (display-mode: standalone) {
+  /* Adjust for safe areas */
+  .fixed.inset-0.z-50 {
+    padding-top: env(safe-area-inset-top, 12px) !important;
+    padding-bottom: env(safe-area-inset-bottom, 12px) !important;
+  }
+  
+  /* Account for bottom bar in standalone mode */
+  .fixed.inset-0.z-50 > div.bg-white {
+    max-height: calc(90vh - env(safe-area-inset-bottom, 0px) - 20px) !important;
+  }
+}
+
+/* Custom styles for exercise category grid */
+.grid.grid-cols-2 button {
+  transition: all 0.2s ease !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-width: 1px !important;
+}
+
+.grid.grid-cols-2 button:active {
+  transform: scale(0.98) !important;
+}
+
+/* Global styles */
+@media (max-width: 640px) {
+  .workout-log-container {
+    padding: 0.5rem !important;
+  }
+
+  .workout-page-title {
+    font-size: 1.25rem !important;
+    margin-bottom: 0.75rem !important;
+  }
+
+  /* Tab styling */
+  .workout-log-tabs {
+    font-size: 0.875rem !important;
+  }
+
+  .workout-log-tab {
+    padding: 0.5rem 0.75rem !important;
+  }
+
+  /* Workout List */
+  .workout-list-item {
+    padding: 0.75rem !important;
+    margin-bottom: 0.5rem !important;
+  }
+
+  .workout-list-title {
+    font-size: 1rem !important;
+  }
+
+  .workout-list-date {
+    font-size: 0.75rem !important;
+  }
+
+  /* Exercise cards */
+  .exercise-card {
+    padding: 0.75rem !important;
+    margin-bottom: 0.75rem !important;
+  }
+
+  .exercise-name {
+    font-size: 0.875rem !important;
+    font-weight: 600 !important;
+  }
+
+  .sets-table th,
+  .sets-table td {
+    padding: 0.375rem 0.5rem !important;
+    font-size: 0.75rem !important;
+  }
+
+  .sets-table input {
+    width: 40px !important;
+    padding: 0.25rem !important;
+  }
+
+  .button-group button {
+    padding: 0.375rem 0.5rem !important;
+    font-size: 0.75rem !important;
+  }
+
+  /* Action buttons */
+  .action-button {
+    width: 36px !important;
+    height: 36px !important;
+  }
+
+  .action-button svg {
+    width: 16px !important;
+    height: 16px !important;
+  }
+
+  /* Workout form */
+  .workout-form-group {
+    margin-bottom: 0.75rem !important;
+  }
+
+  .workout-form-label {
+    font-size: 0.875rem !important;
+    margin-bottom: 0.25rem !important;
+  }
+
+  .workout-form-input {
+    padding: 0.5rem 0.75rem !important;
+    font-size: 0.875rem !important;
+  }
+
+  /* Bottom bar */
+  .bottom-bar {
+    padding: 0.75rem !important;
+  }
+
+  .bottom-bar button {
+    padding: 0.5rem 0.75rem !important;
+    font-size: 0.875rem !important;
+  }
+}
+
+/* iPhone X/11/12/13 specific adjustments */
+@media (max-width: 390px) {
+  .workout-log-container {
+    padding: 0.375rem !important;
+  }
+
+  .workout-list-item,
+  .exercise-card {
+    border-radius: 0.5rem !important;
+  }
+
+  /* Touch target sizes */
+  .action-button,
+  .workout-form-input,
+  .sets-table input,
+  .button-group button {
+    min-height: 44px !important; /* Apple's recommended minimum */
+  }
+
+  /* Prevent iOS zoom on input */
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Fix for standalone mode (PWA) */
+@media (display-mode: standalone) {
+  .workout-log-container {
+    padding-bottom: env(safe-area-inset-bottom, 0) !important;
+    margin-bottom: env(safe-area-inset-bottom, 0) !important;
+  }
+
+  .bottom-bar {
+    padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0)) !important;
+  }
+}
+
+/* Fix specifically for custom exercises in mobile view */
+.exercise-card {
+  padding: 0.75rem !important;
+  margin-bottom: 0.75rem !important;
+  border-radius: 0.5rem !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+  overflow: visible !important;
+}
+
+.exercise-card h3 {
+  display: inline-block !important;
+  margin-right: 2rem !important;
+  position: relative !important;
+  font-size: 1rem !important;
+  text-overflow: ellipsis !important;
+  overflow: hidden !important;
+  white-space: nowrap !important;
+  width: calc(100% - 50px) !important;
+}
+
+.exercise-card h3[data-sets] {
+  position: relative !important;
+}
+
+.exercise-card h3[data-sets]::after {
+  display: none !important;
+}
+
+.exercise-card .flex-grow {
+  width: 100% !important;
+}
+
+.set-row {
+  margin-bottom: 0.5rem !important;
+  padding: 0.5rem !important;
+  border-radius: 0.375rem !important;
+  background-color: #f9fafb !important;
+  border: 1px solid #e5e7eb !important;
+}
+
+.workout-log-container {
+  padding: 0.75rem !important;
+}
+
+.fixed-bottom-actions {
+  z-index: 50 !important;
+}
+
+/* Reorder Modal for Mobile */
+.reorder-modal {
+  max-width: 100% !important;
+  width: calc(100% - 24px) !important;
+  max-height: 80vh !important;
+  padding: 16px !important;
+}
+
+.reorder-modal-header {
+  margin-bottom: 12px !important;
+}
+
+.reorder-modal-item {
+  padding: 14px 12px !important;
+  margin-bottom: 8px !important;
+  border-radius: 8px !important;
+  touch-action: none !important;
+  min-height: 60px !important;
+}
+
+.reorder-modal-item-grip {
+  padding: 10px !important;
+  margin-right: 10px !important;
+}
+
+.reorder-modal-item-name {
+  font-size: 16px !important;
+  line-height: 1.2 !important;
+}
+
+.reorder-modal-instructions {
+  font-size: 14px !important;
+  margin-bottom: 12px !important;
+  padding: 8px !important;
+  background-color: rgba(59, 130, 246, 0.1) !important;
+  border-radius: 6px !important;
+}
+
+/* iPhone specific adjustments */
+@media screen and (max-width: 390px) {
+  .reorder-modal {
+    padding: 12px !important;
+    max-height: 75vh !important;
+  }
+  
+  .reorder-modal-item {
+    padding: 12px 8px !important;
+  }
+  
+  .reorder-modal-item-name {
+    font-size: 15px !important;
+  }
+  
+  .reorder-modal button {
+    min-height: 44px !important;
+    font-size: 15px !important;
+  }
+  
+  .reorder-modal-list {
+    max-height: calc(75vh - 140px) !important;
+    padding-right: 4px !important;
+  }
+}
+
+/* Styles for standalone mode (PWA) */
+@media screen and (display-mode: standalone) {
+  .reorder-modal {
+    padding-bottom: 20px !important;
+    /* Adjust for bottom nav bar in standalone mode */
+    max-height: 70vh !important;
+  }
+  
+  /* Handle landscape orientation */
+  @media (orientation: landscape) {
+    .reorder-modal {
+      max-height: 85vh !important;
+      max-width: 90% !important;
+    }
+    
+    .reorder-modal-list {
+      display: grid !important;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)) !important;
+      gap: 8px !important;
+      max-height: calc(85vh - 120px) !important;
+    }
+  }
+}
+
+/* Drag and drop visual feedback */
+.reorder-modal-item.dragging {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2) !important;
+  transform: scale(1.02) !important;
+  z-index: 10 !important;
+  opacity: 0.9 !important;
+}
+
+/* Accessibility improvements */
+.reorder-modal-item:active {
+  transform: scale(0.98) !important;
+}
+
+/* Scrollbar styling for the modal */
+.reorder-modal-list::-webkit-scrollbar {
+  width: 4px !important;
+}
+
+.reorder-modal-list::-webkit-scrollbar-thumb {
+  background-color: rgba(107, 114, 128, 0.5) !important;
+  border-radius: 4px !important;
+}
+
+/* Add Set button styling - make it match add another exercise button */
+.exercise-card button[title="Add Set"],
+.exercise-card button[class*="bg-blue-500"] {
+  width: 100% !important;
+  margin: 8px auto !important;
+  padding: 10px !important;
+  height: auto !important;
+  font-size: 14px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
+}
+
+@media (max-width: 640px) {
+  /* Match styling between Add Set and Add Another Exercise buttons */
+  .exercise-card .mt-3.text-center button,
+  .mt-4.mb-16 button:not(.fixed button) {
+    width: 100% !important;
+    padding: 10px 16px !important;
+    height: auto !important;
+    min-height: 48px !important;
+    font-size: 15px !important;
+    border-radius: 8px !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+  }
+  
+  /* Add Set icon */
+  .exercise-card .mt-3.text-center button svg,
+  .mt-4.mb-16 button svg {
+    margin-right: 8px !important;
+    width: 18px !important;
+    height: 18px !important;
   }
 } 

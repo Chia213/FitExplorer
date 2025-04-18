@@ -11,7 +11,7 @@ from datetime import timedelta, datetime, timezone
 import jwt as pyjwt
 from jwt.exceptions import PyJWTError as JWTError
 from database import get_db, SessionLocal
-from models import User, AdminSettings, Set, Exercise, Workout, WorkoutPreferences, NutritionMeal, NutritionFood, NutritionGoal, CommonFood, UserSession
+from models import User, AdminSettings, Set, Exercise, Workout, WorkoutPreferences, NutritionMeal, NutritionFood, NutritionGoal, CommonFood, UserSession, UserProfile
 from schemas import UserCreate, UserLogin, Token, GoogleTokenVerifyRequest, GoogleAuthResponse, ForgotPasswordRequest, ResetPasswordRequest, TokenVerificationRequest, ConfirmAccountDeletionRequest, ResendVerificationRequest, ChangePasswordRequest, SessionSettingsUpdate, UserSessionResponse
 from config import settings
 from security import generate_verification_token, hash_password, verify_password
@@ -1652,3 +1652,89 @@ async def update_session_settings(
     db.commit()
     
     return {"message": "Session settings updated successfully"}
+
+@router.post("/refresh-token", response_model=Token)
+async def refresh_auth_token(
+    request: Request,
+    token: str = Depends(oauth2_scheme),
+    db: Session = Depends(get_db)
+):
+    """
+    Refresh an authentication token
+    """
+    try:
+        # First, verify the existing token
+        payload = pyjwt.decode(
+            token, 
+            settings.SECRET_KEY, 
+            algorithms=["HS256"]
+        )
+        
+        username = payload.get("sub")
+        if username is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid authentication credentials",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+            
+        # Check if token is blacklisted
+        if is_token_blacklisted(token):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token has been revoked",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        
+        # Get the user
+        user = db.query(User).filter(User.username == username).first()
+        if user is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        
+        # Ensure user is verified
+        if not user.is_verified and settings.require_email_verification:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Email not verified. Please verify your email.",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        
+        # Create a new token with refreshed expiry
+        access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token = create_access_token(
+            data={"sub": user.username}, 
+            expires_delta=access_token_expires
+        )
+        
+        # Update last_login in the user's profile
+        profile = db.query(UserProfile).filter(UserProfile.user_id == user.id).first()
+        if profile:
+            profile.last_login = datetime.now(timezone.utc)
+            db.commit()
+        
+        # Optionally blacklist the old token
+        # blacklist_token(token, payload.get("exp", 3600))
+        
+        return {"access_token": access_token, "token_type": "bearer"}
+        
+    except JWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+@router.get("/validate-token", status_code=200)
+async def validate_token(
+    token: str = Depends(oauth2_scheme),
+    user: User = Depends(original_get_current_user)
+):
+    """
+    Validate that a token is still active and not blacklisted
+    """
+    # The token is validated by the dependency, so if we get here, it's valid
+    return {"valid": True}

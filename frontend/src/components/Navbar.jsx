@@ -24,6 +24,7 @@ import {
   FaChevronDown,
   FaCog,
   FaQrcode,
+  FaPlus,
 } from "react-icons/fa";
 import { LuBicepsFlexed, LuCalendarClock } from "react-icons/lu";
 import logo from "../assets/Ronjasdrawing.png";
@@ -79,6 +80,7 @@ const NAVIGATION_ITEMS = {
     { label: 'Workout Log', path: '/workout-log', icon: <FaListAlt /> },
     { label: 'Workout History', path: '/workout-history', icon: <FaHistory /> },
     { label: 'My Routines', path: '/routines', icon: <FaSave /> },
+    { label: 'Custom Exercises', path: '/custom-exercises', icon: <FaPlus /> },
   ],
   tools: [
     { label: 'Fitness Calculator', path: '/fitness-calculator', icon: <FaCalculator /> },

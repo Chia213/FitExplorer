@@ -92,10 +92,10 @@ const MobileBottomNav = () => {
   
   // Navigation items for the bottom nav
   const navItems = [
-    { path: '/', icon: <FaHome className="w-5 h-5" />, label: 'Home' },
+    { path: '/', icon: <FaHome className="w-6 h-6" />, label: 'Home' },
     { 
       path: '/workout-generator', 
-      icon: <FaDumbbell className="w-5 h-5" />, 
+      icon: <FaDumbbell className="w-6 h-6" />, 
       label: 'Workouts',
       hasDropdown: true,
       dropdownType: 'workouts',
@@ -108,10 +108,10 @@ const MobileBottomNav = () => {
       ]
     },
     
-    { path: 'explore-muscle-guide', icon: <LuBicepsFlexed className="w-5 h-5" />, label: 'Training Library' },
+    { path: 'explore-muscle-guide', icon: <LuBicepsFlexed className="w-6 h-6" />, label: 'Training Library' },
     { 
       path: '/fitness-tools', 
-      icon: <FaTools className="w-5 h-5" />, 
+      icon: <FaTools className="w-6 h-6" />, 
       label: 'Tools',
       hasDropdown: true,
       dropdownType: 'tools',
@@ -121,7 +121,7 @@ const MobileBottomNav = () => {
         { path: '/progress-tracker', icon: <FaChartLine />, label: 'Progress Tracker' },
       ]
     },
-    { path: '/profile', icon: <FaUser className="w-5 h-5" />, label: 'Profile' }
+    { path: '/profile', icon: <FaUser className="w-6 h-6" />, label: 'Profile' }
   ];
   
   // Check if a route is active
@@ -171,11 +171,12 @@ const MobileBottomNav = () => {
             transition={{ duration: 0.2 }}
             className="fixed z-50 bg-white dark:bg-gray-800 rounded-lg shadow-xl navbar-dropdown"
             style={{
-              bottom: '55px',
+              bottom: '70px',
               left: '0',
               right: '0',
               maxHeight: '300px',
-              overflowY: 'auto'
+              overflowY: 'auto',
+              margin: '0 8px'
             }}
           >
             <div className="p-1">
@@ -215,11 +216,12 @@ const MobileBottomNav = () => {
             transition={{ duration: 0.2 }}
             className="fixed z-50 bg-white dark:bg-gray-800 rounded-lg shadow-xl navbar-dropdown"
             style={{
-              bottom: '55px',
+              bottom: '70px',
               left: '0',
               right: '0',
               maxHeight: '300px',
-              overflowY: 'auto'
+              overflowY: 'auto',
+              margin: '0 8px'
             }}
           >
             <div className="p-1">
@@ -249,10 +251,10 @@ const MobileBottomNav = () => {
         )}
       </AnimatePresence>
       
-      {/* Bottom navbar */}
-      <div className="fixed bottom-0 left-0 right-0 h-14 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 z-40">
-        <div className="h-full flex items-end">
-          <div className="flex justify-between items-center w-full h-full bg-white dark:bg-gray-800">
+      {/* Main bottom nav bar - full width */}
+      <div className="fixed bottom-0 left-0 right-0 h-16 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 z-40 w-full overflow-hidden">
+        <div className="h-full flex items-center w-full">
+          <div className="flex justify-between items-center w-full h-full">
             {navItems.map((item, index) => {
               const isActive = item.hasDropdown
                 ? (item.dropdownType === 'workouts' ? isWorkoutActive : 
@@ -283,7 +285,7 @@ const MobileBottomNav = () => {
                     }}
                   >
                     <div className="relative flex flex-col items-center">
-                      <div className={`rounded-full transition-colors ${isActive ? 'text-blue-600 dark:text-blue-300' : 'text-gray-600 dark:text-gray-400'}`}>
+                      <div className={`rounded-full p-1 transition-colors ${isActive ? 'text-blue-600 dark:text-blue-300' : 'text-gray-600 dark:text-gray-400'}`}>
                         {item.icon}
                         
                         {isActive && (
@@ -294,7 +296,7 @@ const MobileBottomNav = () => {
                           />
                         )}
                       </div>
-                      <span className={`text-xs mt-0.5 flex items-center ${isActive ? 'text-blue-600 dark:text-blue-300 font-medium' : 'text-gray-600 dark:text-gray-400'}`}>
+                      <span className={`text-xs mt-1 flex items-center ${isActive ? 'text-blue-600 dark:text-blue-300 font-medium' : 'text-gray-600 dark:text-gray-400'}`}>
                         {item.label}
                         {item.hasDropdown && (
                           <FaChevronUp 

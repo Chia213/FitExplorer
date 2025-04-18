@@ -9,6 +9,7 @@ import ScrollToTop from "./components/ScrollToTop";
 import MobileBottomNav from "./components/MobileBottomNav";
 import { NotificationProvider } from "./contexts/NotificationContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
+import { Toaster } from 'react-hot-toast';
 
 // Pagess
 import ExploreMuscleGuide from "./pages/ExploreMuscleGuide";
@@ -22,6 +23,8 @@ import WorkoutGenerator from "./pages/WorkoutGenerator";
 import AIWorkoutGenerator from "./pages/AIWorkoutGenerator";
 import Routines from "./pages/Routines";
 import AddExercise from "./pages/AddExercise";
+import CustomExercises from "./pages/CustomExercises";
+import CustomExercisesTest from "./pages/CustomExercisesTest";
 import Login from "./pages/Login";
 import VerifyEmail from "./pages/VerifyEmail";
 import ResetPassword from "./pages/ResetPassword";
@@ -61,6 +64,7 @@ import "./styles/navHover.css";
 import "./styles/micro-interactions.css";
 import "./styles/custom-scrollbar.css";
 import "./styles/responsive-utilities.css";
+import "./styles/custom-exercises.css";
 
 // Component to handle OAuth return in PWA mode
 const OAuthHandler = () => {
@@ -150,6 +154,8 @@ function App() {
                     <Route path="/workout-history" element={<AuthRoute><WorkoutHistory /></AuthRoute>} />
                     <Route path="/ai-workout-generator" element={<AuthRoute><AIWorkoutGenerator /></AuthRoute>} />
                     <Route path="/routines" element={<AuthRoute><Routines /></AuthRoute>} />
+                    <Route path="/custom-exercises" element={<AuthRoute><CustomExercises /></AuthRoute>} />
+                    <Route path="/custom-exercises-test" element={<AuthRoute><CustomExercisesTest /></AuthRoute>} />
                     <Route path="/explore-muscle-guide" element={<AuthRoute><ExploreMuscleGuide /></AuthRoute>} />
                     <Route path="/progress-tracker" element={<AuthRoute><ProgressTracker /></AuthRoute>} />
                     <Route path="/add-exercise" element={<AuthRoute><AddExercise /></AuthRoute>} />
@@ -178,6 +184,26 @@ function App() {
               </Layout>
               <WelcomeModalWrapper />
               <MobileBottomNav />
+              <Toaster position="bottom-center" toastOptions={{
+                duration: 3000,
+                style: {
+                  background: '#333',
+                  color: '#fff',
+                  maxWidth: '500px',
+                },
+                success: {
+                  duration: 3000,
+                  style: {
+                    background: '#10B981',
+                  },
+                },
+                error: {
+                  duration: 4000,
+                  style: {
+                    background: '#EF4444',
+                  },
+                },
+              }} />
             </div>
           </NotificationProvider>
         </WelcomeProvider>

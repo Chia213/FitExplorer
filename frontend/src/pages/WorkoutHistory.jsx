@@ -910,26 +910,26 @@ function WorkoutHistory() {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
             Workout History
           </h1>
-          <div className="flex space-x-2">
+          <div className="flex space-x-1.5">
             <button
               onClick={() => setViewMode("list")}
-              className={`px-3 py-1 rounded ${
+              className={`px-2 py-1 rounded text-xs ${
                 viewMode === "list"
                   ? "bg-blue-500 text-white"
                   : "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
               }`}
             >
-              View Listed Workouts
+              List View
             </button>
             <button
               onClick={() => setViewMode("calendar")}
-              className={`px-3 py-1 rounded ${
+              className={`px-2 py-1 rounded text-xs ${
                 viewMode === "calendar"
                   ? "bg-blue-500 text-white"
                   : "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
               }`}
             >
-              View Calendar
+              Calendar
             </button>
           </div>
         </div>
@@ -941,14 +941,14 @@ function WorkoutHistory() {
         )}
         
         {/* Action Bar */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 mb-4 shadow">
-          <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3">
-            <div className="flex flex-wrap gap-2 items-center">
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-3 mb-4 shadow">
+          <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-2">
+            <div className="flex flex-wrap gap-1.5 items-center">
               <button
                 onClick={handleSelectAllWorkouts}
-                className="flex items-center text-sm bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 px-2 py-1 rounded"
+                className="flex items-center text-xs bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 px-1.5 py-1 rounded"
               >
-                <FaCheckSquare className="mr-1" />
+                <FaCheckSquare className="mr-1 text-xs" />
                 {selectedWorkouts.length === filteredWorkouts.length && filteredWorkouts.length > 0 
                   ? "Unselect All" 
                   : "Select All"}
@@ -957,48 +957,48 @@ function WorkoutHistory() {
               <button
                 onClick={handleDeleteSelectedWorkouts}
                 disabled={selectedWorkouts.length === 0}
-                className={`flex items-center text-sm ${
+                className={`flex items-center text-xs ${
                   selectedWorkouts.length > 0
                     ? "bg-red-500 hover:bg-red-600 text-white"
                     : "bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed"
-                } px-2 py-1 rounded`}
+                } px-1.5 py-1 rounded`}
               >
-                <FaTrash className="mr-1" />
-                Delete Selected ({selectedWorkouts.length})
+                <FaTrash className="mr-1 text-xs" />
+                Del ({selectedWorkouts.length})
               </button>
               
               <button
                 onClick={handleDeleteAllWorkouts}
-                className="flex items-center text-sm bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded"
+                className="flex items-center text-xs bg-red-500 hover:bg-red-600 text-white px-1.5 py-1 rounded"
               >
-                <FaTrash className="mr-1" />
-                Delete All
+                <FaTrash className="mr-1 text-xs" />
+                Del All
               </button>
               
               <button
                 onClick={() => navigate('/personal-records')}
-                className="flex items-center text-sm bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded"
+                className="flex items-center text-xs bg-green-500 hover:bg-green-600 text-white px-1.5 py-1 rounded"
               >
-                <FaTrophy className="mr-1" />
-                Personal Records
+                <FaTrophy className="mr-1 text-xs" />
+                Records
               </button>
             </div>
             
-            <div className="flex items-center">
+            <div className="flex items-center mt-2 md:mt-0">
               <button
                 onClick={toggleWeightUnit}
-                className="flex items-center text-sm bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded font-medium"
+                className="flex items-center text-xs bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded font-medium"
               >
-                <FaBalanceScale className="mr-1" />
-                Switch to {weightUnit === "kg" ? "LBS" : "KG"}
+                <FaBalanceScale className="mr-1 text-xs" />
+                {weightUnit === "kg" ? "→ LBS" : "→ KG"}
               </button>
             </div>
           </div>
           
           {/* Filters */}
-          <div className="mt-4 flex flex-col space-y-3">
+          <div className="mt-1.5 flex flex-col space-y-1">
             <div className="flex flex-col">
-              <label htmlFor="search-query" className="text-gray-700 dark:text-gray-300 text-sm font-medium mb-1">
+              <label htmlFor="search-query" className="text-gray-700 dark:text-gray-300 text-[10px] font-medium mb-0.5">
                 Search:
               </label>
               <div className="relative">
@@ -1007,16 +1007,16 @@ function WorkoutHistory() {
                   id="search-query"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search by workout name..."
-                  className="w-full rounded-lg border border-gray-300 dark:border-gray-500 bg-white dark:bg-gray-800 text-gray-800 dark:text-white px-3 py-2.5 text-sm focus:ring-blue-500 focus:border-blue-500 shadow-sm"
+                  placeholder="Search workouts..."
+                  className="w-full rounded border border-gray-300 dark:border-gray-500 bg-white dark:bg-gray-800 text-gray-800 dark:text-white px-2 py-1 text-[11px] focus:ring-blue-500 focus:border-blue-500 shadow-sm"
                 />
-                <FaSearch className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-300" />
+                <FaSearch className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-300 text-[10px]" />
               </div>
             </div>
             
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-1">
               <div className="flex flex-col">
-                <label htmlFor="filter-date" className="text-gray-700 dark:text-gray-300 text-sm font-medium mb-1">
+                <label htmlFor="filter-date" className="text-gray-700 dark:text-gray-300 text-[10px] font-medium mb-0.5">
                   Date:
                 </label>
                 <input
@@ -1024,19 +1024,19 @@ function WorkoutHistory() {
                   id="filter-date"
                   value={filterDate}
                   onChange={(e) => setFilterDate(e.target.value)}
-                  className="w-full rounded-lg border border-gray-300 dark:border-gray-500 bg-white dark:bg-gray-800 text-gray-800 dark:text-white px-3 py-2.5 text-sm focus:ring-blue-500 focus:border-blue-500 shadow-sm"
+                  className="w-full rounded border border-gray-300 dark:border-gray-500 bg-white dark:bg-gray-800 text-gray-800 dark:text-white px-2 py-1 text-[11px] focus:ring-blue-500 focus:border-blue-500 shadow-sm"
                 />
               </div>
               
               <div className="flex flex-col">
-                <label htmlFor="filter-exercise" className="text-gray-700 dark:text-gray-300 text-sm font-medium mb-1">
+                <label htmlFor="filter-exercise" className="text-gray-700 dark:text-gray-300 text-[10px] font-medium mb-0.5">
                   Exercise:
                 </label>
                 <select
                   id="filter-exercise"
                   value={filterExercise}
                   onChange={(e) => setFilterExercise(e.target.value)}
-                  className="w-full rounded-lg border border-gray-300 dark:border-gray-500 bg-white dark:bg-gray-800 text-gray-800 dark:text-white px-3 py-2.5 text-sm focus:ring-blue-500 focus:border-blue-500 shadow-sm appearance-none bg-no-repeat bg-right pr-8"
+                  className="w-full rounded border border-gray-300 dark:border-gray-500 bg-white dark:bg-gray-800 text-gray-800 dark:text-white px-2 py-1 text-[11px] focus:ring-blue-500 focus:border-blue-500 shadow-sm appearance-none bg-no-repeat bg-right pr-7"
                   style={{ backgroundImage: 'url("data:image/svg+xml,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 fill=%27none%27 viewBox=%270 0 20 20%27%3e%3cpath stroke=%27%236b7280%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27 stroke-width=%271.5%27 d=%27M6 8l4 4 4-4%27/%3e%3c/svg%3e")' }}
                 >
                   <option value="">All Exercises</option>
@@ -1061,36 +1061,36 @@ function WorkoutHistory() {
         ) : (
           <>
             {workoutStats && (
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
-                <h2 className="text-lg font-semibold mb-3">Your Workout Summary</h2>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="bg-blue-50 dark:bg-blue-900/30 p-3 rounded-lg">
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 mb-4">
+                <h2 className="text-sm font-semibold mb-2">Your Workout Summary</h2>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                  <div className="bg-blue-50 dark:bg-blue-900/30 p-2 rounded-lg">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
                       Total Workouts
                     </p>
-                    <p className="text-2xl font-bold">
+                    <p className="text-lg font-bold">
                       {workoutStats.totalWorkouts}
                     </p>
                   </div>
-                  <div className="bg-green-50 dark:bg-green-900/30 p-3 rounded-lg">
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                  <div className="bg-green-50 dark:bg-green-900/30 p-2 rounded-lg">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
                       This Month
                     </p>
-                    <p className="text-2xl font-bold">{workoutStats.thisMonth}</p>
+                    <p className="text-lg font-bold">{workoutStats.thisMonth}</p>
                   </div>
-                  <div className="bg-purple-50 dark:bg-purple-900/30 p-3 rounded-lg">
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                  <div className="bg-purple-50 dark:bg-purple-900/30 p-2 rounded-lg">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
                       Avg Duration
                     </p>
-                    <p className="text-2xl font-bold">
+                    <p className="text-lg font-bold">
                       {workoutStats.avgDuration} min
                     </p>
                   </div>
-                  <div className="bg-yellow-50 dark:bg-yellow-900/30 p-3 rounded-lg">
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                  <div className="bg-yellow-50 dark:bg-yellow-900/30 p-2 rounded-lg">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
                       Favorite Exercise
                     </p>
-                    <p className="text-xl font-bold truncate">
+                    <p className="text-sm font-bold truncate">
                       {workoutStats.mostFrequentExercise}
                     </p>
                   </div>
@@ -1099,20 +1099,20 @@ function WorkoutHistory() {
             )}
 
             {viewMode === "calendar" && (
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 mb-4 overflow-auto">
-                <div className="mb-3 flex justify-between items-center">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-2 mb-4">
+                <div className="mb-2 flex justify-between items-center">
                   <button
                     onClick={() => {
                       const newDate = new Date(currentMonth);
                       newDate.setMonth(newDate.getMonth() - 1);
                       setCurrentMonth(newDate);
                     }}
-                    className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
+                    className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
                   >
-                    <FaChevronLeft />
+                    <FaChevronLeft className="text-xs" />
                   </button>
 
-                  <h3 className="text-base font-medium">
+                  <h3 className="text-sm font-medium">
                     {new Date(currentMonth).toLocaleDateString("en-GB", {
                       month: "long",
                       year: "numeric",
@@ -1125,15 +1125,15 @@ function WorkoutHistory() {
                       newDate.setMonth(newDate.getMonth() + 1);
                       setCurrentMonth(newDate);
                     }}
-                    className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
+                    className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
                   >
-                    <FaChevronRight />
+                    <FaChevronRight className="text-xs" />
                   </button>
                 </div>
 
-                <div className="grid grid-cols-7 gap-1 min-w-[500px]">
+                <div className="grid grid-cols-7 gap-0.5">
                   {["S", "M", "T", "W", "T", "F", "S"].map((day) => (
-                    <div key={day} className="text-center font-medium p-1 text-xs">
+                    <div key={day} className="text-center font-medium p-0.5 text-[10px]">
                       {day}
                     </div>
                   ))}
@@ -1142,22 +1142,41 @@ function WorkoutHistory() {
                   {generateCalendarDays().map((day, i) => (
                     <div
                       key={i}
-                      className={`p-1 min-h-[60px] border rounded text-xs ${
+                      className={`p-0.5 min-h-[40px] border rounded text-[10px] ${
                         day.isCurrentMonth
                           ? "border-gray-200 dark:border-gray-700"
                           : "border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 text-gray-400"
-                      } ${day.isToday ? "ring-2 ring-blue-500" : ""}`}
+                      } ${day.isToday ? "ring-1 ring-blue-500" : ""}`}
                     >
-                      <div className="text-right mb-1">{day.date.getDate()}</div>
-                      {day.workouts.map((workout, idx) => (
-                        <div
-                          key={idx}
-                          onClick={() => handleViewWorkout(workout)}
-                          className="text-xs p-1 mb-1 rounded bg-blue-100 dark:bg-blue-900/30 cursor-pointer truncate hover:bg-blue-200 dark:hover:bg-blue-800/30"
-                        >
-                          {workout.name}
-                        </div>
-                      ))}
+                      <div className="text-right mb-0.5">{day.date.getDate()}</div>
+                      <div className="flex flex-col gap-0.5">
+                        {day.workouts.length > 0 ? (
+                          day.workouts.map((workout, idx) => (
+                            <div 
+                              key={idx}
+                              onClick={() => {
+                                // Format date as YYYY-MM-DD for filter
+                                const formattedDate = day.date.toISOString().split('T')[0];
+                                setFilterDate(formattedDate);
+                                // Clear other filters that might interfere
+                                setFilterExercise("");
+                                setSearchQuery("");
+                                // Switch to list view and expand the workout
+                                setViewMode("list");
+                                setExpandedWorkouts(prev => ({
+                                  ...prev,
+                                  [workout.id]: true
+                                }));
+                              }}
+                              className="text-[9px] p-0.5 rounded bg-blue-100 dark:bg-blue-900/30 cursor-pointer truncate hover:bg-blue-200 dark:hover:bg-blue-800/30"
+                            >
+                              {workout.name || (workout.exercises?.[0]?.name || "Workout")}
+                            </div>
+                          ))
+                        ) : day.isCurrentMonth ? (
+                          <div className="text-[9px] text-center text-gray-400">No workouts</div>
+                        ) : null}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -1205,20 +1224,20 @@ function WorkoutHistory() {
                                       e.stopPropagation();
                                       handleDeleteWorkout(workout.id);
                                     }}
-                                    className="text-red-500 hover:text-red-700 dark:hover:text-red-400 p-1"
+                                    className="text-red-500 hover:text-red-700 dark:hover:text-red-400 p-1.5 rounded-full bg-gray-100 dark:bg-gray-700"
                                     title="Delete workout"
                                   >
-                                    <FaTrash className="text-sm" />
+                                    <FaTrash className="text-xs" />
                                   </button>
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       handleSaveAsRoutine(workout);
                                     }}
-                                    className="text-blue-500 hover:text-blue-700 dark:hover:text-blue-400 p-1"
+                                    className="text-blue-500 hover:text-blue-700 dark:hover:text-blue-400 p-1.5 rounded-full bg-gray-100 dark:bg-gray-700"
                                     title="Save as Routine"
                                   >
-                                    <FaSave className="text-sm" />
+                                    <FaSave className="text-xs" />
                                   </button>
                                 </div>
                               </div>
@@ -1312,9 +1331,9 @@ function WorkoutHistory() {
                                               <th scope="col" className="py-1 pl-1 pr-2 text-left font-medium text-gray-600 dark:text-gray-300 tracking-wider">#</th>
                                               {exercise.is_cardio ? (
                                                 <>
-                                                  <th scope="col" className="py-1 px-2 text-left font-medium text-gray-600 dark:text-gray-300 tracking-wider">Dist</th>
-                                                  <th scope="col" className="py-1 px-2 text-left font-medium text-gray-600 dark:text-gray-300 tracking-wider">Time</th>
-                                                  <th scope="col" className="py-1 px-2 text-left font-medium text-gray-600 dark:text-gray-300 tracking-wider">Level</th>
+                                                  <th scope="col" className="py-1 px-2 text-left font-medium text-gray-600 dark:text-gray-300 tracking-wider">Distance</th>
+                                                  <th scope="col" className="py-1 px-2 text-left font-medium text-gray-600 dark:text-gray-300 tracking-wider">Duration</th>
+                                                  <th scope="col" className="py-1 px-2 text-left font-medium text-gray-600 dark:text-gray-300 tracking-wider">Intensity</th>
                                                 </>
                                               ) : (
                                                 <>

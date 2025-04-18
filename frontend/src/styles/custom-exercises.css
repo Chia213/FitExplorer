@@ -1,0 +1,115 @@
+/* Custom Exercises Manager Styles */
+
+.custom-exercise-manager {
+  padding: 1rem;
+  background-color: #f9fafb;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Mobile Optimizations */
+.custom-exercise-manager.mobile {
+  padding: 0.75rem;
+}
+
+.custom-exercise-manager.mobile h2 {
+  font-size: 1.25rem;
+}
+
+/* Exercise Card Styles */
+.custom-exercise-manager .exercise-card {
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.custom-exercise-manager .exercise-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Modal Touch-friendly adjustments */
+@media (max-width: 768px) {
+  .custom-exercise-manager input,
+  .custom-exercise-manager select,
+  .custom-exercise-manager button {
+    font-size: 16px; /* Prevents iOS zoom on focus */
+  }
+  
+  .custom-exercise-manager button {
+    min-height: 44px; /* iOS recommended minimum touch target size */
+  }
+}
+
+/* iPhone specific optimizations */
+@media (max-width: 390px) {
+  .custom-exercise-manager {
+    padding: 0.5rem;
+  }
+  
+  .custom-exercise-manager .grid {
+    gap: 0.5rem;
+  }
+  
+  .custom-exercise-manager h2 {
+    font-size: 1.125rem;
+  }
+  
+  /* Make buttons more touch-friendly */
+  .custom-exercise-manager button {
+    padding: 0.5rem 0.75rem;
+  }
+  
+  /* Adjust modal for iPhone */
+  .custom-exercise-manager .modal-content {
+    width: 90%;
+    max-width: 350px;
+  }
+}
+
+/* Empty state styling */
+.custom-exercise-manager .empty-state {
+  padding: 2rem;
+  text-align: center;
+  background-color: #f3f4f6;
+  border-radius: 0.5rem;
+  margin: 1rem 0;
+}
+
+/* Loading spinner adjustments */
+.custom-exercise-manager .loading-spinner {
+  border-top-color: #3b82f6;
+  border-bottom-color: #3b82f6;
+}
+
+/* Fix button spacing and dimensions for mobile */
+@media (max-width: 640px) {
+  .custom-exercise-manager .action-buttons {
+    display: flex;
+    justify-content: space-between;
+  }
+  
+  .custom-exercise-manager .action-button {
+    min-width: 44px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+/* Standalone mode (PWA) optimizations */
+@media (display-mode: standalone) {
+  .custom-exercise-manager {
+    /* Account for status bar on iOS */
+    padding-top: env(safe-area-inset-top);
+    /* Account for home indicator on newer iPhones */
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  
+  /* Adjust for landscape orientation */
+  @media (orientation: landscape) {
+    .custom-exercise-manager {
+      padding-left: env(safe-area-inset-left);
+      padding-right: env(safe-area-inset-right);
+    }
+  }
+} 

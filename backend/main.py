@@ -62,6 +62,7 @@ import jwt as pyjwt
 from passlib.context import CryptContext
 from nutrition import router as nutrition_router
 from ai_workout import router as ai_workout_router
+from routers.custom_exercises import router as custom_exercises_router
 from sqlalchemy.sql import text as sql_text
 from sqlalchemy.exc import IntegrityError
 
@@ -434,6 +435,7 @@ app.include_router(admin_router)
 app.include_router(notifications_router)
 app.include_router(nutrition_router)
 app.include_router(ai_workout_router)
+app.include_router(custom_exercises_router)
 
 
 @app.get("/protected-route")

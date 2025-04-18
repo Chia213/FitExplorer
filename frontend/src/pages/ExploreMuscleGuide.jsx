@@ -5657,6 +5657,9 @@ function ExploreMuscleGuide() {
   };
 
   const handleMouseMove = (e) => {
+    // Skip on mobile since we use tap instead of hover
+    if (state.isMobile) return;
+    
     const rect = e.currentTarget.getBoundingClientRect();
     const x = ((e.clientX - rect.left) / rect.width) * 100;
     const y = ((e.clientY - rect.top) / rect.height) * 100;
@@ -5664,40 +5667,32 @@ function ExploreMuscleGuide() {
     let closestMuscle = null;
     let minDistance = Infinity;
 
-    for (let i = 0; i < allMuscles.length; i++) {
-      const muscle = allMuscles[i];
-
-      for (let j = 0; j < muscle.positions.length; j++) {
-        const position = muscle.positions[j];
-        const posLeft = parseInt(position.left);
-        const posTop = parseInt(position.top);
+    allMuscles.forEach(muscle => {
+      muscle.positions.forEach(position => {
+        const adjustedPosition = adjustPositionForScreenSize(position);
+        const posLeft = parseFloat(adjustedPosition.left);
+        const posTop = parseFloat(adjustedPosition.top);
 
         const distance = Math.sqrt(
           Math.pow(x - posLeft, 2) + Math.pow(y - posTop, 2)
         );
 
-        if (distance < 15 && distance < minDistance) {
+        if (distance < minDistance && distance < 15) {
           minDistance = distance;
           closestMuscle = muscle;
-          if (distance < 8) break;
         }
-      }
+      });
+    });
 
-      if (minDistance < 8) break;
-    }
-
-    if (
-      (closestMuscle && closestMuscle.name !== state.hoveredMuscle) ||
-      (!closestMuscle && state.hoveredMuscle !== null)
-    ) {
-      const newHighlightedAreas = closestMuscle
-        ? { [closestMuscle.name]: true }
-        : {};
-
+    if (closestMuscle && closestMuscle.name !== state.hoveredMuscle) {
       setState(prev => ({
         ...prev,
-        highlightedAreas: newHighlightedAreas,
-        hoveredMuscle: closestMuscle ? closestMuscle.name : null
+        hoveredMuscle: closestMuscle.name,
+      }));
+    } else if (!closestMuscle && state.hoveredMuscle && state.activeMuscleIndex === null) {
+      setState(prev => ({
+        ...prev,
+        hoveredMuscle: null,
       }));
     }
   };

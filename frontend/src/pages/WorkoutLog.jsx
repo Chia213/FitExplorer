@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   FaTrash,
@@ -24,7 +24,14 @@ import {
   FaCheck,
   FaEdit,
   FaCalendarAlt,
-  FaDumbbell
+  FaDumbbell,
+  FaSort,
+  FaGripVertical,
+  FaLayerGroup,
+  FaChartLine,
+  FaWeightHanging,
+  FaEllipsisV,
+  FaExclamationTriangle
 } from "react-icons/fa";
 import AddExercise from "./AddExercise";
 import { LuCalendarClock } from "react-icons/lu";
@@ -56,11 +63,34 @@ const getIntensityName = (intensityValue) => {
   return intensityMap[intensityValue] || "-";
 };
 
+// Weight conversion utility functions
+const kgToLbs = (kg) => {
+  if (!kg || isNaN(parseFloat(kg))) return "";
+  return (parseFloat(kg) * 2.20462).toFixed(1);
+};
+
+const lbsToKg = (lbs) => {
+  if (!lbs || isNaN(parseFloat(lbs))) return "";
+  return (parseFloat(lbs) / 2.20462).toFixed(1);
+};
+
+// Define a new function to format the current time in the required format for datetime-local input
+const getCurrentTimeForInput = () => {
+  const now = new Date();
+  
+  // Format with local timezone consideration
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+};
+
 const WorkoutLog = () => {
   const [workoutName, setWorkoutName] = useState("");
-  const [startTime, setStartTime] = useState(
-    new Date().toISOString().slice(0, 16)
-  );
+  const [startTime, setStartTime] = useState(getCurrentTimeForInput());
   const [endTime, setEndTime] = useState("");
   const [bodyweight, setBodyweight] = useState("");
   const [notes, setNotes] = useState("");
@@ -105,9 +135,65 @@ const WorkoutLog = () => {
   const [showPersonalRecordsModal, setShowPersonalRecordsModal] = useState(false);
   const [selectedExerciseForHistory, setSelectedExerciseForHistory] = useState(null);
   const isLocalStorageDisabled = false;
+  const [showReorderModal, setShowReorderModal] = useState(false);
+  const [exerciseReorderList, setExerciseReorderList] = useState([]);
+  const [draggedExerciseIndex, setDraggedExerciseIndex] = useState(null);
+  const [timerRunningInBackground, setTimerRunningInBackground] = useState(false);
+  const [showLoadConfirmation, setShowLoadConfirmation] = useState(false);
+  const [workoutToLoad, setWorkoutToLoad] = useState(null);
+  const [exerciseMemory, setExerciseMemory] = useState({});
 
+  // Load weight unit preference from localStorage on component mount
+  useEffect(() => {
+    const storedWeightUnit = localStorage.getItem("weightUnit");
+    if (storedWeightUnit && (storedWeightUnit === "kg" || storedWeightUnit === "lbs")) {
+      setWeightUnit(storedWeightUnit);
+    }
+    // Also try to load from user preferences later
+  }, []);
+
+  // Function to toggle weight unit and convert all weights
   const toggleWeightUnit = () => {
     const newUnit = weightUnit === "kg" ? "lbs" : "kg";
+    
+    // Convert bodyweight
+    if (bodyweight) {
+      const convertedBodyweight = weightUnit === "kg" 
+        ? kgToLbs(bodyweight) 
+        : lbsToKg(bodyweight);
+      setBodyweight(convertedBodyweight);
+    }
+    
+    // Convert all exercise weights
+    setWorkoutExercises(prev => 
+      prev.map(exercise => {
+        if (!exercise.is_cardio) {
+          return {
+            ...exercise,
+            sets: exercise.sets.map(set => {
+              const convertedWeight = weightUnit === "kg" 
+                ? kgToLbs(set.weight) 
+                : lbsToKg(set.weight);
+              
+              const convertedOriginalWeight = set.original_weight 
+                ? (weightUnit === "kg" 
+                    ? kgToLbs(set.original_weight) 
+                    : lbsToKg(set.original_weight))
+                : set.original_weight;
+              
+              return {
+                ...set,
+                weight: convertedWeight,
+                original_weight: convertedOriginalWeight
+              };
+            })
+          };
+        }
+        return exercise;
+      })
+    );
+    
+    // Update state and save preference
     setWeightUnit(newUnit);
     localStorage.setItem("weightUnit", newUnit);
     
@@ -132,10 +218,7 @@ const WorkoutLog = () => {
     if (weightUnit === "lbs") {
       // Convert bodyweight to kg if present
       if (workoutCopy.bodyweight) {
-        const bw = parseFloat(workoutCopy.bodyweight);
-        if (!isNaN(bw)) {
-          workoutCopy.bodyweight = (bw / 2.20462).toFixed(1);
-        }
+        workoutCopy.bodyweight = lbsToKg(workoutCopy.bodyweight);
       }
 
       // Convert all exercise weights
@@ -144,16 +227,10 @@ const WorkoutLog = () => {
           if (!exercise.is_cardio && exercise.sets && Array.isArray(exercise.sets)) {
             exercise.sets.forEach(set => {
               if (set.weight) {
-                const weight = parseFloat(set.weight);
-                if (!isNaN(weight)) {
-                  set.weight = (weight / 2.20462).toFixed(1);
-                }
+                set.weight = lbsToKg(set.weight);
               }
               if (set.original_weight) {
-                const originalWeight = parseFloat(set.original_weight);
-                if (!isNaN(originalWeight)) {
-                  set.original_weight = (originalWeight / 2.20462).toFixed(1);
-                }
+                set.original_weight = lbsToKg(set.original_weight);
               }
             });
           }
@@ -336,123 +413,8 @@ const WorkoutLog = () => {
       }
     }
 
-    // Set the workout name
-    setWorkoutName(routine.name);
-
-    // Convert routine exercises to workout exercises
-    const newExercises = exercises.map((exercise) => {
-      // Ensure is_cardio is properly set as a boolean
-      const isCardio = Boolean(exercise.is_cardio);
-      const initialSets = exercise.initial_sets || exercise.sets?.length || 1;
-
-      // If the exercise has existing sets, use those
-      if (Array.isArray(exercise.sets) && exercise.sets.length > 0) {
-        return {
-          name: exercise.name,
-          category: exercise.category || "Uncategorized",
-          is_cardio: isCardio,
-          sets: exercise.sets.map((set) => {
-            if (isCardio) {
-              return {
-                distance: set.distance || "",
-                duration: set.duration || "",
-                intensity: set.intensity || "",
-                notes: set.notes || "",
-                // Set type flags - ensure they're properly converted to boolean
-                is_warmup: !!set.is_warmup,
-                is_drop_set: !!set.is_drop_set,
-                is_superset: !!set.is_superset,
-                is_amrap: !!set.is_amrap,
-                is_restpause: !!set.is_restpause,
-                is_pyramid: !!set.is_pyramid,
-                is_giant: !!set.is_giant,
-                // Additional set properties
-                drop_number: set.drop_number || null,
-                original_weight: set.original_weight || null,
-                superset_with: set.superset_with !== undefined ? set.superset_with : null,
-                rest_pauses: set.rest_pauses || null,
-                pyramid_type: set.pyramid_type || null,
-                pyramid_step: set.pyramid_step || null,
-                giant_with: Array.isArray(set.giant_with) ? set.giant_with.map(item => String(item)) : null
-              };
-            } else {
-              return {
-                weight: set.weight || "",
-                reps: set.reps || "",
-                notes: set.notes || "",
-                // Set type flags - ensure they're properly converted to boolean
-                is_warmup: !!set.is_warmup,
-                is_drop_set: !!set.is_drop_set,
-                is_superset: !!set.is_superset,
-                is_amrap: !!set.is_amrap,
-                is_restpause: !!set.is_restpause,
-                is_pyramid: !!set.is_pyramid,
-                is_giant: !!set.is_giant,
-                // Additional set properties
-                drop_number: set.drop_number || null,
-                original_weight: set.original_weight || null,
-                superset_with: set.superset_with !== undefined ? set.superset_with : null,
-                rest_pauses: set.rest_pauses || null,
-                pyramid_type: set.pyramid_type || null,
-                pyramid_step: set.pyramid_step || null,
-                giant_with: Array.isArray(set.giant_with) ? set.giant_with.map(item => String(item)) : null
-              };
-            }
-          }),
-        };
-      }
-
-      // Otherwise create new empty sets
-      if (isCardio) {
-        const cardioSets = Array(initialSets)
-          .fill()
-          .map(() => ({
-            distance: "",
-            duration: "",
-            intensity: "",
-            notes: "",
-            is_warmup: false,
-            is_drop_set: false,
-            is_superset: false,
-            is_amrap: false,
-            is_restpause: false,
-            is_pyramid: false,
-            is_giant: false
-          }));
-
-        return {
-          name: exercise.name,
-          category: exercise.category || "Uncategorized",
-          is_cardio: true,
-          sets: cardioSets,
-        };
-      } else {
-        const sets = Array(initialSets)
-          .fill()
-          .map(() => ({
-            weight: "",
-            reps: "",
-            notes: "",
-            is_warmup: false,
-            is_drop_set: false,
-            is_superset: false,
-            is_amrap: false,
-            is_restpause: false,
-            is_pyramid: false,
-            is_giant: false
-          }));
-
-        return {
-          name: exercise.name,
-          category: exercise.category || "Uncategorized",
-          is_cardio: false,
-          sets: sets,
-        };
-      }
-    });
-
-    setWorkoutExercises(newExercises);
-    setShowRoutinesSelector(false);
+    // Show the load confirmation dialog
+    handleShowWorkoutLoadOptions(routine);
   };
 
   const checkForPersonalRecords = async (workout) => {
@@ -1028,8 +990,22 @@ const WorkoutLog = () => {
     }
   };
 
-  const handleAddExercise = (exercise) => {
-    const initialSets = exercise.initialSets || 1;
+  const handleAddExercise = (exercise, initialSetsCount) => {
+    console.log("Adding exercise:", exercise); // Debug: log exercise data
+    
+    // Ensure exercise is an object with a name
+    if (typeof exercise === 'string') {
+      exercise = { name: exercise };
+    }
+    
+    // Ensure exercise has a valid name
+    if (!exercise.name) {
+      console.error("Exercise missing name:", exercise);
+      exercise.name = "Unnamed Exercise";
+    }
+    
+    const initialSets = initialSetsCount || exercise.initialSets || 1;
+    console.log(`Adding ${initialSets} sets for ${exercise.name}`);
 
     // Auto-collapse all existing exercises when adding a new one
     const allCollapsed = {};
@@ -1038,7 +1014,22 @@ const WorkoutLog = () => {
     });
     setCollapsedExercises(allCollapsed);
 
-    if (exercise.is_cardio) {
+    // Detect if the exercise is a cardio exercise
+    // First check explicitly set is_cardio property, then check category
+    const isCardio = exercise.is_cardio === true || 
+                    exercise.category === "Cardio" || 
+                    (typeof exercise.category === 'string' && 
+                    exercise.category.toLowerCase() === 'cardio');
+    
+    console.log("Is cardio exercise:", isCardio);
+
+    // Create the new exercise with the appropriate sets
+    let newExercise;
+    
+    // Check if we have memory for this exercise
+    const memory = exerciseMemory[exercise.name] || {};
+    
+    if (isCardio) {
       const emptyCardioSets = Array(initialSets)
         .fill()
         .map(() => ({
@@ -1061,17 +1052,19 @@ const WorkoutLog = () => {
           rest_pauses: null,
           pyramid_type: null,
           pyramid_step: null,
-          giant_with: null
+          giant_with: null,
+          completed: false,
+          // Include the memory values for UI reference
+          memoryDistance: memory.distance || "",
+          memoryDuration: memory.duration || "",
+          memoryIntensity: memory.intensity || ""
         }));
 
-      setWorkoutExercises([
-        ...workoutExercises,
-        {
-          ...exercise,
-          sets: emptyCardioSets,
-          is_cardio: true,
-        },
-      ]);
+      newExercise = {
+        ...exercise,
+        sets: emptyCardioSets,
+        is_cardio: true,
+      };
     } else {
       const emptySets = Array(initialSets)
         .fill()
@@ -1094,16 +1087,25 @@ const WorkoutLog = () => {
           rest_pauses: null,
           pyramid_type: null,
           pyramid_step: null,
-          giant_with: null
+          giant_with: null,
+          completed: false,
+          // Include the memory values for UI reference
+          memoryWeight: memory.weight || "",
+          memoryReps: memory.reps || ""
         }));
 
-      setWorkoutExercises([
-        ...workoutExercises,
-        { ...exercise, sets: emptySets, is_cardio: false },
-      ]);
+      newExercise = {
+        ...exercise,
+        sets: emptySets,
+        is_cardio: false
+      };
     }
-
-    setShowExerciseSelection(false);
+    
+    // Add the new exercise to the workout
+    setWorkoutExercises([
+      ...workoutExercises,
+      newExercise
+    ]);
   };
 
   const handleDeleteExercise = (exerciseIndex) => {
@@ -1122,6 +1124,10 @@ const WorkoutLog = () => {
     setWorkoutExercises((prev) =>
       prev.map((exercise, index) => {
         if (index === exerciseIndex) {
+          // Check if we have memory for this exercise
+          const memory = exerciseMemory[exercise.name] || {};
+          
+          // Create new set with memory values if available
           const newSet = exercise.is_cardio
             ? { 
                 distance: "", 
@@ -1135,7 +1141,11 @@ const WorkoutLog = () => {
                 is_restpause: false,
                 is_pyramid: false,
                 is_giant: false,
-                completed: false
+                completed: false,
+                // Include the memory values for UI reference
+                memoryDistance: memory.distance || "",
+                memoryDuration: memory.duration || "",
+                memoryIntensity: memory.intensity || ""
               }
             : { 
                 weight: "", 
@@ -1148,7 +1158,10 @@ const WorkoutLog = () => {
                 is_restpause: false,
                 is_pyramid: false,
                 is_giant: false,
-                completed: false
+                completed: false,
+                // Include the memory values for UI reference
+                memoryWeight: memory.weight || "",
+                memoryReps: memory.reps || ""
               };
 
           return {
@@ -1162,44 +1175,53 @@ const WorkoutLog = () => {
   };
 
   const handleEditSet = (exerciseIndex, setIndex, field, value) => {
-    setWorkoutExercises((prev) =>
-      prev.map((exercise, eIndex) => {
-        if (eIndex === exerciseIndex) {
+    setWorkoutExercises(
+      workoutExercises.map((exercise, idx) => {
+        if (idx === exerciseIndex) {
+          const sets = [...exercise.sets];
+          if (sets[setIndex]) {
+            sets[setIndex] = {
+              ...sets[setIndex],
+              [field]: value,
+            };
+
+            // Only save memory for completed sets with non-empty values
+            if (field === 'completed' && value === true) {
+              // When marking as completed, remember the values for this exercise
+              const updatedMemory = { ...exerciseMemory };
+              
+              if (!updatedMemory[exercise.name]) {
+                updatedMemory[exercise.name] = {};
+              }
+              
+              // Check if it's cardio or strength exercise
+              if (exercise.is_cardio) {
+                // For cardio, remember distance, duration and intensity
+                if (sets[setIndex].distance && sets[setIndex].duration && sets[setIndex].intensity) {
+                  updatedMemory[exercise.name] = {
+                    distance: sets[setIndex].distance,
+                    duration: sets[setIndex].duration,
+                    intensity: sets[setIndex].intensity
+                  };
+                }
+              } else {
+                // For strength, remember weight and reps
+                if (sets[setIndex].weight && sets[setIndex].reps) {
+                  updatedMemory[exercise.name] = {
+                    weight: sets[setIndex].weight,
+                    reps: sets[setIndex].reps
+                  };
+                }
+              }
+              
+              // Save to state and localStorage
+              setExerciseMemory(updatedMemory);
+              localStorage.setItem('exerciseMemory', JSON.stringify(updatedMemory));
+            }
+          }
           return {
             ...exercise,
-            sets: exercise.sets.map((set, sIndex) => {
-              if (sIndex === setIndex) {
-                // Handle special set type changes
-                if (field.startsWith('is_')) {
-                  // Reset all set type flags when changing to a new type
-                  const newSet = {
-                    ...set,
-                    is_warmup: false,
-                    is_drop_set: false,
-                    is_superset: false,
-                    is_amrap: false,
-                    is_restpause: false,
-                    is_pyramid: false,
-                    is_giant: false,
-                    // Reset additional properties
-                    drop_number: null,
-                    original_weight: null,
-                    superset_with: null,
-                    rest_pauses: null,
-                    pyramid_type: null,
-                    pyramid_step: null,
-                    giant_with: null
-                  };
-                  // Set the new type flag
-                  newSet[field] = value;
-                  return newSet;
-                }
-                
-                // For regular field updates
-                return { ...set, [field]: value };
-              }
-              return set;
-            }),
+            sets,
           };
         }
         return exercise;
@@ -1311,11 +1333,21 @@ const WorkoutLog = () => {
   };
 
   const handleRestTimerChange = (e) => {
-    const newTime = parseInt(e.target.value);
+    const newValue = e.target.value;
+    
+    // Always update restTime with the raw input value to allow empty input during editing
+    setRestTime(newValue === '' ? '' : parseInt(newValue));
+    
+    // Only update timeLeft if we have a valid positive number
+    const newTime = parseInt(newValue);
     if (!isNaN(newTime) && newTime > 0) {
-      setRestTime(newTime);
       setTimeLeft(newTime);
     }
+  };
+
+  const setRestTimePreset = (seconds) => {
+    setRestTime(seconds);
+    setTimeLeft(seconds);
   };
 
   const startRestTimer = () => {
@@ -1331,6 +1363,7 @@ const WorkoutLog = () => {
           clearInterval(interval);
           setIsResting(false);
           setTimerInterval(null);
+          setTimerRunningInBackground(false);
           // Play sound
           new Audio('/timer-done.mp3').play().catch(() => {});
           // Auto close timer and update workout time
@@ -1362,19 +1395,39 @@ const WorkoutLog = () => {
     }
     setTimeLeft(restTime);
     setIsResting(false);
+    setTimerRunningInBackground(false);
   };
 
   const closeRestTimer = () => {
-    if (timerInterval) {
-      clearInterval(timerInterval);
-      setTimerInterval(null);
+    if (isResting) {
+      // If timer is running, just hide the UI but keep timer running
+      setShowRestTimer(false);
+      setTimerRunningInBackground(true);
+    } else {
+      // If timer is not running, completely close the timer
+      if (timerInterval) {
+        clearInterval(timerInterval);
+        setTimerInterval(null);
+      }
+      setShowRestTimer(false);
+      setIsResting(false);
+      setTimeLeft(restTime);
+      setTimerRunningInBackground(false);
     }
-    setShowRestTimer(false);
-    setIsResting(false);
-    setTimeLeft(restTime);
+  };
+
+  const reopenRestTimer = () => {
+    setShowRestTimer(true);
+    setTimerRunningInBackground(false);
   };
 
   const handleShowSetTypeModal = (exercise) => {
+    // Early return if this is a cardio exercise - set types don't apply to cardio
+    if (exercise.is_cardio) {
+      console.log("Set types are not applicable to cardio exercises");
+      return;
+    }
+    
     // Get the last set's weight as the starting point
     const lastSet = exercise.sets[exercise.sets.length - 1];
     if (lastSet && lastSet.weight) {
@@ -1971,6 +2024,29 @@ const WorkoutLog = () => {
     }
   };
 
+  // Only set the start time when the component first mounts
+  useEffect(() => {
+    // Set the initial start time when the component first loads
+    setStartTime(getCurrentTimeForInput());
+  }, []);  // Empty dependency array means this only runs once on mount
+
+  // Listen for when the page becomes visible again (user returns to the tab or refreshes)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      // Only update when page becomes visible again and the URL includes workout-log
+      if (document.visibilityState === 'visible' && window.location.pathname.includes('workout-log')) {
+        setStartTime(getCurrentTimeForInput());
+      }
+    };
+
+    // Add the visibility listener
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);  // Empty dependency array - we don't want to depend on workout state
+
   const formatDateForDisplay = (dateString) => {
     if (!dateString) return "";
     return new Date(dateString).toLocaleDateString('en-GB', {
@@ -1993,6 +2069,26 @@ const WorkoutLog = () => {
       minute: "2-digit"
     });
     return `${datePart} ${timePart}`;
+  };
+  
+  // Format time only (for mobile display)
+  const formatTimeOnlyForDisplay = (dateString) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    return date.toLocaleTimeString('en-GB', {
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+  };
+  
+  // Format date only
+  const formatDateOnlyForDisplay = (dateString) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-GB', {
+      day: "2-digit",
+      month: "short",
+    });
   };
 
   // Add a new useEffect to handle navigation with routineId
@@ -2085,32 +2181,30 @@ const WorkoutLog = () => {
       });
       
       if (response.ok) {
-        const data = await response.json();
-        if (data.bodyweight) {
-          setBodyweight(data.bodyweight);
+        const preferences = await response.json();
+        if (preferences.weight_unit) {
+          setWeightUnit(preferences.weight_unit);
+          localStorage.setItem("weightUnit", preferences.weight_unit);
         }
-        if (data.weight_unit) {
-          setWeightUnit(data.weight_unit);
-        }
+        
+        // Also load other preferences here if needed
       }
     } catch (error) {
       console.error('Error loading user preferences:', error);
+      // Fallback to localStorage if API fails
+      const storedWeightUnit = localStorage.getItem("weightUnit");
+      if (storedWeightUnit) {
+        setWeightUnit(storedWeightUnit);
+      }
     }
   }, []);
 
-  // Load the last used bodyweight from localStorage when the component mounts
+  // Call loadUserPreferences when component mounts
   useEffect(() => {
-    // First try to load from localStorage as a quick solution
-    const storedBodyweight = localStorage.getItem("lastBodyweight");
-    if (storedBodyweight && !bodyweight) {
-      setBodyweight(storedBodyweight);
-    }
-    
-    // Then try to load from the server preferences
     loadUserPreferences();
   }, [loadUserPreferences]);
 
-  // Update localStorage and API whenever bodyweight changes
+  // Load the last used bodyweight from localStorage when the component mounts
   useEffect(() => {
     if (bodyweight) {
       // Store in localStorage for quick access next time
@@ -2152,8 +2246,14 @@ const WorkoutLog = () => {
     if (!token) return;
     
     try {
-      const response = await fetch(`${API_BASE_URL}/api/workout-preferences`, {
-        method: 'PUT',
+      // Store preferences in localStorage first as a fallback
+      if (preferences.weight_unit) {
+        localStorage.setItem("weightUnit", preferences.weight_unit);
+      }
+      
+      // Updated to use POST instead of PUT and use the correct endpoint
+      const response = await fetch(`${API_BASE_URL}/user/settings`, {
+        method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
@@ -2162,10 +2262,12 @@ const WorkoutLog = () => {
       });
       
       if (!response.ok) {
-        console.error('Failed to save user preferences');
+        console.error('Failed to save user preferences:', response.status, response.statusText);
+        // Continue using the local settings without showing an error to the user
       }
     } catch (error) {
       console.error('Error saving user preferences:', error);
+      // Continue using the local settings without showing an error to the user
     }
   };
 
@@ -2264,6 +2366,179 @@ const WorkoutLog = () => {
     );
   };
 
+  const handlePersonalRecordsClose = () => {
+    setShowPersonalRecordsModal(false);
+  };
+
+  const handleShowReorderModal = () => {
+    setExerciseReorderList([...workoutExercises]);
+    setShowReorderModal(true);
+  };
+
+  const handleCloseReorderModal = () => {
+    setShowReorderModal(false);
+    setDraggedExerciseIndex(null);
+  };
+
+  const handleDragStart = (index) => {
+    setDraggedExerciseIndex(index);
+  };
+  
+  // Add touch event handlers for mobile
+  const handleTouchStart = (index) => {
+    setDraggedExerciseIndex(index);
+  };
+  
+  const handleTouchMove = (e, index) => {
+    e.preventDefault();
+    if (draggedExerciseIndex === null) return;
+    handleDragOver(e, index);
+  };
+  
+  const handleTouchEnd = () => {
+    // Keep the draggedExerciseIndex set for visual feedback
+    // It will be cleared when the modal is closed or reorder is confirmed
+  };
+
+  const handleDragOver = (e, index) => {
+    e.preventDefault();
+    if (draggedExerciseIndex === null) return;
+    
+    // Skip if dragging over itself
+    if (draggedExerciseIndex === index) return;
+    
+    // Make a copy of the list
+    const newList = [...exerciseReorderList];
+    
+    // Remove the dragged item
+    const draggedItem = newList[draggedExerciseIndex];
+    newList.splice(draggedExerciseIndex, 1);
+    
+    // Insert it at the new position
+    newList.splice(index, 0, draggedItem);
+    
+    // Update the reordered list and the dragged index
+    setExerciseReorderList(newList);
+    setDraggedExerciseIndex(index);
+  };
+
+  const handleReorderConfirm = () => {
+    setWorkoutExercises(exerciseReorderList);
+    setShowReorderModal(false);
+    setDraggedExerciseIndex(null);
+  };
+
+  const handleShowWorkoutLoadOptions = (workout) => {
+    // Store the workout to load and show confirmation modal
+    setWorkoutToLoad(workout);
+    setShowLoadConfirmation(true);
+  };
+
+  const loadWorkoutWithData = () => {
+    if (!workoutToLoad) return;
+    
+    // Set the workout name
+    setWorkoutName(workoutToLoad.name || "");
+
+    // Get exercises from the workout (handle both formats)
+    const exercises = workoutToLoad.workout?.exercises || workoutToLoad.exercises || [];
+    
+    // Convert exercises to workout exercises with their original data
+    const newExercises = exercises.map((exercise) => {
+      return {
+        name: exercise.name,
+        category: exercise.category || "Uncategorized",
+        is_cardio: Boolean(exercise.is_cardio),
+        sets: Array.isArray(exercise.sets) ? [...exercise.sets] : []
+      };
+    });
+
+    setWorkoutExercises(newExercises);
+    setShowLoadConfirmation(false);
+    setShowHistory(false);
+    setShowRoutinesSelector(false);
+  };
+
+  const loadWorkoutWithoutData = () => {
+    if (!workoutToLoad) return;
+    
+    // Set the workout name
+    setWorkoutName(workoutToLoad.name || "");
+
+    // Get exercises from the workout (handle both formats)
+    const exercises = workoutToLoad.workout?.exercises || workoutToLoad.exercises || [];
+    
+    // Convert exercises to workout exercises but with empty sets
+    const newExercises = exercises.map((exercise) => {
+      // Determine if cardio
+      const isCardio = Boolean(exercise.is_cardio);
+      
+      // Get the number of sets from the original
+      const setsCount = Array.isArray(exercise.sets) ? exercise.sets.length : 1;
+      
+      // Create empty sets based on exercise type
+      const emptySets = Array(setsCount).fill().map(() => {
+        if (isCardio) {
+          return {
+            distance: "",
+            duration: "",
+            intensity: "",
+            notes: "",
+            is_warmup: false,
+            is_drop_set: false,
+            is_superset: false,
+            is_amrap: false,
+            is_restpause: false,
+            is_pyramid: false,
+            is_giant: false
+          };
+        } else {
+          return {
+            weight: "",
+            reps: "",
+            notes: "",
+            is_warmup: false,
+            is_drop_set: false,
+            is_superset: false,
+            is_amrap: false,
+            is_restpause: false,
+            is_pyramid: false,
+            is_giant: false
+          };
+        }
+      });
+
+      return {
+        name: exercise.name,
+        category: exercise.category || "Uncategorized",
+        is_cardio: isCardio,
+        sets: emptySets
+      };
+    });
+
+    setWorkoutExercises(newExercises);
+    setShowLoadConfirmation(false);
+    setShowHistory(false);
+    setShowRoutinesSelector(false);
+  };
+
+  const closeLoadConfirmation = () => {
+    setShowLoadConfirmation(false);
+    setWorkoutToLoad(null);
+  };
+
+  // Load exercise memory from localStorage
+  useEffect(() => {
+    const savedMemory = localStorage.getItem('exerciseMemory');
+    if (savedMemory) {
+      try {
+        setExerciseMemory(JSON.parse(savedMemory));
+      } catch (error) {
+        console.error('Error loading exercise memory:', error);
+      }
+    }
+  }, []);
+
   return (
     <div className="workout-log-container p-4 md:p-6 pb-32">
       <div className="flex flex-col sm:flex-row justify-between items-center mb-6">
@@ -2271,11 +2546,11 @@ const WorkoutLog = () => {
         <div className="flex space-x-2 w-full sm:w-auto">
           <button
             onClick={() => setShowHistory(true)}
-            className="bg-indigo-500 hover:bg-indigo-400 text-white py-2 px-4 rounded-lg text-sm md:text-base flex items-center justify-center"
+            className="bg-indigo-500 hover:bg-indigo-400 text-white py-1.5 px-3 rounded-lg text-xs flex items-center justify-center flex-1 sm:flex-none"
             title="View Workout History"
           >
-            <FaHistory className="sm:mr-1" />
-            <span className="hidden sm:inline">History</span>
+            <FaHistory className="text-sm" />
+            <span className="ml-1">History</span>
           </button>
           
           <button
@@ -2283,21 +2558,24 @@ const WorkoutLog = () => {
               fetchRoutines();
               setShowRoutinesSelector(true);
             }}
-            className="bg-blue-500 hover:bg-blue-400 text-white py-2 px-4 rounded-lg text-sm md:text-base flex items-center justify-center"
+            className="bg-blue-500 hover:bg-blue-400 text-white py-1.5 px-3 rounded-lg text-xs flex items-center justify-center flex-1 sm:flex-none"
             title="Select Routine"
           >
-            <FaListAlt className="sm:mr-1" />
-            <span className="hidden sm:inline">Routines</span>
+            <FaListAlt className="text-sm" />
+            <span className="ml-1">Routines</span>
           </button>
           
-          <button
-            onClick={() => setShowExerciseSelection(true)}
-            className="bg-teal-500 hover:bg-teal-400 text-white py-2 px-4 rounded-lg text-sm md:text-base flex items-center justify-center"
-            title="Add Exercise"
-          >
-            <FaDumbbell className="sm:mr-1" />
-            <span className="hidden sm:inline">Add Exercise</span>
-          </button>
+          {/* Only show Add Exercise button in header if there are already exercises */}
+          {workoutExercises.length > 0 && (
+            <button
+              onClick={() => setShowExerciseSelection(true)}
+              className="bg-teal-500 hover:bg-teal-400 text-white py-1.5 px-3 rounded-lg text-xs flex items-center justify-center flex-1 sm:flex-none"
+              title="Add Exercise"
+            >
+              <FaDumbbell className="text-sm" />
+              <span className="ml-1">Add Exercise</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -2320,6 +2598,7 @@ const WorkoutLog = () => {
               className="bg-gray-200 dark:bg-gray-600 p-2 rounded-lg cursor-pointer pr-10 flex items-center"
               onClick={() => {
                 try {
+                  // Don't update time automatically when clicking if workout has started
                   document.getElementById('start-time-picker').showPicker();
                 } catch (error) {
                   // Fallback for browsers/PWAs that don't support showPicker()
@@ -2396,6 +2675,17 @@ const WorkoutLog = () => {
           placeholder="Add any notes..."
           className="w-full h-24 p-2 bg-gray-200 dark:bg-gray-600 rounded-lg resize-none"
         />
+        
+        {/* Add Exercise button when no exercises exist */}
+        {workoutExercises.length === 0 && (
+          <button
+            onClick={() => setShowExerciseSelection(true)}
+            className="w-full bg-teal-500 hover:bg-teal-400 text-white py-2 px-4 rounded-lg text-sm flex items-center justify-center mt-4"
+          >
+            <FaPlus className="mr-2" />
+            Add Exercise
+          </button>
+        )}
       </div>
 
       {workoutExercises.map((exercise, exerciseIndex) => (
@@ -2405,92 +2695,93 @@ const WorkoutLog = () => {
         >
           {/* Exercise header */}
           <div className="flex flex-wrap items-center mb-2">
-            <div className="flex-grow mr-2 mb-2 sm:mb-0">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white" data-sets={`${exercise.sets.length} set${exercise.sets.length !== 1 ? 's' : ''}`}>
+            <div className="flex-grow mr-2 mb-2 sm:mb-0 w-full">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                 {exercise.name}
               </h3>
-              <span className="text-sm text-gray-600 dark:text-gray-400">
-                {exercise.muscle_group}
-              </span>
             </div>
             {/* Exercise control buttons */}
-            <div className="flex flex-wrap gap-1">
+            <div className="flex flex-wrap gap-1 mt-1">
               <button
-                onClick={() => handleMoveExercise(exerciseIndex, "up")}
-                className="text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white bg-gray-200 dark:bg-gray-700 p-2 rounded"
-                disabled={exerciseIndex === 0}
+                onClick={() => handleShowReorderModal()}
+                className="text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white bg-gray-200 dark:bg-gray-700 p-2 rounded flex items-center"
+                title="Reorder Exercises"
               >
-                <FaArrowUp />
-              </button>
-              <button
-                onClick={() => handleMoveExercise(exerciseIndex, "down")}
-                className="text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white bg-gray-200 dark:bg-gray-700 p-2 rounded"
-                disabled={exerciseIndex === workoutExercises.length - 1}
-              >
-                <FaArrowDown />
-              </button>
-              <button
-                onClick={() => toggleExerciseCollapse(exerciseIndex)}
-                className="text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white bg-gray-200 dark:bg-gray-700 p-2 rounded"
-              >
-                {collapsedExercises[exerciseIndex] ? (
-                  <FaChevronDown />
-                ) : (
-                  <FaChevronUp />
-                )}
-              </button>
-              <button
-                onClick={() => handleDeleteExercise(exerciseIndex)}
-                className="text-red-500 hover:text-red-600 bg-gray-200 dark:bg-gray-700 p-2 rounded"
-              >
-                <FaTrash />
-              </button>
-              <button
-                onClick={() => handleStartRestTimer(exercise)}
-                className="text-teal-500 hover:text-teal-600 bg-gray-200 dark:bg-gray-700 p-2 rounded"
-              >
-                <FaClock />
+                <FaSort className="mr-1" />
+                <span className="text-xs">Reorder</span>
               </button>
               
-              <div className="flex gap-1 mt-1 w-full justify-center flex-wrap">
+              {/* Only show Set Type button for strength exercises, not cardio */}
+              {!exercise.is_cardio && (
                 <button
-                  onClick={() => handleShowExerciseHistory(exercise)}
-                  className="text-indigo-500 hover:text-indigo-600 bg-gray-200 dark:bg-gray-700 p-2 rounded flex items-center"
-                  title="Exercise History"
+                  onClick={() => handleShowSetTypeModal(exercise)}
+                  className="text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white bg-gray-200 dark:bg-gray-700 p-2 rounded flex items-center"
+                  title="Set Type"
                 >
-                  <FaHistory className="mr-1" />
-                  <span className="text-xs">History</span>
+                  <FaLayerGroup className="mr-1" />
+                  <span className="text-xs">Set Type</span>
                 </button>
-                
-                <button
-                  onClick={() => handleShowExerciseCharts(exercise)}
-                  className="text-green-500 hover:text-green-600 bg-gray-200 dark:bg-gray-700 p-2 rounded flex items-center"
-                  title="Progress Charts"
-                >
-                  <FaChartBar className="mr-1" />
-                  <span className="text-xs">Charts</span>
-                </button>
-                
-                <button
-                  onClick={() => handleShowPersonalRecords(exercise)}
-                  className="text-yellow-500 hover:text-yellow-600 bg-gray-200 dark:bg-gray-700 p-2 rounded flex items-center"
-                  title="Personal Records"
-                >
-                  <FaTrophy className="mr-1" />
-                  <span className="text-xs">Records</span>
-                </button>
-                
-                {!exercise.is_cardio && (
-                  <button
-                    onClick={() => handleShowSetTypeModal(exercise)}
-                    className="text-blue-500 hover:text-blue-600 bg-gray-200 dark:bg-gray-700 p-2 rounded flex items-center"
-                    title="Add Set Type (Drop Set, Warm-up, Working)"
-                  >
-                    <FaListUl className="mr-1" />
-                    <span className="text-xs">Set Type</span>
-                  </button>
+              )}
+              
+              <button
+                onClick={() => handleShowExerciseHistory(exercise)}
+                className="text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white bg-gray-200 dark:bg-gray-700 p-2 rounded flex items-center"
+                title="Exercise History"
+              >
+                <FaHistory className="mr-1" />
+                <span className="text-xs">History</span>
+              </button>
+              
+              <button
+                onClick={() => handleShowExerciseCharts(exercise)}
+                className="text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white bg-gray-200 dark:bg-gray-700 p-2 rounded flex items-center"
+                title="Exercise Charts"
+              >
+                <FaChartLine className="mr-1" />
+                <span className="text-xs">Charts</span>
+              </button>
+              
+              <button
+                onClick={() => handleShowPersonalRecords(exercise)}
+                className="text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white bg-gray-200 dark:bg-gray-700 p-2 rounded flex items-center"
+                title="Personal Records"
+              >
+                <FaTrophy className="mr-1" />
+                <span className="text-xs">Records</span>
+              </button>
+              
+              <button
+                onClick={() => toggleExerciseCollapse(exerciseIndex)}
+                className="text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white bg-gray-200 dark:bg-gray-700 p-2 rounded flex items-center"
+              >
+                {collapsedExercises[exerciseIndex] ? (
+                  <>
+                    <FaChevronDown className="mr-1" />
+                    <span className="text-xs">Expand</span>
+                  </>
+                ) : (
+                  <>
+                    <FaChevronUp className="mr-1" />
+                    <span className="text-xs">Collapse</span>
+                  </>
                 )}
-              </div>
+              </button>
+              
+              <button
+                onClick={() => handleDeleteExercise(exerciseIndex)}
+                className="text-red-500 hover:text-red-600 bg-gray-200 dark:bg-gray-700 p-2 rounded flex items-center"
+              >
+                <FaTrash className="mr-1" />
+                <span className="text-xs">Delete</span>
+              </button>
+              
+              <button
+                onClick={() => handleStartRestTimer(exercise)}
+                className="text-teal-500 hover:text-teal-600 bg-gray-200 dark:bg-gray-700 p-2 rounded flex items-center"
+              >
+                <FaClock className="mr-1" />
+                <span className="text-xs">Timer</span>
+              </button>
             </div>
           </div>
 
@@ -2519,157 +2810,162 @@ const WorkoutLog = () => {
 
                 {/* Exercise sets */}
                 <div className="exercise-sets">
-                  {exercise.sets.map((set, setIndex) => (
-                    <div key={setIndex} className="set-row">
-                      {/* Set header showing set number and type */}
-                      <div className="set-number-heading w-full mb-2 flex justify-between items-center">
-                        <span className="font-medium">Set {setIndex + 1}</span>
-                        <div>
-                          {set.is_warmup ? (
-                            <span className="bg-yellow-200 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 text-xs py-1 px-2 rounded-full">
-                              Warm-up
-                            </span>
-                          ) : set.is_drop_set ? (
-                            <span className="bg-red-200 text-red-800 dark:bg-red-900 dark:text-red-200 text-xs py-1 px-2 rounded-full">
-                              Drop {set.drop_number}
-                            </span>
-                          ) : (
-                            <span className="bg-blue-200 text-blue-800 dark:bg-blue-900 dark:text-blue-200 text-xs py-1 px-2 rounded-full">
-                              Normal Set
-                            </span>
-                          )}
-                          <button
-                            onClick={() => handleEditSet(exerciseIndex, setIndex, "is_warmup", !set.is_warmup)}
-                            className="ml-2 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200 text-xs"
-                          >
-                            {set.is_warmup ? "Mark as Normal" : "Mark as Warm-up"}
-                          </button>
-                        </div>
-                      </div>
-                      
-                      {!exercise.is_cardio ? (
-                        <>
-                          <div>
-                            <label className="block text-gray-700 dark:text-gray-300 text-sm font-medium mb-1">
-                              Weight ({weightUnit})
-                            </label>
-                            <input
-                              type="number"
-                              value={set.weight}
-                              onChange={(e) =>
-                                handleEditSet(
-                                  exerciseIndex,
-                                  setIndex,
-                                  "weight",
-                                  e.target.value
-                                )
-                              }
-                              placeholder="0"
-                              className="w-full p-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm weight-input"
-                            />
+                  {exercise && exercise.sets && exercise.sets.length > 0 ? (
+                    exercise.sets.map((set, setIndex) => (
+                      <div key={setIndex} className="set-row mb-3 pb-3 border-b border-gray-200 dark:border-gray-700">
+                        {/* Set header showing set number and type */}
+                        <div className="set-number-heading w-full mb-2 flex justify-between items-center">
+                          <div className="flex items-center">
+                            <span className="font-medium">Set {setIndex + 1}</span>
+                            <div className="ml-2">
+                              <input
+                                type="checkbox"
+                                checked={set.completed || false}
+                                onChange={(e) => 
+                                  handleEditSet(
+                                    exerciseIndex, 
+                                    setIndex, 
+                                    "completed", 
+                                    e.target.checked
+                                  )
+                                }
+                                className="h-4 w-4 text-blue-600 border-gray-300 rounded"
+                              />
+                            </div>
                           </div>
-                          <div>
-                            <label className="block text-gray-700 dark:text-gray-300 text-sm font-medium mb-1">
-                              Reps
-                            </label>
-                            <input
-                              type="number"
-                              value={set.reps}
-                              onChange={(e) =>
-                                handleEditSet(
-                                  exerciseIndex,
-                                  setIndex,
-                                  "reps",
-                                  e.target.value
-                                )
-                              }
-                              placeholder="0"
-                              className="w-full p-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm reps-input"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-gray-700 dark:text-gray-300 text-sm font-medium mb-1">
-                              Notes
-                            </label>
-                            <input
-                              type="text"
-                              value={set.notes || ""}
-                              onChange={(e) =>
-                                handleEditSet(
-                                  exerciseIndex,
-                                  setIndex,
-                                  "notes",
-                                  e.target.value
-                                )
-                              }
-                              placeholder="Notes (optional)"
-                              className="w-full p-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm"
-                            />
-                          </div>
-                        </>
-                      ) : (
-                        <>
-                          <div>
-                            <label className="block text-gray-700 dark:text-gray-300 text-sm font-medium mb-1">
-                              Distance (km)
-                            </label>
-                            <input
-                              type="number"
-                              value={set.distance}
-                              onChange={(e) =>
-                                handleEditSet(
-                                  exerciseIndex,
-                                  setIndex,
-                                  "distance",
-                                  e.target.value
-                                )
-                              }
-                              placeholder="0"
-                              className="w-full p-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-gray-700 dark:text-gray-300 text-sm font-medium mb-1">
-                              Duration (min)
-                            </label>
-                            <input
-                              type="number"
-                              value={set.duration}
-                              onChange={(e) =>
-                                handleEditSet(
-                                  exerciseIndex,
-                                  setIndex,
-                                  "duration",
-                                  e.target.value
-                                )
-                              }
-                              placeholder="0"
-                              className="w-full p-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-gray-700 dark:text-gray-300 text-sm font-medium mb-1">
-                              Intensity
-                            </label>
-                            <select
-                              value={set.intensity}
-                              onChange={(e) =>
-                                handleEditSet(
-                                  exerciseIndex,
-                                  setIndex,
-                                  "intensity",
-                                  e.target.value
-                                )
-                              }
-                              className="w-full p-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm"
+                          <div className="set-type-controls flex items-center">
+                            {set.is_warmup ? (
+                              <span className="set-type-badge bg-yellow-200 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 text-xs py-1 px-2 rounded-full">
+                                Warm-up
+                              </span>
+                            ) : set.is_drop_set ? (
+                              <span className="set-type-badge bg-red-200 text-red-800 dark:bg-red-900 dark:text-red-200 text-xs py-1 px-2 rounded-full">
+                                Drop {set.drop_number}
+                              </span>
+                            ) : (
+                              <span className="set-type-badge bg-blue-200 text-blue-800 dark:bg-blue-900 dark:text-blue-200 text-xs py-1 px-2 rounded-full">
+                                Normal
+                              </span>
+                            )}
+                            <button
+                              onClick={() => handleEditSet(exerciseIndex, setIndex, "is_warmup", !set.is_warmup)}
+                              className="set-type-toggle ml-2 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200 text-xs"
                             >
-                              <option value="">-</option>
-                              <option value="Low">Low</option>
-                              <option value="Medium">Medium</option>
-                              <option value="High">High</option>
-                              <option value="Very High">Very High</option>
-                            </select>
+                              {set.is_warmup ? "Mark Normal" : "Mark Warm-up"}
+                            </button>
                           </div>
+                        </div>
+                      
+                        {/* Set inputs */}
+                        <div className={`grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-2`}>
+                          {!exercise || !exercise.is_cardio ? (
+                            <>
+                              <div>
+                                <label className="block text-gray-700 dark:text-gray-300 text-sm font-medium mb-1">
+                                  Weight ({weightUnit})
+                                </label>
+                                <input
+                                  type="number"
+                                  value={set.weight}
+                                  onChange={(e) =>
+                                    handleEditSet(
+                                      exerciseIndex,
+                                      setIndex,
+                                      "weight",
+                                      e.target.value
+                                    )
+                                  }
+                                  placeholder="0"
+                                  className="w-full p-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-gray-700 dark:text-gray-300 text-sm font-medium mb-1">
+                                  Reps
+                                </label>
+                                <input
+                                  type="number"
+                                  value={set.reps}
+                                  onChange={(e) =>
+                                    handleEditSet(
+                                      exerciseIndex,
+                                      setIndex,
+                                      "reps",
+                                      e.target.value
+                                    )
+                                  }
+                                  placeholder="0"
+                                  className="w-full p-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm"
+                                />
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              {/* Cardio fields */}
+                              <div>
+                                <label className="block text-gray-700 dark:text-gray-300 text-sm font-medium mb-1">
+                                  Distance (km)
+                                </label>
+                                <input
+                                  type="number"
+                                  value={set.distance || ""}
+                                  onChange={(e) =>
+                                    handleEditSet(
+                                      exerciseIndex,
+                                      setIndex,
+                                      "distance",
+                                      e.target.value
+                                    )
+                                  }
+                                  placeholder="0"
+                                  className="w-full p-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-gray-700 dark:text-gray-300 text-sm font-medium mb-1">
+                                  Duration (min)
+                                </label>
+                                <input
+                                  type="number"
+                                  value={set.duration || ""}
+                                  onChange={(e) =>
+                                    handleEditSet(
+                                      exerciseIndex,
+                                      setIndex,
+                                      "duration",
+                                      e.target.value
+                                    )
+                                  }
+                                  placeholder="0"
+                                  className="w-full p-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-gray-700 dark:text-gray-300 text-sm font-medium mb-1">
+                                  Intensity
+                                </label>
+                                <select
+                                  value={set.intensity || ""}
+                                  onChange={(e) =>
+                                    handleEditSet(
+                                      exerciseIndex,
+                                      setIndex,
+                                      "intensity",
+                                      e.target.value
+                                    )
+                                  }
+                                  className="w-full p-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm"
+                                >
+                                  <option value="">-</option>
+                                  <option value="Low">Low</option>
+                                  <option value="Medium">Medium</option>
+                                  <option value="High">High</option>
+                                  <option value="Very High">Very High</option>
+                                </select>
+                              </div>
+                            </>
+                          )}
+
                           <div>
                             <label className="block text-gray-700 dark:text-gray-300 text-sm font-medium mb-1">
                               Notes
@@ -2689,53 +2985,67 @@ const WorkoutLog = () => {
                               className="w-full p-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm"
                             />
                           </div>
-                        </>
-                      )}
-                      <div className="flex justify-between items-center mt-2">
-                        <div className="flex items-center">
-                          <input
-                            type="checkbox"
-                            id={`set-completed-${exerciseIndex}-${setIndex}`}
-                            checked={set.completed || false}
-                            onChange={(e) =>
-                              handleEditSet(
-                                exerciseIndex,
-                                setIndex,
-                                "completed",
-                                e.target.checked
-                              )
-                            }
-                            className="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-                          />
-                          <label
-                            htmlFor={`set-completed-${exerciseIndex}-${setIndex}`}
-                            className="ml-2 text-sm text-gray-700 dark:text-gray-300"
-                          >
-                            Completed
-                          </label>
+                                
+                          <div className="flex justify-end items-center space-x-1 col-span-1 set-actions">
+                            <button
+                              onClick={() => handleDeleteSet(exerciseIndex, setIndex)}
+                              className="p-2 text-red-500 hover:text-red-600 bg-gray-100 dark:bg-gray-700 rounded"
+                              title="Delete Set"
+                            >
+                              <FaTrash />
+                            </button>
+                          </div>
                         </div>
-                        <button
-                          onClick={() => handleDeleteSet(exerciseIndex, setIndex)}
-                          className="text-red-500 hover:text-red-700 p-1 rounded"
-                        >
-                          <FaTrash />
-                        </button>
                       </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-4 text-gray-500 dark:text-gray-400">
+                      No sets added yet.
                     </div>
-                  ))}
+                  )}
                 </div>
 
-                <button
-                  onClick={() => handleAddSet(exerciseIndex)}
-                  className="mt-2 w-full bg-teal-500 hover:bg-teal-600 text-white py-2 px-4 rounded-lg flex items-center justify-center"
-                >
-                  <FaPlus className="mr-1" /> Add Set
-                </button>
+                {/* Add Set button after all sets */}
+                <div className="mt-3 text-center">
+                  <button
+                    onClick={() => handleAddSet(exerciseIndex)}
+                    className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg text-sm flex items-center justify-center w-full sm:w-auto mx-auto"
+                  >
+                    <FaPlus className="mr-1" />
+                    Add Set
+                  </button>
+                </div>
               </div>
             </>
           )}
         </div>
       ))}
+
+      {/* Add Exercise button at the bottom if exercises exist */}
+      {workoutExercises.length > 0 && (
+        <div className="mt-4 mb-16 sm:mb-4 text-center">
+          <button
+            onClick={() => setShowExerciseSelection(true)}
+            className="bg-teal-500 hover:bg-teal-400 text-white py-3 sm:py-2 px-6 sm:px-4 rounded-lg text-base sm:text-sm inline-flex items-center justify-center w-full sm:w-auto sticky bottom-4 sm:static shadow-lg sm:shadow-none"
+          >
+            <FaPlus className="mr-2" />
+            Add Another Exercise
+          </button>
+        </div>
+      )}
+
+      {/* Fixed floating add exercise button for mobile devices */}
+      {workoutExercises.length > 0 && (
+        <div className="fixed bottom-20 right-4 sm:hidden z-10">
+          <button
+            onClick={() => setShowExerciseSelection(true)}
+            className="bg-teal-500 hover:bg-teal-400 text-white p-4 rounded-full shadow-lg flex items-center justify-center"
+            aria-label="Add Exercise"
+          >
+            <FaPlus size={24} />
+          </button>
+        </div>
+      )}
 
       {/* Replace the original buttons with the new component */}
       {/* Action buttons at the bottom */}
@@ -2744,10 +3054,14 @@ const WorkoutLog = () => {
         onSaveRoutine={handleSaveAsRoutine}
       />
 
+      {/* Add Exercise Modal */}
       {showExerciseSelection && (
         <AddExercise
           onClose={() => setShowExerciseSelection(false)}
-          onSelectExercise={handleAddExercise}
+          onSelectExercise={(exercise, initialSets) => {
+            handleAddExercise(exercise, initialSets);
+            setShowExerciseSelection(false);
+          }}
         />
       )}
 
@@ -2808,13 +3122,16 @@ const WorkoutLog = () => {
                             {routine.name}
                           </h3>
                           <p className="text-sm text-gray-600 dark:text-gray-400">
-                            {routine.workout && routine.workout.exercises
-                              ? `${routine.workout.exercises.length} Exercise${
-                                  routine.workout.exercises.length !== 1
-                                    ? "s"
-                                    : ""
-                                }`
-                              : "No exercises"}
+                            {(() => {
+                              // First determine where the exercises are located - support both formats
+                              const exercises = routine.workout?.exercises || routine.exercises;
+                              
+                              if (exercises && exercises.length > 0) {
+                                return `${exercises.length} Exercise${exercises.length !== 1 ? "s" : ""}`;
+                              } else {
+                                return "No exercises";
+                              }
+                            })()}
                           </p>
                         </div>
                         <button
@@ -2902,6 +3219,7 @@ const WorkoutLog = () => {
               <button
                 onClick={closeRestTimer}
                 className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                title={isResting ? "Minimize (timer will continue running)" : "Close"}
               >
                 <FaTimes />
               </button>
@@ -2912,12 +3230,45 @@ const WorkoutLog = () => {
               </label>
               <input
                 type="number"
-                min="1"
-                value={restTime}
+                value={restTime === '' ? '' : restTime}
                 onChange={handleRestTimerChange}
                 className="w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white"
                 disabled={isResting}
               />
+              {!isResting && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  <button 
+                    onClick={() => setRestTimePreset(30)}
+                    className="bg-blue-100 hover:bg-blue-200 dark:bg-blue-900 dark:hover:bg-blue-800 text-blue-800 dark:text-blue-200 rounded px-3 py-1 text-sm"
+                  >
+                    30s
+                  </button>
+                  <button 
+                    onClick={() => setRestTimePreset(60)}
+                    className="bg-blue-100 hover:bg-blue-200 dark:bg-blue-900 dark:hover:bg-blue-800 text-blue-800 dark:text-blue-200 rounded px-3 py-1 text-sm"
+                  >
+                    60s
+                  </button>
+                  <button 
+                    onClick={() => setRestTimePreset(90)}
+                    className="bg-blue-100 hover:bg-blue-200 dark:bg-blue-900 dark:hover:bg-blue-800 text-blue-800 dark:text-blue-200 rounded px-3 py-1 text-sm"
+                  >
+                    90s
+                  </button>
+                  <button 
+                    onClick={() => setRestTimePreset(120)}
+                    className="bg-blue-100 hover:bg-blue-200 dark:bg-blue-900 dark:hover:bg-blue-800 text-blue-800 dark:text-blue-200 rounded px-3 py-1 text-sm"
+                  >
+                    2m
+                  </button>
+                  <button 
+                    onClick={() => setRestTimePreset(180)}
+                    className="bg-blue-100 hover:bg-blue-200 dark:bg-blue-900 dark:hover:bg-blue-800 text-blue-800 dark:text-blue-200 rounded px-3 py-1 text-sm"
+                  >
+                    3m
+                  </button>
+                </div>
+              )}
             </div>
 
             <div className="text-center mb-6">
@@ -2959,14 +3310,29 @@ const WorkoutLog = () => {
         </div>
       )}
 
+      {/* Timer Running Indicator (when minimized) */}
+      {timerRunningInBackground && (
+        <div 
+          onClick={reopenRestTimer}
+          className="fixed bottom-36 right-4 sm:bottom-20 bg-blue-600 text-white p-3 rounded-full shadow-xl cursor-pointer flex items-center justify-center z-[1000] hover:bg-blue-700 min-w-[70px] min-h-[70px] border-2 border-white dark:border-gray-800 animate-pulse"
+          style={{
+            boxShadow: '0 0 15px rgba(59, 130, 246, 0.5)'
+          }}
+          title="Click to open rest timer"
+        >
+          <FaClock className="mr-2 text-xl" />
+          <span className="text-lg font-bold">{timeLeft}s</span>
+        </div>
+      )}
+
       {/* Set Type Modal */}
       {showSetTypeModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full p-3 sm:p-6 max-h-[95vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-3">
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
                 Set Type
-            </h2>
+              </h2>
               <button
                 onClick={closeSetTypeModal}
                 className="text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
@@ -2975,14 +3341,14 @@ const WorkoutLog = () => {
               </button>
             </div>
 
-            <div className="mb-4">
-              <label className="block text-gray-700 dark:text-gray-300 mb-2">
+            <div className="mb-3">
+              <label className="block text-gray-700 dark:text-gray-300 mb-1 text-sm sm:text-base">
                 Select Set Type
               </label>
               <select
                 value={selectedSetType}
                 onChange={(e) => setSelectedSetType(e.target.value)}
-                className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
+                className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white text-sm"
               >
                 <option value="drop">Drop Set</option>
                 <option value="warmup">Warm-up Set</option>
@@ -2998,357 +3364,440 @@ const WorkoutLog = () => {
             {/* Conditional content based on selected set type */}
             {selectedSetType === "drop" && (
               <>
-            <div className="mb-4">
-              <label className="block text-gray-700 dark:text-gray-300 mb-2">
-                Original Weight ({weightUnit})
-              </label>
-              <input
-                type="number"
-                value={originalWeight || ""}
-                onChange={(e) => {
-                  setOriginalWeight(e.target.value);
-                  setDropSetWeight(e.target.value);
-                }}
-                className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
-                placeholder="Enter original weight"
-              />
-            </div>
-                
-            <div className="mb-4">
-              <label className="block text-gray-700 dark:text-gray-300 mb-2">
-                Weight Reduction (%)
-              </label>
-              <input
-                type="number"
-                value={dropSetPercentage}
-                onChange={(e) => setDropSetPercentage(parseInt(e.target.value))}
-                className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
-                min="5"
-                max="50"
-              />
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                Each drop will reduce the weight by this percentage
-              </p>
-            </div>
-                
-            <div className="mb-4">
-              <label className="block text-gray-700 dark:text-gray-300 mb-2">
-                Total Sets in Drop Series
-              </label>
-              <input
-                type="number"
-                value={dropSetCount}
-                onChange={(e) => setDropSetCount(parseInt(e.target.value))}
-                className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
-                min="2"
-                max="5"
-              />
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                Includes top set + drop sets (min: 2, meaning top set + 1 drop)
-              </p>
-            </div>
-                
-            <div className="mb-4">
-              <label className="block text-gray-700 dark:text-gray-300 mb-2">
-                Reps per Drop
-              </label>
-              <input
-                type="number"
-                value={dropSetReps}
-                onChange={(e) => setDropSetReps(e.target.value)}
-                className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
-                placeholder="Enter reps"
-              />
-            </div>
-                
-            {originalWeight && (
-              <div className="mb-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
-                <h3 className="font-medium mb-2">Drop Set Preview:</h3>
-                <div className="space-y-1">
-                  <div className="text-sm font-medium mb-1">
-                    Top Set: {originalWeight} {weightUnit}
+                <div className="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg mb-4">
+                  <h3 className="font-medium text-red-700 dark:text-red-400 mb-2 text-sm sm:text-base">Drop Set</h3>
+                  <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-3">
+                    Drop sets involve performing a set to near-failure, then immediately reducing the weight and continuing with additional reps.
+                  </p>
+                  
+                  <div className="grid grid-cols-2 gap-2 mb-2">
+                    <div>
+                      <label className="block text-gray-700 dark:text-gray-300 mb-1 text-xs sm:text-sm">
+                        Starting Weight ({weightUnit})
+                      </label>
+                      <input
+                        type="number"
+                        value={originalWeight || ""}
+                        onChange={(e) => {
+                          setOriginalWeight(e.target.value);
+                          setDropSetWeight(e.target.value);
+                        }}
+                        className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white text-sm"
+                        placeholder="Weight"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-gray-700 dark:text-gray-300 mb-1 text-xs sm:text-sm">
+                        Reps per Drop
+                      </label>
+                      <input
+                        type="number"
+                        value={dropSetReps}
+                        onChange={(e) => setDropSetReps(e.target.value)}
+                        className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white text-sm"
+                        placeholder="Reps"
+                      />
+                    </div>
                   </div>
-                  {Array.from({ length: dropSetCount - 1 }).map((_, i) => {
-                    const weight = calculateNextWeight(
-                      parseFloat(originalWeight),
-                      dropSetPercentage * (i + 1)
-                    );
-                    return (
-                      <div key={i} className="text-sm">
-                        Drop {i + 1}: {weight} {weightUnit} ({dropSetPercentage}% reduction)
+                  
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-gray-700 dark:text-gray-300 mb-1 text-xs sm:text-sm">
+                        Weight Reduction (%)
+                      </label>
+                      <input
+                        type="number"
+                        value={dropSetPercentage}
+                        onChange={(e) => setDropSetPercentage(parseInt(e.target.value))}
+                        className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white text-sm"
+                        min="5"
+                        max="50"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-gray-700 dark:text-gray-300 mb-1 text-xs sm:text-sm">
+                        Total Sets
+                      </label>
+                      <input
+                        type="number"
+                        value={dropSetCount}
+                        onChange={(e) => setDropSetCount(parseInt(e.target.value))}
+                        className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white text-sm"
+                        min="2"
+                        max="5"
+                      />
+                    </div>
+                  </div>
+                  
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Includes top set + drop sets (min: 2, max: 5)
+                  </p>
+                  
+                  {originalWeight && (
+                    <div className="mt-3 p-2 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                      <h4 className="font-medium text-xs sm:text-sm mb-1">Drop Set Preview:</h4>
+                      <div className="grid grid-cols-2 gap-1 text-xs">
+                        <div className="font-medium">
+                          Top: {originalWeight} {weightUnit}
+                        </div>
+                        {Array.from({ length: dropSetCount - 1 }).map((_, i) => {
+                          const weight = calculateNextWeight(
+                            parseFloat(originalWeight),
+                            dropSetPercentage * (i + 1)
+                          );
+                          return (
+                            <div key={i}>
+                              Drop {i + 1}: {weight} {weightUnit}
+                            </div>
+                          );
+                        })}
                       </div>
-                    );
-                  })}
+                    </div>
+                  )}
                 </div>
-              </div>
-            )}
               </>
             )}
 
             {selectedSetType === "warmup" && (
-              <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg mb-4">
-                <h3 className="font-medium text-yellow-700 dark:text-yellow-400 mb-2">Warm-up Set</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
+              <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg mb-4">
+                <h3 className="font-medium text-yellow-700 dark:text-yellow-400 mb-2 text-sm sm:text-base">Warm-up Set</h3>
+                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-3">
                   Warm-up sets are typically performed with lighter weights to prepare your muscles and joints.
-                  {!setTypeExercise?.is_cardio && " We suggest using about 70% of your working weight."}
+                  {!setTypeExercise?.is_cardio && " We suggest using about 60-70% of your working weight."}
                 </p>
+                
                 {originalWeight && !setTypeExercise?.is_cardio && (
-                  <div className="mt-3 font-medium">
-                    Suggested warm-up weight: {(parseFloat(originalWeight) * 0.7).toFixed(1)} {weightUnit}
+                  <div className="bg-yellow-100 dark:bg-yellow-800/30 p-2 rounded-lg mt-2">
+                    <div className="flex items-center text-xs text-yellow-800 dark:text-yellow-300">
+                      <FaInfoCircle className="mr-1 flex-shrink-0" />
+                      <span>
+                        Suggested warm-up weight: {(parseFloat(originalWeight) * 0.7).toFixed(1)} {weightUnit}
+                      </span>
+                    </div>
                   </div>
                 )}
               </div>
             )}
 
             {selectedSetType === "working" && (
-              <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg mb-4">
-                <h3 className="font-medium text-blue-700 dark:text-blue-400 mb-2">Normal Set</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
+              <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg mb-4">
+                <h3 className="font-medium text-blue-700 dark:text-blue-400 mb-2 text-sm sm:text-base">Normal Set</h3>
+                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-3">
                   Normal sets are your primary training sets performed at your target intensity.
                 </p>
+                
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-gray-700 dark:text-gray-300 mb-1 text-xs sm:text-sm">
+                      Weight ({weightUnit})
+                    </label>
+                    <input
+                      type="number"
+                      value={originalWeight || ""}
+                      onChange={(e) => setOriginalWeight(e.target.value)}
+                      className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white text-sm"
+                      placeholder="Weight"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-gray-700 dark:text-gray-300 mb-1 text-xs sm:text-sm">
+                      Reps
+                    </label>
+                    <input
+                      type="number"
+                      value={dropSetReps}
+                      onChange={(e) => setDropSetReps(e.target.value)}
+                      className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white text-sm"
+                      placeholder="Reps"
+                    />
+                  </div>
+                </div>
               </div>
             )}
             
             {selectedSetType === "superset" && (
-              <div className="mb-4">
-                <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg mb-4">
-                  <h3 className="font-medium text-purple-700 dark:text-purple-400 mb-2">Superset</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Supersets are two exercises performed back-to-back with minimal rest between them.
-                    Pair {setTypeExercise?.name} with another exercise from your list or catalog.
-                  </p>
-                </div>
+              <div className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg mb-4">
+                <h3 className="font-medium text-purple-700 dark:text-purple-400 mb-2 text-sm sm:text-base">Superset</h3>
+                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-3">
+                  Supersets are two exercises performed back-to-back with minimal rest between them.
+                  Pair {setTypeExercise?.name} with another exercise from your list.
+                </p>
                 
-                <div className="mb-4">
+                <div className="mb-3">
                   <div className="flex flex-col space-y-2">
-              <button
+                    <button
                       onClick={() => setShowSupersetExerciseSelector(true)}
-                      className="bg-purple-500 hover:bg-purple-600 text-white py-2 px-4 rounded-lg flex items-center justify-center"
+                      className="bg-purple-500 hover:bg-purple-600 text-white py-2 px-3 rounded-lg flex items-center justify-center text-sm"
                     >
-                      <FaPlus className="mr-2" /> Select Exercise from Catalog
+                      <FaPlus className="mr-2" /> Select Secondary Exercise
                     </button>
                     
                     {supersetExerciseId !== null && (
                       <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                        <p className="font-medium">Selected: {workoutExercises[supersetExerciseId]?.name}</p>
+                        <p className="font-medium text-xs sm:text-sm">Secondary Exercise: {workoutExercises[supersetExerciseId]?.name}</p>
                       </div>
                     )}
                   </div>
                 </div>
                 
                 {supersetExerciseId !== null && !setTypeExercise?.is_cardio && !workoutExercises[supersetExerciseId]?.is_cardio && (
-                  <>
-                    <div className="mb-4">
-                      <label className="block text-gray-700 dark:text-gray-300 mb-2">
-                        {setTypeExercise?.name} Weight ({weightUnit})
-                      </label>
-                      <input
-                        type="number"
-                        value={originalWeight || ""}
-                        onChange={(e) => setOriginalWeight(e.target.value)}
-                        className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
-                        placeholder="Enter weight"
-                      />
+                  <div className="bg-white dark:bg-gray-800 rounded-lg p-2 mb-2">
+                    <h4 className="font-medium text-xs sm:text-sm mb-2 text-purple-700 dark:text-purple-400">
+                      {setTypeExercise?.name} (Primary)
+                    </h4>
+                    
+                    <div className="grid grid-cols-2 gap-2 mb-3">
+                      <div>
+                        <label className="block text-gray-700 dark:text-gray-300 mb-1 text-xs">
+                          Weight ({weightUnit})
+                        </label>
+                        <input
+                          type="number"
+                          value={originalWeight || ""}
+                          onChange={(e) => setOriginalWeight(e.target.value)}
+                          className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white text-sm"
+                          placeholder="Weight"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-gray-700 dark:text-gray-300 mb-1 text-xs">
+                          Reps
+                        </label>
+                        <input
+                          type="number"
+                          value={dropSetReps}
+                          onChange={(e) => setDropSetReps(e.target.value)}
+                          className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white text-sm"
+                          placeholder="Reps"
+                        />
+                      </div>
                     </div>
                     
-                    <div className="mb-4">
-                      <label className="block text-gray-700 dark:text-gray-300 mb-2">
-                        {setTypeExercise?.name} Reps
-                      </label>
-                      <input
-                        type="number"
-                        value={dropSetReps}
-                        onChange={(e) => setDropSetReps(e.target.value)}
-                        className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
-                        placeholder="Enter reps"
-                      />
-                    </div>
+                    <h4 className="font-medium text-xs sm:text-sm mb-2 text-purple-700 dark:text-purple-400">
+                      {workoutExercises[supersetExerciseId]?.name} (Secondary)
+                    </h4>
                     
-                    <div className="mb-4">
-                      <label className="block text-gray-700 dark:text-gray-300 mb-2">
-                        {workoutExercises[supersetExerciseId]?.name} Weight ({weightUnit})
-                      </label>
-                      <input
-                        type="number"
-                        value={supersetWeight}
-                        onChange={(e) => setSupersetWeight(e.target.value)}
-                        className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
-                        placeholder="Enter weight"
-                      />
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-gray-700 dark:text-gray-300 mb-1 text-xs">
+                          Weight ({weightUnit})
+                        </label>
+                        <input
+                          type="number"
+                          value={supersetWeight}
+                          onChange={(e) => setSupersetWeight(e.target.value)}
+                          className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white text-sm"
+                          placeholder="Weight"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-gray-700 dark:text-gray-300 mb-1 text-xs">
+                          Reps
+                        </label>
+                        <input
+                          type="number"
+                          value={supersetReps}
+                          onChange={(e) => setSupersetReps(e.target.value)}
+                          className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white text-sm"
+                          placeholder="Reps"
+                        />
+                      </div>
                     </div>
-                    
-                    <div className="mb-4">
-                      <label className="block text-gray-700 dark:text-gray-300 mb-2">
-                        {workoutExercises[supersetExerciseId]?.name} Reps
-                      </label>
-                      <input
-                        type="number"
-                        value={supersetReps}
-                        onChange={(e) => setSupersetReps(e.target.value)}
-                        className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
-                        placeholder="Enter reps"
-                      />
-                    </div>
-                  </>
+                  </div>
+                )}
+                
+                {supersetExerciseId !== null && (
+                  <div className="text-xs text-gray-600 dark:text-gray-400 mt-1 bg-gray-100 dark:bg-gray-700 p-2 rounded-lg">
+                    <div className="font-medium mb-1">Superset Tip:</div>
+                    For best results, pair opposing or non-competing muscle groups 
+                    (e.g., push/pull, upper/lower body).
+                  </div>
                 )}
               </div>
             )}
 
             {selectedSetType === "amrap" && (
-              <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg mb-4">
-                <h3 className="font-medium text-green-700 dark:text-green-400 mb-2">AMRAP Set</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
+              <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg mb-4">
+                <h3 className="font-medium text-green-700 dark:text-green-400 mb-2 text-sm sm:text-base">AMRAP Set</h3>
+                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-3">
                   AMRAP (As Many Reps As Possible) sets are performed to technical failure - complete as many reps as you can with good form.
                 </p>
                 
-                <div className="mt-4">
-                  <label className="block text-gray-700 dark:text-gray-300 mb-2">
-                    Weight ({weightUnit})
-                  </label>
-                  <input
-                    type="number"
-                    value={originalWeight || ""}
-                    onChange={(e) => setOriginalWeight(e.target.value)}
-                    className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
-                    placeholder="Enter weight"
-                  />
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-gray-700 dark:text-gray-300 mb-1 text-xs sm:text-sm">
+                      Weight ({weightUnit})
+                    </label>
+                    <input
+                      type="number"
+                      value={originalWeight || ""}
+                      onChange={(e) => setOriginalWeight(e.target.value)}
+                      className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white text-sm"
+                      placeholder="Weight"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-gray-700 dark:text-gray-300 mb-1 text-xs sm:text-sm">
+                      Target Reps (min)
+                    </label>
+                    <input
+                      type="number"
+                      value={dropSetReps}
+                      onChange={(e) => setDropSetReps(e.target.value)}
+                      className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white text-sm"
+                      placeholder="Min. reps"
+                    />
+                  </div>
                 </div>
                 
-                <div className="mt-3">
-                  <label className="block text-gray-700 dark:text-gray-300 mb-2">
-                    Target Reps (minimum)
-                  </label>
-                  <input
-                    type="number"
-                    value={dropSetReps}
-                    onChange={(e) => setDropSetReps(e.target.value)}
-                    className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
-                    placeholder="Enter target reps"
-                  />
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Example: If you aim for at least 8 reps, enter "8"
-                  </p>
+                <div className="mt-3 bg-green-100 dark:bg-green-800/30 p-2 rounded-lg">
+                  <div className="text-xs text-green-800 dark:text-green-300 flex items-start">
+                    <FaInfoCircle className="mr-1 mt-0.5 flex-shrink-0" />
+                    <span>
+                      Aim to exceed your target reps. Record the total reps completed after set.
+                    </span>
+                  </div>
                 </div>
               </div>
             )}
 
             {selectedSetType === "restpause" && (
-              <div className="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg mb-4">
-                <h3 className="font-medium text-orange-700 dark:text-orange-400 mb-2">Rest-Pause Set</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
+              <div className="p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg mb-4">
+                <h3 className="font-medium text-orange-700 dark:text-orange-400 mb-2 text-sm sm:text-base">Rest-Pause Set</h3>
+                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-3">
                   Rest-Pause involves performing a set to failure, resting 15-20 seconds, then continuing with the same weight for additional reps.
                 </p>
                 
-                <div className="mt-4">
-                  <label className="block text-gray-700 dark:text-gray-300 mb-2">
-                    Weight ({weightUnit})
-                  </label>
-                  <input
-                    type="number"
-                    value={originalWeight || ""}
-                    onChange={(e) => setOriginalWeight(e.target.value)}
-                    className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
-                    placeholder="Enter weight"
-                  />
+                <div className="grid grid-cols-2 gap-2 mb-2">
+                  <div>
+                    <label className="block text-gray-700 dark:text-gray-300 mb-1 text-xs sm:text-sm">
+                      Weight ({weightUnit})
+                    </label>
+                    <input
+                      type="number"
+                      value={originalWeight || ""}
+                      onChange={(e) => setOriginalWeight(e.target.value)}
+                      className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white text-sm"
+                      placeholder="Weight"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-gray-700 dark:text-gray-300 mb-1 text-xs sm:text-sm">
+                      Initial Reps
+                    </label>
+                    <input
+                      type="number"
+                      value={dropSetReps}
+                      onChange={(e) => setDropSetReps(e.target.value)}
+                      className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white text-sm"
+                      placeholder="Reps"
+                    />
+                  </div>
                 </div>
                 
-                <div className="mt-3">
-                  <label className="block text-gray-700 dark:text-gray-300 mb-2">
-                    Initial Reps
-                  </label>
-                  <input
-                    type="number"
-                    value={dropSetReps}
-                    onChange={(e) => setDropSetReps(e.target.value)}
-                    className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
-                    placeholder="Enter initial reps"
-                  />
-                </div>
-                
-                <div className="mt-3">
-                  <label className="block text-gray-700 dark:text-gray-300 mb-2">
+                <div>
+                  <label className="block text-gray-700 dark:text-gray-300 mb-1 text-xs sm:text-sm">
                     Number of Rest-Pauses
                   </label>
-                  <input
-                    type="number"
-                    value={dropSetCount}
-                    onChange={(e) => setDropSetCount(parseInt(e.target.value))}
-                    className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
-                    min="1"
-                    max="3"
-                    placeholder="How many times to rest-pause"
-                  />
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Typically 1-3 rest-pauses are performed
-                  </p>
+                  <div className="flex items-center">
+                    <input
+                      type="range"
+                      min="1"
+                      max="3"
+                      value={dropSetCount}
+                      onChange={(e) => setDropSetCount(parseInt(e.target.value))}
+                      className="flex-grow mr-2"
+                    />
+                    <span className="w-6 text-center bg-orange-200 dark:bg-orange-800 rounded-md text-xs py-1">
+                      {dropSetCount}
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="mt-3 bg-orange-100 dark:bg-orange-800/30 p-2 rounded-lg">
+                  <div className="text-xs text-orange-800 dark:text-orange-300 flex items-start">
+                    <FaInfoCircle className="mr-1 mt-0.5 flex-shrink-0" />
+                    <span>
+                      Between each attempt, rest for 15-20 seconds. This technique increases time under tension for better muscle growth.
+                    </span>
+                  </div>
                 </div>
               </div>
             )}
 
             {selectedSetType === "pyramid" && (
-              <div className="p-4 bg-pink-50 dark:bg-pink-900/20 rounded-lg mb-4">
-                <h3 className="font-medium text-pink-700 dark:text-pink-400 mb-2">Pyramid Set</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Pyramid sets involve progressively increasing the weight while decreasing reps (ascending), then optionally decreasing weight while increasing reps (descending).
+              <div className="p-3 bg-pink-50 dark:bg-pink-900/20 rounded-lg mb-4">
+                <h3 className="font-medium text-pink-700 dark:text-pink-400 mb-2 text-sm sm:text-base">Pyramid Set</h3>
+                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-3">
+                  Pyramid sets involve progressively increasing weight while decreasing reps, with an option to reverse the pyramid.
                 </p>
                 
-                <div className="mt-4">
-                  <label className="block text-gray-700 dark:text-gray-300 mb-2">
-                    Starting Weight ({weightUnit})
-                  </label>
-                  <input
-                    type="number"
-                    value={originalWeight || ""}
-                    onChange={(e) => setOriginalWeight(e.target.value)}
-                    className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
-                    placeholder="Enter starting weight"
-                  />
+                <div className="grid grid-cols-2 gap-2 mb-2">
+                  <div>
+                    <label className="block text-gray-700 dark:text-gray-300 mb-1 text-xs sm:text-sm">
+                      Starting Weight ({weightUnit})
+                    </label>
+                    <input
+                      type="number"
+                      value={originalWeight || ""}
+                      onChange={(e) => setOriginalWeight(e.target.value)}
+                      className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white text-sm"
+                      placeholder="Weight"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-gray-700 dark:text-gray-300 mb-1 text-xs sm:text-sm">
+                      Starting Reps
+                    </label>
+                    <input
+                      type="number"
+                      value={dropSetReps}
+                      onChange={(e) => setDropSetReps(e.target.value)}
+                      className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white text-sm"
+                      placeholder="Reps"
+                    />
+                  </div>
                 </div>
                 
-                <div className="mt-3">
-                  <label className="block text-gray-700 dark:text-gray-300 mb-2">
-                    Starting Reps
-                  </label>
-                  <input
-                    type="number"
-                    value={dropSetReps}
-                    onChange={(e) => setDropSetReps(e.target.value)}
-                    className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
-                    placeholder="Enter starting reps"
-                  />
+                <div className="grid grid-cols-2 gap-2 mb-2">
+                  <div>
+                    <label className="block text-gray-700 dark:text-gray-300 mb-1 text-xs sm:text-sm">
+                      Weight Increment (%)
+                    </label>
+                    <input
+                      type="number"
+                      value={dropSetPercentage}
+                      onChange={(e) => setDropSetPercentage(parseInt(e.target.value))}
+                      className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white text-sm"
+                      min="5"
+                      max="30"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-gray-700 dark:text-gray-300 mb-1 text-xs sm:text-sm">
+                      Number of Steps
+                    </label>
+                    <input
+                      type="number"
+                      value={dropSetCount}
+                      onChange={(e) => setDropSetCount(parseInt(e.target.value))}
+                      className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white text-sm"
+                      min="2"
+                      max="5"
+                    />
+                  </div>
                 </div>
                 
-                <div className="mt-3">
-                  <label className="block text-gray-700 dark:text-gray-300 mb-2">
-                    Weight Increment (%)
-                  </label>
-                  <input
-                    type="number"
-                    value={dropSetPercentage}
-                    onChange={(e) => setDropSetPercentage(parseInt(e.target.value))}
-                    className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
-                    min="5"
-                    max="30"
-                    placeholder="Weight increment percentage"
-                  />
-                </div>
-                
-                <div className="mt-3">
-                  <label className="block text-gray-700 dark:text-gray-300 mb-2">
-                    Number of Steps
-                  </label>
-                  <input
-                    type="number"
-                    value={dropSetCount}
-                    onChange={(e) => setDropSetCount(parseInt(e.target.value))}
-                    className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
-                    min="2"
-                    max="5"
-                    placeholder="How many steps in the pyramid"
-                  />
-                </div>
-                
-                <div className="mt-3 flex items-center">
+                <div className="mt-2 flex items-center">
                   <input
                     type="checkbox"
                     id="fullPyramid"
@@ -3356,10 +3805,46 @@ const WorkoutLog = () => {
                     checked={fullPyramidChecked}
                     onChange={(e) => setFullPyramidChecked(e.target.checked)}
                   />
-                  <label htmlFor="fullPyramid" className="text-gray-700 dark:text-gray-300">
+                  <label htmlFor="fullPyramid" className="text-gray-700 dark:text-gray-300 text-xs sm:text-sm">
                     Full Pyramid (ascending + descending)
                   </label>
                 </div>
+                
+                {originalWeight && dropSetReps && (
+                  <div className="mt-3 p-2 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                    <h4 className="font-medium text-xs sm:text-sm mb-1">Pyramid Preview:</h4>
+                    <div className="grid grid-cols-3 gap-1 text-xs">
+                      {Array.from({ length: dropSetCount }).map((_, i) => {
+                        const stepPercent = dropSetPercentage * i;
+                        const weight = i === 0 
+                          ? originalWeight 
+                          : calculateNextWeight(parseFloat(originalWeight), stepPercent);
+                        const reps = Math.max(1, parseInt(dropSetReps) - (i * 2));
+                        
+                        return (
+                          <div key={`up-${i}`} className={i === 0 ? "font-medium" : ""}>
+                            Step {i+1}: {weight}{weightUnit} × {reps}
+                          </div>
+                        );
+                      })}
+                      
+                      {fullPyramidChecked && Array.from({ length: dropSetCount - 1 }).map((_, i) => {
+                        const reverseIdx = dropSetCount - 2 - i;
+                        const stepPercent = dropSetPercentage * reverseIdx;
+                        const weight = reverseIdx === 0 
+                          ? originalWeight 
+                          : calculateNextWeight(parseFloat(originalWeight), stepPercent);
+                        const reps = Math.max(1, parseInt(dropSetReps) - (reverseIdx * 2));
+                        
+                        return (
+                          <div key={`down-${i}`}>
+                            Step {dropSetCount + i + 1}: {weight}{weightUnit} × {reps}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -3458,15 +3943,16 @@ const WorkoutLog = () => {
               </div>
             )}
 
-            <div className="flex justify-between space-x-3 mt-6">
+            {/* Add the footer buttons after all set type sections */}
+            <div className="flex justify-between space-x-3 mt-4">
               <button
-                className="flex-1 bg-gray-300 hover:bg-gray-400 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-800 dark:text-white py-2 rounded-lg"
+                className="flex-1 bg-gray-300 hover:bg-gray-400 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-800 dark:text-white py-2 rounded-lg text-sm"
                 onClick={closeSetTypeModal}
               >
                 Cancel
               </button>
               <button
-                className="flex-1 bg-teal-500 hover:bg-teal-600 text-white py-2 rounded-lg"
+                className="flex-1 bg-teal-500 hover:bg-teal-600 text-white py-2 rounded-lg text-sm"
                 onClick={handleAddSetByType}
               >
                 {getButtonText()}
@@ -3529,8 +4015,8 @@ const WorkoutLog = () => {
                     const percentChange = (previousBestSet.weight && previousBestSet.weight > 0) 
                       ? ((weightDiff / parseFloat(previousBestSet.weight)) * 100).toFixed(1)
                       : 0;
-                    
-                    return (
+                        
+                        return (
                       <div className="flex justify-between items-center">
                         <div>
                           <h3 className="font-semibold text-gray-800 dark:text-gray-200">Trend Analysis</h3>
@@ -3547,7 +4033,7 @@ const WorkoutLog = () => {
                             {weightDiff > 0 ? <FaArrowUp className="inline ml-1" /> : weightDiff < 0 ? <FaArrowDown className="inline ml-1" /> : null}
                           </span>
                         </div>
-                      </div>
+                          </div>
                     );
                   }
                   
@@ -3634,7 +4120,7 @@ const WorkoutLog = () => {
                 <div className="text-sm">
                   <select 
                     className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-sm"
-                    onChange={(e) => {
+                        onChange={(e) => {
                       const sortedHistory = [...workoutHistory].sort((a, b) => {
                         if (e.target.value === "date-desc") {
                           return new Date(b.start_time) - new Date(a.start_time);
@@ -3719,8 +4205,8 @@ const WorkoutLog = () => {
                             )}
                           </td>
                         </tr>
-                      );
-                    })}
+                        );
+                      })}
                   {workoutHistory.filter(workout => 
                     workout.exercises?.some(ex => 
                       ex.name === selectedExerciseForHistory.name
@@ -3739,11 +4225,7 @@ const WorkoutLog = () => {
               <button
                 onClick={() => {
                   setShowExerciseHistoryModal(false);
-                  navigate("/workout-history", { 
-                    state: { 
-                      filterExercise: selectedExerciseForHistory.name 
-                    } 
-                  });
+                  setShowHistory(true);
                 }}
                 className="bg-indigo-500 hover:bg-indigo-600 text-white py-2 px-4 rounded-lg inline-flex items-center"
               >
@@ -3947,16 +4429,12 @@ const WorkoutLog = () => {
               <button
                 onClick={() => {
                   setShowExerciseChartsModal(false);
-                  navigate("/progress-tracker", { 
-                    state: { 
-                      activeExercise: selectedExerciseForHistory.name 
-                    } 
-                  });
+                  // We close the modal but we don't navigate away
                 }}
                 className="bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg inline-flex items-center"
               >
                 <FaChartBar className="mr-2" />
-                View Full Progress Charts
+                Close
               </button>
             </div>
           </div>
@@ -4368,12 +4846,12 @@ const WorkoutLog = () => {
               <button
                 onClick={() => {
                   setShowPersonalRecordsModal(false);
-                  navigate("/personal-records");
+                  // We close the modal but we don't navigate away
                 }}
                 className="bg-yellow-500 hover:bg-yellow-600 text-white py-2 px-4 rounded-lg inline-flex items-center"
               >
                 <FaTrophy className="mr-2" />
-                View All Personal Records
+                Close
               </button>
             </div>
           </div>
@@ -4384,7 +4862,7 @@ const WorkoutLog = () => {
       {showSupersetExerciseSelector && (
         <AddExercise
           onClose={() => setShowSupersetExerciseSelector(false)}
-          onSelectExercise={(exercise) => {
+          onSelectExercise={(exercise, initialSets) => {
             // Find the exercise in the current workout
             const exerciseIndex = workoutExercises.findIndex(ex => ex.name === exercise.name);
             
@@ -4394,30 +4872,40 @@ const WorkoutLog = () => {
             } else {
               // If not in workout yet, add it first then use its index
               setWorkoutExercises(prevExercises => {
+                // Detect if this is a cardio exercise
+                const isCardio = exercise.is_cardio || 
+                                exercise.category === "Cardio" || 
+                                (typeof exercise.category === 'string' && 
+                                exercise.category.toLowerCase() === 'cardio');
+                
                 // Create default sets for the exercise
                 let newExercise = {
                   name: exercise.name,
                   category: exercise.category,
-                  is_cardio: exercise.is_cardio,
+                  is_cardio: isCardio,
                   sets: []
                 };
                 
                 // Add appropriate number of sets
-                const initialSets = exercise.initialSets || 1;
-                if (exercise.is_cardio) {
-                  for (let i = 0; i < initialSets; i++) {
+                const setsToAdd = initialSets || exercise.initialSets || 1;
+                if (isCardio) {
+                  for (let i = 0; i < setsToAdd; i++) {
                     newExercise.sets.push({
                       duration: "",
                       distance: "",
-                      intensity: ""
+                      intensity: "",
+                      notes: "",
+                      completed: false
                     });
                   }
                 } else {
-                  for (let i = 0; i < initialSets; i++) {
+                  for (let i = 0; i < setsToAdd; i++) {
                     newExercise.sets.push({
                       weight: "",
                       reps: "",
-                      is_warmup: false
+                      notes: "",
+                      is_warmup: false,
+                      completed: false
                     });
                   }
                 }
@@ -4435,10 +4923,10 @@ const WorkoutLog = () => {
 
       {/* Workout History Modal */}
       {showHistory && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-4xl w-full p-6 max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-md sm:max-w-lg p-3 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-3">
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white">
                 Workout History
               </h2>
               <button
@@ -4449,19 +4937,18 @@ const WorkoutLog = () => {
               </button>
             </div>
             
-            <div className="mb-4">
-              <div className="overflow-x-auto">
-                <table className="min-w-full bg-white dark:bg-gray-800 rounded-lg">
-                  <thead className="bg-gray-100 dark:bg-gray-700">
+            <div className="mb-3">
+              <div className="overflow-x-auto -mx-3">
+                <table className="min-w-full bg-white dark:bg-gray-800">
+                  <thead className="bg-gray-100 dark:bg-gray-700 text-xs">
                     <tr>
-                      <th className="py-2 px-4 text-left">Date</th>
-                      <th className="py-2 px-4 text-left">Workout</th>
-                      <th className="py-2 px-4 text-center">Duration</th>
-                      <th className="py-2 px-4 text-center">Exercises</th>
-                      <th className="py-2 px-4 text-center">Actions</th>
+                      <th className="py-2 px-2 text-left">Date</th>
+                      <th className="py-2 px-2 text-left">Workout</th>
+                      <th className="py-2 px-2 text-center whitespace-nowrap">Duration</th>
+                      <th className="py-2 px-2 text-center">Action</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="text-xs">
                     {workoutHistory.length > 0 ? (
                       workoutHistory
                         .sort((a, b) => new Date(b.start_time) - new Date(a.start_time))
@@ -4473,23 +4960,19 @@ const WorkoutLog = () => {
                           
                           return (
                             <tr key={idx} className="border-b border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700">
-                              <td className="py-3 px-4">{formatDateForDisplay(workout.start_time)}</td>
-                              <td className="py-3 px-4">{workout.name || "Unnamed Workout"}</td>
-                              <td className="py-3 px-4 text-center">{duration}</td>
-                              <td className="py-3 px-4 text-center">{workout.exercises?.length || 0}</td>
-                              <td className="py-3 px-4 text-center">
+                              <td className="py-2 px-2 whitespace-nowrap">{formatDateForDisplay(workout.start_time)}</td>
+                              <td className="py-2 px-2 truncate max-w-[80px]">{workout.name || "Unnamed"}</td>
+                              <td className="py-2 px-2 text-center whitespace-nowrap">{duration}</td>
+                              <td className="py-2 px-2 text-center">
                                 <button
                                   onClick={() => {
-                                    // Reuse routine feature to load the workout as a new workout
-                                    handleSelectRoutine({
+                                    // Show the load confirmation modal instead of directly loading
+                                    handleShowWorkoutLoadOptions({
                                       name: workout.name,
-                                      workout: {
-                                        exercises: workout.exercises || []
-                                      }
+                                      exercises: workout.exercises || []
                                     });
-                                    setShowHistory(false);
                                   }}
-                                  className="bg-blue-500 hover:bg-blue-600 text-white py-1 px-2 rounded mr-2 text-sm"
+                                  className="bg-blue-500 hover:bg-blue-600 text-white py-1 px-2 rounded text-xs"
                                 >
                                   Load
                                 </button>
@@ -4499,7 +4982,7 @@ const WorkoutLog = () => {
                         })
                     ) : (
                       <tr>
-                        <td colSpan="5" className="py-4 text-center text-gray-500 dark:text-gray-400">
+                        <td colSpan="4" className="py-4 text-center text-gray-500 dark:text-gray-400">
                           No workout history found.
                         </td>
                       </tr>
@@ -4513,12 +4996,142 @@ const WorkoutLog = () => {
               <button
                 onClick={() => {
                   setShowHistory(false);
-                  navigate("/workout-history");
+                  // We close the modal but we don't navigate away
                 }}
-                className="bg-indigo-500 hover:bg-indigo-600 text-white py-2 px-4 rounded-lg inline-flex items-center"
+                className="bg-indigo-500 hover:bg-indigo-600 text-white py-1.5 px-4 rounded-lg inline-flex items-center text-xs"
               >
-                <FaHistory className="mr-2" />
-                View Full History
+                <FaHistory className="mr-1 text-xs" />
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reorder Exercises Modal */}
+      {showReorderModal && (
+        <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full p-4 max-h-[90vh] flex flex-col reorder-modal">
+            <div className="flex justify-between items-center mb-3 reorder-modal-header">
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+                Reorder Exercises
+              </h2>
+              <button
+                onClick={handleCloseReorderModal}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+              >
+                <FaTimes />
+              </button>
+            </div>
+            
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 reorder-modal-instructions">
+              Drag and drop exercises to reorder them in your workout.
+            </p>
+            
+            <div className="overflow-y-auto flex-1 mb-3 reorder-modal-list">
+              <ul className="space-y-2">
+                {exerciseReorderList.map((exercise, index) => (
+                  <li 
+                    key={`${exercise.name}-${index}`}
+                    draggable
+                    onDragStart={() => handleDragStart(index)}
+                    onDragOver={(e) => handleDragOver(e, index)}
+                    onTouchStart={() => handleTouchStart(index)}
+                    onTouchMove={(e) => handleTouchMove(e, index)}
+                    onTouchEnd={handleTouchEnd}
+                    className={`p-3 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center cursor-move reorder-modal-item ${
+                      draggedExerciseIndex === index ? 'border-2 border-blue-500 dragging' : ''
+                    }`}
+                  >
+                    <div className="mr-3 text-gray-500 dark:text-gray-400 reorder-modal-item-grip">
+                      <FaGripVertical />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-medium text-gray-900 dark:text-white truncate reorder-modal-item-name">
+                        {index + 1}. {exercise.name}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {exercise.sets.length} set{exercise.sets.length !== 1 ? 's' : ''}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            
+            <div className="flex space-x-2 justify-end mt-auto">
+              <button
+                onClick={handleCloseReorderModal}
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleReorderConfirm}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg"
+              >
+                Apply Order
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Load Confirmation Modal */}
+      {showLoadConfirmation && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                Load {workoutToLoad?.name || "Workout"}
+              </h2>
+              <button
+                onClick={closeLoadConfirmation}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+              >
+                <FaTimes />
+              </button>
+            </div>
+            
+            {workoutToLoad?.start_time && (
+              <div className="mb-4 text-sm bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
+                <span className="text-blue-600 dark:text-blue-300 font-medium">Last performed: </span>
+                <span className="text-gray-700 dark:text-gray-300">
+                  {formatDateForDisplay(workoutToLoad.start_time)}
+                </span>
+              </div>
+            )}
+            
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              How would you like to load this workout?
+            </p>
+
+            <div className="space-y-4">
+              <button
+                onClick={loadWorkoutWithData}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg text-left flex flex-col"
+              >
+                <span className="font-semibold text-lg">Repeat Workout</span>
+                <span className="text-sm text-blue-100">
+                  Use the same weights, reps, distances, and notes from the previous workout
+                </span>
+              </button>
+              
+              <button
+                onClick={loadWorkoutWithoutData}
+                className="w-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-white py-3 px-4 rounded-lg text-left flex flex-col"
+              >
+                <span className="font-semibold text-lg">Fresh Start</span>
+                <span className="text-sm text-gray-600 dark:text-gray-300">
+                  Use the same exercises but start with empty values
+                </span>
+              </button>
+              
+              <button
+                onClick={closeLoadConfirmation}
+                className="w-full border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+              >
+                Cancel
               </button>
             </div>
           </div>

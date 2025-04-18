@@ -233,6 +233,16 @@ function PersonalRecords() {
     }));
   }, [filteredRecords]);
 
+  // Sort filtered records for descending display on mobile
+  const sortedGroupedRecords = useMemo(() => {
+    return [...groupedRecords].sort((a, b) => {
+      // Sort by most recent record
+      const aLatestDate = Math.max(...a.records.map(r => new Date(r.date)));
+      const bLatestDate = Math.max(...b.records.map(r => new Date(r.date)));
+      return bLatestDate - aLatestDate;
+    });
+  }, [groupedRecords]);
+
   const generateProgressChart = (exerciseName, recordType) => {
     // Filter workouts that contain this exercise
     const relevantWorkouts = workoutHistory
@@ -913,17 +923,17 @@ function PersonalRecords() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-6">
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-4">
       <div className="max-w-4xl mx-auto">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center">
-            <FaTrophy className="text-yellow-500 mr-2" />
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white flex items-center">
+            <FaTrophy className="text-yellow-500 mr-2 text-lg" />
             {showFrequencyAnalysis ? "Progress Tracker" : "Personal Records"}
           </h1>
-          <div className="flex space-x-4">
+          <div className="flex flex-wrap gap-2">
             <button
               onClick={() => setShowFrequencyAnalysis(!showFrequencyAnalysis)}
-              className={`flex items-center px-4 py-2 rounded-lg ${
+              className={`flex items-center px-2 py-1 rounded-lg text-xs ${
                 showFrequencyAnalysis
                   ? "bg-purple-500 text-white"
                   : "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
@@ -931,40 +941,42 @@ function PersonalRecords() {
             >
               {showFrequencyAnalysis ? (
                 <>
-                  <FaTrophy className="mr-2" /> View Records
+                  <FaTrophy className="mr-1" /> Records
                 </>
               ) : (
                 <>
-                  <FaChartLine className="mr-2" /> View Progress
+                  <FaChartLine className="mr-1" /> Progress
                 </>
               )}
             </button>
-          <button
-            onClick={() => navigate("/workout-history")}
-            className="flex items-center text-teal-500 hover:text-teal-400"
-          >
-            <FaArrowLeft className="mr-2" /> Back to History
-          </button>
+            <button
+              onClick={() => navigate("/workout-history")}
+              className="flex items-center text-teal-500 hover:text-teal-400 text-xs px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded-lg"
+            >
+              <FaArrowLeft className="mr-1" /> Back
+            </button>
           </div>
         </div>
 
         {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+          <div className="bg-red-100 border border-red-400 text-red-700 px-3 py-2 rounded mb-3 text-xs">
             {error}
           </div>
         )}
 
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div className="flex items-center space-x-2">
-              <FaFilter className="text-gray-500" />
-              <span className="text-gray-700 dark:text-gray-300">
-                Filter by:
-              </span>
-              <div className="flex space-x-1">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 mb-4">
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col">
+              <div className="flex items-center space-x-1 mb-2">
+                <FaFilter className="text-gray-500 text-xs" />
+                <span className="text-gray-700 dark:text-gray-300 text-xs">
+                  Filter:
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-1">
                 <button
                   onClick={() => setFilterCategory("all")}
-                  className={`px-3 py-1 rounded-full text-sm ${
+                  className={`px-2 py-1 rounded-full text-xs ${
                     filterCategory === "all"
                       ? "bg-blue-500 text-white"
                       : "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
@@ -974,23 +986,23 @@ function PersonalRecords() {
                 </button>
                 <button
                   onClick={() => setFilterCategory("strength")}
-                  className={`px-3 py-1 rounded-full text-sm flex items-center ${
+                  className={`px-2 py-1 rounded-full text-xs flex items-center ${
                     filterCategory === "strength"
                       ? "bg-blue-500 text-white"
                       : "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
                   }`}
                 >
-                  <FaDumbbell className="mr-1" /> Strength
+                  <FaDumbbell className="mr-1 text-xs" /> Strength
                 </button>
                 <button
                   onClick={() => setFilterCategory("cardio")}
-                  className={`px-3 py-1 rounded-full text-sm flex items-center ${
+                  className={`px-2 py-1 rounded-full text-xs flex items-center ${
                     filterCategory === "cardio"
                       ? "bg-blue-500 text-white"
                       : "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
                   }`}
                 >
-                  <FaRunning className="mr-1" /> Cardio
+                  <FaRunning className="mr-1 text-xs" /> Cardio
                 </button>
               </div>
             </div>
@@ -1001,55 +1013,55 @@ function PersonalRecords() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search exercises..."
-                className="w-full md:w-64 bg-gray-200 dark:bg-gray-700 rounded p-2 pl-10"
+                className="w-full bg-gray-200 dark:bg-gray-700 rounded p-1.5 pl-7 text-xs"
               />
-              <FaSearch className="absolute left-3 top-3 text-gray-500 dark:text-gray-400" />
+              <FaSearch className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 text-xs" />
             </div>
-          </div>
 
-          {/* Add toggle for frequency analysis */}
-          <div className="mt-4 border-t border-gray-200 dark:border-gray-700 pt-4">
-            <div className="flex flex-wrap gap-2">
-              <button
-                onClick={() => setProgressView("frequency")}
-                className={`px-3 py-1 rounded-full text-sm flex items-center ${
-                  progressView === "frequency"
-                    ? "bg-purple-500 text-white"
-                    : "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
-                }`}
-              >
-                <FaCalendarAlt className="mr-1" /> Exercise History
-              </button>
-              <button
-                onClick={() => setProgressView("strength")}
-                className={`px-3 py-1 rounded-full text-sm flex items-center ${
-                  progressView === "strength"
-                    ? "bg-purple-500 text-white"
-                    : "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
-                }`}
-              >
-                <FaDumbbell className="mr-1" /> Strength Progress
-              </button>
-              <button
-                onClick={() => setProgressView("charts")}
-                className={`px-3 py-1 rounded-full text-sm flex items-center ${
-                  progressView === "charts"
-                    ? "bg-purple-500 text-white"
-                    : "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
-                }`}
-              >
-                <FaChartLine className="mr-1" /> Charts
-              </button>
-              <button
-                onClick={() => setProgressView("insights")}
-                className={`px-3 py-1 rounded-full text-sm flex items-center ${
-                  progressView === "insights"
-                    ? "bg-purple-500 text-white"
-                    : "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
-                }`}
-              >
-                <FaFire className="mr-1" /> Insights
-              </button>
+            {/* Add toggle for frequency analysis */}
+            <div className="border-t border-gray-200 dark:border-gray-700 pt-2">
+              <div className="flex flex-wrap gap-1">
+                <button
+                  onClick={() => setProgressView("frequency")}
+                  className={`px-2 py-1 rounded-full text-xs flex items-center ${
+                    progressView === "frequency"
+                      ? "bg-purple-500 text-white"
+                      : "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+                  }`}
+                >
+                  <FaCalendarAlt className="mr-1 text-xs" /> History
+                </button>
+                <button
+                  onClick={() => setProgressView("strength")}
+                  className={`px-2 py-1 rounded-full text-xs flex items-center ${
+                    progressView === "strength"
+                      ? "bg-purple-500 text-white"
+                      : "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+                  }`}
+                >
+                  <FaDumbbell className="mr-1 text-xs" /> Strength
+                </button>
+                <button
+                  onClick={() => setProgressView("charts")}
+                  className={`px-2 py-1 rounded-full text-xs flex items-center ${
+                    progressView === "charts"
+                      ? "bg-purple-500 text-white"
+                      : "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+                  }`}
+                >
+                  <FaChartLine className="mr-1 text-xs" /> Charts
+                </button>
+                <button
+                  onClick={() => setProgressView("insights")}
+                  className={`px-2 py-1 rounded-full text-xs flex items-center ${
+                    progressView === "insights"
+                      ? "bg-purple-500 text-white"
+                      : "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+                  }`}
+                >
+                  <FaFire className="mr-1 text-xs" /> Insights
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1080,7 +1092,7 @@ function PersonalRecords() {
                   {filteredFrequencyData.length === 0 ? (
                     <div className="p-6 text-center text-gray-500 dark:text-gray-400">
                       No exercise data found matching your filters.
-          </div>
+                    </div>
                   ) : (
                     <div className="overflow-x-auto">
                       <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
@@ -1405,24 +1417,24 @@ function PersonalRecords() {
             )}
           </>
         ) : (
-          <div className="space-y-6">
-            {groupedRecords.map((group, index) => (
+          <div className="space-y-4">
+            {sortedGroupedRecords.map((group, index) => (
               <div
                 key={index}
                 className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden"
               >
-                <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                <div className="p-3 border-b border-gray-200 dark:border-gray-700">
+                  <h2 className="text-base font-semibold text-gray-900 dark:text-white">
                     {group.name}
                   </h2>
                 </div>
                 
-                <div className="p-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {group.records.map((record, rIndex) => (
                       <div 
                         key={rIndex} 
-                        className={`p-4 rounded-lg ${
+                        className={`p-3 rounded-lg ${
                           record.category === "strength"
                             ? "bg-blue-50 dark:bg-blue-900/30"
                             : "bg-green-50 dark:bg-green-900/30"
@@ -1430,33 +1442,33 @@ function PersonalRecords() {
                       >
                         <div className="flex justify-between items-start">
                           <div>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
                               {record.category === "strength"
                                 ? `${record.reps} Rep Max` 
                                 : record.type === "pace"
                                 ? "Best Pace"
                                 : "Longest Distance"}
                             </p>
-                            <p className="text-2xl font-bold">
+                            <p className="text-lg font-bold">
                               {record.display}
                             </p>
                           </div>
                           <div
-                            className={`p-2 rounded-full ${
+                            className={`p-1.5 rounded-full ${
                               record.category === "strength"
                                 ? "bg-blue-100 dark:bg-blue-800"
                                 : "bg-green-100 dark:bg-green-800"
                             }`}
                           >
                             {record.category === "strength" ? (
-                              <FaDumbbell className="text-blue-500 dark:text-blue-300" />
+                              <FaDumbbell className="text-blue-500 dark:text-blue-300 text-xs" />
                             ) : (
-                              <FaRunning className="text-green-500 dark:text-green-300" />
+                              <FaRunning className="text-green-500 dark:text-green-300 text-xs" />
                             )}
                           </div>
                         </div>
-                        <div className="mt-2 flex items-center text-sm text-gray-500 dark:text-gray-400">
-                          <FaCalendarAlt className="mr-1" />
+                        <div className="mt-1 flex items-center text-xs text-gray-500 dark:text-gray-400">
+                          <FaCalendarAlt className="mr-1 text-[10px]" />
                           {new Date(record.date).toLocaleDateString()}
                         </div>
                       </div>

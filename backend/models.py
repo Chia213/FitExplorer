@@ -173,11 +173,12 @@ class CustomExercise(Base):
     __tablename__ = "custom_exercises"
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, index=True)
-    category = Column(String, index=True)
-    user_id = Column(Integer, ForeignKey(
-        "users.id", ondelete="CASCADE"), nullable=False)
-
+    name = Column(String, nullable=False)
+    category = Column(String, nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    created_at = Column(DateTime, default=datetime.now)
+    
+    # Relationships
     user = relationship("User", back_populates="custom_exercises")
 
 
