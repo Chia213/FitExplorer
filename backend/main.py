@@ -35,14 +35,15 @@ from models import (
     SavedWorkoutProgram, Notification, WorkoutPreferences,
     Achievement, UserAchievement, NutritionMeal, 
     NutritionFood, NutritionGoal, CommonFood, 
-    WorkoutTemplate, UserUnlockedTemplates, UserReward
+    WorkoutTemplate, UserUnlockedTemplates, UserReward,
+    AdminSettings, UserSession, ExerciseMemory
 )
 from typing import List, Dict, Any, Optional
 from admin import router as admin_router
 from dependencies import get_current_user, get_admin_user
 from auth import router as auth_router
 print("Auth router initialized with session validation endpoints")
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone, timedelta, date
 from database import engine, Base, get_db, SessionLocal
 from sqlalchemy import func, desc, extract, asc, text, distinct, or_, and_, inspect
 from sqlalchemy.orm import Session, joinedload, contains_eager, aliased
@@ -50,7 +51,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import uuid
 import os
-from fastapi import FastAPI, Depends, HTTPException, File, UploadFile, BackgroundTasks, Body, Query, Request, status
+from fastapi import FastAPI, Depends, HTTPException, File, UploadFile, BackgroundTasks, Body, Query, Request, status, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse
 from background_task import send_summary_emails
@@ -3272,65 +3273,167 @@ def update_workout_frequency(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Update user's workout frequency goal"""
     try:
-        # Get frequency goal from request
-        frequency_goal = frequency_data.get("frequency_goal")
+        # Get or create user workout preferences
+        workout_prefs = db.query(WorkoutPreferences).filter(WorkoutPreferences.user_id == user.id).first()
         
-        # Validate frequency goal (null or 1-7)
-        if frequency_goal is not None and (not isinstance(frequency_goal, int) or frequency_goal < 1 or frequency_goal > 7):
-            raise HTTPException(status_code=400, detail="Frequency goal must be between 1 and 7 or null")
+        if not workout_prefs:
+            workout_prefs = WorkoutPreferences(user_id=user.id)
+            db.add(workout_prefs)
         
-        # Start a transaction
-        db.begin()
+        # Update frequency goal
+        if "workout_frequency_goal" in frequency_data:
+            frequency = frequency_data["workout_frequency_goal"]
+            # Validate input (must be between 1-7)
+            if frequency is not None and (not isinstance(frequency, int) or frequency < 1 or frequency > 7):
+                raise HTTPException(status_code=400, detail="Workout frequency goal must be between 1 and 7")
+            workout_prefs.workout_frequency_goal = frequency
         
-        try:
-            # Get or create workout preferences
-            preferences = db.query(WorkoutPreferences).filter(
-                WorkoutPreferences.user_id == user.id
-            ).first()
-            
-            if not preferences:
-                preferences = WorkoutPreferences(
-                    user_id=user.id,
-                    workout_frequency_goal=frequency_goal
-                )
-                db.add(preferences)
-            else:
-                preferences.workout_frequency_goal = frequency_goal
-            
-            # Also update streak frequency goal in UserProfile
-            profile = db.query(UserProfile).filter(
-                UserProfile.user_id == user.id
-            ).first()
-            
-            if not profile:
-                profile = UserProfile(
-                    user_id=user.id,
-                    frequency_goal=frequency_goal
-                )
-                db.add(profile)
-            else:
-                profile.frequency_goal = frequency_goal
-            
-            # Commit all changes
-            db.commit()
-            db.refresh(preferences)
-            
-            return {
-                "message": "Workout frequency goal updated successfully",
-                "workout_frequency_goal": preferences.workout_frequency_goal
-            }
-            
-        except Exception as e:
-            # Rollback on any error
-            db.rollback()
-            raise e
-            
+        db.commit()
+        
+        return {
+            "workout_frequency_goal": workout_prefs.workout_frequency_goal,
+            "message": "Workout frequency goal updated successfully"
+        }
+        
     except HTTPException:
         raise
     except Exception as e:
-        if not isinstance(e, HTTPException):
-            import traceback
-            traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Error updating workout frequency goal: {str(e)}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error updating workout frequency: {str(e)}")
+
+
+# Exercise Memory Endpoints
+
+@app.get("/user/exercise-memory")
+def get_exercise_memory(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get all saved exercise memory values for the current user"""
+    try:
+        memory_entries = db.query(ExerciseMemory).filter(ExerciseMemory.user_id == user.id).all()
+        
+        # Convert to dictionary format for easier frontend usage, using exercise name as key
+        memory_dict = {}
+        for entry in memory_entries:
+            # Create different memory structure based on whether it's a strength or cardio exercise
+            if entry.weight is not None or entry.reps is not None:
+                # Strength exercise
+                memory_dict[entry.exercise_name] = {
+                    "weight": entry.weight,
+                    "reps": entry.reps,
+                    "notes": entry.notes
+                }
+            elif entry.distance is not None or entry.duration is not None or entry.intensity is not None:
+                # Cardio exercise
+                memory_dict[entry.exercise_name] = {
+                    "distance": entry.distance,
+                    "duration": entry.duration,
+                    "intensity": entry.intensity,
+                    "notes": entry.notes
+                }
+        
+        return memory_dict
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error retrieving exercise memory: {str(e)}")
+
+
+@app.patch("/user/exercise-memory")
+def update_exercise_memory(
+    memory_data: dict = Body(...),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Update exercise memory values for the current user"""
+    try:
+        updated_entries = []
+        
+        # Process each exercise in the memory data
+        for exercise_name, values in memory_data.items():
+            # Find existing memory entry or create new one
+            memory_entry = db.query(ExerciseMemory).filter(
+                ExerciseMemory.user_id == user.id,
+                ExerciseMemory.exercise_name == exercise_name
+            ).first()
+            
+            if not memory_entry:
+                memory_entry = ExerciseMemory(
+                    user_id=user.id,
+                    exercise_name=exercise_name
+                )
+                db.add(memory_entry)
+            
+            # Update with new values
+            if 'weight' in values:
+                memory_entry.weight = values['weight']
+            if 'reps' in values:
+                memory_entry.reps = values['reps']
+            if 'distance' in values:
+                memory_entry.distance = values['distance']
+            if 'duration' in values:
+                memory_entry.duration = values['duration']
+            if 'intensity' in values:
+                memory_entry.intensity = values['intensity']
+            if 'notes' in values:
+                memory_entry.notes = values['notes']
+            
+            updated_entries.append(exercise_name)
+        
+        db.commit()
+        
+        return {
+            "message": f"Updated memory for {len(updated_entries)} exercises",
+            "updated_exercises": updated_entries
+        }
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error updating exercise memory: {str(e)}")
+
+
+@app.delete("/user/exercise-memory/{exercise_name}")
+def delete_exercise_memory(
+    exercise_name: str,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Delete a specific exercise memory entry"""
+    try:
+        memory_entry = db.query(ExerciseMemory).filter(
+            ExerciseMemory.user_id == user.id,
+            ExerciseMemory.exercise_name == exercise_name
+        ).first()
+        
+        if not memory_entry:
+            return {"message": f"No memory found for exercise: {exercise_name}"}
+        
+        db.delete(memory_entry)
+        db.commit()
+        
+        return {"message": f"Memory for exercise '{exercise_name}' deleted successfully"}
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error deleting exercise memory: {str(e)}")
+
+
+@app.delete("/user/exercise-memory")
+def delete_all_exercise_memory(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Delete all exercise memory entries for the current user"""
+    try:
+        memory_count = db.query(ExerciseMemory).filter(
+            ExerciseMemory.user_id == user.id
+        ).delete()
+        
+        db.commit()
+        
+        return {"message": f"Deleted {memory_count} exercise memory entries"}
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error deleting exercise memory: {str(e)}")

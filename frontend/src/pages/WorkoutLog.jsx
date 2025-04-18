@@ -143,6 +143,69 @@ const WorkoutLog = () => {
   const [workoutToLoad, setWorkoutToLoad] = useState(null);
   const [exerciseMemory, setExerciseMemory] = useState({});
 
+  // Load exercise memory from localStorage and backend
+  useEffect(() => {
+    // First load from localStorage as a fallback
+    const savedMemory = localStorage.getItem('exerciseMemory');
+    if (savedMemory) {
+      try {
+        setExerciseMemory(JSON.parse(savedMemory));
+      } catch (error) {
+        console.error('Error loading exercise memory from localStorage:', error);
+      }
+    }
+    
+    // Then try to load from backend (will override localStorage values)
+    fetchExerciseMemory();
+  }, []);
+  
+  // Function to fetch exercise memory from backend
+  const fetchExerciseMemory = async () => {
+    const token = localStorage.getItem('access_token');
+    if (!token) return;
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/user/exercise-memory`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setExerciseMemory(data);
+        
+        // Also update localStorage for offline fallback
+        localStorage.setItem('exerciseMemory', JSON.stringify(data));
+      }
+    } catch (error) {
+      console.error('Error fetching exercise memory from backend:', error);
+    }
+  };
+  
+  // Function to save exercise memory to backend
+  const saveExerciseMemory = async (updatedMemory) => {
+    const token = localStorage.getItem('access_token');
+    if (!token) return;
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/user/exercise-memory`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(updatedMemory)
+      });
+      
+      if (!response.ok) {
+        console.error('Failed to save exercise memory to backend:', response.status);
+      }
+    } catch (error) {
+      console.error('Error saving exercise memory to backend:', error);
+    }
+  };
+
   // Load weight unit preference from localStorage on component mount
   useEffect(() => {
     const storedWeightUnit = localStorage.getItem("weightUnit");
@@ -1057,7 +1120,8 @@ const WorkoutLog = () => {
           // Include the memory values for UI reference
           memoryDistance: memory.distance || "",
           memoryDuration: memory.duration || "",
-          memoryIntensity: memory.intensity || ""
+          memoryIntensity: memory.intensity || "",
+          memoryNotes: memory.notes || ""
         }));
 
       newExercise = {
@@ -1091,7 +1155,8 @@ const WorkoutLog = () => {
           completed: false,
           // Include the memory values for UI reference
           memoryWeight: memory.weight || "",
-          memoryReps: memory.reps || ""
+          memoryReps: memory.reps || "",
+          memoryNotes: memory.notes || ""
         }));
 
       newExercise = {
@@ -1145,7 +1210,8 @@ const WorkoutLog = () => {
                 // Include the memory values for UI reference
                 memoryDistance: memory.distance || "",
                 memoryDuration: memory.duration || "",
-                memoryIntensity: memory.intensity || ""
+                memoryIntensity: memory.intensity || "",
+                memoryNotes: memory.notes || ""
               }
             : { 
                 weight: "", 
@@ -1161,7 +1227,8 @@ const WorkoutLog = () => {
                 completed: false,
                 // Include the memory values for UI reference
                 memoryWeight: memory.weight || "",
-                memoryReps: memory.reps || ""
+                memoryReps: memory.reps || "",
+                memoryNotes: memory.notes || ""
               };
 
           return {
@@ -1201,7 +1268,8 @@ const WorkoutLog = () => {
                   updatedMemory[exercise.name] = {
                     distance: sets[setIndex].distance,
                     duration: sets[setIndex].duration,
-                    intensity: sets[setIndex].intensity
+                    intensity: sets[setIndex].intensity,
+                    notes: sets[setIndex].notes
                   };
                 }
               } else {
@@ -1209,14 +1277,21 @@ const WorkoutLog = () => {
                 if (sets[setIndex].weight && sets[setIndex].reps) {
                   updatedMemory[exercise.name] = {
                     weight: sets[setIndex].weight,
-                    reps: sets[setIndex].reps
+                    reps: sets[setIndex].reps,
+                    notes: sets[setIndex].notes
                   };
                 }
               }
               
-              // Save to state and localStorage
+              // Save to state, localStorage, and backend
               setExerciseMemory(updatedMemory);
               localStorage.setItem('exerciseMemory', JSON.stringify(updatedMemory));
+              
+              // Save to backend - create a single-exercise object for the API
+              const memoryToSave = {
+                [exercise.name]: updatedMemory[exercise.name]
+              };
+              saveExerciseMemory(memoryToSave);
             }
           }
           return {
@@ -2526,18 +2601,6 @@ const WorkoutLog = () => {
     setShowLoadConfirmation(false);
     setWorkoutToLoad(null);
   };
-
-  // Load exercise memory from localStorage
-  useEffect(() => {
-    const savedMemory = localStorage.getItem('exerciseMemory');
-    if (savedMemory) {
-      try {
-        setExerciseMemory(JSON.parse(savedMemory));
-      } catch (error) {
-        console.error('Error loading exercise memory:', error);
-      }
-    }
-  }, []);
 
   return (
     <div className="workout-log-container p-4 md:p-6 pb-32">

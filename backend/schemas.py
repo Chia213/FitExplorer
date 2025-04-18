@@ -365,6 +365,34 @@ class WorkoutPreferencesResponse(WorkoutPreferencesBase):
         from_attributes = True
 
 
+class ExerciseMemoryBase(BaseModel):
+    exercise_name: str
+    # Optional fields for both strength and cardio exercises
+    weight: Optional[float] = None
+    reps: Optional[str] = None
+    distance: Optional[float] = None
+    duration: Optional[float] = None
+    intensity: Optional[str] = None
+    notes: Optional[str] = None
+
+
+class ExerciseMemoryCreate(ExerciseMemoryBase):
+    pass
+
+
+class ExerciseMemoryUpdate(ExerciseMemoryBase):
+    exercise_name: Optional[str] = None  # Make it optional for updates
+
+
+class ExerciseMemoryResponse(ExerciseMemoryBase):
+    id: int
+    user_id: int
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
 class TokenVerificationRequest(BaseModel):
     token: str
 

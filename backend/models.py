@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Float, Boolean, JSON
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Float, Boolean, JSON, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import JSON as PGJSON
 from sqlalchemy.ext.declarative import declarative_base
@@ -64,6 +64,7 @@ class User(Base):
     nutrition_goal = relationship("NutritionGoal", back_populates="user", uselist=False, cascade="all, delete-orphan")
     rewards = relationship("UserReward", back_populates="user", cascade="all, delete-orphan", lazy="noload", overlaps="rewards")
     sessions = relationship("UserSession", back_populates="user", cascade="all, delete-orphan")
+    exercise_memories = relationship("ExerciseMemory", back_populates="user", cascade="all, delete-orphan")
 
 
 class UserProfile(Base):
@@ -268,6 +269,33 @@ class WorkoutPreferences(Base):
     workout_frequency_goal = Column(Integer, nullable=True)  # Number of workouts per week (1-7)
 
     user = relationship("User", back_populates="workout_preferences")
+
+
+class ExerciseMemory(Base):
+    __tablename__ = "exercise_memory"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    exercise_name = Column(String, nullable=False)
+    # Store memory values based on exercise type (strength or cardio)
+    # For strength exercises
+    weight = Column(Float, nullable=True)
+    reps = Column(String, nullable=True)  # Using String to support ranges like "8-10"
+    # For cardio exercises
+    distance = Column(Float, nullable=True)
+    duration = Column(Float, nullable=True)
+    intensity = Column(String, nullable=True)
+    # Common fields
+    notes = Column(String, nullable=True)
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    
+    # Unique constraint to ensure one memory entry per exercise per user
+    __table_args__ = (
+        UniqueConstraint('user_id', 'exercise_name', name='unique_user_exercise_memory'),
+    )
+    
+    # Relationship
+    user = relationship("User", back_populates="exercise_memories")
 
 
 class AdminSettings(Base):
