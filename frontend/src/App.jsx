@@ -11,6 +11,9 @@ import { NotificationProvider } from "./contexts/NotificationContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { Toaster } from 'react-hot-toast';
 
+// Components
+import HomePage from "./components/HomePage";
+
 // Pagess
 import ExploreMuscleGuide from "./pages/ExploreMuscleGuide";
 import About from "./pages/About";
@@ -138,7 +141,8 @@ function App() {
                 <PageTransition>
                   <Routes>
                     {/* Public Routes */}
-                    <Route path="/" element={<LandingPage />} />
+                    <Route path="/" element={<HomePage />} />
+                    <Route path="/landing" element={<LandingPage />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/signup" element={<Signup />} />
                     <Route path="/about" element={<About />} />

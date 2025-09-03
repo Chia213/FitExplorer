@@ -513,13 +513,134 @@ export const premiumThemes = {
     secondaryRgb: "234, 88, 12",
     accentRgb: "251, 191, 36",
     preview: "fireTech"
+  },
+  // New fitness-focused themes
+  gymDark: {
+    name: "Gym Dark",
+    isPremium: true,
+    description: "Professional dark theme perfect for serious fitness enthusiasts",
+    primary: "#1f2937", // gray-800
+    secondary: "#374151", // gray-700
+    accent: "#10b981", // emerald-500
+    primaryRgb: "31, 41, 55",
+    secondaryRgb: "55, 65, 81",
+    accentRgb: "16, 185, 129",
+    preview: "gymDark"
+  },
+  powerLifter: {
+    name: "Power Lifter",
+    isPremium: true,
+    description: "Bold and strong colors for power athletes",
+    primary: "#dc2626", // red-600
+    secondary: "#1f2937", // gray-800
+    accent: "#fbbf24", // amber-400
+    primaryRgb: "220, 38, 38",
+    secondaryRgb: "31, 41, 55",
+    accentRgb: "251, 191, 36",
+    preview: "powerLifter"
+  },
+  cardio: {
+    name: "Cardio",
+    isPremium: true,
+    description: "Energetic colors to boost your cardio sessions",
+    primary: "#ef4444", // red-500
+    secondary: "#f97316", // orange-500
+    accent: "#fbbf24", // amber-400
+    primaryRgb: "239, 68, 68",
+    secondaryRgb: "249, 115, 22",
+    accentRgb: "251, 191, 36",
+    preview: "cardio"
+  },
+  zen: {
+    name: "Zen",
+    isPremium: true,
+    description: "Calming colors for yoga and meditation sessions",
+    primary: "#059669", // emerald-600
+    secondary: "#0d9488", // teal-600
+    accent: "#6b7280", // gray-500
+    primaryRgb: "5, 150, 105",
+    secondaryRgb: "13, 148, 136",
+    accentRgb: "107, 114, 128",
+    preview: "zen"
+  },
+  neonGym: {
+    name: "Neon Gym",
+    isPremium: true,
+    description: "Vibrant neon colors for high-energy workouts",
+    primary: "#06b6d4", // cyan-500
+    secondary: "#8b5cf6", // violet-500
+    accent: "#10b981", // emerald-500
+    primaryRgb: "6, 182, 212",
+    secondaryRgb: "139, 92, 246",
+    accentRgb: "16, 185, 129",
+    preview: "neonGym"
+  },
+  steel: {
+    name: "Steel",
+    isPremium: true,
+    description: "Metallic grays and blues for a professional gym aesthetic",
+    primary: "#475569", // slate-600
+    secondary: "#64748b", // slate-500
+    accent: "#0ea5e9", // sky-500
+    primaryRgb: "71, 85, 105",
+    secondaryRgb: "100, 116, 139",
+    accentRgb: "14, 165, 233",
+    preview: "steel"
+  },
+  protein: {
+    name: "Protein",
+    isPremium: true,
+    description: "Rich browns and golds inspired by protein supplements",
+    primary: "#92400e", // amber-800
+    secondary: "#b45309", // amber-700
+    accent: "#fbbf24", // amber-400
+    primaryRgb: "146, 64, 14",
+    secondaryRgb: "180, 83, 9",
+    accentRgb: "251, 191, 36",
+    preview: "protein"
+  },
+  midnightGym: {
+    name: "Midnight Gym",
+    isPremium: true,
+    description: "Deep dark theme for late-night training sessions",
+    primary: "#111827", // gray-900
+    secondary: "#1f2937", // gray-800
+    accent: "#7c3aed", // violet-600
+    primaryRgb: "17, 24, 39",
+    secondaryRgb: "31, 41, 55",
+    accentRgb: "124, 58, 237",
+    preview: "midnightGym"
+  },
+  energy: {
+    name: "Energy",
+    isPremium: true,
+    description: "High-energy colors to fuel your workouts",
+    primary: "#f59e0b", // amber-500
+    secondary: "#ef4444", // red-500
+    accent: "#8b5cf6", // violet-500
+    primaryRgb: "245, 158, 11",
+    secondaryRgb: "239, 68, 68",
+    accentRgb: "139, 92, 246",
+    preview: "energy"
+  },
+  recovery: {
+    name: "Recovery",
+    isPremium: true,
+    description: "Soft, healing colors for rest and recovery days",
+    primary: "#6366f1", // indigo-500
+    secondary: "#8b5cf6", // violet-500
+    accent: "#a78bfa", // violet-400
+    primaryRgb: "99, 102, 241",
+    secondaryRgb: "139, 92, 246",
+    accentRgb: "167, 139, 250",
+    preview: "recovery"
   }
 };
 
 const ThemeContext = createContext(undefined);
 
 export function ThemeProvider({ children }) {
-  const [theme, setTheme] = useState("light"); // Default to light
+  const [theme, setTheme] = useState("dark"); // Default to dark for fitness vibe
   const [premiumTheme, setPremiumTheme] = useState("default");
   const [unlockedThemes, setUnlockedThemes] = useState(["default"]);
   const [loading, setLoading] = useState(true);
@@ -585,7 +706,7 @@ export function ThemeProvider({ children }) {
     
     if (!token) {
       // Set default theme when not logged in
-      setTheme("light");
+      setTheme("dark");
       setPremiumTheme("default");
       setUnlockedThemes(["default"]);
       setLoading(false);
@@ -602,7 +723,7 @@ export function ThemeProvider({ children }) {
           const data = await response.json();
           
           // Get theme settings from backend
-          const backendThemeMode = data.theme || "light";
+          const backendThemeMode = data.theme || "dark";
           const backendPremiumTheme = data.premium_theme || "default";
           const backendUnlockedThemes = data.unlocked_themes || ["default"];
           
@@ -631,14 +752,14 @@ export function ThemeProvider({ children }) {
           });
         } else {
           // If API fails, use defaults
-          setTheme("light");
+          setTheme("dark");
           setPremiumTheme("default");
           setUnlockedThemes(["default"]);
         }
       } catch (err) {
         console.error("Error fetching theme settings:", err);
         // Use defaults
-        setTheme("light");
+        setTheme("dark");
         setPremiumTheme("default");
         setUnlockedThemes(["default"]);
       } finally {
@@ -697,14 +818,14 @@ export function ThemeProvider({ children }) {
       const token = localStorage.getItem("token");
       if (!token) {
         // Reset to defaults when logged out
-        setTheme("light");
+        setTheme("dark");
         setPremiumTheme("default");
         setUnlockedThemes(["default"]);
         
         // Apply default theme
         const root = window.document.documentElement;
         root.classList.remove("light", "dark");
-        root.classList.add("light");
+        root.classList.add("dark");
         
         const defaultTheme = premiumThemes.default;
         root.style.setProperty('--color-primary', defaultTheme.primary);
@@ -724,7 +845,7 @@ export function ThemeProvider({ children }) {
               const data = await response.json();
               
               // Get theme settings from backend
-              const backendThemeMode = data.theme || "light";
+              const backendThemeMode = data.theme || "dark";
               const backendPremiumTheme = data.premium_theme || "default";
               const backendUnlockedThemes = data.unlocked_themes || ["default"];
               
@@ -749,7 +870,7 @@ export function ThemeProvider({ children }) {
           } catch (err) {
             console.error("Error fetching theme settings:", err);
             // Reset to defaults on error
-            setTheme("light");
+            setTheme("dark");
             setPremiumTheme("default");
             setUnlockedThemes(["default"]);
           } finally {
@@ -1057,14 +1178,14 @@ export function ThemeProvider({ children }) {
     localStorage.removeItem("unlockedThemes");
     
     // Reset to defaults
-    setTheme("light");
+    setTheme("dark");
     setPremiumTheme("default");
     setUnlockedThemes(["default"]);
     
     // Apply default theme immediately
     const root = window.document.documentElement;
     root.classList.remove("light", "dark");
-    root.classList.add("light");
+    root.classList.add("dark");
     
     // Reset CSS variables to default theme
     const defaultTheme = premiumThemes.default;

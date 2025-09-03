@@ -77,61 +77,63 @@ const featuredPrograms = [
   }
 ];
 
-// Simplified feature card component inspired by BetterMe's clean design
+// Professional feature card component
 const ProgramCard = ({ program }) => (
   <motion.div
     initial={{ opacity: 0, y: 20 }}
     whileInView={{ opacity: 1, y: 0 }}
     viewport={{ once: true }}
-    className="relative overflow-hidden rounded-3xl aspect-[4/3] group shadow-lg"
+    className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800 group shadow-lg hover:shadow-xl transition-all duration-300 border border-slate-200 dark:border-slate-700"
   >
-    {/* Background image with overlay */}
-    <div className="absolute inset-0 bg-gradient-to-br from-black/30 to-black/60 z-10"></div>
-    <div className={`absolute inset-0 bg-gradient-to-br ${program.color} opacity-70 z-0`}></div>
-    
     {/* Image background */}
     {program.image && (
+      <div className="relative h-48 overflow-hidden">
       <img 
         src={program.image} 
         alt={program.title} 
-        className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-700"
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
       />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
+      </div>
     )}
     
     {/* Content */}
-    <div className="relative z-20 flex flex-col justify-between h-full p-4 sm:p-6 md:p-8">
-      <div>
-        <h3 className="text-xl sm:text-2xl font-bold text-white mb-2">
+    <div className="p-8">
+      <div className="mb-6">
+        <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-3">
           {program.title}
         </h3>
-        <p className="text-base sm:text-lg text-white/90">
+        <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
           {program.description}
         </p>
       </div>
       
       <Link
         to={program.link}
-        className="mt-4 sm:mt-6 w-full bg-white hover:bg-blue-50 text-blue-900 font-bold py-2 sm:py-3 px-4 sm:px-6 rounded-xl text-center transition-all duration-300 shadow-md"
+        className="inline-flex items-center text-slate-900 dark:text-white font-semibold hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-200"
       >
-        Get Started
+        Learn More
+        <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
+        </svg>
       </Link>
     </div>
   </motion.div>
 );
 
-// Secondary features in the BetterMe style
+// Professional feature item component
 const FeatureItem = ({ feature }) => (
   <motion.div
     initial={{ opacity: 0, y: 10 }}
     whileInView={{ opacity: 1, y: 0 }}
     viewport={{ once: true }}
-    className="flex flex-col items-center text-center p-3 sm:p-4"
+    className="flex flex-col items-center text-center p-6 bg-slate-50 dark:bg-slate-800 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors duration-300"
   >
-    <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-blue-500/30 to-purple-500/30 flex items-center justify-center text-xl sm:text-2xl mb-3 sm:mb-4 shadow-md">
+    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-emerald-500 flex items-center justify-center text-2xl mb-4 shadow-lg">
       {feature.icon}
     </div>
-    <h3 className="text-base sm:text-lg font-bold mb-1 sm:mb-2 text-blue-900 dark:text-white">{feature.title}</h3>
-    <p className="text-gray-700 dark:text-gray-300 text-xs sm:text-sm">{feature.description}</p>
+    <h3 className="text-lg font-bold mb-2 text-slate-900 dark:text-white">{feature.title}</h3>
+    <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed">{feature.description}</p>
   </motion.div>
 );
 
@@ -203,9 +205,10 @@ const BrightHero = () => {
   }, [appScreens.length]);
   
   return (
-    <section className="min-h-[80vh] flex items-center relative overflow-hidden py-16 bg-white dark:bg-gray-900">
-      {/* Gradient background that changes with theme */}
-      <div className="absolute inset-0 bg-gradient-to-b from-blue-400 via-indigo-400 to-purple-400 dark:from-blue-900 dark:via-indigo-900 dark:to-purple-900 z-0 opacity-100 dark:opacity-90"></div>
+    <section className="min-h-screen flex items-center relative overflow-hidden bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+      {/* Subtle background pattern */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_80%,rgba(59,130,246,0.05),transparent_50%)] dark:bg-[radial-gradient(circle_at_20%_80%,rgba(59,130,246,0.1),transparent_50%)]"></div>
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(16,185,129,0.05),transparent_50%)] dark:bg-[radial-gradient(circle_at_80%_20%,rgba(16,185,129,0.1),transparent_50%)]"></div>
       
       <div className="container mx-auto px-4 py-12 relative z-10">
         <div className="max-w-6xl mx-auto">
@@ -216,13 +219,13 @@ const BrightHero = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
-                className="text-3xl sm:text-4xl md:text-6xl font-bold mb-6 sm:mb-8"
+                className="text-4xl sm:text-5xl md:text-7xl font-bold mb-6 sm:mb-8 leading-tight"
               >
-                <span className="text-gray-900 dark:text-white drop-shadow-sm">
-                  Fun & Simple Fitness
+                <span className="text-slate-900 dark:text-white">
+                  Your Fitness Journey
                 </span>
-                <span className="block text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-600 dark:from-emerald-400 dark:to-teal-400 mt-2 drop-shadow-sm">
-                  Built from personal need. Designed for everyone.
+                <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-emerald-600 dark:from-blue-400 dark:to-emerald-400 mt-2">
+                  Starts Here
                 </span>
               </motion.h1>
         
@@ -230,44 +233,36 @@ const BrightHero = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.2 }}
-                className="text-xl text-gray-700 dark:text-gray-200 mb-6 leading-relaxed"
+                className="text-lg text-slate-600 dark:text-slate-300 mb-8 leading-relaxed max-w-lg"
               >
-                I created this app because I wanted a fitness experience that felt smarter, more intuitive, and truly personal.
-              </motion.p>
-              
-              <motion.p
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.3 }}
-                className="text-xl text-gray-700 dark:text-gray-200 mb-10 leading-relaxed"
-              >
-                Now, with AI-powered workouts, seamless tracking, and goal-focused plans — you can experience the kind of support I always wished existed.
+                Professional-grade fitness tracking with AI-powered workout generation. 
+                Track your progress, achieve your goals, and transform your body with confidence.
               </motion.p>
         
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.4 }}
-                className="flex flex-col sm:flex-row gap-5"
+                className="flex flex-col sm:flex-row gap-4"
               >
                 <Link
                   to="/signup"
-                  className="px-8 py-4 bg-gradient-to-r from-emerald-500 to-teal-500 dark:from-emerald-600 dark:to-teal-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl hover:from-emerald-400 hover:to-teal-400 dark:hover:from-emerald-500 dark:hover:to-teal-500 transition-all duration-300 text-center relative overflow-hidden group"
+                  className="px-8 py-4 bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-900 font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 text-center relative overflow-hidden group"
                 >
                   <span className="relative z-10 flex items-center justify-center">
-                    Get Started
-                    <svg className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    Start Your Journey
+                    <svg className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
                     </svg>
                   </span>
                 </Link>
                 <Link
                   to="/about"
-                  className="px-8 py-4 bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-semibold rounded-xl shadow-md hover:shadow-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-300 text-center flex items-center justify-center"
+                  className="px-8 py-4 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-semibold rounded-lg shadow-md hover:shadow-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all duration-300 text-center flex items-center justify-center"
                 >
                   Learn More
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                  <svg className="h-5 w-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                   </svg>
                 </Link>
               </motion.div>
@@ -278,18 +273,18 @@ const BrightHero = () => {
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.8, delay: 0.3 }}
-              className="relative flex justify-center w-full max-w-[320px]"
+              className="relative flex justify-center w-full max-w-[280px]"
             >
               <div className="relative z-10 w-full perspective-1200 hover:rotate-y-3 transition-transform duration-500">
                 {/* iPhone frame */}
-                <div className="relative mx-auto bg-gray-900 dark:bg-black rounded-[40px] shadow-2xl dark:shadow-black/20" style={{ width: '320px', height: '650px', padding: '9px' }}>
+                <div className="relative mx-auto bg-gray-900 dark:bg-black rounded-[35px] shadow-2xl dark:shadow-black/20" style={{ width: '280px', height: '570px', padding: '8px' }}>
                   {/* iPhone notch */}
-                  <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-[0%] h-[24px] bg-gray-900 dark:bg-black rounded-b-xl z-20 flex justify-center items-end">
-                    <div className="w-[60px] h-[8px] bg-gray-900 dark:bg-black rounded-[4px] mb-1"></div>
+                  <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-[0%] h-[20px] bg-gray-900 dark:bg-black rounded-b-xl z-20 flex justify-center items-end">
+                    <div className="w-[50px] h-[6px] bg-gray-900 dark:bg-black rounded-[3px] mb-1"></div>
                   </div>
                   
                   {/* iPhone screen bezel */}
-                  <div className="relative w-full h-full bg-gray-900 dark:bg-black overflow-hidden rounded-[32px] border-[2px] border-gray-800 dark:border-gray-950">
+                  <div className="relative w-full h-full bg-gray-900 dark:bg-black overflow-hidden rounded-[28px] border-[2px] border-gray-800 dark:border-gray-950">
                     {/* Main visible slide */}
                     <AnimatePresence mode="wait">
                       <motion.div
@@ -318,12 +313,12 @@ const BrightHero = () => {
                   </div>
                   
                   {/* Side buttons */}
-                  <div className="absolute right-[-2px] top-[100px] w-[3px] h-[30px] bg-gray-800 dark:bg-gray-700 rounded-l-sm"></div>
-                  <div className="absolute right-[-2px] top-[150px] w-[3px] h-[40px] bg-gray-800 dark:bg-gray-700 rounded-l-sm"></div>
-                  <div className="absolute right-[-2px] top-[200px] w-[3px] h-[40px] bg-gray-800 dark:bg-gray-700 rounded-l-sm"></div>
+                  <div className="absolute right-[-2px] top-[85px] w-[2px] h-[25px] bg-gray-800 dark:bg-gray-700 rounded-l-sm"></div>
+                  <div className="absolute right-[-2px] top-[125px] w-[2px] h-[35px] bg-gray-800 dark:bg-gray-700 rounded-l-sm"></div>
+                  <div className="absolute right-[-2px] top-[170px] w-[2px] h-[35px] bg-gray-800 dark:bg-gray-700 rounded-l-sm"></div>
                   
                   {/* Power button */}
-                  <div className="absolute left-[-2px] top-[150px] w-[3px] h-[40px] bg-gray-800 dark:bg-gray-700 rounded-r-sm"></div>
+                  <div className="absolute left-[-2px] top-[125px] w-[2px] h-[35px] bg-gray-800 dark:bg-gray-700 rounded-r-sm"></div>
                 </div>
                 
                 {/* iPhone model name */}
@@ -353,26 +348,26 @@ const BrightHero = () => {
   );
 };
 
-// Program showcase section with brighter design
+// Program showcase section with professional design
 const ProgramShowcase = () => (
-  <section className="py-20 bg-white">
+  <section className="py-24 bg-slate-50 dark:bg-slate-900">
     <div className="container mx-auto px-4">
-      <div className="text-center mb-16">
+      <div className="text-center mb-20">
         <motion.h2
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="text-3xl md:text-4xl font-bold mb-4"
+          className="text-4xl md:text-5xl font-bold mb-6"
         >
-          <span className="text-blue-900">Featured Programs</span>
+          <span className="text-slate-900 dark:text-white">Core Features</span>
         </motion.h2>
         <motion.p
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="text-lg text-gray-600 max-w-2xl mx-auto"
+          className="text-xl text-slate-600 dark:text-slate-300 max-w-3xl mx-auto leading-relaxed"
         >
-          Choose from our most popular fitness solutions
+          Everything you need to achieve your fitness goals, powered by advanced technology and designed for real results.
         </motion.p>
       </div>
       
@@ -491,41 +486,30 @@ const QRCodeSection = () => {
   );
 };
 
-// My journey section
+// Professional journey section
 const JourneySection = () => (
-  <section className="py-16 bg-gradient-to-r from-blue-900 to-indigo-900 text-white relative overflow-hidden">
-    <div className="absolute inset-0 bg-pattern-dots opacity-10"></div>
-    <div className="absolute top-0 left-0 w-full h-full bg-[url('/src/assets/grid-pattern.svg')] opacity-5"></div>
-    
-    {/* Added 3D effect elements */}
-    <motion.div 
-      animate={floatingAnimation} 
-      className="absolute top-20 right-[10%] w-24 h-24 rounded-xl bg-blue-600/10 backdrop-blur-sm rotate-12"
-    ></motion.div>
-    <motion.div 
-      animate={{...floatingAnimation, transition: { ...floatingAnimation.transition, delay: 0.5 }}} 
-      className="absolute bottom-20 left-[15%] w-20 h-20 rounded-full bg-purple-600/10 backdrop-blur-sm"
-    ></motion.div>
+  <section className="py-24 bg-slate-100 dark:bg-slate-900 text-slate-900 dark:text-white relative overflow-hidden">
+    <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(59,130,246,0.1),transparent_50%)] dark:bg-[radial-gradient(circle_at_30%_30%,rgba(59,130,246,0.1),transparent_50%)]"></div>
     
     <div className="container mx-auto px-4 relative z-10">
       <div className="max-w-4xl mx-auto">
-        <div className="text-center mb-10">
+        <div className="text-center mb-16">
           <motion.span
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
-            className="inline-block px-4 py-1.5 bg-white/10 rounded-full text-sm font-medium text-blue-200 mb-4 border border-white/20 backdrop-blur-sm shadow-lg"
+            className="inline-block px-4 py-2 bg-blue-600/20 dark:bg-blue-600/20 rounded-full text-sm font-medium text-blue-700 dark:text-blue-300 mb-6 border border-blue-500/30"
           >
-            MY JOURNEY
+            MY STORY
           </motion.span>
           
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-3xl md:text-4xl font-bold mb-6"
+            className="text-4xl md:text-5xl font-bold mb-8"
           >
-            Why I Created FitExplorer
+            From Passion to Purpose
           </motion.h2>
         </div>
         
@@ -533,30 +517,37 @@ const JourneySection = () => (
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="bg-white/10 backdrop-blur-md rounded-xl p-8 border border-white/20 shadow-xl relative transform hover:-translate-y-1 transition-transform duration-300"
+          className="bg-white/80 dark:bg-slate-800/50 backdrop-blur-md rounded-2xl p-12 border border-slate-200/50 dark:border-slate-700/50 shadow-2xl relative"
         >
-          {/* Decorative quote mark */}
-          <div className="absolute -top-6 -left-2 text-8xl text-white/10 font-serif">"</div>
-          
-          <p className="text-xl mb-6 leading-relaxed relative z-10">
-            "I've always been passionate about fitness, but I found existing apps either too complex or too limited. I wanted a single solution that could provide intelligent workout suggestions, track my progress, and adapt to my changing needs."
+          <p className="text-xl mb-8 leading-relaxed text-slate-700 dark:text-slate-200">
+            FitExplorer started as a personal hobby project born from my genuine love for fitness and the frustration I felt with existing fitness apps. As someone who incorporates fitness into my daily life, I noticed that every app I tried was missing something essential – that perfect balance of simplicity and functionality.
           </p>
           
-          <p className="text-xl mb-6 leading-relaxed relative z-10">
-            "FitExplorer is the app I wish I had when I started my fitness journey — combining AI technology with intuitive tracking and a supportive community. I built it to solve real problems and make fitness more accessible for everyone."
+          <p className="text-xl mb-8 leading-relaxed text-slate-700 dark:text-slate-200">
+            When I had the opportunity to create a fitness app, I combined my passion for fitness with the knowledge I gained from school to bring this vision to life. I wanted to build the simplest solution that addressed the gaps I experienced in every other fitness app I had used.
           </p>
           
-          <p className="text-xl leading-relaxed relative z-10">
-            "Whether you're just starting out or looking to reach new heights in your fitness journey, FitExplorer is designed to be the companion that helps you achieve your goals."
+          <p className="text-xl leading-relaxed text-slate-700 dark:text-slate-200">
+            I'm incredibly proud of what FitExplorer has become, and I'm committed to continuously developing and improving it to make it even better. This isn't just an app – it's a reflection of my dedication to fitness and my desire to create something truly useful for fellow fitness enthusiasts.
           </p>
           
-          <div className="mt-8 flex items-center">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white font-bold text-xl mr-4 shadow-lg border-2 border-white/30">
-              F
+          <div className="mt-12 flex items-center justify-center">
+            <div className="relative w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-emerald-500 flex items-center justify-center text-white font-bold text-2xl mr-6 shadow-lg overflow-hidden">
+              {/* Placeholder for profile picture - you can replace this with your actual image */}
+              <div className="w-full h-full bg-gradient-to-br from-blue-500 to-emerald-500 flex items-center justify-center">
+                <span className="text-white font-bold text-2xl">C</span>
+              </div>
+              {/* Uncomment and replace with your profile image when ready:
+              <img 
+                src="/path/to/your/profile-picture.jpg" 
+                alt="Chia Ranchber" 
+                className="w-full h-full object-cover"
+              />
+              */}
             </div>
-            <div>
-              <div className="font-bold text-lg">Founder</div>
-              <div className="text-blue-200">FitExplorer</div>
+            <div className="text-center">
+              <div className="font-bold text-xl text-slate-900 dark:text-white">Chia Ranchber</div>
+              <div className="text-slate-600 dark:text-slate-300">Developer and Creator</div>
             </div>
           </div>
         </motion.div>
@@ -565,7 +556,7 @@ const JourneySection = () => (
   </section>
 );
 
-// Additional features section with brighter design
+// Professional features section
 const MoreFeaturesSection = () => {
   const moreFeatures = [
     {
@@ -599,20 +590,28 @@ const MoreFeaturesSection = () => {
   ];
 
   return (
-    <section className="py-16 bg-gray-50">
+    <section className="py-24 bg-white dark:bg-slate-900">
       <div className="container mx-auto px-4">
-        <div className="text-center mb-10">
+        <div className="text-center mb-16">
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-2xl md:text-3xl font-bold mb-3 text-blue-900"
+            className="text-3xl md:text-4xl font-bold mb-6 text-slate-900 dark:text-white"
           >
-            More Ways to Improve Your Fitness
+            Complete Fitness Solution
           </motion.h2>
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-lg text-slate-600 dark:text-slate-300 max-w-2xl mx-auto"
+          >
+            Everything you need to track, improve, and achieve your fitness goals in one powerful platform.
+          </motion.p>
         </div>
         
-        <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           {moreFeatures.map(feature => (
             <FeatureItem key={feature.id} feature={feature} />
           ))}
@@ -622,13 +621,13 @@ const MoreFeaturesSection = () => {
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="mt-12 text-center"
+          className="mt-16 text-center"
         >
           <Link
             to="/signup"
-            className="bg-blue-600 hover:bg-blue-500 text-white px-10 py-4 rounded-xl font-bold text-lg transition-all duration-300 inline-block shadow-lg border-2 border-blue-500"
+            className="bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-900 px-10 py-4 rounded-lg font-semibold text-lg transition-all duration-300 inline-block shadow-lg"
           >
-            Try All Features
+            Start Your Journey
           </Link>
         </motion.div>
       </div>
@@ -636,54 +635,41 @@ const MoreFeaturesSection = () => {
   );
 };
 
-// Call to action section with brighter design
+// Professional call to action section
 const CallToAction = () => (
-  <section className="py-20 relative overflow-hidden bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700">
-    <div className="absolute inset-0 bg-[url('/src/assets/grid-pattern.svg')] opacity-10"></div>
-    
-    {/* 3D floating elements */}
-    <motion.div 
-      animate={floatingAnimation} 
-      className="absolute top-20 right-[10%] w-32 h-32 rounded-full bg-blue-500/10 backdrop-blur-sm z-0"
-    ></motion.div>
-    <motion.div 
-      animate={{...floatingAnimation, transition: { ...floatingAnimation.transition, delay: 0.7 }}} 
-      className="absolute bottom-20 left-[10%] w-24 h-24 rounded-full bg-indigo-500/10 backdrop-blur-sm z-0"
-    ></motion.div>
+  <section className="py-24 relative overflow-hidden bg-slate-900 dark:bg-slate-800">
+    <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(59,130,246,0.1),transparent_70%)]"></div>
     
     <div className="container mx-auto px-4 relative z-10">
-      <div className="max-w-2xl mx-auto text-center">
+      <div className="max-w-4xl mx-auto text-center">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
         >
-          
-          <h2 className="text-3xl md:text-5xl font-bold mb-6 text-white drop-shadow-md">
-            Unleash Your Fitness Potential Today
+          <h2 className="text-4xl md:text-6xl font-bold mb-8 text-white">
+            Ready to Transform Your Fitness?
           </h2>
           
-          <p className="text-lg text-white/90 mb-8 leading-relaxed">
-            Get exclusive access to our AI-powered workout system, progress tracking, and nutrition plans in one seamless platform.
+          <p className="text-xl text-slate-300 mb-12 leading-relaxed max-w-3xl mx-auto">
+            Join thousands of fitness enthusiasts who are already achieving their goals with our professional-grade platform. Start your transformation today.
           </p>
           
-          <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-10">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
             {stats.map((stat, index) => (
               <motion.div 
                 key={index} 
-                className="bg-white/10 backdrop-blur-sm border border-white/20 p-5 rounded-xl hover:bg-white/15 transition-all duration-300 transform hover:-translate-y-1"
+                className="text-center"
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.1 }}
               >
-                <div className="flex items-center justify-center w-10 h-10 rounded-full bg-white/20 mx-auto mb-2 text-xl">
-                  {stat.icon}
-                </div>
-                <div className="text-2xl md:text-3xl font-bold text-white">
+                <div className="text-3xl mb-2">{stat.icon}</div>
+                <div className="text-3xl md:text-4xl font-bold text-white mb-1">
                   {stat.value}
                 </div>
-                <div className="text-sm text-blue-100">{stat.label}</div>
+                <div className="text-slate-400 text-sm">{stat.label}</div>
               </motion.div>
             ))}
           </div>
@@ -694,21 +680,14 @@ const CallToAction = () => (
           >
             <Link
               to="/signup"
-              className="group bg-white hover:bg-blue-50 text-blue-800 px-8 py-4 rounded-xl font-semibold transition-all duration-300 text-center shadow-lg inline-flex items-center gap-2"
+              className="inline-flex items-center bg-white hover:bg-slate-100 text-slate-900 px-12 py-4 rounded-lg font-semibold text-lg transition-all duration-300 shadow-lg"
             >
-            Join Us Now!
-              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-600 group-hover:bg-blue-200 transition-colors duration-300">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+              Get Started Free
+              <svg className="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
                 </svg>
-              </span>
             </Link>
           </motion.div>
-          
-          {/* Trust indicators */}
-          <div className="mt-8 flex flex-wrap justify-center gap-4 text-white/80 text-sm">
-            
-          </div>
         </motion.div>
       </div>
     </div>
@@ -733,17 +712,17 @@ const LandingPage = () => {
   }, []);
 
   return (
-    <div className="bg-white text-gray-900">
-      {/* Bright, welcoming hero section */}
+    <div className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">
+      {/* Professional hero section */}
       <BrightHero />
       
-      {/* Program showcase with brighter design */}
+      {/* Core features showcase */}
       <ProgramShowcase />
       
-      {/* My Journey section */}
+      {/* Mission section */}
       <JourneySection />
       
-      {/* Additional features in a simplified layout */}
+      {/* Complete fitness solution */}
       <MoreFeaturesSection />
       
       {/* Mobile app section with QR code */}

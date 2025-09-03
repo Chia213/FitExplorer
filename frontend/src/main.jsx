@@ -5,6 +5,7 @@ import './index.css'
 import { BrowserRouter } from 'react-router-dom'
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { AuthProvider } from "./hooks/useAuth.jsx";
+import { ThemeProvider } from "./hooks/useTheme.jsx";
 
 const clientId =
   import.meta.env.VITE_GOOGLE_CLIENT_ID ||
@@ -87,9 +88,11 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       onScriptLoadSuccess={() => console.log("Google API script loaded successfully")}
     >
       <BrowserRouter>
-        <AuthProvider>
-          <App />
-        </AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <App />
+          </AuthProvider>
+        </ThemeProvider>
       </BrowserRouter>
     </GoogleOAuthProvider>
   </React.StrictMode>,
