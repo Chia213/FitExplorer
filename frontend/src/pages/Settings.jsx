@@ -488,18 +488,18 @@ function Settings() {
   };
 
   const renderTabButton = (tabName, label, icon) => {
-  return (
-                <button
+    return (
+      <button
         onClick={() => setActiveTab(tabName)}
-        className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${
+        className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
           activeTab === tabName 
-            ? "bg-primary/10 dark:bg-primary/20 text-primary" 
-            : "hover:bg-gray-100 dark:hover:bg-gray-800"
+            ? "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800" 
+            : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200"
         }`}
       >
         {icon}
-        <span>{label}</span>
-                </button>
+        <span className="font-medium">{label}</span>
+      </button>
     );
   };
 
@@ -618,380 +618,454 @@ function Settings() {
   };
 
   return (
-    <div className="settings-page">
-      <div className="flex flex-col min-h-screen w-full max-w-6xl mx-auto p-4 md:p-6">
-        <h1 className="text-2xl md:text-3xl font-bold mb-4 flex items-center">
-          {t("settings")}
-        </h1>
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">
+            {t("settings")}
+          </h1>
+          <p className="mt-2 text-slate-600 dark:text-slate-400">
+            Manage your account settings and preferences
+          </p>
+        </div>
 
+        {/* Alert Messages */}
         {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4 flex justify-between items-center">
+          <div className="mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200 px-4 py-3 rounded-lg flex justify-between items-center">
             <span>{error}</span>
-            <button onClick={() => setError(null)} className="text-red-700">
+            <button onClick={() => setError(null)} className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-200">
               <FaTimes />
             </button>
           </div>
         )}
 
         {success && (
-          <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4 flex justify-between items-center">
+          <div className="mb-6 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-200 px-4 py-3 rounded-lg flex justify-between items-center">
             <span>{success}</span>
-            <button onClick={() => setSuccess(null)} className="text-green-700">
+            <button onClick={() => setSuccess(null)} className="text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-200">
               <FaTimes />
             </button>
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-          {/* Sidebar */}
-          <div className="md:col-span-3 bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 h-fit">
-            <div className="flex flex-row md:flex-col space-x-2 md:space-x-0 md:space-y-2 overflow-x-auto pb-2 md:pb-0">
-              {renderTabButton("account", t("account"), <FaUser className="text-blue-500" />)}
-              {renderTabButton("appearance", t("appearance"), <FaPalette className="text-purple-500" />)}
-              {renderTabButton("notifications", t("notifications"), <FaBell className="text-yellow-500" />)}
-              {renderTabButton("language", t("language"), <FaLanguage className="text-green-500" />)}
-              {renderTabButton("security", t("security"), <FaLock className="text-red-500" />)}
-              {renderTabButton("sessions", t("sessions"), <FaShieldAlt className="text-gray-500" />)}
-            </div>
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          {/* Sidebar Navigation */}
+          <div className="lg:col-span-1">
+            <nav className="space-y-2">
+              {renderTabButton("account", t("account"), <FaUser className="w-4 h-4" />)}
+              {renderTabButton("appearance", t("appearance"), <FaPalette className="w-4 h-4" />)}
+              {renderTabButton("notifications", t("notifications"), <FaBell className="w-4 h-4" />)}
+              {renderTabButton("language", t("language"), <FaLanguage className="w-4 h-4" />)}
+              {renderTabButton("security", t("security"), <FaLock className="w-4 h-4" />)}
+              {renderTabButton("sessions", t("sessions"), <FaShieldAlt className="w-4 h-4" />)}
+            </nav>
           </div>
 
-          {/* Main content */}
-          <div className="md:col-span-9 bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 min-h-[60vh]">
+          {/* Main Content */}
+          <div className="lg:col-span-3">
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
             {/* Account Settings */}
             {activeTab === "account" && (
-              <div>
-                <h2 className="text-xl font-semibold mb-4">{t("account")}</h2>
-                <div className="mb-4">
-                  <label className="block text-gray-700 dark:text-gray-300 mb-2">{t("username")}</label>
-                  <div className="flex items-center">
-                    <input
-                      type="text"
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value)}
-                      className="w-full md:w-[70%] px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
-                      placeholder={t("enterUsername")}
-                    />
-                    <button
-                      className="ml-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      onClick={() => savePreferences("account")}
-                    >
-                      {t("save")}
-                    </button>
+              <div className="p-6">
+                <div className="mb-8">
+                  <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">{t("account")}</h2>
+                  <p className="text-slate-600 dark:text-slate-400">Manage your account information and profile settings</p>
+                </div>
+
+                {/* Username Section */}
+                <div className="mb-8">
+                  <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-6">
+                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">{t("username")}</h3>
+                    <div className="flex flex-col sm:flex-row gap-4">
+                      <div className="flex-1">
+                        <input
+                          type="text"
+                          value={username}
+                          onChange={(e) => setUsername(e.target.value)}
+                          className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400"
+                          placeholder={t("enterUsername")}
+                        />
+                      </div>
+                      <button
+                        className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800"
+                        onClick={() => savePreferences("account")}
+                      >
+                        {t("save")}
+                      </button>
+                    </div>
                   </div>
                 </div>
                 
                 {/* Emoji Preferences Section */}
-                <div id="emoji-preferences-section" className="mb-6">
-                  <h3 className="text-lg font-semibold mb-3">{t("profileEmoji")}</h3>
-                  <div className="mb-4">
-                    <label className="flex items-center mb-2">
-                      <input
-                        type="checkbox"
-                        checked={userPreferences.showProfileEmoji}
-                        onChange={(e) => handlePreferenceChange("showProfileEmoji", e.target.checked)}
-                        className="mr-2 h-5 w-5"
-                      />
-                      <span>{t("showProfileEmoji")}</span>
-                    </label>
-                  </div>
-                  
-                  {userPreferences.showProfileEmoji && (
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block mb-2">{t("chooseEmoji")}</label>
-                        <div className="flex flex-wrap gap-2">
-                          {userPreferences.favoriteEmojis.map((emoji, index) => (
-                            <button
-                              key={index}
-                              onClick={() => handlePreferenceChange("profileEmoji", emoji)}
-                              className={`text-2xl p-2 border rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 
-                                ${userPreferences.profileEmoji === emoji ? 'ring-2 ring-blue-500 bg-blue-50 dark:bg-blue-900' : ''}`}
-                            >
-                              {emoji}
-                            </button>
-                          ))}
+                <div id="emoji-preferences-section" className="mb-8">
+                  <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-6">
+                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">{t("profileEmoji")}</h3>
+                    
+                    <div className="mb-6">
+                      <label className="flex items-center space-x-3 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={userPreferences.showProfileEmoji}
+                          onChange={(e) => handlePreferenceChange("showProfileEmoji", e.target.checked)}
+                          className="w-5 h-5 text-blue-600 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 rounded focus:ring-blue-500 focus:ring-2"
+                        />
+                        <span className="text-slate-700 dark:text-slate-300 font-medium">{t("showProfileEmoji")}</span>
+                      </label>
+                    </div>
+                    
+                    {userPreferences.showProfileEmoji && (
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-slate-700 dark:text-slate-300 font-medium mb-3">{t("chooseEmoji")}</label>
+                          <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 gap-3">
+                            {userPreferences.favoriteEmojis.map((emoji, index) => (
+                              <button
+                                key={index}
+                                onClick={() => handlePreferenceChange("profileEmoji", emoji)}
+                                className={`text-2xl p-3 border-2 rounded-lg transition-all duration-200 hover:scale-110 ${
+                                  userPreferences.profileEmoji === emoji 
+                                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-200 dark:ring-blue-800' 
+                                    : 'border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500 bg-white dark:bg-slate-800'
+                                }`}
+                              >
+                                {emoji}
+                              </button>
+                            ))}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               </div>
             )}
 
             {/* Appearance Settings */}
             {activeTab === "appearance" && (
-              <div>
-                <h2 className="text-xl font-semibold mb-4">{t("appearance")}</h2>
+              <div className="p-6">
+                <div className="mb-8">
+                  <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">{t("appearance")}</h2>
+                  <p className="text-slate-600 dark:text-slate-400">Customize the look and feel of your FitExplorer experience</p>
+                </div>
                 
                 {/* Theme Toggle */}
-                <div className="mb-6">
-                  <h3 className="text-lg font-semibold mb-2">{t("theme")}</h3>
-                  <div className="flex items-center space-x-4">
-                    <button
-                      className={`px-4 py-2 rounded-lg flex items-center justify-center ${
-                        theme === 'light' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700'
-                      }`}
-                      onClick={() => setThemeMode('light')}
-                    >
-                      <span className="mr-2">☀️</span>
-                      {t("light")}
-                    </button>
-                    <button
-                      className={`px-4 py-2 rounded-lg flex items-center justify-center ${
-                        theme === 'dark' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700'
-                      }`}
-                      onClick={() => setThemeMode('dark')}
-                    >
-                      <span className="mr-2">🌙</span>
-                      {t("dark")}
-                    </button>
-                    <button
-                      className={`px-4 py-2 rounded-lg flex items-center justify-center ${
-                        theme === 'system' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700'
-                      }`}
-                      onClick={() => setThemeMode('system')}
-                    >
-                      <span className="mr-2">💻</span>
-                      {t("system")}
-                    </button>
+                <div className="mb-8">
+                  <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-6">
+                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">{t("theme")}</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <button
+                        className={`p-4 rounded-lg border-2 transition-all duration-200 flex items-center justify-center space-x-3 ${
+                          theme === 'light' 
+                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-200 dark:ring-blue-800' 
+                            : 'border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500 bg-white dark:bg-slate-800'
+                        }`}
+                        onClick={() => setThemeMode('light')}
+                      >
+                        <span className="text-2xl">☀️</span>
+                        <span className="font-medium text-slate-700 dark:text-slate-300">{t("light")}</span>
+                      </button>
+                      <button
+                        className={`p-4 rounded-lg border-2 transition-all duration-200 flex items-center justify-center space-x-3 ${
+                          theme === 'dark' 
+                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-200 dark:ring-blue-800' 
+                            : 'border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500 bg-white dark:bg-slate-800'
+                        }`}
+                        onClick={() => setThemeMode('dark')}
+                      >
+                        <span className="text-2xl">🌙</span>
+                        <span className="font-medium text-slate-700 dark:text-slate-300">{t("dark")}</span>
+                      </button>
+                      <button
+                        className={`p-4 rounded-lg border-2 transition-all duration-200 flex items-center justify-center space-x-3 ${
+                          theme === 'system' 
+                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-200 dark:ring-blue-800' 
+                            : 'border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500 bg-white dark:bg-slate-800'
+                        }`}
+                        onClick={() => setThemeMode('system')}
+                      >
+                        <span className="text-2xl">💻</span>
+                        <span className="font-medium text-slate-700 dark:text-slate-300">{t("system")}</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
                 
                 {/* Card Color Customization */}
-                <div className="mb-6">
-                  <h3 className="text-lg font-semibold mb-2">{t("cardColor")}</h3>
-                  <label className="flex items-center mb-4">
-                    <input
-                      type="checkbox"
-                      checked={userPreferences.useCustomCardColor}
-                      onChange={(e) => toggleCustomCardColor(e.target.checked)}
-                      className="mr-2 h-5 w-5"
-                    />
-                    <span>{t("useCustomCardColor")}</span>
-                  </label>
-                  
-                  {userPreferences.useCustomCardColor && (
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                      {['#3b82f6', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6', '#ec4899', '#f97316', '#06b6d4'].map(color => (
-                        <button
-                          key={color}
-                          className={`h-10 rounded-lg border-2 ${
-                            userPreferences.cardColor === color ? 'border-black dark:border-white' : 'border-transparent'
-                          }`}
-                          style={{ backgroundColor: color }}
-                          onClick={() => handleColorChange(color)}
-                        />
-                      ))}
-                      <div className="flex items-center">
-                        <input
-                          type="color"
-                          value={userPreferences.cardColor}
-                          onChange={(e) => handleColorChange(e.target.value)}
-                          className="w-10 h-10 cursor-pointer"
-                        />
-                        <span className="ml-2">{t("custom")}</span>
+                <div className="mb-8">
+                  <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-6">
+                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">{t("cardColor")}</h3>
+                    <label className="flex items-center space-x-3 cursor-pointer mb-6">
+                      <input
+                        type="checkbox"
+                        checked={userPreferences.useCustomCardColor}
+                        onChange={(e) => toggleCustomCardColor(e.target.checked)}
+                        className="w-5 h-5 text-blue-600 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 rounded focus:ring-blue-500 focus:ring-2"
+                      />
+                      <span className="text-slate-700 dark:text-slate-300 font-medium">{t("useCustomCardColor")}</span>
+                    </label>
+                    
+                    {userPreferences.useCustomCardColor && (
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-3">
+                          {['#3b82f6', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6', '#ec4899', '#f97316', '#06b6d4'].map(color => (
+                            <button
+                              key={color}
+                              className={`h-12 rounded-lg border-2 transition-all duration-200 hover:scale-110 ${
+                                userPreferences.cardColor === color 
+                                  ? 'border-slate-900 dark:border-white ring-2 ring-slate-300 dark:ring-slate-600' 
+                                  : 'border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500'
+                              }`}
+                              style={{ backgroundColor: color }}
+                              onClick={() => handleColorChange(color)}
+                            />
+                          ))}
+                        </div>
+                        <div className="flex items-center space-x-3">
+                          <input
+                            type="color"
+                            value={userPreferences.cardColor}
+                            onChange={(e) => handleColorChange(e.target.value)}
+                            className="w-12 h-12 cursor-pointer rounded-lg border-2 border-slate-200 dark:border-slate-600"
+                          />
+                          <span className="text-slate-700 dark:text-slate-300 font-medium">{t("custom")}</span>
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
                 
                 {/* Animation Settings */}
-                <div className="mb-6">
-                  <h3 className="text-lg font-semibold mb-2">{t("animations")}</h3>
-                  <label className="flex items-center mb-4">
-                    <input
-                      type="checkbox"
-                      checked={userPreferences.enableAnimations}
-                      onChange={(e) => handlePreferenceChange("enableAnimations", e.target.checked)}
-                      className="mr-2 h-5 w-5"
-                    />
-                    <span>{t("enableAnimations")}</span>
-                  </label>
-                  
-                  {userPreferences.enableAnimations && (
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block mb-2">{t("animationStyle")}</label>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                          {["subtle", "medium", "bold"].map(style => (
-                            <button
-                              key={style}
-                              onClick={() => handlePreferenceChange("animationStyle", style)}
-                              className={`px-4 py-2 rounded-lg ${
-                                userPreferences.animationStyle === style
-                                  ? 'bg-blue-500 text-white'
-                                  : 'bg-gray-200 dark:bg-gray-700'
-                              }`}
-                            >
-                              {t(style)}
-                            </button>
-                          ))}
+                <div className="mb-8">
+                  <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-6">
+                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">{t("animations")}</h3>
+                    <label className="flex items-center space-x-3 cursor-pointer mb-6">
+                      <input
+                        type="checkbox"
+                        checked={userPreferences.enableAnimations}
+                        onChange={(e) => handlePreferenceChange("enableAnimations", e.target.checked)}
+                        className="w-5 h-5 text-blue-600 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 rounded focus:ring-blue-500 focus:ring-2"
+                      />
+                      <span className="text-slate-700 dark:text-slate-300 font-medium">{t("enableAnimations")}</span>
+                    </label>
+                    
+                    {userPreferences.enableAnimations && (
+                      <div className="space-y-6">
+                        <div>
+                          <label className="block text-slate-700 dark:text-slate-300 font-medium mb-3">{t("animationStyle")}</label>
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            {["subtle", "medium", "bold"].map(style => (
+                              <button
+                                key={style}
+                                onClick={() => handlePreferenceChange("animationStyle", style)}
+                                className={`px-4 py-3 rounded-lg border-2 transition-all duration-200 ${
+                                  userPreferences.animationStyle === style
+                                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-200 dark:ring-blue-800 text-blue-700 dark:text-blue-300'
+                                    : 'border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300'
+                                }`}
+                              >
+                                {t(style)}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-slate-700 dark:text-slate-300 font-medium mb-3">{t("animationSpeed")}</label>
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            {["slow", "medium", "fast"].map(speed => (
+                              <button
+                                key={speed}
+                                onClick={() => handlePreferenceChange("animationSpeed", speed)}
+                                className={`px-4 py-3 rounded-lg border-2 transition-all duration-200 ${
+                                  userPreferences.animationSpeed === speed
+                                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-200 dark:ring-blue-800 text-blue-700 dark:text-blue-300'
+                                    : 'border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300'
+                                }`}
+                              >
+                                {t(speed)}
+                              </button>
+                            ))}
+                          </div>
                         </div>
                       </div>
-                      <div>
-                        <label className="block mb-2">{t("animationSpeed")}</label>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                          {["slow", "medium", "fast"].map(speed => (
-                            <button
-                              key={speed}
-                              onClick={() => handlePreferenceChange("animationSpeed", speed)}
-                              className={`px-4 py-2 rounded-lg ${
-                                userPreferences.animationSpeed === speed
-                                  ? 'bg-blue-500 text-white'
-                                  : 'bg-gray-200 dark:bg-gray-700'
-                              }`}
-                            >
-                              {t(speed)}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
                 
                 {/* Button to Save Appearance Settings */}
-                <button
-                  className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg flex items-center"
-                  onClick={() => savePreferences("appearance")}
-                  disabled={isSavingPreferences}
-                >
-                  {isSavingPreferences ? t("saving") : t("saveChanges")}
-                  <FaSave className="ml-2" />
-                </button>
+                <div className="flex justify-end">
+                  <button
+                    className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 flex items-center space-x-2"
+                    onClick={() => savePreferences("appearance")}
+                    disabled={isSavingPreferences}
+                  >
+                    <FaSave className="w-4 h-4" />
+                    <span>{isSavingPreferences ? t("saving") : t("saveChanges")}</span>
+                  </button>
+                </div>
               </div>
             )}
 
             {/* Security Settings */}
             {activeTab === "security" && (
-              <div>
-                <h2 className="text-xl font-semibold mb-4">{t("security")}</h2>
-                <form onSubmit={handlePasswordChange} className="space-y-4">
-                  <div>
-                    <label className="block text-gray-700 dark:text-gray-300 mb-2">
-                      {t("currentPassword")}
-                    </label>
-                    <div className="relative">
-                      <input
-                        type={showCurrentPassword ? "text" : "password"}
-                        value={currentPassword}
-                        onChange={(e) => setCurrentPassword(e.target.value)}
-                        className="w-full md:w-[70%] px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
-                        placeholder={t("enterCurrentPassword")}
-                      />
+              <div className="p-6">
+                <div className="mb-8">
+                  <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">{t("security")}</h2>
+                  <p className="text-slate-600 dark:text-slate-400">Manage your password and security settings</p>
+                </div>
+
+                <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-6">
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-6">{t("changePassword")}</h3>
+                  <form onSubmit={handlePasswordChange} className="space-y-6">
+                    <div>
+                      <label className="block text-slate-700 dark:text-slate-300 font-medium mb-2">
+                        {t("currentPassword")}
+                      </label>
+                      <div className="relative">
+                        <input
+                          type={showCurrentPassword ? "text" : "password"}
+                          value={currentPassword}
+                          onChange={(e) => setCurrentPassword(e.target.value)}
+                          className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400 pr-12"
+                          placeholder={t("enterCurrentPassword")}
+                        />
+                        <button
+                          type="button"
+                          className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                          onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                        >
+                          {showCurrentPassword ? <FaEyeSlash className="w-5 h-5" /> : <FaEye className="w-5 h-5" />}
+                        </button>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-slate-700 dark:text-slate-300 font-medium mb-2">
+                        {t("newPassword")}
+                      </label>
+                      <div className="relative">
+                        <input
+                          type={showNewPassword ? "text" : "password"}
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400 pr-12"
+                          placeholder={t("enterNewPassword")}
+                        />
+                        <button
+                          type="button"
+                          className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                          onClick={() => setShowNewPassword(!showNewPassword)}
+                        >
+                          {showNewPassword ? <FaEyeSlash className="w-5 h-5" /> : <FaEye className="w-5 h-5" />}
+                        </button>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-slate-700 dark:text-slate-300 font-medium mb-2">
+                        {t("confirmPassword")}
+                      </label>
+                      <div className="relative">
+                        <input
+                          type={showConfirmPassword ? "text" : "password"}
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400 pr-12"
+                          placeholder={t("confirmNewPassword")}
+                        />
+                        <button
+                          type="button"
+                          className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        >
+                          {showConfirmPassword ? <FaEyeSlash className="w-5 h-5" /> : <FaEye className="w-5 h-5" />}
+                        </button>
+                      </div>
+                    </div>
+                    <div className="flex justify-end">
                       <button
-                        type="button"
-                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm mr-[30%]"
-                        onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                        type="submit"
+                        className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 flex items-center space-x-2"
+                        disabled={isLoading}
                       >
-                        {showCurrentPassword ? <FaEyeSlash /> : <FaEye />}
+                        <FaLock className="w-4 h-4" />
+                        <span>{isLoading ? t("changing") : t("changePassword")}</span>
                       </button>
                     </div>
-                  </div>
-                  <div>
-                    <label className="block text-gray-700 dark:text-gray-300 mb-2">
-                      {t("newPassword")}
-                    </label>
-                    <div className="relative">
-                      <input
-                        type={showNewPassword ? "text" : "password"}
-                        value={newPassword}
-                        onChange={(e) => setNewPassword(e.target.value)}
-                        className="w-full md:w-[70%] px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
-                        placeholder={t("enterNewPassword")}
-                      />
-                      <button
-                        type="button"
-                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm mr-[30%]"
-                        onClick={() => setShowNewPassword(!showNewPassword)}
-                      >
-                        {showNewPassword ? <FaEyeSlash /> : <FaEye />}
-                      </button>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-gray-700 dark:text-gray-300 mb-2">
-                      {t("confirmPassword")}
-                    </label>
-                    <div className="relative">
-                      <input
-                        type={showConfirmPassword ? "text" : "password"}
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        className="w-full md:w-[70%] px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
-                        placeholder={t("confirmNewPassword")}
-                      />
-                      <button
-                        type="button"
-                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm mr-[30%]"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      >
-                        {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
-                      </button>
-                    </div>
-                  </div>
-                  <button
-                    type="submit"
-                    className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg flex items-center"
-                    disabled={isLoading}
-                  >
-                    {isLoading ? t("changing") : t("changePassword")}
-                    <FaLock className="ml-2" />
-                  </button>
-                </form>
+                  </form>
+                </div>
               </div>
             )}
             
             {/* Notification Settings */}
             {activeTab === "notifications" && (
-              <div>
-                <h2 className="text-xl font-semibold mb-4">{t("notifications")}</h2>
-                <div className="space-y-4">
-                  <div>
-                    <label className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        checked={userPreferences.emailNotifications}
-                        onChange={(e) => handlePreferenceChange("emailNotifications", e.target.checked)}
-                        className="h-5 w-5"
-                      />
-                      <span>{t("emailNotifications")}</span>
-                    </label>
-                  </div>
-                  <div>
-                    <label className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        checked={userPreferences.workoutReminders}
-                        onChange={(e) => handlePreferenceChange("workoutReminders", e.target.checked)}
-                        className="h-5 w-5"
-                      />
-                      <span>{t("workoutReminders")}</span>
-                    </label>
-                  </div>
-                  <div>
-                    <label className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        checked={userPreferences.progressReports}
-                        onChange={(e) => handlePreferenceChange("progressReports", e.target.checked)}
-                        className="h-5 w-5"
-                      />
-                      <span>{t("progressReports")}</span>
-                    </label>
+              <div className="p-6">
+                <div className="mb-8">
+                  <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">{t("notifications")}</h2>
+                  <p className="text-slate-600 dark:text-slate-400">Configure how you receive notifications and updates</p>
+                </div>
+
+                <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-6">
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-6">Notification Preferences</h3>
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-between p-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-600">
+                      <div>
+                        <h4 className="font-medium text-slate-900 dark:text-white">{t("emailNotifications")}</h4>
+                        <p className="text-sm text-slate-600 dark:text-slate-400">Receive notifications via email</p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={userPreferences.emailNotifications}
+                          onChange={(e) => handlePreferenceChange("emailNotifications", e.target.checked)}
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-blue-600"></div>
+                      </label>
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-600">
+                      <div>
+                        <h4 className="font-medium text-slate-900 dark:text-white">{t("workoutReminders")}</h4>
+                        <p className="text-sm text-slate-600 dark:text-slate-400">Get reminded about your workout schedule</p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={userPreferences.workoutReminders}
+                          onChange={(e) => handlePreferenceChange("workoutReminders", e.target.checked)}
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-blue-600"></div>
+                      </label>
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-600">
+                      <div>
+                        <h4 className="font-medium text-slate-900 dark:text-white">{t("progressReports")}</h4>
+                        <p className="text-sm text-slate-600 dark:text-slate-400">Receive weekly progress summaries</p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={userPreferences.progressReports}
+                          onChange={(e) => handlePreferenceChange("progressReports", e.target.checked)}
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-blue-600"></div>
+                      </label>
+                    </div>
                   </div>
                   
-                  <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                    <h3 className="text-lg font-semibold mb-2">{t("summaryFrequency")}</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-600">
+                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">{t("summaryFrequency")}</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       {["daily", "weekly", "monthly"].map(frequency => (
                         <button
                           key={frequency}
                           onClick={() => handlePreferenceChange("summary_frequency", frequency)}
-                          className={`px-4 py-2 rounded-lg ${
+                          className={`px-4 py-3 rounded-lg border-2 transition-all duration-200 ${
                             userPreferences.summary_frequency === frequency
-                              ? 'bg-blue-500 text-white'
-                              : 'bg-gray-200 dark:bg-gray-700'
+                              ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-200 dark:ring-blue-800 text-blue-700 dark:text-blue-300'
+                              : 'border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300'
                           }`}
                         >
                           {t(frequency)}
@@ -1001,17 +1075,17 @@ function Settings() {
                   </div>
                   
                   {userPreferences.summary_frequency === "weekly" && (
-                    <div className="mt-4">
-                      <h3 className="text-lg font-semibold mb-2">{t("summaryDay")}</h3>
-                      <div className="grid grid-cols-2 md:grid-cols-7 gap-2">
+                    <div className="mt-6">
+                      <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">{t("summaryDay")}</h3>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2">
                         {["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"].map(day => (
                           <button
                             key={day}
                             onClick={() => handlePreferenceChange("summary_day", day)}
-                            className={`px-2 py-2 rounded-lg ${
+                            className={`px-3 py-2 rounded-lg border-2 transition-all duration-200 text-sm ${
                               userPreferences.summary_day === day
-                                ? 'bg-blue-500 text-white'
-                                : 'bg-gray-200 dark:bg-gray-700'
+                                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-200 dark:ring-blue-800 text-blue-700 dark:text-blue-300'
+                                : 'border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300'
                             }`}
                           >
                             {t(day)}
@@ -1021,60 +1095,75 @@ function Settings() {
                     </div>
                   )}
                   
-                  <button
-                    className="mt-4 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg flex items-center"
-                    onClick={() => savePreferences("notifications")}
-                    disabled={isSavingPreferences}
-                  >
-                    {isSavingPreferences ? t("saving") : t("saveChanges")}
-                    <FaSave className="ml-2" />
-                  </button>
+                  <div className="flex justify-end mt-8">
+                    <button
+                      className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 flex items-center space-x-2"
+                      onClick={() => savePreferences("notifications")}
+                      disabled={isSavingPreferences}
+                    >
+                      <FaSave className="w-4 h-4" />
+                      <span>{isSavingPreferences ? t("saving") : t("saveChanges")}</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
             
             {/* Language Settings */}
             {activeTab === "language" && (
-              <div>
-                <h2 className="text-xl font-semibold mb-4">{t("language")}</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {["en", "es", "fr", "de", "it", "pt", "zh", "ja", "ko", "ru"].map(lang => (
-                    <button
-                      key={lang}
-                      onClick={() => {
-                        handlePreferenceChange("language", lang);
-                        changeLanguage(lang);
-                      }}
-                      className={`px-4 py-3 rounded-lg flex items-center ${
-                        userPreferences.language === lang
-                          ? 'bg-blue-500 text-white'
-                          : 'bg-gray-100 dark:bg-gray-700'
-                      }`}
-                    >
-                      <span className="mr-2">{getLanguageFlag(lang)}</span>
-                      {getLanguageName(lang)}
-                    </button>
-                  ))}
+              <div className="p-6">
+                <div className="mb-8">
+                  <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">{t("language")}</h2>
+                  <p className="text-slate-600 dark:text-slate-400">Choose your preferred language for the interface</p>
                 </div>
-                
-                <button
-                  className="mt-6 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg flex items-center"
-                  onClick={() => savePreferences("language")}
-                  disabled={isSavingPreferences}
-                >
-                  {isSavingPreferences ? t("saving") : t("saveChanges")}
-                  <FaSave className="ml-2" />
-                </button>
+
+                <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-6">
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-6">Select Language</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {["en", "es", "fr", "de", "it", "pt", "zh", "ja", "ko", "ru"].map(lang => (
+                      <button
+                        key={lang}
+                        onClick={() => {
+                          handlePreferenceChange("language", lang);
+                          changeLanguage(lang);
+                        }}
+                        className={`p-4 rounded-lg border-2 transition-all duration-200 flex items-center space-x-3 ${
+                          userPreferences.language === lang
+                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-200 dark:ring-blue-800'
+                            : 'border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500 bg-white dark:bg-slate-800'
+                        }`}
+                      >
+                        <span className="text-2xl">{getLanguageFlag(lang)}</span>
+                        <span className="font-medium text-slate-700 dark:text-slate-300">{getLanguageName(lang)}</span>
+                      </button>
+                    ))}
+                  </div>
+                  
+                  <div className="flex justify-end mt-8">
+                    <button
+                      className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 flex items-center space-x-2"
+                      onClick={() => savePreferences("language")}
+                      disabled={isSavingPreferences}
+                    >
+                      <FaSave className="w-4 h-4" />
+                      <span>{isSavingPreferences ? t("saving") : t("saveChanges")}</span>
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
 
             {/* Sessions Management */}
             {activeTab === "sessions" && (
-              <div>
-                <h2 className="text-xl font-semibold mb-4">{t("sessions")}</h2>
+              <div className="p-6">
+                <div className="mb-8">
+                  <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">{t("sessions")}</h2>
+                  <p className="text-slate-600 dark:text-slate-400">Manage your active sessions and devices</p>
+                </div>
                 <SessionsManager />
               </div>
             )}
+            </div>
           </div>
         </div>
       </div>
