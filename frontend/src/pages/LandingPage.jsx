@@ -103,7 +103,7 @@ const ProgramCard = ({ program }) => (
         <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-3">
           {program.title}
         </h3>
-        <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
+        <p className="text-slate-700 dark:text-slate-300 leading-relaxed">
           {program.description}
         </p>
       </div>
@@ -133,7 +133,7 @@ const FeatureItem = ({ feature }) => (
       {feature.icon}
     </div>
     <h3 className="text-lg font-bold mb-2 text-slate-900 dark:text-white">{feature.title}</h3>
-    <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed">{feature.description}</p>
+    <p className="text-slate-700 dark:text-slate-300 text-sm leading-relaxed">{feature.description}</p>
   </motion.div>
 );
 
@@ -233,7 +233,7 @@ const BrightHero = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.2 }}
-                className="text-lg text-slate-600 dark:text-slate-300 mb-8 leading-relaxed max-w-lg"
+                className="text-lg text-slate-700 dark:text-slate-300 mb-8 leading-relaxed max-w-lg"
               >
                 Professional-grade fitness tracking with AI-powered workout generation. 
                 Track your progress, achieve your goals, and transform your body with confidence.
@@ -350,14 +350,14 @@ const BrightHero = () => {
 
 // Program showcase section with professional design
 const ProgramShowcase = () => (
-  <section className="py-24 bg-slate-50 dark:bg-slate-900">
+  <section className="py-16 sm:py-24 bg-slate-50 dark:bg-slate-900">
     <div className="container mx-auto px-4">
-      <div className="text-center mb-20">
+      <div className="text-center mb-12 sm:mb-20">
         <motion.h2
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="text-4xl md:text-5xl font-bold mb-6"
+          className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 sm:mb-6"
         >
           <span className="text-slate-900 dark:text-white">Core Features</span>
         </motion.h2>
@@ -365,7 +365,7 @@ const ProgramShowcase = () => (
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="text-xl text-slate-600 dark:text-slate-300 max-w-3xl mx-auto leading-relaxed"
+          className="text-lg sm:text-xl text-slate-700 dark:text-slate-300 max-w-3xl mx-auto leading-relaxed px-4"
         >
           Everything you need to achieve your fitness goals, powered by advanced technology and designed for real results.
         </motion.p>
@@ -488,12 +488,12 @@ const QRCodeSection = () => {
 
 // Professional journey section
 const JourneySection = () => (
-  <section className="py-24 bg-slate-100 dark:bg-slate-900 text-slate-900 dark:text-white relative overflow-hidden">
+  <section className="py-16 sm:py-24 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white relative overflow-hidden">
     <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(59,130,246,0.1),transparent_50%)] dark:bg-[radial-gradient(circle_at_30%_30%,rgba(59,130,246,0.1),transparent_50%)]"></div>
     
     <div className="container mx-auto px-4 relative z-10">
       <div className="max-w-4xl mx-auto">
-        <div className="text-center mb-16">
+        <div className="text-center mb-12 sm:mb-16">
           <motion.span
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
@@ -507,7 +507,7 @@ const JourneySection = () => (
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-4xl md:text-5xl font-bold mb-8"
+            className="text-3xl sm:text-4xl md:text-5xl font-bold mb-6 sm:mb-8"
           >
             From Passion to Purpose
           </motion.h2>
@@ -517,22 +517,22 @@ const JourneySection = () => (
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="bg-white/80 dark:bg-slate-800/50 backdrop-blur-md rounded-2xl p-12 border border-slate-200/50 dark:border-slate-700/50 shadow-2xl relative"
+          className="bg-white/95 dark:bg-slate-800/50 backdrop-blur-md rounded-2xl p-6 sm:p-12 border border-slate-300/60 dark:border-slate-700/50 shadow-2xl relative"
         >
-          <p className="text-xl mb-8 leading-relaxed text-slate-700 dark:text-slate-200">
+          <p className="text-lg sm:text-xl mb-6 sm:mb-8 leading-relaxed text-slate-800 dark:text-slate-200">
             FitExplorer started as a personal hobby project born from my genuine love for fitness and the frustration I felt with existing fitness apps. As someone who incorporates fitness into my daily life, I noticed that every app I tried was missing something essential – that perfect balance of simplicity and functionality.
           </p>
           
-          <p className="text-xl mb-8 leading-relaxed text-slate-700 dark:text-slate-200">
+          <p className="text-lg sm:text-xl mb-6 sm:mb-8 leading-relaxed text-slate-800 dark:text-slate-200">
             When I had the opportunity to create a fitness app, I combined my passion for fitness with the knowledge I gained from school to bring this vision to life. I wanted to build the simplest solution that addressed the gaps I experienced in every other fitness app I had used.
           </p>
           
-          <p className="text-xl leading-relaxed text-slate-700 dark:text-slate-200">
+          <p className="text-lg sm:text-xl leading-relaxed text-slate-800 dark:text-slate-200">
             I'm incredibly proud of what FitExplorer has become, and I'm committed to continuously developing and improving it to make it even better. This isn't just an app – it's a reflection of my dedication to fitness and my desire to create something truly useful for fellow fitness enthusiasts.
           </p>
           
-          <div className="mt-12 flex items-center justify-center">
-            <div className="relative w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-emerald-500 flex items-center justify-center text-white font-bold text-2xl mr-6 shadow-lg overflow-hidden">
+          <div className="mt-8 sm:mt-12 flex flex-col sm:flex-row items-center justify-center">
+            <div className="relative w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-emerald-500 flex items-center justify-center text-white font-bold text-2xl mb-4 sm:mb-0 sm:mr-6 shadow-lg overflow-hidden">
               {/* Placeholder for profile picture - you can replace this with your actual image */}
               <div className="w-full h-full bg-gradient-to-br from-blue-500 to-emerald-500 flex items-center justify-center">
                 <span className="text-white font-bold text-2xl">C</span>
@@ -546,7 +546,7 @@ const JourneySection = () => (
               */}
             </div>
             <div className="text-center">
-              <div className="font-bold text-xl text-slate-900 dark:text-white">Chia Ranchber</div>
+              <div className="font-bold text-lg sm:text-xl text-slate-900 dark:text-white">Chia Ranchber</div>
               <div className="text-slate-600 dark:text-slate-300">Developer and Creator</div>
             </div>
           </div>
@@ -590,14 +590,14 @@ const MoreFeaturesSection = () => {
   ];
 
   return (
-    <section className="py-24 bg-white dark:bg-slate-900">
+    <section className="py-16 sm:py-24 bg-white dark:bg-slate-900">
       <div className="container mx-auto px-4">
-        <div className="text-center mb-16">
+        <div className="text-center mb-12 sm:mb-16">
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-3xl md:text-4xl font-bold mb-6 text-slate-900 dark:text-white"
+            className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 sm:mb-6 text-slate-900 dark:text-white"
           >
             Complete Fitness Solution
           </motion.h2>
@@ -605,13 +605,13 @@ const MoreFeaturesSection = () => {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-lg text-slate-600 dark:text-slate-300 max-w-2xl mx-auto"
+            className="text-lg sm:text-xl text-slate-700 dark:text-slate-300 max-w-2xl mx-auto px-4"
           >
             Everything you need to track, improve, and achieve your fitness goals in one powerful platform.
           </motion.p>
         </div>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
           {moreFeatures.map(feature => (
             <FeatureItem key={feature.id} feature={feature} />
           ))}

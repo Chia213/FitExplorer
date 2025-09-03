@@ -644,6 +644,17 @@ export function ThemeProvider({ children }) {
   const [premiumTheme, setPremiumTheme] = useState("default");
   const [unlockedThemes, setUnlockedThemes] = useState(["default"]);
   const [loading, setLoading] = useState(true);
+
+  // Immediately apply dark mode on mount for non-logged-in users
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      // For non-logged-in users, immediately apply dark mode
+      const root = window.document.documentElement;
+      root.classList.remove("light");
+      root.classList.add("dark");
+    }
+  }, []);
   
   // Check if user is admin - still use localStorage for this
   const isAdmin = localStorage.getItem("isAdmin") === "true";
