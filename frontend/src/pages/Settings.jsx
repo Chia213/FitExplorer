@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { FaLock, FaEye, FaEyeSlash, FaSave, FaTimes, FaUser, FaBell, FaLanguage, FaPalette, FaCrown, FaShieldAlt, FaClock, FaTachometerAlt, FaBolt } from "react-icons/fa";
+import { FaLock, FaEye, FaEyeSlash, FaSave, FaTimes, FaUser, FaBell, FaLanguage, FaPalette, FaCrown, FaShieldAlt, FaClock, FaTachometerAlt, FaBolt, FaDumbbell, FaChartLine, FaFileAlt, FaDownload, FaUpload, FaExternalLinkAlt, FaChartBar, FaTrophy, FaCheckCircle } from "react-icons/fa";
 import { getTranslation } from "../utils/translations";
 import { useLanguage } from "../contexts/LanguageContext";
 import { useTheme, premiumThemes } from "../hooks/useTheme";
@@ -491,14 +491,14 @@ function Settings() {
     return (
       <button
         onClick={() => setActiveTab(tabName)}
-        className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
+        className={`flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2 lg:py-3 rounded-lg transition-all duration-200 whitespace-nowrap ${
           activeTab === tabName 
             ? "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800" 
             : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200"
         }`}
       >
         {icon}
-        <span className="font-medium">{label}</span>
+        <span className="font-medium text-sm lg:text-base">{label}</span>
       </button>
     );
   };
@@ -652,10 +652,29 @@ function Settings() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Sidebar Navigation */}
           <div className="lg:col-span-1">
-            <nav className="space-y-2">
+            {/* Mobile Navigation - Horizontal Scroll */}
+            <div className="lg:hidden mb-6">
+              <nav className="flex space-x-2 overflow-x-auto pb-2 scrollbar-hide">
+                {renderTabButton("account", t("account"), <FaUser className="w-4 h-4" />)}
+                {renderTabButton("appearance", t("appearance"), <FaPalette className="w-4 h-4" />)}
+                {renderTabButton("workout", "Workout", <FaDumbbell className="w-4 h-4" />)}
+                {renderTabButton("notifications", t("notifications"), <FaBell className="w-4 h-4" />)}
+                {renderTabButton("data", "Data", <FaChartLine className="w-4 h-4" />)}
+                {renderTabButton("privacy", "Privacy", <FaShieldAlt className="w-4 h-4" />)}
+                {renderTabButton("language", t("language"), <FaLanguage className="w-4 h-4" />)}
+                {renderTabButton("security", t("security"), <FaLock className="w-4 h-4" />)}
+                {renderTabButton("sessions", t("sessions"), <FaShieldAlt className="w-4 h-4" />)}
+              </nav>
+            </div>
+            
+            {/* Desktop Navigation - Vertical */}
+            <nav className="hidden lg:block space-y-2">
               {renderTabButton("account", t("account"), <FaUser className="w-4 h-4" />)}
               {renderTabButton("appearance", t("appearance"), <FaPalette className="w-4 h-4" />)}
+              {renderTabButton("workout", "Workout", <FaDumbbell className="w-4 h-4" />)}
               {renderTabButton("notifications", t("notifications"), <FaBell className="w-4 h-4" />)}
+              {renderTabButton("data", "Data", <FaChartLine className="w-4 h-4" />)}
+              {renderTabButton("privacy", "Privacy", <FaShieldAlt className="w-4 h-4" />)}
               {renderTabButton("language", t("language"), <FaLanguage className="w-4 h-4" />)}
               {renderTabButton("security", t("security"), <FaLock className="w-4 h-4" />)}
               {renderTabButton("sessions", t("sessions"), <FaShieldAlt className="w-4 h-4" />)}
@@ -892,11 +911,290 @@ function Settings() {
                   </div>
                 </div>
                 
+                {/* Premium Theme Showcase */}
+                <div className="mb-8">
+                  <div className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-lg p-6 border border-purple-200 dark:border-purple-800">
+                    <div className="flex items-center justify-between mb-6">
+                      <div>
+                        <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">Premium Themes</h3>
+                        <p className="text-slate-600 dark:text-slate-400">Unlock exclusive fitness-focused themes</p>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <FaCrown className="w-5 h-5 text-yellow-500" />
+                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Premium</span>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {Object.entries(premiumThemes).filter(([key]) => 
+                        ['gymDark', 'powerLifter', 'cardio', 'zen', 'neonGym', 'steel', 'protein', 'midnightGym', 'energy', 'recovery'].includes(key)
+                      ).map(([themeKey, theme]) => (
+                        <div
+                          key={themeKey}
+                          className={`relative p-4 rounded-lg border-2 transition-all duration-200 cursor-pointer ${
+                            premiumTheme === themeKey
+                              ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-200 dark:ring-blue-800'
+                              : 'border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500 bg-white dark:bg-slate-800'
+                          }`}
+                          onClick={() => canAccessTheme(themeKey) ? handleApplyTheme(themeKey) : null}
+                        >
+                          {/* Theme Preview */}
+                          <div className="mb-3">
+                            <div 
+                              className="h-16 rounded-lg flex items-center justify-center text-white font-bold text-sm"
+                              style={{ 
+                                background: `linear-gradient(135deg, ${theme.primary} 0%, ${theme.secondary} 50%, ${theme.accent} 100%)` 
+                              }}
+                            >
+                              {theme.name}
+                            </div>
+                          </div>
+                          
+                          {/* Theme Info */}
+                          <div className="space-y-2">
+                            <h4 className="font-medium text-slate-900 dark:text-white text-sm">{theme.name}</h4>
+                            <p className="text-xs text-slate-600 dark:text-slate-400">{theme.description}</p>
+                          </div>
+                          
+                          {/* Access Status */}
+                          <div className="absolute top-2 right-2">
+                            {canAccessTheme(themeKey) ? (
+                              <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                                <FaCheckCircle className="w-3 h-3 text-white" />
+                              </div>
+                            ) : (
+                              <div className="w-6 h-6 bg-slate-400 rounded-full flex items-center justify-center">
+                                <FaLock className="w-3 h-3 text-white" />
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* Color Palette */}
+                          <div className="flex space-x-1 mt-3">
+                            <div 
+                              className="w-4 h-4 rounded-full border border-slate-200 dark:border-slate-600"
+                              style={{ backgroundColor: theme.primary }}
+                            ></div>
+                            <div 
+                              className="w-4 h-4 rounded-full border border-slate-200 dark:border-slate-600"
+                              style={{ backgroundColor: theme.secondary }}
+                            ></div>
+                            <div 
+                              className="w-4 h-4 rounded-full border border-slate-200 dark:border-slate-600"
+                              style={{ backgroundColor: theme.accent }}
+                            ></div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    {/* Theme Unlock Progress */}
+                    <div className="mt-6 p-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-600">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Theme Progress</span>
+                        <span className="text-sm text-slate-600 dark:text-slate-400">
+                          {unlockedThemes.length} / {Object.keys(premiumThemes).length} unlocked
+                        </span>
+                      </div>
+                      <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2">
+                        <div 
+                          className="bg-gradient-to-r from-purple-500 to-blue-500 h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${(unlockedThemes.length / Object.keys(premiumThemes).length) * 100}%` }}
+                        ></div>
+                      </div>
+                      <p className="text-xs text-slate-600 dark:text-slate-400 mt-2">
+                        Complete more workouts to unlock premium themes!
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Button to Save Appearance Settings */}
                 <div className="flex justify-end">
                   <button
                     className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 flex items-center space-x-2"
                     onClick={() => savePreferences("appearance")}
+                    disabled={isSavingPreferences}
+                  >
+                    <FaSave className="w-4 h-4" />
+                    <span>{isSavingPreferences ? t("saving") : t("saveChanges")}</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Workout Preferences */}
+            {activeTab === "workout" && (
+              <div className="p-6">
+                <div className="mb-8">
+                  <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Workout Preferences</h2>
+                  <p className="text-slate-600 dark:text-slate-400">Customize your default workout settings and preferences</p>
+                </div>
+
+                {/* Default Exercise Settings */}
+                <div className="mb-8">
+                  <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-6">
+                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-6">Default Exercise Settings</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div>
+                        <label className="block text-slate-700 dark:text-slate-300 font-medium mb-2">Default Sets</label>
+                        <input
+                          type="number"
+                          min="1"
+                          max="20"
+                          className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-slate-900 dark:text-white"
+                          placeholder="3"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-slate-700 dark:text-slate-300 font-medium mb-2">Default Reps</label>
+                        <input
+                          type="number"
+                          min="1"
+                          max="100"
+                          className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-slate-900 dark:text-white"
+                          placeholder="10"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-slate-700 dark:text-slate-300 font-medium mb-2">Rest Time (seconds)</label>
+                        <input
+                          type="number"
+                          min="0"
+                          max="600"
+                          className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-slate-900 dark:text-white"
+                          placeholder="60"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Unit Preferences */}
+                <div className="mb-8">
+                  <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-6">
+                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-6">Unit Preferences</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div>
+                        <label className="block text-slate-700 dark:text-slate-300 font-medium mb-3">Weight Unit</label>
+                        <div className="space-y-2">
+                          {[
+                            { value: 'kg', label: 'Kilograms (kg)', flag: '🇪🇺' },
+                            { value: 'lbs', label: 'Pounds (lbs)', flag: '🇺🇸' }
+                          ].map(unit => (
+                            <label key={unit.value} className="flex items-center space-x-3 cursor-pointer">
+                              <input
+                                type="radio"
+                                name="weightUnit"
+                                value={unit.value}
+                                className="w-4 h-4 text-blue-600 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 focus:ring-blue-500"
+                              />
+                              <span className="text-2xl">{unit.flag}</span>
+                              <span className="text-slate-700 dark:text-slate-300">{unit.label}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-slate-700 dark:text-slate-300 font-medium mb-3">Distance Unit</label>
+                        <div className="space-y-2">
+                          {[
+                            { value: 'km', label: 'Kilometers (km)', flag: '🌍' },
+                            { value: 'miles', label: 'Miles', flag: '🇺🇸' }
+                          ].map(unit => (
+                            <label key={unit.value} className="flex items-center space-x-3 cursor-pointer">
+                              <input
+                                type="radio"
+                                name="distanceUnit"
+                                value={unit.value}
+                                className="w-4 h-4 text-blue-600 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 focus:ring-blue-500"
+                              />
+                              <span className="text-2xl">{unit.flag}</span>
+                              <span className="text-slate-700 dark:text-slate-300">{unit.label}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-slate-700 dark:text-slate-300 font-medium mb-3">Temperature Unit</label>
+                        <div className="space-y-2">
+                          {[
+                            { value: 'celsius', label: 'Celsius (°C)', flag: '🌡️' },
+                            { value: 'fahrenheit', label: 'Fahrenheit (°F)', flag: '🌡️' }
+                          ].map(unit => (
+                            <label key={unit.value} className="flex items-center space-x-3 cursor-pointer">
+                              <input
+                                type="radio"
+                                name="temperatureUnit"
+                                value={unit.value}
+                                className="w-4 h-4 text-blue-600 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 focus:ring-blue-500"
+                              />
+                              <span className="text-2xl">{unit.flag}</span>
+                              <span className="text-slate-700 dark:text-slate-300">{unit.label}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Workout Behavior */}
+                <div className="mb-8">
+                  <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-6">
+                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-6">Workout Behavior</h3>
+                    <div className="space-y-6">
+                      <div className="flex items-center justify-between p-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-600">
+                        <div>
+                          <h4 className="font-medium text-slate-900 dark:text-white">Auto-advance sets</h4>
+                          <p className="text-sm text-slate-600 dark:text-slate-400">Automatically move to next set after rest time</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-blue-600"></div>
+                        </label>
+                      </div>
+
+                      <div className="flex items-center justify-between p-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-600">
+                        <div>
+                          <h4 className="font-medium text-slate-900 dark:text-white">Rest timer notifications</h4>
+                          <p className="text-sm text-slate-600 dark:text-slate-400">Get notified when rest time is over</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            className="sr-only peer"
+                            defaultChecked
+                          />
+                          <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-blue-600"></div>
+                        </label>
+                      </div>
+
+                      <div className="flex items-center justify-between p-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-600">
+                        <div>
+                          <h4 className="font-medium text-slate-900 dark:text-white">Auto-save workouts</h4>
+                          <p className="text-sm text-slate-600 dark:text-slate-400">Automatically save workout progress</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            className="sr-only peer"
+                            defaultChecked
+                          />
+                          <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-blue-600"></div>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-end">
+                  <button
+                    className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 flex items-center space-x-2"
+                    onClick={() => savePreferences("workout")}
                     disabled={isSavingPreferences}
                   >
                     <FaSave className="w-4 h-4" />
@@ -1107,8 +1405,226 @@ function Settings() {
                   </div>
                 </div>
               </div>
+                        )}
+
+            {/* Data Management */}
+            {activeTab === "data" && (
+              <div className="p-6">
+                <div className="mb-8">
+                  <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Data Management</h2>
+                  <p className="text-slate-600 dark:text-slate-400">Export, import, and manage your fitness data</p>
+                </div>
+
+                {/* Data Export */}
+                <div className="mb-8">
+                  <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-6">
+                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-6">Export Your Data</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <button className="p-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-600 hover:border-blue-300 dark:hover:border-blue-600 transition-colors duration-200">
+                        <div className="flex items-center space-x-3 mb-2">
+                          <FaChartLine className="w-5 h-5 text-blue-500" />
+                          <span className="font-medium text-slate-900 dark:text-white">CSV Export</span>
+                        </div>
+                        <p className="text-sm text-slate-600 dark:text-slate-400">Download workout data as CSV</p>
+                      </button>
+                      <button className="p-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-600 hover:border-blue-300 dark:hover:border-blue-600 transition-colors duration-200">
+                        <div className="flex items-center space-x-3 mb-2">
+                          <FaFileAlt className="w-5 h-5 text-green-500" />
+                          <span className="font-medium text-slate-900 dark:text-white">PDF Report</span>
+                        </div>
+                        <p className="text-sm text-slate-600 dark:text-slate-400">Generate progress report</p>
+                      </button>
+                      <button className="p-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-600 hover:border-blue-300 dark:hover:border-blue-600 transition-colors duration-200">
+                        <div className="flex items-center space-x-3 mb-2">
+                          <FaDownload className="w-5 h-5 text-purple-500" />
+                          <span className="font-medium text-slate-900 dark:text-white">Full Backup</span>
+                        </div>
+                        <p className="text-sm text-slate-600 dark:text-slate-400">Complete data backup</p>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Data Import */}
+                <div className="mb-8">
+                  <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-6">
+                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-6">Import Data</h3>
+                    <div className="space-y-4">
+                      <div className="p-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-600">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            <FaUpload className="w-5 h-5 text-blue-500" />
+                            <div>
+                              <h4 className="font-medium text-slate-900 dark:text-white">Import from CSV</h4>
+                              <p className="text-sm text-slate-600 dark:text-slate-400">Upload workout data from CSV file</p>
+                            </div>
+                          </div>
+                          <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors duration-200">
+                            Choose File
+                          </button>
+                        </div>
+                      </div>
+                      <div className="p-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-600">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            <FaExternalLinkAlt className="w-5 h-5 text-green-500" />
+                            <div>
+                              <h4 className="font-medium text-slate-900 dark:text-white">Import from MyFitnessPal</h4>
+                              <p className="text-sm text-slate-600 dark:text-slate-400">Sync nutrition data</p>
+                            </div>
+                          </div>
+                          <button className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors duration-200">
+                            Connect
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Data Analytics */}
+                <div className="mb-8">
+                  <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-6">
+                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-6">Data Insights</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="p-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-600">
+                        <div className="flex items-center space-x-3 mb-3">
+                          <FaChartBar className="w-5 h-5 text-blue-500" />
+                          <h4 className="font-medium text-slate-900 dark:text-white">Workout Statistics</h4>
+                        </div>
+                        <div className="space-y-2 text-sm text-slate-600 dark:text-slate-400">
+                          <div className="flex justify-between">
+                            <span>Total Workouts:</span>
+                            <span className="font-medium text-slate-900 dark:text-white">127</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Total Hours:</span>
+                            <span className="font-medium text-slate-900 dark:text-white">89.5</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Calories Burned:</span>
+                            <span className="font-medium text-slate-900 dark:text-white">12,450</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="p-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-600">
+                        <div className="flex items-center space-x-3 mb-3">
+                          <FaTrophy className="w-5 h-5 text-yellow-500" />
+                          <h4 className="font-medium text-slate-900 dark:text-white">Achievements</h4>
+                        </div>
+                        <div className="space-y-2 text-sm text-slate-600 dark:text-slate-400">
+                          <div className="flex justify-between">
+                            <span>Current Streak:</span>
+                            <span className="font-medium text-slate-900 dark:text-white">7 days</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Best Streak:</span>
+                            <span className="font-medium text-slate-900 dark:text-white">23 days</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Goals Completed:</span>
+                            <span className="font-medium text-slate-900 dark:text-white">15/20</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             )}
-            
+
+            {/* Privacy Settings */}
+            {activeTab === "privacy" && (
+              <div className="p-6">
+                <div className="mb-8">
+                  <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Privacy & Data</h2>
+                  <p className="text-slate-600 dark:text-slate-400">Control your privacy and data sharing preferences</p>
+                </div>
+
+                {/* Data Sharing */}
+                <div className="mb-8">
+                  <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-6">
+                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-6">Data Sharing</h3>
+                    <div className="space-y-6">
+                      <div className="flex items-center justify-between p-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-600">
+                        <div>
+                          <h4 className="font-medium text-slate-900 dark:text-white">Analytics & Usage</h4>
+                          <p className="text-sm text-slate-600 dark:text-slate-400">Help improve the app with anonymous usage data</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            className="sr-only peer"
+                            defaultChecked
+                          />
+                          <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-blue-600"></div>
+                        </label>
+                      </div>
+
+                      <div className="flex items-center justify-between p-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-600">
+                        <div>
+                          <h4 className="font-medium text-slate-900 dark:text-white">Workout Sharing</h4>
+                          <p className="text-sm text-slate-600 dark:text-slate-400">Allow others to see your workout achievements</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-blue-600"></div>
+                        </label>
+                      </div>
+
+                      <div className="flex items-center justify-between p-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-600">
+                        <div>
+                          <h4 className="font-medium text-slate-900 dark:text-white">Social Features</h4>
+                          <p className="text-sm text-slate-600 dark:text-slate-400">Enable community features and challenges</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-blue-600"></div>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Data Retention */}
+                <div className="mb-8">
+                  <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-6">
+                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-6">Data Management</h3>
+                    <div className="space-y-4">
+                      <div className="p-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-600">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h4 className="font-medium text-slate-900 dark:text-white">Delete Account</h4>
+                            <p className="text-sm text-slate-600 dark:text-slate-400">Permanently delete your account and all data</p>
+                          </div>
+                          <button className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors duration-200">
+                            Delete Account
+                          </button>
+                        </div>
+                      </div>
+                      <div className="p-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-600">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h4 className="font-medium text-slate-900 dark:text-white">Download All Data</h4>
+                            <p className="text-sm text-slate-600 dark:text-slate-400">Get a copy of all your personal data</p>
+                          </div>
+                          <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors duration-200">
+                            Download
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Language Settings */}
             {activeTab === "language" && (
               <div className="p-6">
