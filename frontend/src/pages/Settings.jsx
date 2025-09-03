@@ -124,6 +124,11 @@ function Settings() {
     }
   };
 
+  // Check if user can access a specific theme
+  const canAccessTheme = (themeKey) => {
+    return isAdmin || unlockedThemes.includes(themeKey);
+  };
+
   // Update the useEffect to use our new handleApplyTheme function 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);

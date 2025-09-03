@@ -10,6 +10,7 @@ import personalRecordsImage from '../assets/personal-records.png';
 import fitnessCalculatorImage from '../assets/fitness-calculator.png';
 import aiWorkoutGeneratorImage from '../assets/ai-workoutgenerator.png';
 import logo from '../assets/Ronjasdrawing.png';
+import profilePicture from '../assets/profile-picture.jpg';
 import '../styles/landing-page.css';
 
 // Animation variants
@@ -520,7 +521,7 @@ const JourneySection = () => (
           className="bg-white/95 dark:bg-slate-800/50 backdrop-blur-md rounded-2xl p-6 sm:p-12 border border-slate-300/60 dark:border-slate-700/50 shadow-2xl relative"
         >
           <p className="text-lg sm:text-xl mb-6 sm:mb-8 leading-relaxed text-slate-800 dark:text-slate-200">
-            FitExplorer started as a personal hobby project born from my genuine love for fitness and the frustration I felt with existing fitness apps. As someone who incorporates fitness into my daily life, I noticed that every app I tried was missing something essential – that perfect balance of simplicity and functionality.
+            FitExplorer started as a personal hobby project born from my genuine love for fitness and the frustration I felt with existing fitness apps. As someone who incorporates fitness into my daily life, I noticed that every app I tried was missing something essential that perfect balance of simplicity and functionality.
           </p>
           
           <p className="text-lg sm:text-xl mb-6 sm:mb-8 leading-relaxed text-slate-800 dark:text-slate-200">
@@ -528,22 +529,16 @@ const JourneySection = () => (
           </p>
           
           <p className="text-lg sm:text-xl leading-relaxed text-slate-800 dark:text-slate-200">
-            I'm incredibly proud of what FitExplorer has become, and I'm committed to continuously developing and improving it to make it even better. This isn't just an app – it's a reflection of my dedication to fitness and my desire to create something truly useful for fellow fitness enthusiasts.
+            I'm incredibly proud of what FitExplorer has become, and I'm committed to continuously developing and improving it to make it even better. This isn't just an app it's a reflection of my dedication to fitness and my desire to create something truly useful for fellow fitness enthusiasts.
           </p>
           
           <div className="mt-8 sm:mt-12 flex flex-col sm:flex-row items-center justify-center">
-            <div className="relative w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-emerald-500 flex items-center justify-center text-white font-bold text-2xl mb-4 sm:mb-0 sm:mr-6 shadow-lg overflow-hidden">
-              {/* Placeholder for profile picture - you can replace this with your actual image */}
-              <div className="w-full h-full bg-gradient-to-br from-blue-500 to-emerald-500 flex items-center justify-center">
-                <span className="text-white font-bold text-2xl">C</span>
-              </div>
-              {/* Uncomment and replace with your profile image when ready:
+            <div className="relative w-32 h-32 sm:w-40 sm:h-40 rounded-full bg-gradient-to-br from-blue-500 to-emerald-500 flex items-center justify-center text-white font-bold text-2xl mb-6 sm:mb-0 sm:mr-8 shadow-xl overflow-hidden border-4 border-white dark:border-slate-800">
               <img 
-                src="/path/to/your/profile-picture.jpg" 
+                src={profilePicture} 
                 alt="Chia Ranchber" 
                 className="w-full h-full object-cover"
               />
-              */}
             </div>
             <div className="text-center">
               <div className="font-bold text-lg sm:text-xl text-slate-900 dark:text-white">Chia Ranchber</div>
