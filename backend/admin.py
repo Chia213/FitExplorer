@@ -415,6 +415,66 @@ def delete_user(
     return {"message": f"User {user.username} has been deleted"}
 
 
+class AdminUserUpdate(BaseModel):
+    username: str = None
+    email: EmailStr = None
+    password: str = None
+    is_admin: bool = None
+    is_verified: bool = None
+
+
+@router.put("/users/{user_id}")
+def update_user(
+    user_id: int,
+    user_data: AdminUserUpdate,
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_admin_user)
+):
+    """Update user information by admin"""
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Check if username already exists (if changing username)
+    if user_data.username and user_data.username != user.username:
+        existing_user = db.query(User).filter(User.username == user_data.username).first()
+        if existing_user:
+            raise HTTPException(status_code=400, detail="Username already exists")
+
+    # Check if email already exists (if changing email)
+    if user_data.email and user_data.email != user.email:
+        existing_user = db.query(User).filter(User.email == user_data.email).first()
+        if existing_user:
+            raise HTTPException(status_code=400, detail="Email already exists")
+
+    # Update fields if provided
+    if user_data.username is not None:
+        user.username = user_data.username
+    if user_data.email is not None:
+        user.email = user_data.email
+    if user_data.password is not None and user_data.password.strip():
+        user.hashed_password = pwd_context.hash(user_data.password)
+    if user_data.is_admin is not None:
+        user.is_admin = user_data.is_admin
+    if user_data.is_verified is not None:
+        user.is_verified = user_data.is_verified
+
+    db.commit()
+    db.refresh(user)
+    
+    return {
+        "message": f"User {user.username} updated successfully",
+        "user": {
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "is_admin": user.is_admin,
+            "is_verified": user.is_verified,
+            "created_at": user.created_at
+        }
+    }
+
+
 class AdminSettingsUpdate(BaseModel):
     auto_verify_users: bool = False
     require_email_verification: bool = True
