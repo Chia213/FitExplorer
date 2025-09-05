@@ -1,4 +1,3 @@
-rked
 #!/usr/bin/env python3
 """
 Script to create the first admin user for FitExplorer
