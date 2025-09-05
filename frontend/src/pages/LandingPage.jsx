@@ -390,6 +390,7 @@ const QRCodeComponent = () => {
     if (typeof window !== 'undefined') {
       // Point to the redirect page that explains how to use Expo Go
       const redirectUrl = `${window.location.origin}/expo-redirect.html`;
+      console.log('QR Code URL:', redirectUrl);
       setExpoUrl(redirectUrl);
     }
   }, []);
@@ -492,6 +493,9 @@ const QRCodeSection = () => {
                 </p>
                 <p className="text-gray-500 text-xs mt-1">
                   Get step-by-step guide for Expo Go
+                </p>
+                <p className="text-blue-500 text-xs mt-2 font-mono break-all">
+                  {expoUrl}
                 </p>
               </div>
             </motion.div>
