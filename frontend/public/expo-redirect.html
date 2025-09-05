@@ -106,10 +106,14 @@
             <div class="instructions">
                 <h3>Choose your experience:</h3>
                 <p>For the best mobile experience, we recommend using Expo Go:</p>
+                <ol>
+                    <li>Download <strong>Expo Go</strong> from your app store</li>
+                    <li>Open Expo Go and tap <strong>"Enter URL manually"</strong></li>
+                    <li>Enter: <code>https://www.fitexplorer.se</code></li>
+                </ol>
             </div>
             
-            <a href="#" id="expoLink" class="button expo">Open in Expo Go</a>
-            <a href="https://www.fitexplorer.se" class="button">Open in Browser</a>
+            <a href="https://www.fitexplorer.se" class="button expo">Open in Browser</a>
             <a href="https://expo.dev" class="button" style="background: #666;">Download Expo Go</a>
         </div>
     </div>
@@ -121,7 +125,8 @@
         const isAndroid = /Android/i.test(navigator.userAgent);
         
         // Expo Go deep link URLs
-        const expoGoUrl = 'exp://exp.host/@chia94/FitExplorerApp';
+        // For now, redirect to website and provide manual instructions
+        const expoGoUrl = 'https://www.fitexplorer.se';
         const websiteUrl = 'https://www.fitexplorer.se';
         
         function tryOpenExpoGo() {
