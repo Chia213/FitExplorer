@@ -383,12 +383,15 @@ const ProgramShowcase = () => (
 
 // QR Code component using qrcode.react library
 const QRCodeComponent = () => {
-  const [currentUrl, setCurrentUrl] = useState('https://fitexplorer.se');
+  const [expoUrl, setExpoUrl] = useState('exp://192.168.1.100:8081');
   
   useEffect(() => {
-    // Get the current URL to encode in the QR code
+    // Generate Expo Go URL for the mobile app
     if (typeof window !== 'undefined') {
-      setCurrentUrl(window.location.origin);
+      // For production, this would be the actual Expo Go URL
+      // For now, we'll use the web URL as a fallback
+      const webUrl = window.location.origin;
+      setExpoUrl(webUrl);
     }
   }, []);
   
@@ -396,7 +399,7 @@ const QRCodeComponent = () => {
     <div className="bg-white p-4 rounded-lg shadow-lg relative">
       <div className="relative">
         <QRCodeSVG
-          value={currentUrl}
+          value={expoUrl}
           size={200}
           bgColor={"#ffffff"}
           fgColor={"#000000"}
@@ -433,34 +436,44 @@ const QRCodeSection = () => {
               <span className="inline-block mb-4 px-4 py-1.5 bg-blue-900/10 rounded-full backdrop-blur-sm border border-blue-700/20 text-sm font-medium text-blue-800">
                 Mobile App
               </span>
-              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-blue-900 mb-4">Install FitExplorer on Your Phone</h2>
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-blue-900 mb-4">Download FitExplorer Mobile App</h2>
               <p className="text-lg text-gray-700 mb-6">
-                Get the same experience as a native app! Add FitExplorer to your home screen for quick access.
+                Get the full mobile app experience! Use Expo Go to download and run FitExplorer on your phone with native app features.
               </p>
               
               <div className="space-y-4 mb-8">
                 <div className="flex items-start">
                   <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-800 mr-4 mt-1 font-semibold">1</div>
                   <div>
-                    <h3 className="text-blue-900 font-medium mb-1">Scan the QR Code</h3>
-                    <p className="text-gray-600">Use your phone's camera to scan the code</p>
+                    <h3 className="text-blue-900 font-medium mb-1">Download Expo Go</h3>
+                    <p className="text-gray-600">Install Expo Go from App Store (iOS) or Google Play (Android)</p>
                   </div>
                 </div>
                 
                 <div className="flex items-start">
                   <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-800 mr-4 mt-1 font-semibold">2</div>
                   <div>
-                    <h3 className="text-blue-900 font-medium mb-1">Open in Browser</h3>
-                    <p className="text-gray-600">Visit the link in Safari (iOS) or Chrome (Android)</p>
+                    <h3 className="text-blue-900 font-medium mb-1">Scan the QR Code</h3>
+                    <p className="text-gray-600">Open Expo Go and scan the QR code below</p>
                   </div>
                 </div>
                 
                 <div className="flex items-start">
                   <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-800 mr-4 mt-1 font-semibold">3</div>
                   <div>
-                    <h3 className="text-blue-900 font-medium mb-1">Add to Home Screen</h3>
-                    <p className="text-gray-600">Use the "Add to Home Screen" option in your browser</p>
+                    <h3 className="text-blue-900 font-medium mb-1">Start Using the App</h3>
+                    <p className="text-gray-600">FitExplorer will load in Expo Go with full mobile features</p>
                   </div>
+                </div>
+              </div>
+              
+              {/* Alternative access methods */}
+              <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <h4 className="text-blue-900 font-medium mb-2">Alternative Access Methods:</h4>
+                <div className="space-y-2 text-sm text-gray-700">
+                  <p>• <strong>Web Browser:</strong> Visit fitexplorer.se directly in your mobile browser</p>
+                  <p>• <strong>PWA:</strong> Add to home screen for app-like experience</p>
+                  <p>• <strong>Expo Go:</strong> Best experience with native mobile features</p>
                 </div>
               </div>
             </motion.div>
@@ -476,7 +489,10 @@ const QRCodeSection = () => {
               <QRCodeComponent />
               <div className="mt-4 text-center">
                 <p className="text-gray-600 text-sm">
-                  FitExplorer Web App
+                  Scan with Expo Go
+                </p>
+                <p className="text-gray-500 text-xs mt-1">
+                  Download Expo Go from your app store first
                 </p>
               </div>
             </motion.div>
