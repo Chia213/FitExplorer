@@ -450,6 +450,22 @@ const QRCodeComponent = () => {
 
 // Mobile app section with QR code
 const QRCodeSection = () => {
+  const [expoUrl, setExpoUrl] = useState('');
+  
+  useEffect(() => {
+    // Generate the correct Expo Go URL
+    try {
+      if (typeof window !== 'undefined') {
+        // Point to the redirect page that explains how to use Expo Go
+        const redirectUrl = `${window.location.origin}/expo-redirect.html?v=${Date.now()}`;
+        console.log('QR Code URL:', redirectUrl);
+        setExpoUrl(redirectUrl);
+      }
+    } catch (error) {
+      console.error('Error generating QR code URL:', error);
+    }
+  }, []);
+
   return (
     <section className="py-16 relative overflow-hidden bg-gradient-to-br from-blue-50 to-purple-50">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(79,70,229,0.1),transparent)] opacity-70"></div>
@@ -523,9 +539,11 @@ const QRCodeSection = () => {
                 <p className="text-gray-500 text-xs mt-1">
                   Get step-by-step guide for Expo Go
                 </p>
-                <p className="text-blue-500 text-xs mt-2 font-mono break-all">
-                  {expoUrl}
-                </p>
+                {expoUrl && (
+                  <p className="text-blue-500 text-xs mt-2 font-mono break-all">
+                    {expoUrl}
+                  </p>
+                )}
               </div>
             </motion.div>
           </div>
