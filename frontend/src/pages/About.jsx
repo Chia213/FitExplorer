@@ -155,13 +155,13 @@ function About() {
             </p>
             <div className="flex flex-wrap justify-center gap-4 mb-8">
               <div className="bg-white/20 backdrop-blur-sm rounded-full px-6 py-2 text-sm font-medium">
-                🚀 10,000+ Active Users
-              </div>
-              <div className="bg-white/20 backdrop-blur-sm rounded-full px-6 py-2 text-sm font-medium">
                 ⚡ AI-Powered Workouts
               </div>
               <div className="bg-white/20 backdrop-blur-sm rounded-full px-6 py-2 text-sm font-medium">
                 📊 Data-Driven Insights
+              </div>
+              <div className="bg-white/20 backdrop-blur-sm rounded-full px-6 py-2 text-sm font-medium">
+                🎯 Personalized Training
               </div>
             </div>
             <div className="flex flex-col sm:flex-row justify-center gap-4 mt-8">
@@ -211,10 +211,10 @@ function About() {
             <div className="mt-16 mb-12">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-4xl mx-auto">
                 {[
-                  { number: "10K+", label: "Active Users", icon: <FaUserFriends size={24} /> },
                   { number: "500+", label: "Exercises", icon: <FaDumbbell size={24} /> },
-                  { number: "50K+", label: "Workouts Logged", icon: <FaChartLine size={24} /> },
-                  { number: "99.9%", label: "Uptime", icon: <FaServer size={24} /> }
+                  { number: "AI", label: "Powered", icon: <FaRobot size={24} /> },
+                  { number: "100%", label: "Free", icon: <FaCheckCircle size={24} /> },
+                  { number: "24/7", label: "Available", icon: <FaServer size={24} /> }
                 ].map((stat, i) => (
                   <motion.div
                     key={i}
@@ -270,7 +270,7 @@ function About() {
               {features.map((feature, index) => (
                 <motion.div variants={cardVariants} key={index}>
                   <Link to={feature.link} className="block hover:no-underline h-full">
-                    <div className={`bg-gradient-to-br ${feature.gradient} dark:bg-gray-700 p-6 rounded-xl hover:shadow-xl transition-all duration-300 ease-in-out h-full border ${feature.border} dark:border-gray-600 group relative overflow-hidden`}>
+                    <div className={`bg-gradient-to-br ${feature.gradient} dark:${feature.darkGradient} p-6 rounded-xl hover:shadow-xl transition-all duration-300 ease-in-out h-full border ${feature.border} dark:${feature.darkBorder} group relative overflow-hidden`}>
                       <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-white/20 to-transparent rounded-full -translate-y-1/2 translate-x-1/2 dark:from-white/5"></div>
                       <div className="relative">
                         <div className="flex items-center mb-4">
@@ -311,7 +311,7 @@ function About() {
               <div className="max-w-4xl mx-auto text-center text-white">
                 <h2 className="text-4xl md:text-5xl font-bold mb-6">Ready to Transform Your Fitness?</h2>
                 <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
-                  Join thousands of users who have already discovered the power of AI-driven fitness planning and tracking. Start your transformation today.
+                  Discover the power of AI-driven fitness planning and tracking. Start your transformation today with our comprehensive fitness platform.
                 </p>
                 <div className="flex flex-col sm:flex-row justify-center gap-6 mb-8">
                   <Link
@@ -328,7 +328,7 @@ function About() {
                   </Link>
                 </div>
                 <div className="text-blue-200 text-sm">
-                  ✨ Free forever • No credit card required • Instant access
+                  ✨ Free to use • No credit card required • Start today
                 </div>
               </div>
             </div>
