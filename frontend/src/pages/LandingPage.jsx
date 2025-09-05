@@ -383,13 +383,13 @@ const ProgramShowcase = () => (
 
 // QR Code component using qrcode.react library
 const QRCodeComponent = () => {
-  const [expoUrl, setExpoUrl] = useState('exp://192.168.1.100:8081');
+  const [expoUrl, setExpoUrl] = useState('');
   
   useEffect(() => {
     // Generate the correct Expo Go URL
     if (typeof window !== 'undefined') {
       // Point to the redirect page that explains how to use Expo Go
-      const redirectUrl = `${window.location.origin}/expo-redirect.html`;
+      const redirectUrl = `${window.location.origin}/expo-redirect.html?v=${Date.now()}`;
       console.log('QR Code URL:', redirectUrl);
       setExpoUrl(redirectUrl);
     }
