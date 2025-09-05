@@ -84,56 +84,56 @@ function ChangePassword() {
           </p>
         )}
         <form onSubmit={handlePasswordChange} className="flex flex-col">
-          <label className="font-semibold">Old Password:</label>
+          <label className="font-semibold text-gray-700 dark:text-gray-300">Old Password:</label>
           <div className="relative mb-3">
             <input
               type={showOldPassword ? "text" : "password"}
               value={oldPassword}
               onChange={(e) => setOldPassword(e.target.value)}
-              className="border p-2 rounded w-full"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 pr-10"
               required
             />
             <button
               type="button"
               onClick={toggleOldPasswordVisibility}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
             >
               {showOldPassword ? <FaEyeSlash size={20} /> : <FaEye size={20} />}
             </button>
           </div>
 
-          <label className="font-semibold">New Password:</label>
+          <label className="font-semibold text-gray-700 dark:text-gray-300">New Password:</label>
           <div className="relative mb-3">
             <input
               type={showNewPassword ? "text" : "password"}
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
-              className="border p-2 rounded w-full"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 pr-10"
               required
             />
             <button
               type="button"
               onClick={toggleNewPasswordVisibility}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
             >
               {showNewPassword ? <FaEyeSlash size={20} /> : <FaEye size={20} />}
             </button>
           </div>
 
-          <label className="font-semibold">Confirm Password:</label>
+          <label className="font-semibold text-gray-700 dark:text-gray-300">Confirm Password:</label>
           <div className="relative mb-3">
             <input
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="border p-2 rounded w-full"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
               required
             />
           </div>
 
           <button
             type="submit"
-            className="bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition"
+            className="bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
           >
             Update Password
           </button>
