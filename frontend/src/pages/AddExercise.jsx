@@ -817,8 +817,8 @@ function AddExercise({ onClose, onSelectExercise }) {
                             ${isIPhone ? "min-h-[54px]" : ""}
                             ${
                               selectedExercise === exercise.name
-                                ? "bg-blue-100 text-blue-700"
-                                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                                ? "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"
+                                : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
                             }
                           `}
                         >
@@ -919,7 +919,7 @@ function AddExercise({ onClose, onSelectExercise }) {
                 {/* Custom exercises for this category */}
                 {categoryCustomExercises.length > 0 && (
             <div>
-                    <h4 className="text-sm font-semibold mb-2 text-gray-500">Your Custom {selectedCategory} Exercises</h4>
+                    <h4 className="text-sm font-semibold mb-2 text-gray-500 dark:text-gray-400">Your Custom {selectedCategory} Exercises</h4>
                     <ul className={`space-y-2 ${isIPhone ? "px-0.5" : ""}`}>
                       {categoryCustomExercises.map((exercise) => (
                         <li
@@ -929,8 +929,8 @@ function AddExercise({ onClose, onSelectExercise }) {
                             ${isIPhone ? "min-h-[54px]" : ""}
                             ${
                               selectedExercise === exercise.name
-                                ? "bg-blue-100 text-blue-700"
-                                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                                ? "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"
+                                : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
                             }
                           `}
                         >

@@ -147,12 +147,23 @@ function About() {
             transition={{ duration: 0.8, ease: [0.4, 0, 0.2, 1] }}
             className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 inline-block shadow-2xl"
           >
-            <h1 className="text-5xl md:text-6xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-white to-blue-100">
+            <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-white via-blue-100 to-indigo-200">
               We Are FitExplorer
             </h1>
-            <p className="text-xl md:text-2xl max-w-2xl mx-auto mb-8 text-blue-50">
-              Transforming fitness with AI-powered workout plans, intuitive tracking, and personalized guidance
+            <p className="text-xl md:text-2xl max-w-3xl mx-auto mb-8 text-blue-50 leading-relaxed">
+              The future of fitness is here. Experience AI-powered workout generation, intelligent progress tracking, and personalized guidance that adapts to your unique journey.
             </p>
+            <div className="flex flex-wrap justify-center gap-4 mb-8">
+              <div className="bg-white/20 backdrop-blur-sm rounded-full px-6 py-2 text-sm font-medium">
+                🚀 10,000+ Active Users
+              </div>
+              <div className="bg-white/20 backdrop-blur-sm rounded-full px-6 py-2 text-sm font-medium">
+                ⚡ AI-Powered Workouts
+              </div>
+              <div className="bg-white/20 backdrop-blur-sm rounded-full px-6 py-2 text-sm font-medium">
+                📊 Data-Driven Insights
+              </div>
+            </div>
             <div className="flex flex-col sm:flex-row justify-center gap-4 mt-8">
               <Link
                 to="/signup"
@@ -196,6 +207,36 @@ function About() {
               </p>
             </div>
             
+            {/* Statistics Section */}
+            <div className="mt-16 mb-12">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-4xl mx-auto">
+                {[
+                  { number: "10K+", label: "Active Users", icon: <FaUserFriends size={24} /> },
+                  { number: "500+", label: "Exercises", icon: <FaDumbbell size={24} /> },
+                  { number: "50K+", label: "Workouts Logged", icon: <FaChartLine size={24} /> },
+                  { number: "99.9%", label: "Uptime", icon: <FaServer size={24} /> }
+                ].map((stat, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.1 }}
+                    className="text-center bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-700 p-6 rounded-xl border border-blue-100 dark:border-gray-600"
+                  >
+                    <div className="text-blue-600 dark:text-blue-400 mb-2 flex justify-center">
+                      {stat.icon}
+                    </div>
+                    <div className="text-3xl font-bold text-gray-900 dark:text-white mb-1">
+                      {stat.number}
+                    </div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400 font-medium">
+                      {stat.label}
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+
             {/* Feature Highlights */}
             <div className="mt-12 grid grid-cols-1 md:grid-cols-4 gap-3 max-w-4xl mx-auto">
               {[
@@ -266,25 +307,28 @@ function About() {
             className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl overflow-hidden mb-16 relative"
           >
             <div className="absolute inset-0 bg-pattern opacity-10"></div>
-            <div className="px-8 py-12 relative z-10">
-              <div className="max-w-3xl mx-auto text-center text-white">
-                <h2 className="text-3xl font-bold mb-4">Ready to Transform Your Fitness?</h2>
-                <p className="text-lg text-blue-100 mb-8">
-                  Join thousands of users who have already discovered the power of AI-driven fitness planning and tracking.
+            <div className="px-8 py-16 relative z-10">
+              <div className="max-w-4xl mx-auto text-center text-white">
+                <h2 className="text-4xl md:text-5xl font-bold mb-6">Ready to Transform Your Fitness?</h2>
+                <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
+                  Join thousands of users who have already discovered the power of AI-driven fitness planning and tracking. Start your transformation today.
                 </p>
-                <div className="flex flex-col sm:flex-row justify-center gap-4">
+                <div className="flex flex-col sm:flex-row justify-center gap-6 mb-8">
                   <Link
                     to="/signup"
-                    className="bg-white text-blue-600 hover:bg-blue-50 py-3 px-8 rounded-lg font-semibold transition-all duration-300 shadow-lg hover:shadow-xl"
+                    className="bg-white text-blue-600 hover:bg-blue-50 py-4 px-10 rounded-full text-lg font-bold transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:-translate-y-1"
                   >
-                    Start Free Trial
+                    🚀 Start Your Journey
                   </Link>
                   <Link
-                    to="/workout-log"
-                    className="bg-white/20 hover:bg-white/30 text-white border border-white/30 py-3 px-8 rounded-lg font-semibold transition-all duration-300"
+                    to="/ai-workout-generator"
+                    className="bg-white/20 hover:bg-white/30 text-white border-2 border-white/30 py-4 px-10 rounded-full text-lg font-bold transition-all duration-300 backdrop-blur-sm"
                   >
-                    Explore Platform
+                    🤖 Try AI Workouts
                   </Link>
+                </div>
+                <div className="text-blue-200 text-sm">
+                  ✨ Free forever • No credit card required • Instant access
                 </div>
               </div>
             </div>
