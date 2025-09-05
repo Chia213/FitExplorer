@@ -384,39 +384,68 @@ const ProgramShowcase = () => (
 // QR Code component using qrcode.react library
 const QRCodeComponent = () => {
   const [expoUrl, setExpoUrl] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
     // Generate the correct Expo Go URL
-    if (typeof window !== 'undefined') {
-      // Point to the redirect page that explains how to use Expo Go
-      const redirectUrl = `${window.location.origin}/expo-redirect.html?v=${Date.now()}`;
-      console.log('QR Code URL:', redirectUrl);
-      setExpoUrl(redirectUrl);
+    try {
+      if (typeof window !== 'undefined') {
+        // Point to the redirect page that explains how to use Expo Go
+        const redirectUrl = `${window.location.origin}/expo-redirect.html?v=${Date.now()}`;
+        console.log('QR Code URL:', redirectUrl);
+        setExpoUrl(redirectUrl);
+        setIsLoading(false);
+      }
+    } catch (error) {
+      console.error('Error generating QR code URL:', error);
+      setIsLoading(false);
     }
   }, []);
   
-  return (
-    <div className="bg-white p-4 rounded-lg shadow-lg relative">
-      <div className="relative">
-        <QRCodeSVG
-          value={expoUrl}
-          size={200}
-          bgColor={"#ffffff"}
-          fgColor={"#000000"}
-          level={"H"}
-          includeMargin={false}
-          imageSettings={{
-            src: logo,
-            x: undefined,
-            y: undefined,
-            height: 40,
-            width: 40,
-            excavate: true,
-          }}
-        />
+  // Don't render QR code until expoUrl is set
+  if (isLoading || !expoUrl) {
+    return (
+      <div className="bg-white p-4 rounded-lg shadow-lg relative">
+        <div className="relative flex items-center justify-center h-[200px]">
+          <div className="text-gray-500">Loading QR Code...</div>
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
+  
+  try {
+    return (
+      <div className="bg-white p-4 rounded-lg shadow-lg relative">
+        <div className="relative">
+          <QRCodeSVG
+            value={expoUrl}
+            size={200}
+            bgColor={"#ffffff"}
+            fgColor={"#000000"}
+            level={"H"}
+            includeMargin={false}
+            imageSettings={{
+              src: logo,
+              x: undefined,
+              y: undefined,
+              height: 40,
+              width: 40,
+              excavate: true,
+            }}
+          />
+        </div>
+      </div>
+    );
+  } catch (error) {
+    console.error('Error rendering QR code:', error);
+    return (
+      <div className="bg-white p-4 rounded-lg shadow-lg relative">
+        <div className="relative flex items-center justify-center h-[200px]">
+          <div className="text-red-500">Error loading QR Code</div>
+        </div>
+      </div>
+    );
+  }
 };
 
 // Mobile app section with QR code
