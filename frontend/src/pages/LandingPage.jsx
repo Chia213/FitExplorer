@@ -390,10 +390,10 @@ const QRCodeComponent = () => {
     // Generate the correct URL for the mobile app
     try {
       if (typeof window !== 'undefined') {
-        // Point to the website that the Expo app loads
-        const websiteUrl = `https://www.fitexplorer.se`;
-        console.log('QR Code URL:', websiteUrl);
-        setExpoUrl(websiteUrl);
+        // Point to the smart redirect page that handles Expo Go detection
+        const redirectUrl = `${window.location.origin}/expo-redirect.html?v=${Date.now()}`;
+        console.log('QR Code URL:', redirectUrl);
+        setExpoUrl(redirectUrl);
         setIsLoading(false);
       }
     } catch (error) {
@@ -456,10 +456,10 @@ const QRCodeSection = () => {
     // Generate the correct URL for the mobile app
     try {
       if (typeof window !== 'undefined') {
-        // Point to the website that the Expo app loads
-        const websiteUrl = `https://www.fitexplorer.se`;
-        console.log('QR Code URL:', websiteUrl);
-        setExpoUrl(websiteUrl);
+        // Point to the smart redirect page that handles Expo Go detection
+        const redirectUrl = `${window.location.origin}/expo-redirect.html?v=${Date.now()}`;
+        console.log('QR Code URL:', redirectUrl);
+        setExpoUrl(redirectUrl);
       }
     } catch (error) {
       console.error('Error generating QR code URL:', error);
@@ -534,10 +534,10 @@ const QRCodeSection = () => {
               <QRCodeComponent />
               <div className="mt-4 text-center">
                 <p className="text-gray-600 text-sm">
-                  Scan with Camera or Expo Go
+                  Scan with Camera
                 </p>
                 <p className="text-gray-500 text-xs mt-1">
-                  Opens FitExplorer website
+                  Auto-detects Expo Go or opens in browser
                 </p>
                 {expoUrl && (
                   <p className="text-blue-500 text-xs mt-2 font-mono break-all">

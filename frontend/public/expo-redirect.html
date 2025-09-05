@@ -63,6 +63,9 @@
             background: #5a6fd8;
             transform: translateY(-2px);
         }
+        .button.expo {
+            background: #000;
+        }
         .instructions {
             background: #f8f9fa;
             border-radius: 10px;
@@ -82,36 +85,93 @@
             margin-bottom: 8px;
             color: #666;
         }
+        .loading {
+            display: none;
+            color: #667eea;
+            font-weight: 600;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="logo">💪</div>
         <h1>FitExplorer Mobile App</h1>
-        <p>Get the full mobile app experience with native features!</p>
+        <p>Getting the best mobile experience for you...</p>
         
-        <div class="instructions">
-            <h3>How to access the mobile app:</h3>
-            <ol>
-                <li>Download <strong>Expo Go</strong> from your app store</li>
-                <li>Open Expo Go and tap <strong>"Scan QR Code"</strong></li>
-                <li>Scan the QR code from the main website</li>
-                <li>Or manually enter: <code>https://fitexplorer.se</code></li>
-            </ol>
+        <div class="loading" id="loading">
+            <p>Redirecting to Expo Go...</p>
         </div>
         
-        <a href="https://fitexplorer.se" class="button">Open Web Version</a>
-        <a href="https://expo.dev" class="button" style="background: #000;">Download Expo Go</a>
+        <div id="options" style="display: none;">
+            <div class="instructions">
+                <h3>Choose your experience:</h3>
+                <p>For the best mobile experience, we recommend using Expo Go:</p>
+            </div>
+            
+            <a href="#" id="expoLink" class="button expo">Open in Expo Go</a>
+            <a href="https://www.fitexplorer.se" class="button">Open in Browser</a>
+            <a href="https://expo.dev" class="button" style="background: #666;">Download Expo Go</a>
+        </div>
     </div>
     
     <script>
-        // Try to detect if user is on mobile and redirect appropriately
-        if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-            // User is on mobile, show instructions for Expo Go
-            console.log('Mobile device detected');
+        // Detect mobile device
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+        const isAndroid = /Android/i.test(navigator.userAgent);
+        
+        // Expo Go deep link URLs
+        const expoGoUrl = 'exp://exp.host/@fitexplorer/fitexplorerapp';
+        const websiteUrl = 'https://www.fitexplorer.se';
+        
+        function tryOpenExpoGo() {
+            // Show loading
+            document.getElementById('loading').style.display = 'block';
+            
+            // Try to open Expo Go
+            const expoLink = document.getElementById('expoLink');
+            expoLink.href = expoGoUrl;
+            
+            // For iOS, try to open the Expo Go app
+            if (isIOS) {
+                // Try to open Expo Go app
+                window.location.href = expoGoUrl;
+                
+                // If Expo Go is not installed, show options after a delay
+                setTimeout(() => {
+                    showOptions();
+                }, 2000);
+            } 
+            // For Android, try to open Expo Go app
+            else if (isAndroid) {
+                // Try to open Expo Go app
+                window.location.href = expoGoUrl;
+                
+                // If Expo Go is not installed, show options after a delay
+                setTimeout(() => {
+                    showOptions();
+                }, 2000);
+            } 
+            // For desktop or other devices
+            else {
+                showOptions();
+            }
         }
         
-        // Add some interactive elements
+        function showOptions() {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('options').style.display = 'block';
+        }
+        
+        // Auto-redirect on mobile
+        if (isMobile) {
+            tryOpenExpoGo();
+        } else {
+            // Desktop users get options immediately
+            showOptions();
+        }
+        
+        // Add click handlers
         document.addEventListener('DOMContentLoaded', function() {
             const buttons = document.querySelectorAll('.button');
             buttons.forEach(button => {
