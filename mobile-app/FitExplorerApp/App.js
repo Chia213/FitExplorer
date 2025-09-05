@@ -94,13 +94,73 @@ export default function App() {
     webViewRef.current?.reload();
   };
 
+  const tryWebViewGoogleLogin = () => {
+    // Try to click the Google button in the WebView
+    webViewRef.current?.injectJavaScript(`
+      // Navigate to login page first
+      if (window.location.pathname !== '/login') {
+        window.location.href = 'https://www.fitexplorer.se/login';
+      }
+      
+      // Wait for page to load, then try to click Google button
+      setTimeout(() => {
+        const googleButton = document.querySelector('[aria-labelledby="button-label"]') || 
+                            document.querySelector('[data-provider="google"]') ||
+                            document.querySelector('.google-login') ||
+                            document.querySelector('iframe[src*="accounts.google.com"]') ||
+                            document.querySelector('div[role="button"][aria-label*="Google"]');
+        
+        if (googleButton) {
+          console.log('Found Google button, clicking...');
+          googleButton.click();
+        } else {
+          console.log('Google button not found, trying alternative selectors...');
+          // Try more specific selectors
+          const iframes = document.querySelectorAll('iframe');
+          iframes.forEach(iframe => {
+            if (iframe.src && iframe.src.includes('accounts.google.com')) {
+              console.log('Found Google iframe, clicking...');
+              iframe.click();
+            }
+          });
+          
+          // Try to find any button with Google text
+          const buttons = document.querySelectorAll('button, div[role="button"]');
+          buttons.forEach(btn => {
+            if (btn.textContent?.includes('Google') || 
+                btn.getAttribute('aria-label')?.includes('Google') ||
+                btn.className?.includes('google')) {
+              console.log('Found Google button by text, clicking...');
+              btn.click();
+            }
+          });
+        }
+      }, 3000);
+      true;
+    `);
+  };
+
   const goHome = () => {
     webViewRef.current?.goBack();
   };
 
   const openGoogleLogin = () => {
-    // Directly open Google OAuth in external browser
-    const googleOAuthUrl = 'https://accounts.google.com/oauth/authorize?client_id=YOUR_GOOGLE_CLIENT_ID&redirect_uri=https://www.fitexplorer.se&response_type=code&scope=openid%20email%20profile';
+    // Use the actual Google Client ID from the frontend
+    const clientId = "917960701094-3448boe93v2n4bru03t0t71n6016lbao.apps.googleusercontent.com";
+    const redirectUri = "https://www.fitexplorer.se";
+    
+    // Create the Google OAuth URL
+    const googleOAuthUrl = `https://accounts.google.com/oauth/authorize?` +
+      `client_id=${clientId}&` +
+      `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+      `response_type=code&` +
+      `scope=openid%20email%20profile&` +
+      `access_type=offline&` +
+      `prompt=consent`;
+    
+    console.log('Opening Google OAuth URL:', googleOAuthUrl);
+    
+    // Open Google OAuth in external browser
     WebBrowser.openBrowserAsync(googleOAuthUrl, {
       showTitle: false,
       enableBarCollapsing: false,
@@ -110,6 +170,13 @@ export default function App() {
       setTimeout(() => {
         webViewRef.current?.reload();
       }, 2000);
+    }).catch((error) => {
+      console.error('Error opening Google OAuth:', error);
+      // Fallback: try to navigate to login page and click Google button
+      webViewRef.current?.injectJavaScript(`
+        window.location.href = 'https://www.fitexplorer.se/login';
+        true;
+      `);
     });
   };
 
@@ -121,7 +188,7 @@ export default function App() {
           <Text style={styles.buttonText}>← Back</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.googleButton} onPress={openGoogleLogin}>
-          <Text style={styles.buttonText}>🔑 Google Login</Text>
+          <Text style={styles.buttonText}>🔑 Google</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.refreshButton} onPress={refreshWebView}>
           <Text style={styles.buttonText}>🔄 Refresh</Text>
