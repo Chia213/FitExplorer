@@ -1,10 +1,10 @@
 # FitExplorer 🏋️‍♀️💪
 
-<img src="https://github.com/user-attachments/assets/aa4e07e9-1834-4c1f-adfc-dc860c4e12e5" width="300" alt="FitExplorer Logo">
+<img src="frontend/src/assets/Ronjasdrawing.png" width="300" alt="FitExplorer Logo">
 
 ## Overview
 
-FitExplorer is a comprehensive fitness tracking and workout management application designed to help users achieve their fitness goals through AI-powered tools, personalized recommendations, and interactive progress tracking.
+FitExplorer is a comprehensive fitness tracking and workout management application designed to help users achieve their fitness goals through AI-powered tools, personalized recommendations, and interactive progress tracking. A website built from passion of training.
 
 ## 🌟 Key Features
 
