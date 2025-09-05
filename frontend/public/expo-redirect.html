@@ -126,8 +126,9 @@
         const isAndroid = /Android/i.test(navigator.userAgent);
         
         // Expo Go deep link URLs
-        // Use the correct Expo URL format
-        const expoGoUrl = 'exp://exp.host/@fitexplorer/fitexplorerapp';
+        // Try multiple URL formats to find the working one
+        const expoGoUrl = 'exp://exp.host/@chia94/FitExplorerApp';
+        const expoGoUrlFallback = 'exp://exp.host/@fitexplorer/fitexplorerapp';
         const websiteUrl = 'https://www.fitexplorer.se';
         
         function tryOpenExpoGo() {
