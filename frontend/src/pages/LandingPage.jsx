@@ -390,10 +390,10 @@ const QRCodeComponent = () => {
     // Generate the correct Expo Go URL
     try {
       if (typeof window !== 'undefined') {
-        // Point to the redirect page that explains how to use Expo Go
-        const redirectUrl = `${window.location.origin}/expo-redirect.html?v=${Date.now()}`;
-        console.log('QR Code URL:', redirectUrl);
-        setExpoUrl(redirectUrl);
+        // Use the actual Expo app URL for Expo Go
+        const expoAppUrl = `https://expo.dev/@fitexplorer/fitexplorerapp`;
+        console.log('QR Code URL:', expoAppUrl);
+        setExpoUrl(expoAppUrl);
         setIsLoading(false);
       }
     } catch (error) {
@@ -456,10 +456,10 @@ const QRCodeSection = () => {
     // Generate the correct Expo Go URL
     try {
       if (typeof window !== 'undefined') {
-        // Point to the redirect page that explains how to use Expo Go
-        const redirectUrl = `${window.location.origin}/expo-redirect.html?v=${Date.now()}`;
-        console.log('QR Code URL:', redirectUrl);
-        setExpoUrl(redirectUrl);
+        // Use the actual Expo app URL for Expo Go
+        const expoAppUrl = `https://expo.dev/@fitexplorer/fitexplorerapp`;
+        console.log('QR Code URL:', expoAppUrl);
+        setExpoUrl(expoAppUrl);
       }
     } catch (error) {
       console.error('Error generating QR code URL:', error);
@@ -534,10 +534,10 @@ const QRCodeSection = () => {
               <QRCodeComponent />
               <div className="mt-4 text-center">
                 <p className="text-gray-600 text-sm">
-                  Scan for Mobile App Instructions
+                  Scan with Expo Go App
                 </p>
                 <p className="text-gray-500 text-xs mt-1">
-                  Get step-by-step guide for Expo Go
+                  Opens FitExplorer in Expo Go
                 </p>
                 {expoUrl && (
                   <p className="text-blue-500 text-xs mt-2 font-mono break-all">
