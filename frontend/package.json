@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "mobile:build": "vite build && npx cap sync",
+    "mobile:android": "npx cap run android",
+    "mobile:sync": "npx cap sync"
   },
   "dependencies": {
     "@headlessui/react": "^1.7.18",
@@ -32,6 +35,10 @@
     "recharts": "^2.15.2"
   },
   "devDependencies": {
+    "@capacitor/android": "^6.0.0",
+    "@capacitor/cli": "^6.0.0",
+    "@capacitor/core": "^6.0.0",
+    "@capacitor/ios": "^6.0.0",
     "@types/react": "^18.2.43",
     "@types/react-dom": "^18.2.17",
     "@vitejs/plugin-react-swc": "^3.8.1",
@@ -40,6 +47,7 @@
     "qrcode": "^1.5.4",
     "sharp": "^0.34.1",
     "tailwindcss": "^3.4.1",
+    "typescript": "^5.9.2",
     "vite": "^4.0.0"
   }
 }
