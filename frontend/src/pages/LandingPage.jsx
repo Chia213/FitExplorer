@@ -386,12 +386,11 @@ const QRCodeComponent = () => {
   const [expoUrl, setExpoUrl] = useState('exp://192.168.1.100:8081');
   
   useEffect(() => {
-    // Generate Expo Go URL for the mobile app
+    // Generate the correct Expo Go URL
     if (typeof window !== 'undefined') {
-      // For production, this would be the actual Expo Go URL
-      // For now, we'll use the web URL as a fallback
-      const webUrl = window.location.origin;
-      setExpoUrl(webUrl);
+      // Point to the redirect page that explains how to use Expo Go
+      const redirectUrl = `${window.location.origin}/expo-redirect.html`;
+      setExpoUrl(redirectUrl);
     }
   }, []);
   
@@ -454,7 +453,7 @@ const QRCodeSection = () => {
                   <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-800 mr-4 mt-1 font-semibold">2</div>
                   <div>
                     <h3 className="text-blue-900 font-medium mb-1">Scan the QR Code</h3>
-                    <p className="text-gray-600">Open Expo Go and scan the QR code below</p>
+                    <p className="text-gray-600">Scan the QR code below to get instructions for Expo Go</p>
                   </div>
                 </div>
                 
@@ -489,10 +488,10 @@ const QRCodeSection = () => {
               <QRCodeComponent />
               <div className="mt-4 text-center">
                 <p className="text-gray-600 text-sm">
-                  Scan with Expo Go
+                  Scan for Mobile App Instructions
                 </p>
                 <p className="text-gray-500 text-xs mt-1">
-                  Download Expo Go from your app store first
+                  Get step-by-step guide for Expo Go
                 </p>
               </div>
             </motion.div>

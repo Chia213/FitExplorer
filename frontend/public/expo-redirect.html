@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FitExplorer - Mobile App</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            max-width: 400px;
+            width: 100%;
+        }
+        .logo {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 20px;
+            background: #667eea;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        p {
+            color: #666;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+        .button {
+            background: #667eea;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            margin: 10px;
+            transition: all 0.3s ease;
+        }
+        .button:hover {
+            background: #5a6fd8;
+            transform: translateY(-2px);
+        }
+        .instructions {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: left;
+        }
+        .instructions h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .instructions ol {
+            margin: 0;
+            padding-left: 20px;
+        }
+        .instructions li {
+            margin-bottom: 8px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">💪</div>
+        <h1>FitExplorer Mobile App</h1>
+        <p>Get the full mobile app experience with native features!</p>
+        
+        <div class="instructions">
+            <h3>How to access the mobile app:</h3>
+            <ol>
+                <li>Download <strong>Expo Go</strong> from your app store</li>
+                <li>Open Expo Go and tap <strong>"Scan QR Code"</strong></li>
+                <li>Scan the QR code from the main website</li>
+                <li>Or manually enter: <code>https://fitexplorer.se</code></li>
+            </ol>
+        </div>
+        
+        <a href="https://fitexplorer.se" class="button">Open Web Version</a>
+        <a href="https://expo.dev" class="button" style="background: #000;">Download Expo Go</a>
+    </div>
+    
+    <script>
+        // Try to detect if user is on mobile and redirect appropriately
+        if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+            // User is on mobile, show instructions for Expo Go
+            console.log('Mobile device detected');
+        }
+        
+        // Add some interactive elements
+        document.addEventListener('DOMContentLoaded', function() {
+            const buttons = document.querySelectorAll('.button');
+            buttons.forEach(button => {
+                button.addEventListener('click', function(e) {
+                    // Add a small animation
+                    this.style.transform = 'scale(0.95)';
+                    setTimeout(() => {
+                        this.style.transform = 'scale(1)';
+                    }, 150);
+                });
+            });
+        });
+    </script>
+</body>
+</html>
