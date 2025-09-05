@@ -537,7 +537,7 @@ const QRCodeSection = () => {
                   Scan with Camera
                 </p>
                 <p className="text-gray-500 text-xs mt-1">
-                  Auto-detects Expo Go or opens in browser
+                  Opens in Expo Go or browser automatically
                 </p>
                 {expoUrl && (
                   <p className="text-blue-500 text-xs mt-2 font-mono break-all">
