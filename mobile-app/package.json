@@ -1,0 +1,14 @@
+{
+  "name": "fitexplorer-mobile",
+  "version": "1.0.0",
+  "description": "FitExplorer Mobile App Setup",
+  "scripts": {
+    "setup": "node setup.js",
+    "generate-icons": "node generate-icons.js",
+    "setup-windows": "setup-capacitor.bat",
+    "setup-unix": "chmod +x setup-capacitor.sh && ./setup-capacitor.sh"
+  },
+  "devDependencies": {
+    "sharp": "^0.34.1"
+  }
+}
