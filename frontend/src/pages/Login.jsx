@@ -39,6 +39,30 @@ function Login() {
     window.dispatchEvent(new Event("auth-change"));
   }, []);
 
+  // Detect if we're in a mobile WebView (like Expo Go)
+  useEffect(() => {
+    const isMobileWebView = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) && 
+                           (window.ReactNativeWebView || window.webkit?.messageHandlers);
+    
+    if (isMobileWebView) {
+      console.log('Detected mobile WebView environment');
+      // Add mobile-specific styling or behavior
+      document.body.classList.add('mobile-webview');
+      
+      // Show mobile-specific Google login button
+      const mobileButton = document.querySelector('.mobile-webview-only');
+      if (mobileButton) {
+        mobileButton.style.display = 'flex';
+      }
+      
+      // Hide the regular Google login button if it's not working
+      const regularButton = document.querySelector('[aria-labelledby="button-label"]');
+      if (regularButton) {
+        regularButton.style.display = 'none';
+      }
+    }
+  }, []);
+
   // Check for success message from location state (e.g., after registration)
   useEffect(() => {
     if (location.state?.message) {
@@ -47,6 +71,61 @@ function Login() {
       window.history.replaceState({}, document.title);
     }
   }, [location]);
+
+  // Handle OAuth callback from URL parameters
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+    const error = urlParams.get('error');
+    
+    if (code) {
+      console.log('OAuth code received:', code);
+      // Handle the OAuth code here
+      handleOAuthCallback(code);
+    } else if (error) {
+      console.error('OAuth error:', error);
+      setError(`OAuth error: ${error}`);
+    }
+  }, []);
+
+  const handleOAuthCallback = async (code) => {
+    try {
+      setError("Processing Google login...");
+      const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+      
+      const response = await fetch(`${API_URL}/auth/google-oauth-callback`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ 
+          code: code,
+          redirect_uri: window.location.origin,
+          source: 'mobile'
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.access_token) {
+        console.log("Google OAuth callback successful");
+        localStorage.setItem("access_token", data.access_token);
+        localStorage.setItem("token", data.access_token);
+        localStorage.setItem("justLoggedIn", "true");
+
+        // Clear URL parameters
+        window.history.replaceState({}, document.title, window.location.pathname);
+        
+        // Navigate to home
+        navigate("/");
+      } else {
+        setError(`OAuth callback failed: ${data.detail || 'Please try again'}`);
+      }
+    } catch (error) {
+      console.error("OAuth callback error:", error);
+      setError(`OAuth callback error: ${error.message}`);
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -407,6 +486,32 @@ function Login() {
               locale="en"
               context="signin"
             />
+          </div>
+
+          {/* Mobile WebView Google Login Button */}
+          <div className="mt-4 flex justify-center mobile-webview-only" style={{ display: 'none' }}>
+            <button
+              type="button"
+              onClick={() => {
+                // For mobile WebView, try to open Google OAuth directly
+                const clientId = "917960701094-3448boe93v2n4bru03t0t71n6016lbao.apps.googleusercontent.com";
+                const redirectUri = window.location.origin;
+                const googleOAuthUrl = `https://accounts.google.com/oauth/authorize?` +
+                  `client_id=${clientId}&` +
+                  `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+                  `response_type=code&` +
+                  `scope=openid%20email%20profile&` +
+                  `access_type=offline&` +
+                  `prompt=consent`;
+                
+                console.log('Opening Google OAuth for mobile WebView:', googleOAuthUrl);
+                window.location.href = googleOAuthUrl;
+              }}
+              className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-lg flex items-center gap-2 transition-colors"
+            >
+              <FaGoogle className="w-5 h-5" />
+              Sign in with Google (Mobile)
+            </button>
           </div>
           
           {/* Fallback for mobile devices */}
