@@ -420,10 +420,10 @@ const QRCodeSection = () => {
     // Generate the correct URL for the mobile app
     try {
       if (typeof window !== 'undefined') {
-        // Point to the smart redirect page that handles Expo Go detection
-        const redirectUrl = `${window.location.origin}/expo-redirect.html?v=${Date.now()}`;
-        console.log('QR Code URL:', redirectUrl);
-        setExpoUrl(redirectUrl);
+        // Expo deep link URL - opens directly in Expo Go
+        const expoUrl = 'exp://exp.host/@chia94/FitExplorerApp';
+        console.log('QR Code URL:', expoUrl);
+        setExpoUrl(expoUrl);
       }
     } catch (error) {
       console.error('Error generating QR code URL:', error);
