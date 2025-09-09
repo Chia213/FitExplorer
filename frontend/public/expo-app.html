@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FitExplorer - Mobile App</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            max-width: 400px;
+            width: 100%;
+        }
+        .logo {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 20px;
+            background: #667eea;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        p {
+            color: #666;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+        .button {
+            background: #667eea;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            margin: 10px;
+            transition: all 0.3s ease;
+        }
+        .button:hover {
+            background: #5a6fd8;
+            transform: translateY(-2px);
+        }
+        .button.expo {
+            background: #000;
+        }
+        .instructions {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: left;
+        }
+        .instructions h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .instructions ol {
+            margin: 0;
+            padding-left: 20px;
+        }
+        .instructions li {
+            margin-bottom: 8px;
+            color: #666;
+        }
+        .loading {
+            color: #667eea;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">💪</div>
+        <h1>FitExplorer Mobile App</h1>
+        <p>Opening your fitness app...</p>
+        
+        <div class="loading" id="loading">
+            <p>Detecting Expo Go...</p>
+        </div>
+        
+        <div id="options" style="display: none;">
+            <div class="instructions">
+                <h3>Choose your experience:</h3>
+                <p>For the best mobile experience, we recommend using Expo Go:</p>
+                <ol>
+                    <li>Download <strong>Expo Go</strong> from your app store</li>
+                    <li>Open Expo Go and tap <strong>"Enter URL manually"</strong></li>
+                    <li>Enter: <code>https://www.fitexplorer.se</code></li>
+                    <li>Your FitExplorer app will load!</li>
+                </ol>
+            </div>
+            
+            <a href="https://www.fitexplorer.se" class="button expo">Open FitExplorer</a>
+            <a href="https://www.fitexplorer.se" class="button">Open in Browser</a>
+            <a href="https://expo.dev" class="button" style="background: #666;">Download Expo Go</a>
+        </div>
+    </div>
+    
+    <script>
+        // Detect mobile device
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+        const isAndroid = /Android/i.test(navigator.userAgent);
+        
+        // Try to open in Expo Go first
+        function tryOpenExpoGo() {
+            // Show loading
+            document.getElementById('loading').style.display = 'block';
+            
+            // Try to open Expo Go with a deep link
+            const expoUrl = 'exp://192.168.1.100:8081'; // This will be your local IP when running expo start
+            
+            if (isMobile) {
+                // Try to open Expo Go
+                const iframe = document.createElement('iframe');
+                iframe.style.display = 'none';
+                iframe.src = expoUrl;
+                document.body.appendChild(iframe);
+                
+                // Also try direct navigation
+                window.location.href = expoUrl;
+                
+                // If Expo Go is not installed, show options after a delay
+                setTimeout(() => {
+                    showOptions();
+                }, 3000);
+            } else {
+                // Desktop users get options immediately
+                showOptions();
+            }
+        }
+        
+        function showOptions() {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('options').style.display = 'block';
+        }
+        
+        // Auto-redirect on mobile
+        if (isMobile) {
+            tryOpenExpoGo();
+        } else {
+            // Desktop users get options immediately
+            showOptions();
+        }
+        
+        // Add click handlers
+        document.addEventListener('DOMContentLoaded', function() {
+            const buttons = document.querySelectorAll('.button');
+            buttons.forEach(button => {
+                button.addEventListener('click', function(e) {
+                    // Add a small animation
+                    this.style.transform = 'scale(0.95)';
+                    setTimeout(() => {
+                        this.style.transform = 'scale(1)';
+                    }, 150);
+                });
+            });
+        });
+    </script>
+</body>
+</html>
