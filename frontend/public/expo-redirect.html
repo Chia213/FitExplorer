@@ -104,19 +104,35 @@
         
         <div id="options" style="display: none;">
             <div class="instructions">
-                <h3>Choose your experience:</h3>
-                <p>For the best mobile experience, we recommend using Expo Go:</p>
-                <ol>
-                    <li>Download <strong>Expo Go</strong> from your app store</li>
-                    <li>Open Expo Go and tap <strong>"Enter URL manually"</strong></li>
-                    <li>Enter: <code>https://www.fitexplorer.se</code></li>
-                    <li>Your FitExplorer app will load in Expo Go!</li>
-                </ol>
+                <h3>Multiple Ways to Access FitExplorer:</h3>
+                
+                <div style="margin: 20px 0; padding: 15px; background: #e8f5e8; border-radius: 10px; border-left: 4px solid #4caf50;">
+                    <h4 style="margin: 0 0 10px 0; color: #2e7d32;">🚀 Method 1: Direct Link (Recommended)</h4>
+                    <p style="margin: 0 0 10px 0; color: #2e7d32;">Click the button below to open FitExplorer directly:</p>
+                    <a href="https://expo.dev/@chia94/FitExplorerApp" class="button" style="background: #4caf50; margin: 5px;">Open FitExplorer App</a>
+                </div>
+
+                <div style="margin: 20px 0; padding: 15px; background: #e3f2fd; border-radius: 10px; border-left: 4px solid #2196f3;">
+                    <h4 style="margin: 0 0 10px 0; color: #1565c0;">📱 Method 2: With Expo Go App</h4>
+                    <ol style="margin: 0; padding-left: 20px; color: #1565c0;">
+                        <li>Download <strong>Expo Go</strong> from your app store</li>
+                        <li>Open Expo Go and tap <strong>"Enter URL manually"</strong></li>
+                        <li>Enter: <code style="background: #bbdefb; padding: 2px 4px; border-radius: 3px;">https://expo.dev/@chia94/FitExplorerApp</code></li>
+                    </ol>
+                    <a href="https://expo.dev" class="button" style="background: #2196f3; margin: 10px 5px 5px 0;">Download Expo Go</a>
+                </div>
+
+                <div style="margin: 20px 0; padding: 15px; background: #f3e5f5; border-radius: 10px; border-left: 4px solid #9c27b0;">
+                    <h4 style="margin: 0 0 10px 0; color: #6a1b9a;">📷 Method 3: QR Code</h4>
+                    <p style="margin: 0; color: #6a1b9a;">Scan the QR code on the main website with your camera or QR scanner app</p>
+                </div>
+
+                <div style="margin: 20px 0; padding: 15px; background: #f5f5f5; border-radius: 10px; border-left: 4px solid #757575;">
+                    <h4 style="margin: 0 0 10px 0; color: #424242;">🌐 Method 4: Web Version</h4>
+                    <p style="margin: 0 0 10px 0; color: #424242;">Use the full web version in your mobile browser:</p>
+                    <a href="https://www.fitexplorer.se" class="button" style="background: #757575; margin: 5px;">Open Web Version</a>
+                </div>
             </div>
-            
-            <a href="https://www.fitexplorer.se" id="expoLink" class="button expo">Open FitExplorer</a>
-            <a href="https://www.fitexplorer.se" class="button">Open in Browser</a>
-            <a href="https://expo.dev" class="button" style="background: #666;">Download Expo Go</a>
         </div>
     </div>
     
@@ -126,19 +142,18 @@
         const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
         const isAndroid = /Android/i.test(navigator.userAgent);
         
-        // Expo Go deep link URLs
-        // Direct users to the website and provide Expo instructions
+        // Expo app URLs
+        const expoAppUrl = 'https://expo.dev/@chia94/FitExplorerApp';
         const websiteUrl = 'https://www.fitexplorer.se';
-        const expoInstructions = 'To use Expo Go: 1) Download Expo Go app 2) Open Expo Go 3) Tap "Enter URL manually" 4) Enter: https://www.fitexplorer.se';
         
         function tryOpenExpoGo() {
             // Show loading
             document.getElementById('loading').style.display = 'block';
             
-            // For mobile devices, redirect to website
+            // For mobile devices, try to open the Expo app directly
             if (isMobile) {
-                // Redirect to the website
-                window.location.href = websiteUrl;
+                // Try to open the Expo app URL first
+                window.location.href = expoAppUrl;
             } 
             // For desktop or other devices
             else {
@@ -172,14 +187,14 @@
                 });
             });
             
-            // Special handler for Expo Go button
-            const expoButton = document.getElementById('expoLink');
-            if (expoButton) {
-                expoButton.addEventListener('click', function(e) {
-                    // Button now redirects to website directly
-                    window.location.href = websiteUrl;
+            // Special handler for Expo app button
+            const expoButtons = document.querySelectorAll('a[href*="expo.dev"]');
+            expoButtons.forEach(button => {
+                button.addEventListener('click', function(e) {
+                    // Button redirects to Expo app URL
+                    window.location.href = expoAppUrl;
                 });
-            }
+            });
         });
     </script>
 </body>
