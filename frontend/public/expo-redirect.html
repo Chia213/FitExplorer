@@ -110,6 +110,7 @@
                     <li>Download <strong>Expo Go</strong> from your app store</li>
                     <li>Open Expo Go and tap <strong>"Enter URL manually"</strong></li>
                     <li>Enter: <code>https://www.fitexplorer.se</code></li>
+                    <li>Or scan this QR code again from within Expo Go</li>
                 </ol>
             </div>
             
@@ -126,9 +127,8 @@
         const isAndroid = /Android/i.test(navigator.userAgent);
         
         // Expo Go deep link URLs
-        // Try multiple URL formats to find the working one
-        const expoGoUrl = 'exp://exp.host/@chia94/FitExplorerApp';
-        const expoGoUrlFallback = 'exp://exp.host/@fitexplorer/fitexplorerapp';
+        // Use Expo Snack for cloud-based development server
+        const expoGoUrl = 'exp://exp.host/@snack/your-snack-id'; // Replace with your Snack URL
         const websiteUrl = 'https://www.fitexplorer.se';
         
         function tryOpenExpoGo() {

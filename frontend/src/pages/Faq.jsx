@@ -1,9 +1,28 @@
 import { useState } from "react";
-import { FaQuestionCircle, FaChevronDown, FaChevronUp, FaSearch } from "react-icons/fa";
-import { useTheme } from "../hooks/useTheme";
+import { Link } from "react-router-dom";
+import { Navigation } from "@/components/ui/navigation";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { 
+  HelpCircle, 
+  ChevronDown, 
+  ChevronUp, 
+  Search,
+  Mail,
+  MessageCircle,
+  BookOpen,
+  Settings,
+  BarChart3,
+  User,
+  Wrench,
+  CheckCircle,
+  Plus,
+  Minus
+} from "lucide-react";
 
 const FAQ = () => {
-  const { theme } = useTheme();
   const [activeIndex, setActiveIndex] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -11,6 +30,8 @@ const FAQ = () => {
   const faqData = [
     {
       category: "General",
+      icon: HelpCircle,
+      gradient: "from-blue-500 to-purple-600",
       questions: [
         {
           id: 1,
@@ -36,6 +57,8 @@ const FAQ = () => {
     },
     {
       category: "Workouts & Exercises",
+      icon: BookOpen,
+      gradient: "from-green-500 to-blue-600",
       questions: [
         {
           id: 5,
@@ -61,6 +84,8 @@ const FAQ = () => {
     },
     {
       category: "Progress Tracking",
+      icon: BarChart3,
+      gradient: "from-purple-500 to-pink-600",
       questions: [
         {
           id: 9,
@@ -81,6 +106,8 @@ const FAQ = () => {
     },
     {
       category: "Account & Settings",
+      icon: Settings,
+      gradient: "from-orange-500 to-red-600",
       questions: [
         {
           id: 12,
@@ -106,11 +133,13 @@ const FAQ = () => {
     },
     {
       category: "Technical Support",
+      icon: Wrench,
+      gradient: "from-cyan-500 to-blue-600",
       questions: [
         {
           id: 16,
           question: "I found a bug. How do I report it?",
-          answer: "We appreciate bug reports! Please contact us at support@fitexplorer.com with as much detail as possible about the issue you're experiencing, including steps to reproduce it."
+          answer: "We appreciate bug reports! Please contact us at fitexplorer.fitnessapp@gmail.com with as much detail as possible about the issue you're experiencing, including steps to reproduce it."
         },
         {
           id: 17,
@@ -120,7 +149,7 @@ const FAQ = () => {
         {
           id: 18,
           question: "How do I request a new feature?",
-          answer: "We love hearing from our users! Send your feature requests to feedback@fitexplorer.com. We regularly review suggestions and incorporate them into our development roadmap."
+          answer: "We love hearing from our users! Send your feature requests to fitexplorer.fitnessapp@gmail.com. We regularly review suggestions and incorporate them into our development roadmap."
         }
       ]
     }
@@ -144,87 +173,191 @@ const FAQ = () => {
   }).filter(category => category.questions.length > 0);
 
   return (
-    <div className={`min-h-screen p-6 ${theme === "dark" ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-800"}`}>
-      <div className="max-w-3xl mx-auto">
-        <h1 className="text-3xl font-bold mb-8 flex items-center">
-          <FaQuestionCircle className="mr-3 text-blue-500" /> Frequently Asked Questions
-        </h1>
-        
-        {/* Search bar */}
-        <div className="mb-8 relative">
-          <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" />
-          <input
-            type="text"
-            placeholder="Search questions..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 rounded-lg shadow-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-        </div>
-
-        {filteredFAQs.length === 0 ? (
-          <div className="text-center p-12 bg-white dark:bg-gray-800 rounded-lg shadow">
-            <FaQuestionCircle className="text-gray-400 text-5xl mx-auto mb-4" />
-            <h2 className="text-xl font-semibold mb-2">No results found</h2>
-            <p className="text-gray-500 dark:text-gray-400">
-              We couldn't find any FAQs matching your search. Try different keywords or browse all questions below.
+    <div className="min-h-screen bg-background">
+      <Navigation />
+      
+      {/* Hero Section */}
+      <section className="relative pt-32 pb-20 px-4">
+        <div className="container mx-auto max-w-6xl text-center">
+          <div className="space-y-6 animate-fade-in-up">
+            <Badge variant="outline" className="border-primary/50 text-primary mb-4">
+              Help & Support
+            </Badge>
+            <h1 className="text-5xl md:text-7xl font-bold hero-text mb-6">
+              Frequently Asked Questions
+            </h1>
+            <p className="text-xl md:text-2xl text-muted-foreground max-w-4xl mx-auto leading-relaxed">
+              Find answers to common questions about FitExplorer. 
+              Can't find what you're looking for? Contact us directly.
             </p>
           </div>
-        ) : (
-          filteredFAQs.map((category, categoryIndex) => (
-            <div key={categoryIndex} className="mb-8">
-              <h2 className="text-xl font-semibold mb-4 text-blue-600 dark:text-blue-400">
-                {category.category}
-              </h2>
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-                {category.questions.map((item, index) => {
-                  const currentIndex = `${categoryIndex}-${index}`;
-                  const isActive = activeIndex === currentIndex;
-                  
-                  return (
-                    <div key={item.id} className="border-b border-gray-200 dark:border-gray-700 last:border-0">
-                      <button
-                        onClick={() => toggleAccordion(currentIndex)}
-                        className="w-full px-6 py-4 text-left flex justify-between items-center hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors"
-                        aria-expanded={isActive}
-                      >
-                        <span className="font-medium text-gray-900 dark:text-white">{item.question}</span>
-                        {isActive ? (
-                          <FaChevronUp className="text-blue-500 flex-shrink-0" />
-                        ) : (
-                          <FaChevronDown className="text-gray-500 flex-shrink-0" />
-                        )}
-                      </button>
-                      
-                      <div
-                        className={`overflow-hidden transition-all duration-300 ${
-                          isActive ? "max-h-screen p-6" : "max-h-0"
-                        }`}
-                      >
-                        <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-                          {item.answer}
-                        </p>
+        </div>
+      </section>
+
+      {/* Search Section */}
+      <section className="py-16 px-4">
+        <div className="container mx-auto max-w-4xl">
+          <Card className="glass-card p-8">
+            <CardContent className="p-0">
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
+                <input
+                  type="text"
+                  placeholder="Search questions..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-12 pr-4 py-4 rounded-lg bg-background border border-glass-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </section>
+
+      {/* FAQ Content */}
+      <section className="py-20 px-4">
+        <div className="container mx-auto max-w-6xl">
+          {filteredFAQs.length === 0 ? (
+            <Card className="glass-card p-12 text-center">
+              <CardContent className="p-0">
+                <HelpCircle className="w-16 h-16 text-muted-foreground mx-auto mb-6" />
+                <h2 className="text-2xl font-semibold mb-4 text-foreground">No results found</h2>
+                <p className="text-muted-foreground mb-6">
+                  We couldn't find any FAQs matching your search. Try different keywords or browse all questions below.
+                </p>
+                <Button 
+                  onClick={() => setSearchQuery("")}
+                  variant="outline"
+                >
+                  Clear Search
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-8">
+              {filteredFAQs.map((category, categoryIndex) => (
+                <Card key={categoryIndex} className="feature-card">
+                  <CardContent className="p-0">
+                    <div className="p-8 border-b border-glass-border">
+                      <div className="flex items-center space-x-4">
+                        <div className={`w-12 h-12 rounded-xl bg-gradient-to-r ${category.gradient} flex items-center justify-center`}>
+                          <category.icon className="w-6 h-6 text-white" />
+                        </div>
+                        <h2 className="text-2xl font-semibold text-foreground">
+                          {category.category}
+                        </h2>
+                        <Badge variant="secondary" className="ml-auto">
+                          {category.questions.length} questions
+                        </Badge>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
+                    
+                    <div className="divide-y divide-glass-border">
+                      {category.questions.map((item, index) => {
+                        const currentIndex = `${categoryIndex}-${index}`;
+                        const isActive = activeIndex === currentIndex;
+                        
+                        return (
+                          <div key={item.id} className="p-6">
+                            <button
+                              onClick={() => toggleAccordion(currentIndex)}
+                              className="w-full text-left flex justify-between items-start space-x-4 group"
+                            >
+                              <h3 className="text-lg font-semibold text-foreground group-hover:text-primary transition-colors flex-1">
+                                {item.question}
+                              </h3>
+                              <div className="flex-shrink-0">
+                                {isActive ? (
+                                  <Minus className="w-5 h-5 text-primary" />
+                                ) : (
+                                  <Plus className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                                )}
+                              </div>
+                            </button>
+                            
+                            <div
+                              className={`overflow-hidden transition-all duration-300 ${
+                                isActive ? "max-h-screen mt-4" : "max-h-0"
+                              }`}
+                            >
+                              <div className="pt-4 border-t border-glass-border">
+                                <p className="text-muted-foreground leading-relaxed">
+                                  {item.answer}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
-          ))
-        )}
-        
-        {/* Contact section */}
-        <div className="mt-12 p-6 bg-blue-50 dark:bg-blue-900 rounded-lg shadow-sm">
-          <h2 className="text-xl font-semibold mb-2">Still have questions?</h2>
-          <p className="mb-4">If you couldn't find the answer to your question, feel free to contact us directly.</p>
-          <a
-            href="mailto:support@fitexplorer.com"
-            className="inline-block px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
-          >
-            Contact Support
-          </a>
+          )}
         </div>
-      </div>
+      </section>
+
+      {/* Contact Section */}
+      <section className="py-20 px-4">
+        <div className="container mx-auto max-w-4xl">
+          <Card className="glass-card p-12 text-center glow-effect">
+            <CardContent className="p-0">
+              <h2 className="text-3xl font-bold mb-6 hero-text">
+                Still Have Questions?
+              </h2>
+              <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
+                If you couldn't find the answer to your question, feel free to contact us directly. 
+                We're here to help!
+              </p>
+              <div className="flex flex-wrap justify-center gap-4">
+                <Button size="lg" asChild>
+                  <a href="mailto:fitexplorer.fitnessapp@gmail.com">
+                    <Mail className="w-4 h-4 mr-2" />
+                    Email Support
+                  </a>
+                </Button>
+                <Button variant="outline" size="lg" asChild>
+                  <Link to="/contact">
+                    <MessageCircle className="w-4 h-4 mr-2" />
+                    Contact Page
+                  </Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </section>
+
+      {/* Footer Navigation */}
+      <section className="py-16 px-4">
+        <div className="container mx-auto max-w-4xl text-center">
+          <h3 className="text-2xl font-semibold mb-6 text-foreground">Related Pages</h3>
+          <div className="flex flex-wrap justify-center gap-4">
+            <Button variant="outline" asChild>
+              <Link to="/about">About Us</Link>
+            </Button>
+            <Button variant="outline" asChild>
+              <Link to="/privacy-policy">Privacy Policy</Link>
+            </Button>
+            <Button variant="outline" asChild>
+              <Link to="/terms">Terms of Service</Link>
+            </Button>
+            <Button variant="outline" asChild>
+              <Link to="/contact">Contact</Link>
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="border-t border-border py-8 px-4">
+        <div className="container mx-auto max-w-6xl text-center">
+          <p className="text-muted-foreground">
+            © 2025 Chia Ranchber. All rights reserved.
+          </p>
+        </div>
+      </footer>
     </div>
   );
 };

@@ -1,6 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { FaLock, FaEye, FaEyeSlash, FaSave, FaTimes, FaUser, FaBell, FaLanguage, FaPalette, FaCrown, FaShieldAlt, FaClock, FaTachometerAlt, FaBolt, FaDumbbell, FaChartLine, FaFileAlt, FaDownload, FaUpload, FaExternalLinkAlt, FaChartBar, FaTrophy, FaCheckCircle } from "react-icons/fa";
+import { 
+  FaLock, FaEye, FaEyeSlash, FaSave, FaTimes, FaUser, FaBell, FaLanguage, 
+  FaPalette, FaCrown, FaShieldAlt, FaClock, FaTachometerAlt, FaBolt, 
+  FaDumbbell, FaChartLine, FaFileAlt, FaDownload, FaUpload, FaExternalLinkAlt, 
+  FaChartBar, FaTrophy, FaCheckCircle, FaCog, FaChevronRight, FaInfoCircle,
+  FaExclamationTriangle, FaSpinner, FaCheck, FaEdit, FaTrash, FaPlus
+} from "react-icons/fa";
 import { getTranslation } from "../utils/translations";
 import { useLanguage } from "../contexts/LanguageContext";
 import { useTheme, premiumThemes } from "../hooks/useTheme";
@@ -71,17 +77,36 @@ function Settings() {
   } = useTheme();
   
   const { i18n } = useTranslation();
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [username, setUsername] = useState("");
-  const [activeTab, setActiveTab] = useState(window.location.hash.substring(1) || "appearance");
+  
+  // Password state
+  const [passwordState, setPasswordState] = useState({
+    current: "",
+    new: "",
+    confirm: "",
+    showCurrent: false,
+    showNew: false,
+    showConfirm: false
+  });
+  
+  // UI state
+  const [uiState, setUiState] = useState({
+    error: null,
+    success: null,
+    isLoading: false,
+    isSavingPreferences: false,
+    showColorOptions: false,
+    emojiChanged: false,
+    showAdvanced: false
+  });
+  
+  // User data
+  const [userData, setUserData] = useState({
+    username: "",
+    activeTab: window.location.hash.substring(1) || "appearance",
+    emojiCategory: 'faces'
+  });
+  
+  // User preferences with better structure
   const [userPreferences, setUserPreferences] = useState({
     language: i18n.language,
     emailNotifications: true,
@@ -96,33 +121,56 @@ function Settings() {
     profileEmoji: "🏋️‍♂️",
     emojiAnimation: "lift",
     customEmojiSrc: null,
-    favoriteEmojis: ["🏋️‍♂️", "💪", "🏃‍♂️", "🏃‍♀️", "🚴", "🏊‍♂️"], // Default favorite emojis
-    favoriteAnimations: ["lift", "bounce", "pulse"] // Default favorite animations
+    favoriteEmojis: ["🏋️‍♂️", "💪", "🏃‍♂️", "🏃‍♀️", "🚴", "🏊‍♂️"],
+    favoriteAnimations: ["lift", "bounce", "pulse"],
+    // Workout preferences
+    defaultSets: 3,
+    defaultReps: 10,
+    defaultRestTime: 60,
+    weightUnit: 'kg',
+    distanceUnit: 'km',
+    temperatureUnit: 'celsius',
+    autoAdvanceSets: false,
+    restTimerNotifications: true,
+    autoSaveWorkouts: true,
+    // Privacy preferences
+    analyticsUsage: true,
+    workoutSharing: false,
+    socialFeatures: false
   });
-  const [isSavingPreferences, setIsSavingPreferences] = useState(false);
-  const [showColorOptions, setShowColorOptions] = useState(false);
-  const [emojiCategory, setEmojiCategory] = useState('faces');
-  const [emojiChanged, setEmojiChanged] = useState(false);
+
+  // Utility functions
+  const updatePasswordState = useCallback((field, value) => {
+    setPasswordState(prev => ({ ...prev, [field]: value }));
+  }, []);
+
+  const updateUiState = useCallback((field, value) => {
+    setUiState(prev => ({ ...prev, [field]: value }));
+  }, []);
+
+  const updateUserData = useCallback((field, value) => {
+    setUserData(prev => ({ ...prev, [field]: value }));
+  }, []);
+
+  const showMessage = useCallback((type, message, duration = 3000) => {
+    updateUiState(type, message);
+    setTimeout(() => updateUiState(type, null), duration);
+  }, [updateUiState]);
 
   // Replace the local applyTheme function with a wrapper that uses the useTheme hook's applyTheme
-  const handleApplyTheme = async (themeKey) => {
+  const handleApplyTheme = useCallback(async (themeKey) => {
     try {
-      const success = await applyTheme(themeKey); // Use the one from the hook
+      const success = await applyTheme(themeKey);
       if (success) {
-        setSuccess(`Applied ${premiumThemes[themeKey].name} theme`);
+        showMessage('success', `Applied ${premiumThemes[themeKey].name} theme`);
       } else {
-        setError("Failed to apply theme. It may not be unlocked yet.");
+        showMessage('error', "Failed to apply theme. It may not be unlocked yet.");
       }
-      setTimeout(() => {
-        setSuccess(null);
-        setError(null);
-      }, 3000);
     } catch (error) {
       console.error("Error applying theme:", error);
-      setError("There was an error applying the theme.");
-      setTimeout(() => setError(null), 3000);
+      showMessage('error', "There was an error applying the theme.");
     }
-  };
+  }, [applyTheme, showMessage]);
 
   // Check if user can access a specific theme
   const canAccessTheme = (themeKey) => {
@@ -182,31 +230,31 @@ function Settings() {
         });
 
         if (response.ok) {
-          const userData = await response.json();
-          if (userData.preferences) {
+          const userProfileData = await response.json();
+          if (userProfileData.preferences) {
             setUserPreferences({
-              emailNotifications: userData.preferences.email_notifications || false,
-              workoutReminders: userData.preferences.workout_reminders || false,
-              progressReports: userData.preferences.progress_reports || false,
-              language: userData.preferences.language || "en",
-              summary_frequency: userData.preferences.summary_frequency || "weekly",
-              summary_day: userData.preferences.summary_day || "monday",
-              useCustomCardColor: userData.preferences.use_custom_card_color || false,
-              cardColor: userData.preferences.card_color || "#f0f4ff",
-              showProfileEmoji: userData.preferences.show_profile_emoji || true,
-              profileEmoji: userData.preferences.profile_emoji || "🏋️‍♂️",
-              emojiAnimation: userData.preferences.emoji_animation || "lift",
-              enableAnimations: userData.preferences.enable_animations || false,
-              animationStyle: userData.preferences.animation_style || "subtle",
-              animationSpeed: userData.preferences.animation_speed || "medium",
-              customEmojiSrc: userData.preferences.custom_emoji_src || null,
-              favoriteEmojis: userData.preferences.favorite_emojis || ["🏋️‍♂️", "💪", "🏃‍♂️", "🏃‍♀️", "🚴", "🏊‍♂️"],
-              favoriteAnimations: userData.preferences.favorite_animations || ["lift", "bounce", "pulse"]
+              emailNotifications: userProfileData.preferences.email_notifications || false,
+              workoutReminders: userProfileData.preferences.workout_reminders || false,
+              progressReports: userProfileData.preferences.progress_reports || false,
+              language: userProfileData.preferences.language || "en",
+              summary_frequency: userProfileData.preferences.summary_frequency || "weekly",
+              summary_day: userProfileData.preferences.summary_day || "monday",
+              useCustomCardColor: userProfileData.preferences.use_custom_card_color || false,
+              cardColor: userProfileData.preferences.card_color || "#f0f4ff",
+              showProfileEmoji: userProfileData.preferences.show_profile_emoji || true,
+              profileEmoji: userProfileData.preferences.profile_emoji || "🏋️‍♂️",
+              emojiAnimation: userProfileData.preferences.emoji_animation || "lift",
+              enableAnimations: userProfileData.preferences.enable_animations || false,
+              animationStyle: userProfileData.preferences.animation_style || "subtle",
+              animationSpeed: userProfileData.preferences.animation_speed || "medium",
+              customEmojiSrc: userProfileData.preferences.custom_emoji_src || null,
+              favoriteEmojis: userProfileData.preferences.favorite_emojis || ["🏋️‍♂️", "💪", "🏃‍♂️", "🏃‍♀️", "🚴", "🏊‍♂️"],
+              favoriteAnimations: userProfileData.preferences.favorite_animations || ["lift", "bounce", "pulse"]
             });
           }
           // Add the username
-          if (userData.username) {
-            setUsername(userData.username);
+          if (userProfileData.username) {
+            updateUserData('username', userProfileData.username);
           }
         }
       } catch (err) {
@@ -217,29 +265,20 @@ function Settings() {
     fetchUserPreferences();
   }, [navigate]);
 
-  const handlePasswordChange = async (e) => {
+  const handlePasswordChange = useCallback(async (e) => {
     e.preventDefault();
-    setError(null);
-    setSuccess(null);
+    updateUiState('error', null);
+    updateUiState('success', null);
 
-    // Validation
-    if (newPassword.length < 8) {
-      setError(t("passwordTooShort"));
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      setError(t("passwordsDoNotMatch"));
-      return;
-    }
-
-    if (newPassword === currentPassword) {
-      setError(t("newPasswordMustBeDifferent"));
+    // Enhanced validation
+    const validation = validatePassword(passwordState.new, passwordState.confirm, passwordState.current);
+    if (!validation.isValid) {
+      updateUiState('error', validation.message);
       return;
     }
 
     try {
-      setIsLoading(true);
+      updateUiState('isLoading', true);
       const token = localStorage.getItem("token");
       const response = await fetch(`${backendURL}/change-password`, {
         method: "POST",
@@ -248,39 +287,52 @@ function Settings() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          old_password: currentPassword,
-          new_password: newPassword,
+          old_password: passwordState.current,
+          new_password: passwordState.new,
         }),
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        setSuccess(t("passwordChanged"));
-        setCurrentPassword("");
-        setNewPassword("");
-        setConfirmPassword("");
-        
-        // Reset password field visibility
-        setShowCurrentPassword(false);
-        setShowNewPassword(false);
-        setShowConfirmPassword(false);
-        
-        // Display a success message that automatically dismisses after 3 seconds
-        setTimeout(() => {
-          setSuccess(null);
-        }, 3000);
+        showMessage('success', t("passwordChanged"));
+        // Reset password state
+        setPasswordState({
+          current: "",
+          new: "",
+          confirm: "",
+          showCurrent: false,
+          showNew: false,
+          showConfirm: false
+        });
       } else {
-        setError(data.detail || t("failedToChangePassword"));
+        updateUiState('error', data.detail || t("failedToChangePassword"));
       }
     } catch (err) {
-      setError(t("somethingWentWrong"));
+      updateUiState('error', t("somethingWentWrong"));
     } finally {
-      setIsLoading(false);
+      updateUiState('isLoading', false);
     }
-  };
+  }, [passwordState, showMessage, t, updateUiState]);
 
-  const handlePreferenceChange = async (key, value) => {
+  // Enhanced password validation
+  const validatePassword = useCallback((newPassword, confirmPassword, currentPassword) => {
+    if (newPassword.length < 8) {
+      return { isValid: false, message: t("passwordTooShort") };
+    }
+    if (newPassword !== confirmPassword) {
+      return { isValid: false, message: t("passwordsDoNotMatch") };
+    }
+    if (newPassword === currentPassword) {
+      return { isValid: false, message: t("newPasswordMustBeDifferent") };
+    }
+    if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(newPassword)) {
+      return { isValid: false, message: "Password must contain uppercase, lowercase, and number" };
+    }
+    return { isValid: true };
+  }, [t]);
+
+  const handlePreferenceChange = useCallback(async (key, value) => {
     if (key === 'language') {
       const success = await changeLanguage(value);
       if (success) {
@@ -294,21 +346,40 @@ function Settings() {
     
     // Mark emoji settings as changed if related to emojis
     if (['showProfileEmoji', 'profileEmoji', 'emojiAnimation', 'customEmojiSrc'].includes(key)) {
-      setEmojiChanged(true);
+      updateUiState('emojiChanged', true);
     }
     
     setUserPreferences(prev => ({
       ...prev,
       [key]: value
     }));
-  };
+  }, [changeLanguage, updateUiState]);
 
-  const savePreferences = async (currentTab) => {
-    setIsSavingPreferences(true);
+  // Enhanced tab management
+  const tabs = useMemo(() => [
+    { id: "account", label: t("account"), icon: FaUser, description: "Manage your account information" },
+    { id: "appearance", label: t("appearance"), icon: FaPalette, description: "Customize the look and feel" },
+    { id: "workout", label: "Workout", icon: FaDumbbell, description: "Workout preferences and settings" },
+    { id: "notifications", label: t("notifications"), icon: FaBell, description: "Notification preferences" },
+    { id: "data", label: "Data", icon: FaChartLine, description: "Data management and export" },
+    { id: "privacy", label: "Privacy", icon: FaShieldAlt, description: "Privacy and data sharing" },
+    { id: "language", label: t("language"), icon: FaLanguage, description: "Language and localization" },
+    { id: "security", label: t("security"), icon: FaLock, description: "Security and password" },
+    { id: "sessions", label: t("sessions"), icon: FaShieldAlt, description: "Active sessions and devices" }
+  ], [t]);
+
+  const handleTabChange = useCallback((tabId) => {
+    updateUserData('activeTab', tabId);
+    // Update URL hash
+    window.history.replaceState({}, '', `#${tabId}`);
+  }, [updateUserData]);
+
+  const savePreferences = useCallback(async (currentTab) => {
+    updateUiState('isSavingPreferences', true);
     
     // Reset emoji changed flag when saving
     if (currentTab === "appearance") {
-      setEmojiChanged(false);
+      updateUiState('emojiChanged', false);
     }
     
     try {
@@ -468,9 +539,79 @@ function Settings() {
       console.error("Error saving preferences:", error);
       toast.error(error.message || t("errorSavingPreferences"));
     } finally {
-      setIsSavingPreferences(false);
+      updateUiState('isSavingPreferences', false);
     }
-  };
+  }, [userPreferences, updateUiState, t]);
+
+  // Enhanced UI components
+  const AlertMessage = useCallback(({ type, message, onClose }) => {
+    if (!message) return null;
+    
+    const styles = {
+      error: "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-800 dark:text-red-200",
+      success: "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-800 dark:text-green-200",
+      warning: "bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800 text-yellow-800 dark:text-yellow-200",
+      info: "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-200"
+    };
+
+    const icons = {
+      error: FaExclamationTriangle,
+      success: FaCheck,
+      warning: FaExclamationTriangle,
+      info: FaInfoCircle
+    };
+
+    const Icon = icons[type] || FaInfoCircle;
+
+    return (
+      <div className={`mb-6 ${styles[type]} border px-4 py-3 rounded-lg flex justify-between items-center animate-in slide-in-from-top-2 duration-300`}>
+        <div className="flex items-center space-x-3">
+          <Icon className="w-5 h-5 flex-shrink-0" />
+          <span>{message}</span>
+        </div>
+        <button 
+          onClick={onClose} 
+          className="text-current hover:opacity-70 transition-opacity"
+        >
+          <FaTimes className="w-4 h-4" />
+        </button>
+      </div>
+    );
+  }, []);
+
+  const LoadingSpinner = useCallback(({ size = "sm" }) => {
+    const sizes = {
+      sm: "w-4 h-4",
+      md: "w-6 h-6",
+      lg: "w-8 h-8"
+    };
+    
+    return (
+      <FaSpinner className={`${sizes[size]} animate-spin`} />
+    );
+  }, []);
+
+  const SectionCard = useCallback(({ title, description, children, className = "" }) => (
+    <div className={`bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 ${className}`}>
+      <div className="p-6">
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">{title}</h2>
+          <p className="text-slate-600 dark:text-slate-400">{description}</p>
+        </div>
+        {children}
+      </div>
+    </div>
+  ), []);
+
+  const SettingCard = useCallback(({ title, description, children, className = "" }) => (
+    <div className={`bg-slate-50 dark:bg-slate-700/50 rounded-lg p-6 ${className}`}>
+      <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">{title}</h3>
+      {description && (
+        <p className="text-slate-600 dark:text-slate-400 mb-4">{description}</p>
+      )}
+      {children}
+    </div>
+  ), []);
 
   // Toggle custom card color
   const toggleCustomCardColor = (checked) => {
@@ -492,21 +633,6 @@ function Settings() {
     }));
   };
 
-  const renderTabButton = (tabName, label, icon) => {
-    return (
-      <button
-        onClick={() => setActiveTab(tabName)}
-        className={`flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2 lg:py-3 rounded-lg transition-all duration-200 whitespace-nowrap ${
-          activeTab === tabName 
-            ? "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800" 
-            : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200"
-        }`}
-      >
-        {icon}
-        <span className="font-medium text-sm lg:text-base">{label}</span>
-      </button>
-    );
-  };
 
   // Apply animation settings to the body element
   const applyAnimationSettings = (enabled, style, speed) => {
@@ -601,7 +727,7 @@ function Settings() {
   ]);
 
   // Get display username with fallback
-  const displayUsername = username || "User";
+  const displayUsername = userData.username || "User";
 
   const getEmojisForCategory = () => {
     // For standard Unicode emojis
@@ -625,116 +751,142 @@ function Settings() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
+        {/* Enhanced Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">
-            {t("settings")}
-          </h1>
-          <p className="mt-2 text-slate-600 dark:text-slate-400">
-            Manage your account settings and preferences
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-slate-900 dark:text-white flex items-center space-x-3">
+                <FaCog className="w-8 h-8 text-blue-600" />
+                <span>{t("settings")}</span>
+              </h1>
+              <p className="mt-2 text-slate-600 dark:text-slate-400">
+                Manage your account settings and preferences
+              </p>
+            </div>
+            <div className="flex items-center space-x-2 text-sm text-slate-500 dark:text-slate-400">
+              <FaUser className="w-4 h-4" />
+              <span>{userData.username || "User"}</span>
+            </div>
+          </div>
         </div>
 
-        {/* Alert Messages */}
-        {error && (
-          <div className="mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200 px-4 py-3 rounded-lg flex justify-between items-center">
-            <span>{error}</span>
-            <button onClick={() => setError(null)} className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-200">
-              <FaTimes />
-            </button>
-          </div>
-        )}
-
-        {success && (
-          <div className="mb-6 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-200 px-4 py-3 rounded-lg flex justify-between items-center">
-            <span>{success}</span>
-            <button onClick={() => setSuccess(null)} className="text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-200">
-              <FaTimes />
-            </button>
-          </div>
-        )}
+        {/* Enhanced Alert Messages */}
+        <AlertMessage 
+          type="error" 
+          message={uiState.error} 
+          onClose={() => updateUiState('error', null)} 
+        />
+        <AlertMessage 
+          type="success" 
+          message={uiState.success} 
+          onClose={() => updateUiState('success', null)} 
+        />
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Sidebar Navigation */}
+          {/* Enhanced Sidebar Navigation */}
           <div className="lg:col-span-1">
             {/* Mobile Navigation - Horizontal Scroll */}
             <div className="lg:hidden mb-6">
               <nav className="flex space-x-2 overflow-x-auto pb-2 scrollbar-hide">
-                {renderTabButton("account", t("account"), <FaUser className="w-4 h-4" />)}
-                {renderTabButton("appearance", t("appearance"), <FaPalette className="w-4 h-4" />)}
-                {renderTabButton("workout", "Workout", <FaDumbbell className="w-4 h-4" />)}
-                {renderTabButton("notifications", t("notifications"), <FaBell className="w-4 h-4" />)}
-                {renderTabButton("data", "Data", <FaChartLine className="w-4 h-4" />)}
-                {renderTabButton("privacy", "Privacy", <FaShieldAlt className="w-4 h-4" />)}
-                {renderTabButton("language", t("language"), <FaLanguage className="w-4 h-4" />)}
-                {renderTabButton("security", t("security"), <FaLock className="w-4 h-4" />)}
-                {renderTabButton("sessions", t("sessions"), <FaShieldAlt className="w-4 h-4" />)}
+                {tabs.map((tab) => {
+                  const Icon = tab.icon;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => handleTabChange(tab.id)}
+                      className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 whitespace-nowrap ${
+                        userData.activeTab === tab.id 
+                          ? "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800" 
+                          : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200"
+                      }`}
+                    >
+                      <Icon className="w-4 h-4" />
+                      <span className="font-medium text-sm">{tab.label}</span>
+                    </button>
+                  );
+                })}
               </nav>
             </div>
             
             {/* Desktop Navigation - Vertical */}
             <nav className="hidden lg:block space-y-2">
-              {renderTabButton("account", t("account"), <FaUser className="w-4 h-4" />)}
-              {renderTabButton("appearance", t("appearance"), <FaPalette className="w-4 h-4" />)}
-              {renderTabButton("workout", "Workout", <FaDumbbell className="w-4 h-4" />)}
-              {renderTabButton("notifications", t("notifications"), <FaBell className="w-4 h-4" />)}
-              {renderTabButton("data", "Data", <FaChartLine className="w-4 h-4" />)}
-              {renderTabButton("privacy", "Privacy", <FaShieldAlt className="w-4 h-4" />)}
-              {renderTabButton("language", t("language"), <FaLanguage className="w-4 h-4" />)}
-              {renderTabButton("security", t("security"), <FaLock className="w-4 h-4" />)}
-              {renderTabButton("sessions", t("sessions"), <FaShieldAlt className="w-4 h-4" />)}
+              {tabs.map((tab) => {
+                const Icon = tab.icon;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => handleTabChange(tab.id)}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 group ${
+                      userData.activeTab === tab.id 
+                        ? "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800" 
+                        : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200"
+                    }`}
+                  >
+                    <Icon className="w-5 h-5 flex-shrink-0" />
+                    <div className="flex-1 text-left">
+                      <div className="font-medium">{tab.label}</div>
+                      <div className="text-xs opacity-75">{tab.description}</div>
+                    </div>
+                    <FaChevronRight className={`w-4 h-4 transition-transform ${
+                      userData.activeTab === tab.id ? 'rotate-90' : 'group-hover:translate-x-1'
+                    }`} />
+                  </button>
+                );
+              })}
             </nav>
           </div>
 
           {/* Main Content */}
           <div className="lg:col-span-3">
-            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
             {/* Account Settings */}
-            {activeTab === "account" && (
-              <div className="p-6">
-                <div className="mb-8">
-                  <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">{t("account")}</h2>
-                  <p className="text-slate-600 dark:text-slate-400">Manage your account information and profile settings</p>
-                </div>
-
+            {userData.activeTab === "account" && (
+              <SectionCard 
+                title={t("account")} 
+                description="Manage your account information and profile settings"
+              >
                 {/* Username Section */}
-                <div className="mb-8">
-                  <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-6">
-                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">{t("username")}</h3>
-                    <div className="flex flex-col sm:flex-row gap-4">
-                      <div className="flex-1">
-                        <input
-                          type="text"
-                          value={username}
-                          onChange={(e) => setUsername(e.target.value)}
-                          className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400"
-                          placeholder={t("enterUsername")}
-                        />
-                      </div>
-                      <button
-                        className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800"
-                        onClick={() => savePreferences("account")}
-                      >
-                        {t("save")}
-                      </button>
+                <SettingCard title={t("username")} description="Update your display name">
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <div className="flex-1">
+                      <input
+                        type="text"
+                        value={userData.username}
+                        onChange={(e) => updateUserData('username', e.target.value)}
+                        className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400"
+                        placeholder={t("enterUsername")}
+                      />
                     </div>
+                    <button
+                      className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                      onClick={() => savePreferences("account")}
+                      disabled={uiState.isSavingPreferences}
+                    >
+                      {uiState.isSavingPreferences ? (
+                        <LoadingSpinner size="sm" />
+                      ) : (
+                        <FaSave className="w-4 h-4" />
+                      )}
+                      <span>{uiState.isSavingPreferences ? t("saving") : t("save")}</span>
+                    </button>
                   </div>
-                </div>
+                </SettingCard>
                 
                 {/* Emoji Preferences Section */}
-                <div id="emoji-preferences-section" className="mb-8">
-                  <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-6">
-                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">{t("profileEmoji")}</h3>
-                    
-                    <div className="mb-6">
-                      <label className="flex items-center space-x-3 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={userPreferences.showProfileEmoji}
-                          onChange={(e) => handlePreferenceChange("showProfileEmoji", e.target.checked)}
-                          className="w-5 h-5 text-blue-600 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 rounded focus:ring-blue-500 focus:ring-2"
-                        />
-                        <span className="text-slate-700 dark:text-slate-300 font-medium">{t("showProfileEmoji")}</span>
+                <SettingCard 
+                  title={t("profileEmoji")} 
+                  description="Customize your profile emoji and animations"
+                >
+                  <div className="space-y-6">
+                    <div className="flex items-center space-x-3">
+                      <input
+                        type="checkbox"
+                        id="showProfileEmoji"
+                        checked={userPreferences.showProfileEmoji}
+                        onChange={(e) => handlePreferenceChange("showProfileEmoji", e.target.checked)}
+                        className="w-5 h-5 text-blue-600 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 rounded focus:ring-blue-500 focus:ring-2"
+                      />
+                      <label htmlFor="showProfileEmoji" className="text-slate-700 dark:text-slate-300 font-medium cursor-pointer">
+                        {t("showProfileEmoji")}
                       </label>
                     </div>
                     
@@ -747,13 +899,34 @@ function Settings() {
                               <button
                                 key={index}
                                 onClick={() => handlePreferenceChange("profileEmoji", emoji)}
-                                className={`text-2xl p-3 border-2 rounded-lg transition-all duration-200 hover:scale-110 ${
+                                className={`text-2xl p-3 border-2 rounded-lg transition-all duration-200 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                                   userPreferences.profileEmoji === emoji 
                                     ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-200 dark:ring-blue-800' 
                                     : 'border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500 bg-white dark:bg-slate-800'
                                 }`}
+                                aria-label={`Select emoji ${emoji}`}
                               >
                                 {emoji}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        
+                        {/* Animation Settings */}
+                        <div>
+                          <label className="block text-slate-700 dark:text-slate-300 font-medium mb-3">Emoji Animation</label>
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                            {["lift", "bounce", "pulse", "wave"].map(animation => (
+                              <button
+                                key={animation}
+                                onClick={() => handlePreferenceChange("emojiAnimation", animation)}
+                                className={`px-3 py-2 text-sm rounded-lg border-2 transition-all duration-200 ${
+                                  userPreferences.emojiAnimation === animation
+                                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
+                                    : 'border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300'
+                                }`}
+                              >
+                                {animation.charAt(0).toUpperCase() + animation.slice(1)}
                               </button>
                             ))}
                           </div>
@@ -761,73 +934,60 @@ function Settings() {
                       </div>
                     )}
                   </div>
-                </div>
-              </div>
+                </SettingCard>
+              </SectionCard>
             )}
 
             {/* Appearance Settings */}
-            {activeTab === "appearance" && (
-              <div className="p-6">
-                <div className="mb-8">
-                  <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">{t("appearance")}</h2>
-                  <p className="text-slate-600 dark:text-slate-400">Customize the look and feel of your FitExplorer experience</p>
-                </div>
+            {userData.activeTab === "appearance" && (
+              <SectionCard 
+                title={t("appearance")} 
+                description="Customize the look and feel of your FitExplorer experience"
+              >
                 
                 {/* Theme Toggle */}
-                <div className="mb-8">
-                  <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-6">
-                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">{t("theme")}</h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <SettingCard title={t("theme")} description="Choose your preferred color scheme">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    {[
+                      { mode: 'light', icon: '☀️', label: t("light") },
+                      { mode: 'dark', icon: '🌙', label: t("dark") },
+                      { mode: 'system', icon: '💻', label: t("system") }
+                    ].map(({ mode, icon, label }) => (
                       <button
-                        className={`p-4 rounded-lg border-2 transition-all duration-200 flex items-center justify-center space-x-3 ${
-                          theme === 'light' 
+                        key={mode}
+                        className={`p-4 rounded-lg border-2 transition-all duration-200 flex items-center justify-center space-x-3 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                          theme === mode 
                             ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-200 dark:ring-blue-800' 
                             : 'border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500 bg-white dark:bg-slate-800'
                         }`}
-                        onClick={() => setThemeMode('light')}
+                        onClick={() => setThemeMode(mode)}
+                        aria-pressed={theme === mode}
                       >
-                        <span className="text-2xl">☀️</span>
-                        <span className="font-medium text-slate-700 dark:text-slate-300">{t("light")}</span>
+                        <span className="text-2xl">{icon}</span>
+                        <span className="font-medium text-slate-700 dark:text-slate-300">{label}</span>
                       </button>
-                      <button
-                        className={`p-4 rounded-lg border-2 transition-all duration-200 flex items-center justify-center space-x-3 ${
-                          theme === 'dark' 
-                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-200 dark:ring-blue-800' 
-                            : 'border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500 bg-white dark:bg-slate-800'
-                        }`}
-                        onClick={() => setThemeMode('dark')}
-                      >
-                        <span className="text-2xl">🌙</span>
-                        <span className="font-medium text-slate-700 dark:text-slate-300">{t("dark")}</span>
-                      </button>
-                      <button
-                        className={`p-4 rounded-lg border-2 transition-all duration-200 flex items-center justify-center space-x-3 ${
-                          theme === 'system' 
-                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-200 dark:ring-blue-800' 
-                            : 'border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500 bg-white dark:bg-slate-800'
-                        }`}
-                        onClick={() => setThemeMode('system')}
-                      >
-                        <span className="text-2xl">💻</span>
-                        <span className="font-medium text-slate-700 dark:text-slate-300">{t("system")}</span>
-                      </button>
-                    </div>
+                    ))}
                   </div>
-                </div>
+                </SettingCard>
                 
                 {/* Card Color Customization */}
-                <div className="mb-8">
-                  <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-6">
-                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">{t("cardColor")}</h3>
-                    <label className="flex items-center space-x-3 cursor-pointer mb-6">
+                <SettingCard 
+                  title={t("cardColor")} 
+                  description="Customize the color scheme for your cards and interface elements"
+                >
+                  <div className="space-y-6">
+                    <div className="flex items-center space-x-3">
                       <input
                         type="checkbox"
+                        id="useCustomCardColor"
                         checked={userPreferences.useCustomCardColor}
                         onChange={(e) => toggleCustomCardColor(e.target.checked)}
                         className="w-5 h-5 text-blue-600 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 rounded focus:ring-blue-500 focus:ring-2"
                       />
-                      <span className="text-slate-700 dark:text-slate-300 font-medium">{t("useCustomCardColor")}</span>
-                    </label>
+                      <label htmlFor="useCustomCardColor" className="text-slate-700 dark:text-slate-300 font-medium cursor-pointer">
+                        {t("useCustomCardColor")}
+                      </label>
+                    </div>
                     
                     {userPreferences.useCustomCardColor && (
                       <div className="space-y-4">
@@ -835,13 +995,14 @@ function Settings() {
                           {['#3b82f6', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6', '#ec4899', '#f97316', '#06b6d4'].map(color => (
                             <button
                               key={color}
-                              className={`h-12 rounded-lg border-2 transition-all duration-200 hover:scale-110 ${
+                              className={`h-12 rounded-lg border-2 transition-all duration-200 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                                 userPreferences.cardColor === color 
                                   ? 'border-slate-900 dark:border-white ring-2 ring-slate-300 dark:ring-slate-600' 
                                   : 'border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500'
                               }`}
                               style={{ backgroundColor: color }}
                               onClick={() => handleColorChange(color)}
+                              aria-label={`Select color ${color}`}
                             />
                           ))}
                         </div>
@@ -850,28 +1011,34 @@ function Settings() {
                             type="color"
                             value={userPreferences.cardColor}
                             onChange={(e) => handleColorChange(e.target.value)}
-                            className="w-12 h-12 cursor-pointer rounded-lg border-2 border-slate-200 dark:border-slate-600"
+                            className="w-12 h-12 cursor-pointer rounded-lg border-2 border-slate-200 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            aria-label="Custom color picker"
                           />
                           <span className="text-slate-700 dark:text-slate-300 font-medium">{t("custom")}</span>
                         </div>
                       </div>
                     )}
                   </div>
-                </div>
+                </SettingCard>
                 
                 {/* Animation Settings */}
-                <div className="mb-8">
-                  <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-6">
-                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">{t("animations")}</h3>
-                    <label className="flex items-center space-x-3 cursor-pointer mb-6">
+                <SettingCard 
+                  title={t("animations")} 
+                  description="Customize animation preferences for a more dynamic experience"
+                >
+                  <div className="space-y-6">
+                    <div className="flex items-center space-x-3">
                       <input
                         type="checkbox"
+                        id="enableAnimations"
                         checked={userPreferences.enableAnimations}
                         onChange={(e) => handlePreferenceChange("enableAnimations", e.target.checked)}
                         className="w-5 h-5 text-blue-600 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 rounded focus:ring-blue-500 focus:ring-2"
                       />
-                      <span className="text-slate-700 dark:text-slate-300 font-medium">{t("enableAnimations")}</span>
-                    </label>
+                      <label htmlFor="enableAnimations" className="text-slate-700 dark:text-slate-300 font-medium cursor-pointer">
+                        {t("enableAnimations")}
+                      </label>
+                    </div>
                     
                     {userPreferences.enableAnimations && (
                       <div className="space-y-6">
@@ -882,7 +1049,7 @@ function Settings() {
                               <button
                                 key={style}
                                 onClick={() => handlePreferenceChange("animationStyle", style)}
-                                className={`px-4 py-3 rounded-lg border-2 transition-all duration-200 ${
+                                className={`px-4 py-3 rounded-lg border-2 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                                   userPreferences.animationStyle === style
                                     ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-200 dark:ring-blue-800 text-blue-700 dark:text-blue-300'
                                     : 'border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300'
@@ -900,7 +1067,7 @@ function Settings() {
                               <button
                                 key={speed}
                                 onClick={() => handlePreferenceChange("animationSpeed", speed)}
-                                className={`px-4 py-3 rounded-lg border-2 transition-all duration-200 ${
+                                className={`px-4 py-3 rounded-lg border-2 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                                   userPreferences.animationSpeed === speed
                                     ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-200 dark:ring-blue-800 text-blue-700 dark:text-blue-300'
                                     : 'border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300'
@@ -914,10 +1081,29 @@ function Settings() {
                       </div>
                     )}
                   </div>
+                </SettingCard>
+
+                {/* Save Button */}
+                <div className="flex justify-end pt-6 border-t border-slate-200 dark:border-slate-700">
+                  <button
+                    className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    onClick={() => savePreferences("appearance")}
+                    disabled={uiState.isSavingPreferences}
+                  >
+                    {uiState.isSavingPreferences ? (
+                      <LoadingSpinner size="sm" />
+                    ) : (
+                      <FaSave className="w-4 h-4" />
+                    )}
+                    <span>{uiState.isSavingPreferences ? t("saving") : t("saveChanges")}</span>
+                  </button>
                 </div>
-                
+
                 {/* Premium Theme Showcase */}
-                <div className="mb-8">
+                <SettingCard 
+                  title="Premium Themes" 
+                  description="Unlock exclusive fitness-focused themes"
+                >
                   <div className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-lg p-6 border border-purple-200 dark:border-purple-800">
                     <div className="flex items-center justify-between mb-6">
                       <div>
@@ -1012,24 +1198,24 @@ function Settings() {
                       </p>
                     </div>
                   </div>
-                </div>
+                </SettingCard>
 
                 {/* Button to Save Appearance Settings */}
-                <div className="flex justify-end">
+                <div className="flex justify-end pt-6 border-t border-slate-200 dark:border-slate-700">
                   <button
                     className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 flex items-center space-x-2"
                     onClick={() => savePreferences("appearance")}
-                    disabled={isSavingPreferences}
+                    disabled={uiState.isSavingPreferences}
                   >
                     <FaSave className="w-4 h-4" />
-                    <span>{isSavingPreferences ? t("saving") : t("saveChanges")}</span>
+                    <span>{uiState.isSavingPreferences ? t("saving") : t("saveChanges")}</span>
                   </button>
                 </div>
-              </div>
+              </SectionCard>
             )}
 
             {/* Workout Preferences */}
-            {activeTab === "workout" && (
+            {userData.activeTab === "workout" && (
               <div className="p-6">
                 <div className="mb-8">
                   <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Workout Preferences</h2>
@@ -1200,25 +1386,25 @@ function Settings() {
                   <button
                     className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 flex items-center space-x-2"
                     onClick={() => savePreferences("workout")}
-                    disabled={isSavingPreferences}
+                    disabled={uiState.isSavingPreferences}
                   >
                     <FaSave className="w-4 h-4" />
-                    <span>{isSavingPreferences ? t("saving") : t("saveChanges")}</span>
+                    <span>{uiState.isSavingPreferences ? t("saving") : t("saveChanges")}</span>
                   </button>
                 </div>
               </div>
             )}
 
             {/* Security Settings */}
-            {activeTab === "security" && (
-              <div className="p-6">
-                <div className="mb-8">
-                  <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">{t("security")}</h2>
-                  <p className="text-slate-600 dark:text-slate-400">Manage your password and security settings</p>
-                </div>
-
-                <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-6">
-                  <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-6">{t("changePassword")}</h3>
+            {userData.activeTab === "security" && (
+              <SectionCard 
+                title={t("security")} 
+                description="Manage your password and security settings"
+              >
+                <SettingCard 
+                  title={t("changePassword")} 
+                  description="Update your account password for better security"
+                >
                   <form onSubmit={handlePasswordChange} className="space-y-6">
                     <div>
                       <label className="block text-slate-700 dark:text-slate-300 font-medium mb-2">
@@ -1226,18 +1412,18 @@ function Settings() {
                       </label>
                       <div className="relative">
                         <input
-                          type={showCurrentPassword ? "text" : "password"}
-                          value={currentPassword}
-                          onChange={(e) => setCurrentPassword(e.target.value)}
+                          type={passwordState.showCurrent ? "text" : "password"}
+                          value={passwordState.current}
+                          onChange={(e) => updatePasswordState('current', e.target.value)}
                           className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400 pr-12"
                           placeholder={t("enterCurrentPassword")}
                         />
                         <button
                           type="button"
                           className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
-                          onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                          onClick={() => updatePasswordState('showCurrent', !passwordState.showCurrent)}
                         >
-                          {showCurrentPassword ? <FaEyeSlash className="w-5 h-5" /> : <FaEye className="w-5 h-5" />}
+                          {passwordState.showCurrent ? <FaEyeSlash className="w-5 h-5" /> : <FaEye className="w-5 h-5" />}
                         </button>
                       </div>
                     </div>
@@ -1247,18 +1433,18 @@ function Settings() {
                       </label>
                       <div className="relative">
                         <input
-                          type={showNewPassword ? "text" : "password"}
-                          value={newPassword}
-                          onChange={(e) => setNewPassword(e.target.value)}
+                          type={passwordState.showNew ? "text" : "password"}
+                          value={passwordState.new}
+                          onChange={(e) => updatePasswordState('new', e.target.value)}
                           className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400 pr-12"
                           placeholder={t("enterNewPassword")}
                         />
                         <button
                           type="button"
                           className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
-                          onClick={() => setShowNewPassword(!showNewPassword)}
+                          onClick={() => updatePasswordState('showNew', !passwordState.showNew)}
                         >
-                          {showNewPassword ? <FaEyeSlash className="w-5 h-5" /> : <FaEye className="w-5 h-5" />}
+                          {passwordState.showNew ? <FaEyeSlash className="w-5 h-5" /> : <FaEye className="w-5 h-5" />}
                         </button>
                       </div>
                     </div>
@@ -1268,18 +1454,18 @@ function Settings() {
                       </label>
                       <div className="relative">
                         <input
-                          type={showConfirmPassword ? "text" : "password"}
-                          value={confirmPassword}
-                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          type={passwordState.showConfirm ? "text" : "password"}
+                          value={passwordState.confirm}
+                          onChange={(e) => updatePasswordState('confirm', e.target.value)}
                           className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400 pr-12"
                           placeholder={t("confirmNewPassword")}
                         />
                         <button
                           type="button"
                           className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
-                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          onClick={() => updatePasswordState('showConfirm', !passwordState.showConfirm)}
                         >
-                          {showConfirmPassword ? <FaEyeSlash className="w-5 h-5" /> : <FaEye className="w-5 h-5" />}
+                          {passwordState.showConfirm ? <FaEyeSlash className="w-5 h-5" /> : <FaEye className="w-5 h-5" />}
                         </button>
                       </div>
                     </div>
@@ -1287,19 +1473,19 @@ function Settings() {
                       <button
                         type="submit"
                         className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 flex items-center space-x-2"
-                        disabled={isLoading}
+                        disabled={uiState.isLoading}
                       >
                         <FaLock className="w-4 h-4" />
-                        <span>{isLoading ? t("changing") : t("changePassword")}</span>
+                        <span>{uiState.isLoading ? t("changing") : t("changePassword")}</span>
                       </button>
                     </div>
                   </form>
-                </div>
-              </div>
+                </SettingCard>
+              </SectionCard>
             )}
             
             {/* Notification Settings */}
-            {activeTab === "notifications" && (
+            {userData.activeTab === "notifications" && (
               <div className="p-6">
                 <div className="mb-8">
                   <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">{t("notifications")}</h2>
@@ -1402,10 +1588,10 @@ function Settings() {
                     <button
                       className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 flex items-center space-x-2"
                       onClick={() => savePreferences("notifications")}
-                      disabled={isSavingPreferences}
+                      disabled={uiState.isSavingPreferences}
                     >
                       <FaSave className="w-4 h-4" />
-                      <span>{isSavingPreferences ? t("saving") : t("saveChanges")}</span>
+                      <span>{uiState.isSavingPreferences ? t("saving") : t("saveChanges")}</span>
                     </button>
                   </div>
                 </div>
@@ -1413,7 +1599,7 @@ function Settings() {
                         )}
 
             {/* Data Management */}
-            {activeTab === "data" && (
+            {userData.activeTab === "data" && (
               <div className="p-6">
                 <div className="mb-8">
                   <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Data Management</h2>
@@ -1539,7 +1725,7 @@ function Settings() {
             )}
 
             {/* Privacy Settings */}
-            {activeTab === "privacy" && (
+            {userData.activeTab === "privacy" && (
               <div className="p-6">
                 <div className="mb-8">
                   <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Privacy & Data</h2>
@@ -1631,7 +1817,7 @@ function Settings() {
             )}
 
             {/* Language Settings */}
-            {activeTab === "language" && (
+            {userData.activeTab === "language" && (
               <div className="p-6">
                 <div className="mb-8">
                   <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">{t("language")}</h2>
@@ -1664,10 +1850,10 @@ function Settings() {
                     <button
                       className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 flex items-center space-x-2"
                       onClick={() => savePreferences("language")}
-                      disabled={isSavingPreferences}
+                      disabled={uiState.isSavingPreferences}
                     >
                       <FaSave className="w-4 h-4" />
-                      <span>{isSavingPreferences ? t("saving") : t("saveChanges")}</span>
+                      <span>{uiState.isSavingPreferences ? t("saving") : t("saveChanges")}</span>
                     </button>
                   </div>
                 </div>
@@ -1675,16 +1861,14 @@ function Settings() {
             )}
 
             {/* Sessions Management */}
-            {activeTab === "sessions" && (
-              <div className="p-6">
-                <div className="mb-8">
-                  <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">{t("sessions")}</h2>
-                  <p className="text-slate-600 dark:text-slate-400">Manage your active sessions and devices</p>
-                </div>
+            {userData.activeTab === "sessions" && (
+              <SectionCard 
+                title={t("sessions")} 
+                description="Manage your active sessions and devices"
+              >
                 <SessionsManager />
-              </div>
+              </SectionCard>
             )}
-            </div>
           </div>
         </div>
       </div>

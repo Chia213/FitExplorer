@@ -47,6 +47,7 @@ import Nutrition from "./pages/Nutrition";
 import TestSearch from "./pages/TestSearch";
 import MealTest from "./pages/MealTest";
 import LandingPage from "./pages/LandingPage";
+import Contact from "./pages/Contact";
 
 // Admin pages
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -146,6 +147,7 @@ function App() {
                     <Route path="/login" element={<Login />} />
                     <Route path="/signup" element={<Signup />} />
                     <Route path="/about" element={<About />} />
+                    <Route path="/contact" element={<Contact />} />
                     <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                     <Route path="/terms" element={<TermsOfService />} />
                     <Route path="/verify-email" element={<VerifyEmail />} />

@@ -33,22 +33,6 @@
 
 /* No color change for text and icons - keeping your existing theme colors */
 
-/* Small bounce animation */
-@keyframes float-bounce {
-
-    0%,
-    100% {
-        transform: translateY(-8px);
-    }
-
-    50% {
-        transform: translateY(-10px);
-    }
-}
-
-.nav-item:hover {
-    animation: float-bounce 3s ease-in-out infinite;
-}
 
 /* Dark mode adjustments */
 .dark .nav-item:hover {

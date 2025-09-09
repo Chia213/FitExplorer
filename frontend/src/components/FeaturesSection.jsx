@@ -94,10 +94,6 @@ const FeatureCard = ({ feature, index }) => {
 const FeaturesSection = () => {
   return (
     <section className="py-20 bg-neutral-900 relative overflow-hidden">
-      {/* Background elements */}
-      <div className="absolute inset-0 bg-[url('/src/assets/grid-pattern.svg')] opacity-5"></div>
-      <div className="absolute -left-64 top-1/4 w-96 h-96 bg-primary-500/10 rounded-full filter blur-3xl"></div>
-      <div className="absolute -right-64 bottom-1/4 w-96 h-96 bg-accent-500/10 rounded-full filter blur-3xl"></div>
 
       <div className="container-modern relative z-10">
         <div className="text-center mb-16">

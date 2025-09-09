@@ -125,11 +125,6 @@ const HeroSection = () => {
   return (
     <section className="relative min-h-screen bg-gradient-to-b from-neutral-900 via-primary-900 to-neutral-900 overflow-hidden">
       {/* Background Elements */}
-      <div className="absolute inset-0">
-        <div className="absolute inset-0 bg-[url('/src/assets/grid-pattern.svg')] opacity-10"></div>
-        <div className="absolute -left-48 -top-48 w-96 h-96 bg-primary-500/30 rounded-full filter blur-3xl animate-pulse"></div>
-        <div className="absolute -right-48 -bottom-48 w-96 h-96 bg-accent-500/30 rounded-full filter blur-3xl animate-pulse delay-1000"></div>
-      </div>
 
       {/* Content Container */}
       <div className="container-modern relative z-10 pt-32 pb-20 min-h-screen flex flex-col justify-center">

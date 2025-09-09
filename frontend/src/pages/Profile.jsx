@@ -225,35 +225,29 @@ function Profile() {
 
     try {
       setLoading(true);
-      const [profileRes, statsRes, routineRes, workoutPrefsRes] = await Promise.all([
-        fetch(`${backendURL}/user-profile`, {
-          headers: { 
-            "Authorization": `Bearer ${token}`,
-            "Content-Type": "application/json"
-          },
-        }),
-        fetch(`${backendURL}/workout-stats`, {
+      setError(null); // Clear any previous errors
+      
+      // First, check if backend is reachable
+      try {
+        const healthCheck = await fetch(`${backendURL}/`, { 
           method: "GET",
-          headers: { 
-            "Authorization": `Bearer ${token}`,
-            "Content-Type": "application/json"
-          },
-          credentials: "include"
-        }),
-        fetch(`${backendURL}/api/last-saved-routine`, {
-          headers: { 
-            "Authorization": `Bearer ${token}`,
-            "Content-Type": "application/json"
-          },
-        }),
-        fetch(`${backendURL}/api/workout-preferences`, {
-          method: "GET",
-          headers: { 
-            "Authorization": `Bearer ${token}`,
-            "Content-Type": "application/json"
-          },
-        }),
-      ]);
+          headers: { "Content-Type": "application/json" }
+        });
+        if (!healthCheck.ok) {
+          throw new Error("Backend server is not responding");
+        }
+      } catch (healthErr) {
+        console.warn("Backend health check failed:", healthErr);
+        // Continue anyway, the main request might still work
+      }
+      
+      // Fetch profile data first (most important)
+      const profileRes = await fetch(`${backendURL}/user-profile`, {
+        headers: { 
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+      });
 
       // Handle profile response
       if (!profileRes.ok) {
@@ -267,8 +261,6 @@ function Profile() {
       }
 
       const userData = await profileRes.json();
-      
-      // Set user and username state directly from server data
       setUser(userData);
       setEditedUsername(userData.username);
 
@@ -278,63 +270,9 @@ function Profile() {
         weight: userData.weight?.toString() || "",
         age: userData.age?.toString() || "",
         gender: userData.gender || "",
-        fitnessGoals: userData.fitness_goals || "",  // This matches the backend's snake_case
+        fitnessGoals: userData.fitness_goals || "",
         bio: userData.bio || ""
       });
-
-      // Fetch workout preferences data
-      let workoutFrequencyGoal = null;
-      let goalWeight = null;
-      
-      if (workoutPrefsRes.ok) {
-        const workoutPrefs = await workoutPrefsRes.json();
-        workoutFrequencyGoal = workoutPrefs.workout_frequency_goal;
-        goalWeight = workoutPrefs.goal_weight;
-      }
-      
-      // Set user preferences
-      if (userData.preferences) {
-        // Log all preferences from backend for debugging
-        console.log("Preferences received from backend:", userData.preferences);
-        console.log("Animation preferences from backend:", {
-          enable_animations: userData.preferences.enable_animations,
-          animation_style: userData.preferences.animation_style,
-          animation_speed: userData.preferences.animation_speed
-        });
-        
-        // Check for goal weight in user.preferences (preferred) or from workout prefs
-        if (userData.preferences.goal_weight !== undefined) {
-          goalWeight = userData.preferences.goal_weight;
-        }
-        
-        setPreferences((prev) => {
-          const newPrefs = {
-            ...prev,
-            cardColor: userData.preferences.card_color || prev.cardColor,
-            workoutFrequencyGoal: workoutFrequencyGoal, 
-            goalWeight: goalWeight,
-            useCustomCardColor: userData.preferences.use_custom_card_color || false,
-            enableAnimations: userData.preferences.enable_animations === true,
-            animationStyle: userData.preferences.animation_style || "subtle",
-            animationSpeed: userData.preferences.animation_speed || "medium"
-          };
-          
-          console.log("Setting preferences state to:", newPrefs);
-          return newPrefs;
-        });
-        
-        // Set card color from backend preferences
-        if (userData.preferences.use_custom_card_color) {
-          // If using custom color, set the color directly from backend
-          setCardColor(userData.preferences.card_color || "#f0f4ff");
-        } else if (premiumTheme && premiumThemes[premiumTheme]) {
-          // If using theme, set from premium theme
-          setCardColor(premiumThemes[premiumTheme].primary);
-        } else {
-          // Otherwise use backend card color
-          setCardColor(userData.preferences.card_color || "#f0f4ff");
-        }
-      }
 
       // Set profile picture with cache busting
       if (userData.profile_picture) {
@@ -343,46 +281,146 @@ function Profile() {
         );
       }
 
-      // Handle workout stats
-      if (statsRes.ok) {
-        const statsData = await statsRes.json();
+      // Set user preferences
+      if (userData.preferences) {
+        setPreferences((prev) => {
+          const newPrefs = {
+            ...prev,
+            cardColor: userData.preferences.card_color || prev.cardColor,
+            useCustomCardColor: userData.preferences.use_custom_card_color || false,
+            enableAnimations: userData.preferences.enable_animations === true,
+            animationStyle: userData.preferences.animation_style || "subtle",
+            animationSpeed: userData.preferences.animation_speed || "medium"
+          };
+          return newPrefs;
+        });
         
-        // Fetch the workout streak information
-        const streakRes = await fetch(`${backendURL}/workout-streak`, {
+        // Set card color from backend preferences
+        if (userData.preferences.use_custom_card_color) {
+          setCardColor(userData.preferences.card_color || "#f0f4ff");
+        } else if (premiumTheme && premiumThemes[premiumTheme]) {
+          setCardColor(premiumThemes[premiumTheme].primary);
+        } else {
+          setCardColor(userData.preferences.card_color || "#f0f4ff");
+        }
+      }
+
+      // Now fetch additional data in parallel (with error handling for each)
+      const additionalDataPromises = [
+        // Workout stats
+        fetch(`${backendURL}/workout-stats`, {
+          method: "GET",
           headers: { 
             "Authorization": `Bearer ${token}`,
             "Content-Type": "application/json"
           },
-        });
+          credentials: "include"
+        }).catch(err => {
+          console.warn("Failed to fetch workout stats:", err);
+          return { ok: false, status: 500 };
+        }),
         
-        let currentStreak = 0;
+        // Last saved routine
+        fetch(`${backendURL}/api/last-saved-routine`, {
+          headers: { 
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json"
+          },
+        }).catch(err => {
+          console.warn("Failed to fetch last saved routine:", err);
+          return { ok: false, status: 500 };
+        }),
         
-        if (streakRes.ok) {
-          const streakData = await streakRes.json();
-          currentStreak = streakData.streak;
-          // If streakData has a frequency_goal and we didn't get it from preferences
-          if (streakData.frequency_goal !== null && !workoutFrequencyGoal) {
-            workoutFrequencyGoal = streakData.frequency_goal;
-          }
+        // Workout preferences
+        fetch(`${backendURL}/api/workout-preferences`, {
+          method: "GET",
+          headers: { 
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json"
+          },
+        }).catch(err => {
+          console.warn("Failed to fetch workout preferences:", err);
+          return { ok: false, status: 500 };
+        })
+      ];
+
+      const [statsRes, routineRes, workoutPrefsRes] = await Promise.all(additionalDataPromises);
+
+      // Fetch workout preferences data
+      let workoutFrequencyGoal = null;
+      let goalWeight = null;
+      
+      if (workoutPrefsRes.ok) {
+        try {
+          const workoutPrefs = await workoutPrefsRes.json();
+          workoutFrequencyGoal = workoutPrefs.workout_frequency_goal;
+          goalWeight = workoutPrefs.goal_weight;
+        } catch (err) {
+          console.warn("Error parsing workout preferences:", err);
         }
-        
-        setWorkoutStats({
-          totalWorkouts: statsData.total_workouts,
-          favoriteExercise: statsData.favorite_exercise,
-          lastWorkout: statsData.last_workout,
-          totalCardioDuration: statsData.total_cardio_duration,
-          weightProgression: statsData.weight_progression,
-          currentWeight: statsData.current_weight,
-          currentStreak: currentStreak,
-          frequencyGoal: workoutFrequencyGoal
+      }
+      
+      // Update preferences with workout data
+      if (userData.preferences) {
+        setPreferences((prev) => {
+          const newPrefs = {
+            ...prev,
+            workoutFrequencyGoal: workoutFrequencyGoal, 
+            goalWeight: goalWeight,
+          };
+          return newPrefs;
         });
-      } else {
-        const statsErrorText = await statsRes.text().catch(() => "Unknown error");
       }
 
-      // Handle last saved routine with better error handling and proper debugging
-      try {
-        if (routineRes.ok) {
+      // Handle workout stats
+      if (statsRes.ok) {
+        try {
+          const statsData = await statsRes.json();
+          
+          // Fetch the workout streak information
+          const streakRes = await fetch(`${backendURL}/workout-streak`, {
+            headers: { 
+              "Authorization": `Bearer ${token}`,
+              "Content-Type": "application/json"
+            },
+          }).catch(err => {
+            console.warn("Failed to fetch workout streak:", err);
+            return { ok: false, status: 500 };
+          });
+          
+          let currentStreak = 0;
+          
+          if (streakRes.ok) {
+            try {
+              const streakData = await streakRes.json();
+              currentStreak = streakData.streak;
+              // If streakData has a frequency_goal and we didn't get it from preferences
+              if (streakData.frequency_goal !== null && !workoutFrequencyGoal) {
+                workoutFrequencyGoal = streakData.frequency_goal;
+              }
+            } catch (err) {
+              console.warn("Error parsing streak data:", err);
+            }
+          }
+          
+          setWorkoutStats({
+            totalWorkouts: statsData.total_workouts || 0,
+            favoriteExercise: statsData.favorite_exercise || null,
+            lastWorkout: statsData.last_workout || null,
+            totalCardioDuration: statsData.total_cardio_duration || 0,
+            weightProgression: statsData.weight_progression || [],
+            currentWeight: statsData.current_weight || null,
+            currentStreak: currentStreak,
+            frequencyGoal: workoutFrequencyGoal
+          });
+        } catch (err) {
+          console.warn("Error processing workout stats:", err);
+        }
+      }
+
+      // Handle last saved routine
+      if (routineRes.ok) {
+        try {
           const routineData = await routineRes.json();
           // Check for valid data - must have name and exercises that is an array
           if (routineData && typeof routineData === 'object' && 
@@ -395,20 +433,13 @@ function Profile() {
           } else {
             console.warn("Got routine data but missing required fields:", routineData);
           }
-        } else if (routineRes.status === 404) {
-          console.log("No saved routines found (404)");
-        } else {
-          // Log the error details for debugging
-          try {
-            const errorData = await routineRes.json();
-            console.error("Error fetching last saved routine:", errorData);
-          } catch (parseError) {
-            console.error("Error parsing error response:", parseError);
-            console.error("Server error when fetching last saved routine:", routineRes.status);
-          }
+        } catch (err) {
+          console.warn("Error processing last saved routine:", err);
         }
-      } catch (routineErr) {
-        console.error("Exception while processing last saved routine:", routineErr);
+      } else if (routineRes.status === 404) {
+        console.log("No saved routines found (404)");
+      } else {
+        console.warn("Failed to fetch last saved routine:", routineRes.status);
       }
     } catch (err) {
       setError(err.message || "Failed to load user data. Please try again.");
@@ -1109,15 +1140,27 @@ function Profile() {
             <strong className="font-bold">Error: </strong>
             <span className="block sm:inline">{error}</span>
           </div>
-          <button
-            onClick={() => {
-              setError(null);  // Clear the error
-              setEditedUsername(user?.username || "");  // Reset username field
-            }}
-            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-          >
-            Continue
-          </button>
+          <div className="flex space-x-4">
+            <button
+              onClick={() => {
+                setError(null);  // Clear the error
+                setEditedUsername(user?.username || "");  // Reset username field
+                fetchUserData(); // Retry fetching data
+              }}
+              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+            >
+              Retry
+            </button>
+            <button
+              onClick={() => {
+                setError(null);  // Clear the error
+                setEditedUsername(user?.username || "");  // Reset username field
+              }}
+              className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+            >
+              Continue Anyway
+            </button>
+          </div>
         </div>
       </div>
     );

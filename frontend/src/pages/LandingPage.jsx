@@ -6,12 +6,18 @@ import aiWorkoutGeneratorImagePreview from '../assets/ai-workoutgenerator-previe
 import workoutLogPreviewImage from '../assets/workout-log-preview.png';
 import nutritionTrackingImage from '../assets/nutrition-tracking.png';
 import progressTrackingImage from '../assets/progress-tracking.png';
-import personalRecordsImage from '../assets/personal-records.png';
+import personalRecordsImage from '../assets/personalrecordspreview.png';
 import fitnessCalculatorImage from '../assets/fitness-calculator.png';
 import aiWorkoutGeneratorImage from '../assets/ai-workoutgenerator.png';
 import logo from '../assets/Ronjasdrawing.png';
 import profilePicture from '../assets/profile-picture.jpg';
 import '../styles/landing-page.css';
+
+// Import new modern design components
+import { Navigation } from "@/components/ui/navigation";
+import { HeroSection } from "@/components/sections/hero";
+import { FeaturesSection } from "@/components/sections/features";
+import { Footer } from "@/components/sections/footer";
 
 // Animation variants
 const fadeIn = {
@@ -29,15 +35,6 @@ const scaleIn = {
   visible: { opacity: 1, scale: 1 }
 };
 
-// Floating animation for decorative elements
-const floatingAnimation = {
-  y: [0, -10, 0],
-  transition: {
-    duration: 3,
-    repeat: Infinity,
-    ease: "easeInOut"
-  }
-};
 
 // Stats for the call to action section
 const stats = [
@@ -165,36 +162,6 @@ const BrightHero = () => {
     { image: fitnessCalculatorImage, title: "Fitness Calculator" }
   ];
   
-  // Enhanced floating animation with more sophisticated movement
-  const floatingAnimationSlow = {
-    y: [0, -15, 0],
-    rotate: [0, 2, 0],
-    transition: {
-      duration: 8,
-      repeat: Infinity,
-      ease: "easeInOut"
-    }
-  };
-  
-  const floatingAnimationMedium = {
-    y: [0, -10, 0],
-    rotate: [0, -1, 0],
-    transition: {
-      duration: 5,
-      repeat: Infinity,
-      ease: "easeInOut"
-    }
-  };
-  
-  const floatingAnimationFast = {
-    y: [0, -5, 0],
-    rotate: [0, 1, 0],
-    transition: {
-      duration: 3,
-      repeat: Infinity,
-      ease: "easeInOut"
-    }
-  };
   
   // Auto-advance the slide
   useEffect(() => {
@@ -207,9 +174,6 @@ const BrightHero = () => {
   
   return (
     <section className="min-h-screen flex items-center relative overflow-hidden bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-      {/* Subtle background pattern */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_80%,rgba(59,130,246,0.05),transparent_50%)] dark:bg-[radial-gradient(circle_at_20%_80%,rgba(59,130,246,0.1),transparent_50%)]"></div>
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(16,185,129,0.05),transparent_50%)] dark:bg-[radial-gradient(circle_at_80%_20%,rgba(16,185,129,0.1),transparent_50%)]"></div>
       
       <div className="container mx-auto px-4 py-12 relative z-10">
         <div className="max-w-6xl mx-auto">
@@ -468,7 +432,6 @@ const QRCodeSection = () => {
 
   return (
     <section className="py-16 relative overflow-hidden bg-gradient-to-br from-blue-50 to-purple-50">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(79,70,229,0.1),transparent)] opacity-70"></div>
       
       <div className="container mx-auto px-4 relative z-10">
         <div className="flex flex-col md:flex-row items-center gap-8 md:gap-12">
@@ -556,7 +519,6 @@ const QRCodeSection = () => {
 // Professional journey section
 const JourneySection = () => (
   <section className="py-16 sm:py-24 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white relative overflow-hidden">
-    <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(59,130,246,0.1),transparent_50%)] dark:bg-[radial-gradient(circle_at_30%_30%,rgba(59,130,246,0.1),transparent_50%)]"></div>
     
     <div className="container mx-auto px-4 relative z-10">
       <div className="max-w-4xl mx-auto">
@@ -699,7 +661,6 @@ const MoreFeaturesSection = () => {
 // Professional call to action section
 const CallToAction = () => (
   <section className="py-24 relative overflow-hidden bg-slate-900 dark:bg-slate-800">
-    <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(59,130,246,0.1),transparent_70%)]"></div>
     
     <div className="container mx-auto px-4 relative z-10">
       <div className="max-w-4xl mx-auto text-center">
@@ -773,24 +734,26 @@ const LandingPage = () => {
   }, []);
 
   return (
-    <div className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">
-      {/* Professional hero section */}
-      <BrightHero />
+    <div className="min-h-screen">
+      {/* New Modern Navigation */}
+      <Navigation />
       
-      {/* Core features showcase */}
-      <ProgramShowcase />
+      <main>
+        {/* New Modern Hero Section */}
+        <HeroSection />
+        
+        {/* New Modern Features Section */}
+        <FeaturesSection />
+        
+        {/* Keep existing sections for additional content */}
+        <ProgramShowcase />
+        <JourneySection />
+        <MoreFeaturesSection />
+        <QRCodeSection />
+      </main>
       
-      {/* Mission section */}
-      <JourneySection />
-      
-      {/* Complete fitness solution */}
-      <MoreFeaturesSection />
-      
-      {/* Mobile app section with QR code */}
-      <QRCodeSection />
-      
-      {/* Call to action */}
-      <CallToAction />
+      {/* New Modern Footer */}
+      <Footer />
     </div>
   );
 };

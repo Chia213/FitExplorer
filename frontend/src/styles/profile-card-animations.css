@@ -215,9 +215,6 @@
     animation-name: glide;
 }
 
-.animate-float {
-    animation-name: float;
-}
 
 .animate-rotate {
     animation-name: rotate;
@@ -298,11 +295,6 @@
     100% { transform: translateX(0) translateY(0); }
 }
 
-@keyframes float {
-    0% { transform: translateY(0); }
-    50% { transform: translateY(-8px); }
-    100% { transform: translateY(0); }
-}
 
 @keyframes rotate {
     0% { transform: rotate(0deg); }

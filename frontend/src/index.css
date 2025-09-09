@@ -1,34 +1,101 @@
-@import 'tailwindcss/base';
-@import 'tailwindcss/components';
-@import 'tailwindcss/utilities';
-
 /* Custom Fonts */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
 
-/* Custom Animations */
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-20px); }
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* FitExplorer Design System - Modern Dark Blue Theme */
+
+@layer base {
+  :root {
+    /* Dark blue theme inspired by FitExplorer */
+    --background: 220 25% 8%;
+    --foreground: 210 40% 98%;
+
+    --card: 220 20% 12%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 220 20% 12%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 217 91% 60%;
+    --primary-foreground: 220 25% 8%;
+
+    --secondary: 220 20% 16%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 220 15% 20%;
+    --muted-foreground: 217 10% 64%;
+
+    --accent: 217 91% 60%;
+    --accent-foreground: 220 25% 8%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 220 15% 20%;
+    --input: 220 15% 20%;
+    --ring: 217 91% 60%;
+
+    /* Hero gradient */
+    --hero-gradient: linear-gradient(135deg, hsl(220, 25%, 8%) 0%, hsl(217, 30%, 15%) 50%, hsl(217, 91%, 20%) 100%);
+    
+    /* Glass effect */
+    --glass-bg: 220 20% 12% / 0.8;
+    --glass-border: 217 91% 60% / 0.2;
+    
+    /* Shadows */
+    --shadow-glow: 0 0 30px hsl(217 91% 60% / 0.3);
+    --shadow-card: 0 4px 6px -1px hsl(220 25% 8% / 0.3), 0 2px 4px -1px hsl(220 25% 8% / 0.06);
+    
+    --radius: 0.75rem;
+
+    --sidebar-background: 220 20% 12%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 217 91% 60%;
+    --sidebar-primary-foreground: 220 25% 8%;
+    --sidebar-accent: 220 15% 20%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 220 15% 20%;
+    --sidebar-ring: 217 91% 60%;
+  }
 }
 
-@keyframes pulse {
-  0%, 100% { opacity: 0.5; }
-  50% { opacity: 0.8; }
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    background: var(--hero-gradient);
+    min-height: 100vh;
+  }
+  
+  html {
+    scroll-behavior: smooth;
+  }
 }
 
-@keyframes gleam {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
+@layer components {
+  .glass-card {
+    @apply bg-card/80 backdrop-blur-xl border border-glass-border shadow-xl;
+  }
+  
+  .hero-text {
+    @apply bg-gradient-to-r from-foreground via-primary to-accent bg-clip-text text-transparent;
+  }
+  
+  .feature-card {
+    @apply glass-card p-6 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-glow;
+  }
+  
+  .glow-effect {
+    @apply relative before:absolute before:inset-0 before:rounded-xl before:bg-gradient-to-r before:from-primary/20 before:to-accent/20 before:blur-xl before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100;
+  }
 }
 
-/* Custom Utility Classes */
-.float-animation {
-  animation: float 6s ease-in-out infinite;
-}
-
-.pulse-animation {
-  animation: pulse 4s ease-in-out infinite;
-}
 
 /* Mobile Scrollbar Hide */
 .scrollbar-hide {
@@ -39,9 +106,6 @@
   display: none;  /* Safari and Chrome */
 }
 
-.animate-gleam {
-  animation: gleam 2s linear infinite;
-}
 
 /* Hide scrollbar but keep functionality */
 .hide-scrollbar {
@@ -79,21 +143,21 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--neutral-100);
+  background: hsl(var(--muted));
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--neutral-400);
+  background: hsl(var(--muted-foreground));
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--neutral-500);
+  background: hsl(var(--primary));
 }
 
 /* Focus Styles */
 :focus-visible {
-  outline: 2px solid var(--primary-400);
+  outline: 2px solid hsl(var(--primary));
   outline-offset: 2px;
 }
 
@@ -102,7 +166,6 @@ body {
   font-family: var(--font-family-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  @apply bg-neutral-50 dark:bg-neutral-900 text-neutral-900 dark:text-white;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -190,30 +253,6 @@ a, button, input[type="button"], input[type="submit"], input[type="reset"] {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Disable pull-to-refresh on iOS Safari - REMOVING THIS CODE */
-/* html {
-  overflow: hidden;
-  position: fixed;
-  width: 100%;
-  height: 100%;
-}
-
-body {
-  overflow: auto;
-  -webkit-overflow-scrolling: touch;
-  height: 100%;
-} */
-
-/* Instead, use this approach for controlling overflow behavior */
-@media (display-mode: standalone) {
-  html, body {
-    overscroll-behavior-y: contain;
-    overscroll-behavior-x: none;
-    height: 100%;
-    width: 100%;
-  }
-}
-
 /* Mobile optimizations - make touch targets bigger */
 @media (max-width: 768px) {
   button, 
@@ -255,68 +294,6 @@ body {
     transform: scale(1.2);
     margin: 0.2rem;
   }
-  
-  /* Mobile-specific Routines page adjustments */
-  .routines-page {
-    padding: 0.5rem !important;
-  }
-  
-  .routines-header {
-    margin-bottom: 0.75rem !important;
-  }
-  
-  .routines-card {
-    margin-bottom: 0.75rem !important;
-    border-radius: 0.5rem !important;
-  }
-  
-  .routines-action-buttons {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-  }
-  
-  .routines-action-buttons button {
-    flex: 1 0 auto;
-    min-width: 80px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  
-  /* Adjust filter and search controls for mobile */
-  .routines-filters {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-  
-  .routines-search-input {
-    width: 100%;
-  }
-  
-  /* Ensure exercise sets are readable on small screens */
-  .routines-exercise-sets {
-    font-size: 0.875rem;
-    overflow-x: auto;
-  }
-  
-  /* Add space at bottom for mobile navigation */
-  .routines-container {
-    padding-bottom: 5rem !important;
-  }
-  
-  /* Fix for routine buttons on mobile */
-  .routine-buttons {
-    display: flex;
-    gap: 0.25rem;
-  }
-  
-  .routine-buttons button {
-    padding: 0.5rem !important;
-    height: 2.5rem;
-    width: 2.5rem;
-  }
 }
 
 /* iOS specific styles for home screen app */
@@ -343,30 +320,16 @@ body {
   input[type="password"] {
     -webkit-appearance: none;
     appearance: none;
-    background-color: #ffffff !important;
-    color: #000000 !important;
-  }
-  
-  /* Dark mode specific override for input fields */
-  .dark input[type="password"] {
-    background-color: #374151 !important;
-    color: #ffffff !important;
-    border-color: #4B5563 !important;
+    background-color: hsl(var(--card)) !important;
+    color: hsl(var(--card-foreground)) !important;
   }
   
   /* Fix for select elements on mobile homescreen */
   select {
     -webkit-appearance: menulist;
     appearance: menulist;
-    background-color: #ffffff !important;
-    color: #000000 !important;
-  }
-  
-  /* Dark mode specific override for select elements */
-  .dark select {
-    background-color: #374151 !important;
-    color: #ffffff !important;
-    border-color: #4B5563 !important;
+    background-color: hsl(var(--card)) !important;
+    color: hsl(var(--card-foreground)) !important;
   }
 }
 
@@ -391,261 +354,6 @@ body {
   opacity: 0;
   transform: translateX(-100%);
   transition: opacity 300ms, transform 300ms;
-}
-
-@layer base {
-  :root {
-    /* Default theme colors */
-    --color-primary: #3b82f6; /* blue-500 */
-    --color-secondary: #10b981; /* emerald-500 */
-    --color-accent: #8b5cf6; /* violet-500 */
-  }
-
-  /* Apply theme colors to Tailwind elements */
-  .btn-primary {
-    @apply bg-[var(--color-primary)] text-white hover:opacity-90;
-  }
-  
-  .btn-secondary {
-    @apply bg-[var(--color-secondary)] text-white hover:opacity-90;
-  }
-  
-  .text-accent {
-    @apply text-[var(--color-accent)];
-  }
-  
-  .border-accent {
-    @apply border-[var(--color-accent)];
-  }
-  
-  .bg-accent {
-    @apply bg-[var(--color-accent)];
-  }
-  
-  /* Enhanced card styles for premium themes */
-  .card {
-    @apply rounded-lg shadow-md;
-    
-    &.premium {
-      background: linear-gradient(
-        135deg,
-        rgba(var(--color-primary-rgb), 0.1) 0%,
-        rgba(var(--color-secondary-rgb), 0.1) 100%
-      );
-      border: 1px solid rgba(var(--color-accent-rgb), 0.2);
-    }
-  }
-  
-  /* Dark mode adjustments */
-  .dark {
-    .card.premium {
-      background: linear-gradient(
-        135deg,
-        rgba(var(--color-primary-rgb), 0.2) 0%,
-        rgba(var(--color-secondary-rgb), 0.2) 100%
-      );
-      border: 1px solid rgba(var(--color-accent-rgb), 0.3);
-    }
-  }
-}
-
-/* Fix for iOS bottom navigation area */
-.bottom-nav {
-  padding-bottom: env(safe-area-inset-bottom);
-  background-color: white;
-  bottom: 0;
-  width: 100%;
-  left: 0;
-  right: 0;
-  transform: none;
-  border-top: 1px solid rgba(229, 231, 235, 0.8);
-  box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.05);
-}
-
-.dark .bottom-nav {
-  background-color: #1f2937;
-  border-top: 1px solid rgba(75, 85, 99, 0.5);
-  box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.1);
-}
-
-/* Add specific fixes for iOS bottom navigation */
-@supports (-webkit-touch-callout: none) {
-  /* iOS specific styles */
-  .bottom-nav {
-    background-color: white;
-    border-top: 1px solid rgba(229, 231, 235, 0.8) !important;
-    box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.05);
-  }
-
-  /* Dark mode for iOS */
-  .dark .bottom-nav {
-    background-color: #1f2937;
-    border-top: 1px solid rgba(75, 85, 99, 0.5) !important;
-    box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.1);
-  }
-
-  /* Extra padding for bottom nav to ensure content isn't hidden */
-  body {
-    /* Add padding to ensure content isn't hidden behind the navigation */
-    padding-bottom: calc(3rem + env(safe-area-inset-bottom, 0px));
-  }
-
-  /* Fix for iOS standalone mode (PWA) */
-  @media (display-mode: standalone) {
-    /* Additional adjustments for PWA mode */
-    body {
-      /* Ensure content isn't cut off */
-      min-height: -webkit-fill-available;
-    }
-    
-    /* Ensure the bottom nav doesn't block content */
-    main {
-      margin-bottom: calc(3rem + env(safe-area-inset-bottom, 0px));
-    }
-    
-    /* Styles for the bottom nav */
-    .bottom-nav {
-      background-color: white;
-      border-top: 1px solid rgba(229, 231, 235, 0.8) !important;
-    }
-    
-    .dark .bottom-nav {
-      background-color: #1f2937;
-      border-top: 1px solid rgba(75, 85, 99, 0.5) !important;
-    }
-  }
-}
-
-/* Mobile-friendly styles for Routines page */
-@media (max-width: 768px) {
-  .routines-container {
-    padding: 0.5rem;
-  }
-  
-  .routines-page {
-    padding: 0.75rem;
-  }
-  
-  .routines-header {
-    gap: 0.5rem;
-  }
-  
-  .routines-filters {
-    padding: 0.75rem;
-  }
-  
-  .routines-search-input {
-    height: 2.5rem;
-    font-size: 1rem;
-  }
-  
-  .routines-action-buttons button {
-    padding: 0.5rem 0.75rem;
-    min-height: 2.5rem;
-    min-width: 2.5rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  
-  .routines-card {
-    margin-bottom: 0.75rem;
-  }
-
-  /* Make buttons larger and more touch-friendly */
-  button, 
-  .btn,
-  select {
-    min-height: 2.5rem;
-  }
-}
-
-/* Special styles for standalone PWA mode */
-body.pwa-standalone-mode {
-  /* Remove fixed position that prevents scrolling */
-  position: relative;
-  height: 100%;
-  width: 100%;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior-y: contain;
-  /* Add padding for safe areas */
-  padding-top: env(safe-area-inset-top, 0);
-  padding-bottom: env(safe-area-inset-bottom, 0);
-  padding-left: env(safe-area-inset-left, 0);
-  padding-right: env(safe-area-inset-right, 0);
-}
-
-/* Tweak layout in standalone mode */
-body.pwa-standalone-mode .workout-log-container {
-  padding-top: env(safe-area-inset-top, 0);
-  padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0));
-  height: auto;
-  overflow-y: auto;
-}
-
-/* Fix height for workout items in standalone mode */
-body.pwa-standalone-mode .workout-log-container .exercise-card {
-  background: white;
-  border-radius: 0.5rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  margin-bottom: 1rem;
-}
-
-/* Improve input styling in standalone mode */
-body.pwa-standalone-mode input, 
-body.pwa-standalone-mode select, 
-body.pwa-standalone-mode textarea {
-  font-size: 16px !important; /* Prevents iOS zoom */
-  -webkit-appearance: none; /* Removes default styling */
-  appearance: none;
-  border-radius: 0.375rem;
-  border: 1px solid #e5e7eb;
-}
-
-/* Style set buttons in standalone mode */
-body.pwa-standalone-mode .exercise-card button {
-  min-height: 44px;
-}
-
-/* Add set button with icon */
-body.pwa-standalone-mode .exercise-set-container button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.75rem;
-  border-radius: 0.5rem;
-}
-
-/* Fix standalone header */
-body.pwa-standalone-mode .workout-log-container h1 {
-  margin-top: env(safe-area-inset-top, 0);
-}
-
-/* Make bottom nav bar match native apps */
-body.pwa-standalone-mode .bottom-nav {
-  background-color: white;
-  border-top: 1px solid rgba(229, 231, 235, 0.8);
-  box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.05);
-  margin: 0;
-  bottom: 0;
-  width: 100%;
-  left: 0;
-  right: 0;
-  transform: none;
-}
-
-/* Dark mode for standalone */
-@media (prefers-color-scheme: dark) {
-  body.pwa-standalone-mode .bottom-nav {
-    background-color: #1f2937;
-    border-top: 1px solid rgba(75, 85, 99, 0.5);
-    box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.1);
-  }
-  
-  body.pwa-standalone-mode .exercise-card {
-    background: #1f2937;
-  }
 }
 
 /* PWA-specific styles */
@@ -686,17 +394,11 @@ body.pwa-standalone-mode .bottom-nav {
     right: 0 !important;
     z-index: 1000;
     margin: 0;
-    background-color: white !important;
-    border-top: 1px solid rgba(229, 231, 235, 0.8);
-    box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.05);
+    background-color: hsl(var(--card)) !important;
+    border-top: 1px solid hsl(var(--border));
+    box-shadow: 0 -1px 3px hsl(var(--background) / 0.1);
     transform: none !important;
     width: 100% !important;
-  }
-
-  .dark .pwa-bottom-nav {
-    background-color: #1f2937 !important;
-    border-top: 1px solid rgba(75, 85, 99, 0.5);
-    box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.1);
   }
 }
 
@@ -727,21 +429,10 @@ body.pwa-standalone-mode .bottom-nav {
 
 /* Mobile navbar dropdown styling */
 .navbar-dropdown {
-  background-color: white;
-  box-shadow: 0 -1px 4px rgba(0, 0, 0, 0.1);
-  border-top: 1px solid rgba(229, 231, 235, 0.8);
+  background-color: hsl(var(--card));
+  box-shadow: 0 -1px 4px hsl(var(--background) / 0.1);
+  border-top: 1px solid hsl(var(--border));
   margin-bottom: 0;
-}
-
-.dark .navbar-dropdown {
-  background-color: #1f2937; /* dark gray-800 */
-  border-top: 1px solid rgba(75, 85, 99, 0.5);
-  box-shadow: 0 -1px 4px rgba(0, 0, 0, 0.2);
-}
-
-/* Add styles for dropdown item hover in dark mode */
-.dark .dropdown-item:hover:not(.bg-blue-900) {
-  background-color: #374151; /* dark gray-700 */
 }
 
 /* Custom animation for dropdown items */
