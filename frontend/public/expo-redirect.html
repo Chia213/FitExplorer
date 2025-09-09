@@ -110,11 +110,11 @@
                     <li>Download <strong>Expo Go</strong> from your app store</li>
                     <li>Open Expo Go and tap <strong>"Enter URL manually"</strong></li>
                     <li>Enter: <code>https://www.fitexplorer.se</code></li>
-                    <li>Or scan this QR code again from within Expo Go</li>
+                    <li>Your FitExplorer app will load in Expo Go!</li>
                 </ol>
             </div>
             
-            <a href="#" id="expoLink" class="button expo">Open in Expo Go</a>
+            <a href="https://www.fitexplorer.se" id="expoLink" class="button expo">Open FitExplorer</a>
             <a href="https://www.fitexplorer.se" class="button">Open in Browser</a>
             <a href="https://expo.dev" class="button" style="background: #666;">Download Expo Go</a>
         </div>
@@ -127,33 +127,18 @@
         const isAndroid = /Android/i.test(navigator.userAgent);
         
         // Expo Go deep link URLs
-        // Use Expo Snack for cloud-based development server
-        const expoGoUrl = 'exp://exp.host/@snack/your-snack-id'; // Replace with your Snack URL
+        // Direct users to the website and provide Expo instructions
         const websiteUrl = 'https://www.fitexplorer.se';
+        const expoInstructions = 'To use Expo Go: 1) Download Expo Go app 2) Open Expo Go 3) Tap "Enter URL manually" 4) Enter: https://www.fitexplorer.se';
         
         function tryOpenExpoGo() {
             // Show loading
             document.getElementById('loading').style.display = 'block';
             
-            // Try to open Expo Go
-            const expoLink = document.getElementById('expoLink');
-            expoLink.href = expoGoUrl;
-            
-            // For mobile devices, try to open Expo Go app
+            // For mobile devices, redirect to website
             if (isMobile) {
-                // Create a hidden iframe to try the deep link
-                const iframe = document.createElement('iframe');
-                iframe.style.display = 'none';
-                iframe.src = expoGoUrl;
-                document.body.appendChild(iframe);
-                
-                // Also try direct navigation
-                window.location.href = expoGoUrl;
-                
-                // If Expo Go is not installed, show options after a delay
-                setTimeout(() => {
-                    showOptions();
-                }, 3000);
+                // Redirect to the website
+                window.location.href = websiteUrl;
             } 
             // For desktop or other devices
             else {
@@ -191,8 +176,8 @@
             const expoButton = document.getElementById('expoLink');
             if (expoButton) {
                 expoButton.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    window.location.href = expoGoUrl;
+                    // Button now redirects to website directly
+                    window.location.href = websiteUrl;
                 });
             }
         });
