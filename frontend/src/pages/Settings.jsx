@@ -758,15 +758,15 @@ function Settings() {
               <h1 className="text-3xl font-bold text-slate-900 dark:text-white flex items-center space-x-3">
                 <FaCog className="w-8 h-8 text-blue-600" />
                 <span>{t("settings")}</span>
-              </h1>
-              <p className="mt-2 text-slate-600 dark:text-slate-400">
-                Manage your account settings and preferences
-              </p>
-            </div>
+          </h1>
+          <p className="mt-2 text-slate-600 dark:text-slate-400">
+            Manage your account settings and preferences
+          </p>
+        </div>
             <div className="flex items-center space-x-2 text-sm text-slate-500 dark:text-slate-400">
               <FaUser className="w-4 h-4" />
               <span>{userData.username || "User"}</span>
-            </div>
+          </div>
           </div>
         </div>
 
@@ -846,19 +846,19 @@ function Settings() {
               >
                 {/* Username Section */}
                 <SettingCard title={t("username")} description="Update your display name">
-                  <div className="flex flex-col sm:flex-row gap-4">
-                    <div className="flex-1">
-                      <input
-                        type="text"
+                    <div className="flex flex-col sm:flex-row gap-4">
+                      <div className="flex-1">
+                        <input
+                          type="text"
                         value={userData.username}
                         onChange={(e) => updateUserData('username', e.target.value)}
-                        className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400"
-                        placeholder={t("enterUsername")}
-                      />
-                    </div>
-                    <button
+                          className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400"
+                          placeholder={t("enterUsername")}
+                        />
+                      </div>
+                      <button
                       className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                      onClick={() => savePreferences("account")}
+                        onClick={() => savePreferences("account")}
                       disabled={uiState.isSavingPreferences}
                     >
                       {uiState.isSavingPreferences ? (
@@ -867,8 +867,8 @@ function Settings() {
                         <FaSave className="w-4 h-4" />
                       )}
                       <span>{uiState.isSavingPreferences ? t("saving") : t("save")}</span>
-                    </button>
-                  </div>
+                      </button>
+                    </div>
                 </SettingCard>
                 
                 {/* Emoji Preferences Section */}
@@ -878,13 +878,13 @@ function Settings() {
                 >
                   <div className="space-y-6">
                     <div className="flex items-center space-x-3">
-                      <input
-                        type="checkbox"
+                        <input
+                          type="checkbox"
                         id="showProfileEmoji"
-                        checked={userPreferences.showProfileEmoji}
-                        onChange={(e) => handlePreferenceChange("showProfileEmoji", e.target.checked)}
-                        className="w-5 h-5 text-blue-600 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 rounded focus:ring-blue-500 focus:ring-2"
-                      />
+                          checked={userPreferences.showProfileEmoji}
+                          onChange={(e) => handlePreferenceChange("showProfileEmoji", e.target.checked)}
+                          className="w-5 h-5 text-blue-600 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 rounded focus:ring-blue-500 focus:ring-2"
+                        />
                       <label htmlFor="showProfileEmoji" className="text-slate-700 dark:text-slate-300 font-medium cursor-pointer">
                         {t("showProfileEmoji")}
                       </label>
@@ -929,11 +929,11 @@ function Settings() {
                                 {animation.charAt(0).toUpperCase() + animation.slice(1)}
                               </button>
                             ))}
-                          </div>
-                        </div>
                       </div>
-                    )}
                   </div>
+                </div>
+                    )}
+              </div>
                 </SettingCard>
               </SectionCard>
             )}
@@ -947,7 +947,7 @@ function Settings() {
                 
                 {/* Theme Toggle */}
                 <SettingCard title={t("theme")} description="Choose your preferred color scheme">
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     {[
                       { mode: 'light', icon: '☀️', label: t("light") },
                       { mode: 'dark', icon: '🌙', label: t("dark") },
@@ -967,7 +967,7 @@ function Settings() {
                         <span className="font-medium text-slate-700 dark:text-slate-300">{label}</span>
                       </button>
                     ))}
-                  </div>
+                    </div>
                 </SettingCard>
                 
                 {/* Card Color Customization */}
@@ -986,7 +986,7 @@ function Settings() {
                       />
                       <label htmlFor="useCustomCardColor" className="text-slate-700 dark:text-slate-300 font-medium cursor-pointer">
                         {t("useCustomCardColor")}
-                      </label>
+                    </label>
                     </div>
                     
                     {userPreferences.useCustomCardColor && (
@@ -1037,7 +1037,7 @@ function Settings() {
                       />
                       <label htmlFor="enableAnimations" className="text-slate-700 dark:text-slate-300 font-medium cursor-pointer">
                         {t("enableAnimations")}
-                      </label>
+                    </label>
                     </div>
                     
                     {userPreferences.enableAnimations && (
@@ -1098,7 +1098,7 @@ function Settings() {
                     <span>{uiState.isSavingPreferences ? t("saving") : t("saveChanges")}</span>
                   </button>
                 </div>
-
+                
                 {/* Premium Theme Showcase */}
                 <SettingCard 
                   title="Premium Themes" 

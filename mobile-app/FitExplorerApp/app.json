@@ -2,6 +2,8 @@
   "expo": {
     "name": "FitExplorerApp",
     "slug": "FitExplorerApp",
+    "owner": "chia94",
+    "privacy": "public",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",

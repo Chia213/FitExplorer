@@ -1,7 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { WebView } from 'react-native-webview';
 import { SafeAreaView, StatusBar, StyleSheet, Alert, TouchableOpacity, Text, View } from 'react-native';
-import * as WebBrowser from 'expo-web-browser';
 
 export default function App() {
   const webViewRef = useRef(null);
@@ -11,53 +10,17 @@ export default function App() {
     console.log('Navigation to:', navState.url);
     setCurrentUrl(navState.url);
     
-    // Handle OAuth redirects by opening in external browser
-    if (navState.url.includes('accounts.google.com') ||
-        navState.url.includes('oauth2.googleapis.com') ||
-        navState.url.includes('google.com/oauth') ||
-        navState.url.includes('google.com/auth') ||
-        navState.url.includes('googleapis.com/oauth')) {
-      
-      WebBrowser.openBrowserAsync(navState.url, {
-        showTitle: false,
-        enableBarCollapsing: false,
-        showInRecents: true,
-      }).then(() => {
-        // After OAuth, reload the WebView
-        setTimeout(() => {
-          webViewRef.current?.reload();
-        }, 2000);
-      });
-      
-      return false; // Prevent WebView from navigating
-    }
+    // Allow OAuth to happen within the WebView instead of opening external browser
+    // This prevents the login loop issue
     return true;
   };
 
   const handleShouldStartLoadWithRequest = (request) => {
     console.log('Loading request:', request.url);
     
-    // Handle OAuth URLs by opening in external browser
-    if (request.url.includes('accounts.google.com') ||
-        request.url.includes('oauth2.googleapis.com') ||
-        request.url.includes('google.com/oauth') ||
-        request.url.includes('google.com/auth') ||
-        request.url.includes('googleapis.com/oauth')) {
-      
-      WebBrowser.openBrowserAsync(request.url, {
-        showTitle: false,
-        enableBarCollapsing: false,
-        showInRecents: true,
-      }).then(() => {
-        // After OAuth, reload the WebView
-        setTimeout(() => {
-          webViewRef.current?.reload();
-        }, 2000);
-      });
-      
-      return false; // Prevent WebView from loading
-    }
-    return true;
+    // Allow OAuth to happen within the WebView instead of opening external browser
+    // This prevents the login loop issue
+    return true; // Allow the request to proceed
   };
 
   const handleMessage = (event) => {
