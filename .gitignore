@@ -107,3 +107,7 @@ capacitor.config.ts
 
 # Local development
 .local
+
+__pycache__/
+*.pyc
+node_modules/

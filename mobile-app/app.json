@@ -1,0 +1,62 @@
+{
+  "expo": {
+    "name": "FitExplorer",
+    "slug": "fitexplorer-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.fitexplorer.app",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true
+        },
+        "NSCameraUsageDescription": "FitExplorer needs camera access to scan QR codes and take progress photos.",
+        "NSPhotoLibraryUsageDescription": "FitExplorer needs photo library access to save and select progress photos.",
+        "NSHealthUpdateUsageDescription": "FitExplorer can sync your workout data with Apple Health to track your fitness progress.",
+        "NSHealthShareUsageDescription": "FitExplorer can read your health data from Apple Health to provide better fitness insights.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true,
+      "package": "com.fitexplorer.app",
+      "versionCode": 1,
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "INTERNET",
+        "ACCESS_NETWORK_STATE"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-web-browser"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "6e8215fe-e86a-4575-9657-490c09e54a17"
+      }
+    },
+    "cli": {
+      "appVersionSource": "remote"
+    },
+    "owner": "chia94"
+  }
+}
