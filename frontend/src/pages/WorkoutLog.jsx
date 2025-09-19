@@ -171,15 +171,24 @@ const WorkoutLog = () => {
     fetchExerciseMemory();
   }, []);
 
-  // Sync with active workout session
+  // Sync with active workout session - only when workout first becomes active
   useEffect(() => {
     if (activeWorkout && isWorkoutActive) {
-      setWorkoutName(activeWorkout.workoutName || "");
-      setStartTime(activeWorkout.startTime ? new Date(activeWorkout.startTime).toISOString().slice(0, 16) : getCurrentTimeForInput());
-      setNotes(activeWorkout.notes || "");
-      setWorkoutExercises(activeWorkout.exercises || []);
+      // Only update if the values are actually different to prevent loops
+      if (workoutName !== (activeWorkout.workoutName || "")) {
+        setWorkoutName(activeWorkout.workoutName || "");
+      }
+      if (startTime !== (activeWorkout.startTime ? new Date(activeWorkout.startTime).toISOString().slice(0, 16) : getCurrentTimeForInput())) {
+        setStartTime(activeWorkout.startTime ? new Date(activeWorkout.startTime).toISOString().slice(0, 16) : getCurrentTimeForInput());
+      }
+      if (notes !== (activeWorkout.notes || "")) {
+        setNotes(activeWorkout.notes || "");
+      }
+      if (JSON.stringify(workoutExercises) !== JSON.stringify(activeWorkout.exercises || [])) {
+        setWorkoutExercises(activeWorkout.exercises || []);
+      }
     }
-  }, [activeWorkout, isWorkoutActive]);
+  }, [activeWorkout?.id, isWorkoutActive]); // Only depend on workout ID, not the entire object
 
   // Start workout session when user begins logging
   const startWorkoutSession = () => {
@@ -193,16 +202,20 @@ const WorkoutLog = () => {
     }
   };
 
-  // Update workout session when workout data changes
+  // Update workout session when workout data changes - debounced to prevent loops
   useEffect(() => {
     if (isWorkoutActive && activeWorkout) {
-      updateWorkout({
-        workoutName: workoutName,
-        notes: notes,
-        exercises: workoutExercises
-      });
+      const timeoutId = setTimeout(() => {
+        updateWorkout({
+          workoutName: workoutName,
+          notes: notes,
+          exercises: workoutExercises
+        });
+      }, 100); // Small delay to prevent rapid updates
+
+      return () => clearTimeout(timeoutId);
     }
-  }, [workoutName, notes, workoutExercises, isWorkoutActive, activeWorkout, updateWorkout]);
+  }, [workoutName, notes, workoutExercises, isWorkoutActive, updateWorkout]); // Removed activeWorkout from deps
   
   // Function to fetch exercise memory from backend
   const fetchExerciseMemory = async () => {
@@ -2342,7 +2355,7 @@ const WorkoutLog = () => {
   // Call loadUserPreferences when component mounts
   useEffect(() => {
     loadUserPreferences();
-  }, [loadUserPreferences]);
+  }, []); // Empty dependency array since loadUserPreferences is stable
 
   // Load the last used bodyweight from localStorage when the component mounts
   useEffect(() => {
@@ -2856,70 +2869,72 @@ const WorkoutLog = () => {
               </button>
             </div>
 
-            {/* Mobile-optimized action buttons */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+            {/* Mobile-optimized action buttons - Much smaller */}
+            <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-7 gap-1">
               <button
                 onClick={() => handleShowReorderModal()}
-                className="text-card-foreground hover:text-foreground bg-muted hover:bg-accent hover:text-accent-foreground p-3 rounded-lg flex items-center justify-center min-h-[44px] text-sm font-medium"
+                className="text-card-foreground hover:text-foreground bg-muted hover:bg-accent hover:text-accent-foreground p-1.5 rounded-md flex flex-col items-center justify-center min-h-[32px] text-xs font-medium"
                 title="Reorder Exercises"
               >
-                <FaSort className="mr-2 text-sm" />
-                <span className="hidden sm:inline">Reorder</span>
+                <FaSort className="w-3 h-3 mb-0.5" />
+                <span className="text-[10px] leading-tight">Reorder</span>
               </button>
               
               {/* Only show Set Type button for strength exercises, not cardio */}
               {!exercise.is_cardio && (
                 <button
                   onClick={() => handleShowSetTypeModal(exercise)}
-                  className="text-card-foreground hover:text-foreground bg-muted hover:bg-accent hover:text-accent-foreground p-3 rounded-lg flex items-center justify-center min-h-[44px] text-sm font-medium"
+                  className="text-card-foreground hover:text-foreground bg-muted hover:bg-accent hover:text-accent-foreground p-1.5 rounded-md flex flex-col items-center justify-center min-h-[32px] text-xs font-medium"
                   title="Set Type"
                 >
-                  <FaLayerGroup className="mr-2 text-sm" />
-                  <span className="hidden sm:inline">Set Type</span>
+                  <FaLayerGroup className="w-3 h-3 mb-0.5" />
+                  <span className="text-[10px] leading-tight">Set Type</span>
                 </button>
               )}
               
               <button
                 onClick={() => handleShowExerciseHistory(exercise)}
-                className="text-card-foreground hover:text-foreground bg-muted hover:bg-accent hover:text-accent-foreground p-3 rounded-lg flex items-center justify-center min-h-[44px] text-sm font-medium"
+                className="text-card-foreground hover:text-foreground bg-muted hover:bg-accent hover:text-accent-foreground p-1.5 rounded-md flex flex-col items-center justify-center min-h-[32px] text-xs font-medium"
                 title="Exercise History"
               >
-                <FaHistory className="mr-2 text-sm" />
-                <span className="hidden sm:inline">History</span>
+                <FaHistory className="w-3 h-3 mb-0.5" />
+                <span className="text-[10px] leading-tight">History</span>
               </button>
               
               <button
                 onClick={() => handleShowExerciseCharts(exercise)}
-                className="text-card-foreground hover:text-foreground bg-muted hover:bg-accent hover:text-accent-foreground p-3 rounded-lg flex items-center justify-center min-h-[44px] text-sm font-medium"
+                className="text-card-foreground hover:text-foreground bg-muted hover:bg-accent hover:text-accent-foreground p-1.5 rounded-md flex flex-col items-center justify-center min-h-[32px] text-xs font-medium"
                 title="Exercise Charts"
               >
-                <FaChartLine className="mr-2 text-sm" />
-                <span className="hidden sm:inline">Charts</span>
+                <FaChartLine className="w-3 h-3 mb-0.5" />
+                <span className="text-[10px] leading-tight">Charts</span>
               </button>
               
               <button
                 onClick={() => handleShowPersonalRecords(exercise)}
-                className="text-card-foreground hover:text-foreground bg-muted hover:bg-accent hover:text-accent-foreground p-3 rounded-lg flex items-center justify-center min-h-[44px] text-sm font-medium"
+                className="text-card-foreground hover:text-foreground bg-muted hover:bg-accent hover:text-accent-foreground p-1.5 rounded-md flex flex-col items-center justify-center min-h-[32px] text-xs font-medium"
                 title="Personal Records"
               >
-                <FaTrophy className="mr-2 text-sm" />
-                <span className="hidden sm:inline">Records</span>
+                <FaTrophy className="w-3 h-3 mb-0.5" />
+                <span className="text-[10px] leading-tight">Records</span>
               </button>
               
               <button
                 onClick={() => handleDeleteExercise(exerciseIndex)}
-                className="text-destructive hover:text-destructive/80 bg-muted hover:bg-accent hover:text-accent-foreground p-3 rounded-lg flex items-center justify-center min-h-[44px] text-sm font-medium"
+                className="text-destructive hover:text-destructive/80 bg-muted hover:bg-destructive/10 p-1.5 rounded-md flex flex-col items-center justify-center min-h-[32px] text-xs font-medium"
+                title="Delete Exercise"
               >
-                <FaTrash className="mr-2 text-sm" />
-                <span className="hidden sm:inline">Delete</span>
+                <FaTrash className="w-3 h-3 mb-0.5" />
+                <span className="text-[10px] leading-tight">Delete</span>
               </button>
               
               <button
                 onClick={() => handleStartRestTimer(exercise)}
-                className="text-accent hover:text-accent/80 bg-muted hover:bg-accent hover:text-accent-foreground p-3 rounded-lg flex items-center justify-center min-h-[44px] text-sm font-medium"
+                className="text-accent hover:text-accent/80 bg-muted hover:bg-accent/10 p-1.5 rounded-md flex flex-col items-center justify-center min-h-[32px] text-xs font-medium"
+                title="Rest Timer"
               >
-                <FaClock className="mr-2 text-sm" />
-                <span className="hidden sm:inline">Timer</span>
+                <FaClock className="w-3 h-3 mb-0.5" />
+                <span className="text-[10px] leading-tight">Timer</span>
               </button>
             </div>
           </div>

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 
 const WorkoutSessionContext = createContext();
 
@@ -55,8 +55,7 @@ export const WorkoutSessionProvider = ({ children }) => {
     if (activeWorkout) {
       setActiveWorkout(prev => ({
         ...prev,
-        ...updates,
-        lastUpdated: new Date().toISOString()
+        ...updates
       }));
     }
   };
@@ -65,8 +64,7 @@ export const WorkoutSessionProvider = ({ children }) => {
     if (activeWorkout) {
       setActiveWorkout(prev => ({
         ...prev,
-        exercises: [...prev.exercises, exercise],
-        lastUpdated: new Date().toISOString()
+        exercises: [...prev.exercises, exercise]
       }));
     }
   };
@@ -77,8 +75,7 @@ export const WorkoutSessionProvider = ({ children }) => {
         ...prev,
         exercises: prev.exercises.map((exercise, index) => 
           index === exerciseIndex ? { ...exercise, ...updates } : exercise
-        ),
-        lastUpdated: new Date().toISOString()
+        )
       }));
     }
   };
@@ -87,8 +84,7 @@ export const WorkoutSessionProvider = ({ children }) => {
     if (activeWorkout) {
       setActiveWorkout(prev => ({
         ...prev,
-        exercises: prev.exercises.filter((_, index) => index !== exerciseIndex),
-        lastUpdated: new Date().toISOString()
+        exercises: prev.exercises.filter((_, index) => index !== exerciseIndex)
       }));
     }
   };
@@ -102,8 +98,7 @@ export const WorkoutSessionProvider = ({ children }) => {
     if (activeWorkout) {
       setActiveWorkout(prev => ({
         ...prev,
-        pausedAt: new Date().toISOString(),
-        lastUpdated: new Date().toISOString()
+        pausedAt: new Date().toISOString()
       }));
     }
   };
@@ -112,15 +107,12 @@ export const WorkoutSessionProvider = ({ children }) => {
     if (activeWorkout) {
       setActiveWorkout(prev => {
         const { pausedAt, ...rest } = prev;
-        return {
-          ...rest,
-          lastUpdated: new Date().toISOString()
-        };
+        return rest;
       });
     }
   };
 
-  const getWorkoutDuration = () => {
+  const getWorkoutDuration = useCallback(() => {
     if (!activeWorkout) return 0;
     
     const startTime = new Date(activeWorkout.startTime);
@@ -132,9 +124,9 @@ export const WorkoutSessionProvider = ({ children }) => {
     }
     
     return currentTime - startTime;
-  };
+  }, [activeWorkout]);
 
-  const value = {
+  const value = useMemo(() => ({
     activeWorkout,
     isWorkoutActive,
     startWorkout,
@@ -146,7 +138,7 @@ export const WorkoutSessionProvider = ({ children }) => {
     pauseWorkout,
     resumeWorkout,
     getWorkoutDuration
-  };
+  }), [activeWorkout, isWorkoutActive, getWorkoutDuration]);
 
   return (
     <WorkoutSessionContext.Provider value={value}>

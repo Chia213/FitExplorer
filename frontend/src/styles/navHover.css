@@ -1,44 +1,19 @@
-/* Floating effect for navigation with neutral styling */
+/* Simple hover effect for navigation without floating */
 .nav-item {
     position: relative;
-    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transition: all 0.3s ease;
     border-radius: 8px;
     z-index: 1;
 }
 
 .nav-item:hover {
-    transform: translateY(-8px);
-    box-shadow: 0 15px 20px -10px rgba(0, 0, 0, 0.1);
-    /* Neutral shadow */
-}
-
-/* Shadow below the floating element */
-.nav-item::after {
-    content: '';
-    position: absolute;
-    bottom: -10px;
-    left: 50%;
-    transform: translateX(-50%) scale(0);
-    width: 60%;
-    height: 5px;
-    border-radius: 50%;
-    background-color: rgba(0, 0, 0, 0.07);
-    /* Very subtle neutral shadow */
-    transition: transform 0.4s ease;
-}
-
-.nav-item:hover::after {
-    transform: translateX(-50%) scale(1);
+    /* Remove floating animation - just keep background color change */
 }
 
 /* No color change for text and icons - keeping your existing theme colors */
 
 
-/* Dark mode adjustments */
+/* Dark mode adjustments - no floating effects */
 .dark .nav-item:hover {
-    box-shadow: 0 15px 20px -10px rgba(255, 255, 255, 0.1);
-}
-
-.dark .nav-item::after {
-    background-color: rgba(255, 255, 255, 0.07);
+    /* Remove floating shadow in dark mode */
 }

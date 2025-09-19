@@ -82,21 +82,21 @@ const TermsOfService = () => {
       <Navigation />
       
       {/* Hero Section */}
-      <section className="relative pt-32 pb-20 px-4">
+      <section className="relative pt-20 md:pt-32 pb-12 md:pb-20 px-4">
         <div className="container mx-auto max-w-6xl text-center">
-          <div className="space-y-6 animate-fade-in-up">
-            <Badge variant="outline" className="border-primary/50 text-primary mb-4">
+          <div className="space-y-4 md:space-y-6 animate-fade-in-up">
+            <Badge variant="outline" className="border-primary/50 text-primary mb-2 md:mb-4 text-sm">
               Legal Information
             </Badge>
-            <h1 className="text-5xl md:text-7xl font-bold hero-text mb-6">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold hero-text mb-4 md:mb-6 leading-tight">
               Terms of Service
             </h1>
-            <p className="text-xl md:text-2xl text-muted-foreground max-w-4xl mx-auto leading-relaxed">
+            <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-muted-foreground max-w-4xl mx-auto leading-relaxed px-2">
               Our commitment to transparency, fairness, and your rights as a user. 
               Please read these terms carefully to understand your rights and responsibilities.
             </p>
-            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-              <Calendar className="w-4 h-4" />
+            <div className="flex items-center justify-center gap-2 text-xs md:text-sm text-muted-foreground">
+              <Calendar className="w-3 h-3 md:w-4 md:h-4" />
               <span>Last Updated: {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
             </div>
           </div>
@@ -104,14 +104,14 @@ const TermsOfService = () => {
       </section>
 
       {/* Key Points */}
-      <section className="py-16 px-4">
+      <section className="py-12 md:py-16 px-4">
         <div className="container mx-auto max-w-6xl">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 animate-fade-in">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 animate-fade-in">
             {keyPoints.map((point, index) => (
-              <Card key={index} className="glass-card text-center p-6">
+              <Card key={index} className="glass-card text-center p-4 md:p-6">
                 <CardContent className="p-0">
-                  <point.icon className="w-8 h-8 text-primary mx-auto mb-3" />
-                  <div className="text-sm font-medium text-foreground">{point.text}</div>
+                  <point.icon className="w-6 h-6 md:w-8 md:h-8 text-primary mx-auto mb-2 md:mb-3" />
+                  <div className="text-xs md:text-sm font-medium text-foreground leading-tight">{point.text}</div>
                 </CardContent>
               </Card>
             ))}
@@ -120,15 +120,15 @@ const TermsOfService = () => {
       </section>
 
       {/* Introduction */}
-      <section className="py-20 px-4">
+      <section className="py-12 md:py-20 px-4">
         <div className="container mx-auto max-w-4xl text-center">
-          <div className="glass-card p-12 animate-scale-in">
-            <h2 className="text-4xl font-bold mb-6 hero-text">Welcome to FitExplorer</h2>
-            <p className="text-lg text-muted-foreground leading-relaxed mb-8">
+          <div className="glass-card p-6 md:p-12 animate-scale-in">
+            <h2 className="text-2xl md:text-4xl font-bold mb-4 md:mb-6 hero-text">Welcome to FitExplorer</h2>
+            <p className="text-sm md:text-lg text-muted-foreground leading-relaxed mb-6 md:mb-8 px-2">
               These Terms of Service govern your use of the FitExplorer platform, including our website, 
               mobile application, and all related services. Please read these terms carefully before using FitExplorer.
             </p>
-            <p className="text-lg text-muted-foreground leading-relaxed">
+            <p className="text-sm md:text-lg text-muted-foreground leading-relaxed px-2">
               By accessing or using our service, you agree to be bound by these Terms. If you disagree with 
               any part of the terms, you may not access the service.
             </p>
@@ -137,28 +137,28 @@ const TermsOfService = () => {
       </section>
 
       {/* Terms Sections */}
-      <section className="py-20 px-4">
+      <section className="py-12 md:py-20 px-4">
         <div className="container mx-auto max-w-6xl">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold mb-4 hero-text">Terms & Conditions</h2>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+          <div className="text-center mb-8 md:mb-16">
+            <h2 className="text-2xl md:text-4xl font-bold mb-3 md:mb-4 hero-text">Terms & Conditions</h2>
+            <p className="text-base md:text-xl text-muted-foreground max-w-3xl mx-auto px-2">
               Detailed information about your rights and responsibilities when using FitExplorer
             </p>
           </div>
           
-          <div className="space-y-8">
+          <div className="space-y-6 md:space-y-8">
             {sections.map((section, index) => (
               <Card key={index} className="feature-card">
-                <CardContent className="p-8">
-                  <div className="flex items-start space-x-6">
-                    <div className={`w-16 h-16 rounded-2xl bg-gradient-to-r ${section.gradient} flex items-center justify-center flex-shrink-0`}>
-                      <section.icon className="w-8 h-8 text-white" />
+                <CardContent className="p-4 md:p-8">
+                  <div className="flex flex-col sm:flex-row items-start space-y-4 sm:space-y-0 sm:space-x-4 md:space-x-6">
+                    <div className={`w-12 h-12 md:w-16 md:h-16 rounded-2xl bg-gradient-to-r ${section.gradient} flex items-center justify-center flex-shrink-0 mx-auto sm:mx-0`}>
+                      <section.icon className="w-6 h-6 md:w-8 md:h-8 text-white" />
                     </div>
-                    <div className="flex-1">
-                      <h3 className="text-2xl font-semibold mb-4 text-foreground">
+                    <div className="flex-1 w-full">
+                      <h3 className="text-lg md:text-2xl font-semibold mb-3 md:mb-4 text-foreground text-center sm:text-left">
                         {section.title}
                       </h3>
-                      <p className="text-muted-foreground leading-relaxed">
+                      <p className="text-sm md:text-base text-muted-foreground leading-relaxed">
                         {section.content}
                       </p>
                     </div>
@@ -171,20 +171,20 @@ const TermsOfService = () => {
       </section>
 
       {/* Additional Information */}
-      <section className="py-20 px-4">
+      <section className="py-12 md:py-20 px-4">
         <div className="container mx-auto max-w-4xl">
-          <Card className="glass-card p-12">
+          <Card className="glass-card p-6 md:p-12">
             <CardContent className="p-0">
-              <h2 className="text-3xl font-bold mb-8 hero-text text-center">Additional Information</h2>
+              <h2 className="text-xl md:text-3xl font-bold mb-6 md:mb-8 hero-text text-center">Additional Information</h2>
               
-              <div className="space-y-8">
-                <div className="flex items-start space-x-4">
-                  <div className="w-8 h-8 bg-primary/20 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                    <Info className="w-4 h-4 text-primary" />
+              <div className="space-y-6 md:space-y-8">
+                <div className="flex items-start space-x-3 md:space-x-4">
+                  <div className="w-6 h-6 md:w-8 md:h-8 bg-primary/20 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                    <Info className="w-3 h-3 md:w-4 md:h-4 text-primary" />
                   </div>
                   <div>
-                    <h3 className="text-xl font-semibold mb-3 text-foreground">Modifications</h3>
-                    <p className="text-muted-foreground leading-relaxed">
+                    <h3 className="text-lg md:text-xl font-semibold mb-2 md:mb-3 text-foreground">Modifications</h3>
+                    <p className="text-sm md:text-base text-muted-foreground leading-relaxed">
                       We reserve the right to modify these Terms at any time. We will provide notice of any 
                       material changes through the service or by other means. Your continued use of FitExplorer 
                       after such modifications will constitute your acknowledgment of the modified Terms.
@@ -194,23 +194,23 @@ const TermsOfService = () => {
 
                 <Separator className="bg-glass-border" />
 
-                <div className="flex items-start space-x-4">
-                  <div className="w-8 h-8 bg-accent/20 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                    <Mail className="w-4 h-4 text-accent" />
+                <div className="flex items-start space-x-3 md:space-x-4">
+                  <div className="w-6 h-6 md:w-8 md:h-8 bg-accent/20 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                    <Mail className="w-3 h-3 md:w-4 md:h-4 text-accent" />
                   </div>
                   <div>
-                    <h3 className="text-xl font-semibold mb-3 text-foreground">Contact Information</h3>
-                    <p className="text-muted-foreground leading-relaxed mb-4">
+                    <h3 className="text-lg md:text-xl font-semibold mb-2 md:mb-3 text-foreground">Contact Information</h3>
+                    <p className="text-sm md:text-base text-muted-foreground leading-relaxed mb-3 md:mb-4">
                       If you have any questions about these Terms, please contact us:
                     </p>
-                    <div className="flex flex-wrap gap-4">
-                      <Button variant="outline" asChild>
+                    <div className="flex flex-col sm:flex-row flex-wrap gap-3 md:gap-4">
+                      <Button variant="outline" size="sm" className="md:size-default" asChild>
                         <a href="mailto:fitexplorer.fitnessapp@gmail.com">
-                          <Mail className="w-4 h-4 mr-2" />
+                          <Mail className="w-3 h-3 md:w-4 md:h-4 mr-2" />
                           Email Support
                         </a>
                       </Button>
-                      <Button variant="outline" asChild>
+                      <Button variant="outline" size="sm" className="md:size-default" asChild>
                         <Link to="/contact">Contact Page</Link>
                       </Button>
                     </div>
@@ -223,20 +223,20 @@ const TermsOfService = () => {
       </section>
 
       {/* Footer Navigation */}
-      <section className="py-16 px-4">
+      <section className="py-12 md:py-16 px-4">
         <div className="container mx-auto max-w-4xl text-center">
-          <h3 className="text-2xl font-semibold mb-6 text-foreground">Related Pages</h3>
-          <div className="flex flex-wrap justify-center gap-4">
-            <Button variant="outline" asChild>
+          <h3 className="text-lg md:text-2xl font-semibold mb-4 md:mb-6 text-foreground">Related Pages</h3>
+          <div className="flex flex-wrap justify-center gap-3 md:gap-4">
+            <Button variant="outline" size="sm" className="md:size-default" asChild>
               <Link to="/privacy-policy">Privacy Policy</Link>
             </Button>
-            <Button variant="outline" asChild>
+            <Button variant="outline" size="sm" className="md:size-default" asChild>
               <Link to="/about">About Us</Link>
             </Button>
-            <Button variant="outline" asChild>
+            <Button variant="outline" size="sm" className="md:size-default" asChild>
               <Link to="/faq">FAQ</Link>
             </Button>
-            <Button variant="outline" asChild>
+            <Button variant="outline" size="sm" className="md:size-default" asChild>
               <Link to="/contact">Contact</Link>
             </Button>
           </div>
@@ -247,7 +247,7 @@ const TermsOfService = () => {
       <footer className="border-t border-border py-8 px-4">
         <div className="container mx-auto max-w-6xl text-center">
           <p className="text-muted-foreground">
-            © 2025 Chia Ranchber. All rights reserved.
+            © 2024 FitExplorer. All rights reserved.
           </p>
         </div>
       </footer>

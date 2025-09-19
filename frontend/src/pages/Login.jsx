@@ -339,38 +339,38 @@ function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
-      <div className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg w-full max-w-md mx-auto text-gray-900 dark:text-gray-100">
-        <h1 className="text-3xl font-bold text-center text-gray-800 dark:text-gray-100 mb-6">
+    <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 p-2 sm:p-4">
+      <div className="bg-white dark:bg-gray-800 p-4 sm:p-6 md:p-8 rounded-xl shadow-lg w-full max-w-md mx-auto text-gray-900 dark:text-gray-100">
+        <h1 className="text-2xl sm:text-3xl font-bold text-center text-gray-800 dark:text-gray-100 mb-4 sm:mb-6">
           Login
         </h1>
 
         {successMessage && (
-          <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg flex items-start">
-            <FaCheckCircle className="text-green-500 mt-1 mr-2 flex-shrink-0" />
-            <p className="text-green-800 dark:text-green-300">
+          <div className="mb-3 sm:mb-4 p-2 sm:p-3 bg-green-50 dark:bg-green-900/20 rounded-lg flex items-start">
+            <FaCheckCircle className="text-green-500 mt-1 mr-2 flex-shrink-0 w-4 h-4 sm:w-5 sm:h-5" />
+            <p className="text-green-800 dark:text-green-300 text-sm sm:text-base">
               {successMessage}
             </p>
           </div>
         )}
 
-        {error && <p className="text-red-500 text-center mb-4">{error}</p>}
+        {error && <p className="text-red-500 text-center mb-3 sm:mb-4 text-sm sm:text-base px-2">{error}</p>}
 
         {showResendVerification && (
-          <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-            <p className="text-sm text-blue-800 dark:text-blue-300 mb-2">
+          <div className="mt-3 sm:mt-4 p-2 sm:p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+            <p className="text-xs sm:text-sm text-blue-800 dark:text-blue-300 mb-2">
               Need a new verification email?
             </p>
             {resendStatus === "success" ? (
-              <p className="text-green-600 dark:text-green-400 text-sm">
+              <p className="text-green-600 dark:text-green-400 text-xs sm:text-sm">
                 Verification email resent! Please check your inbox.
               </p>
             ) : (
-              <div className="flex items-center space-x-2">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
                 <button
                   onClick={handleResendVerification}
                   disabled={resendStatus === "submitting"}
-                  className={`text-white bg-blue-500 px-3 py-1 rounded text-sm ${
+                  className={`text-white bg-blue-500 px-3 py-1.5 rounded text-xs sm:text-sm ${
                     resendStatus === "submitting"
                       ? "opacity-70"
                       : "hover:bg-blue-600"
@@ -381,16 +381,16 @@ function Login() {
                     : "Resend Email"}
                 </button>
                 {resendStatus === "error" && (
-                  <span className="text-red-500 text-sm">Failed to resend</span>
+                  <span className="text-red-500 text-xs sm:text-sm">Failed to resend</span>
                 )}
               </div>
             )}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-3 sm:gap-4">
           <div>
-            <label className="block text-gray-700 dark:text-gray-300 font-medium">
+            <label className="block text-gray-700 dark:text-gray-300 font-medium text-sm sm:text-base">
               Email
             </label>
             <input
@@ -400,58 +400,60 @@ function Login() {
               onChange={handleChange}
               placeholder="Enter your email"
               required
-              className="w-full px-4 py-2 mt-1 border border-gray-300 dark:border-gray-600 rounded-lg 
+              className="w-full px-3 sm:px-4 py-2.5 sm:py-2 mt-1 border border-gray-300 dark:border-gray-600 rounded-lg 
                          bg-white dark:bg-gray-700 
-                         text-gray-900 dark:text-gray-100
+                         text-gray-900 dark:text-gray-100 text-sm sm:text-base
                          focus:outline-none focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-500"
             />
           </div>
 
           <div className="relative">
             <div className="flex justify-between items-center">
-              <label className="block text-gray-700 dark:text-gray-300 font-medium">
+              <label className="block text-gray-700 dark:text-gray-300 font-medium text-sm sm:text-base">
                 Password
               </label>
               <button
                 type="button"
                 onClick={() => setShowForgotPassword(true)}
-                className="text-sm text-blue-500 dark:text-blue-400 hover:underline"
+                className="text-xs sm:text-sm text-blue-500 dark:text-blue-400 hover:underline"
               >
                 Forgot password?
               </button>
             </div>
-            <input
-              type={showPassword ? "text" : "password"}
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              placeholder="Enter your password"
-              required
-              className="w-full px-4 py-2 mt-1 border border-gray-300 dark:border-gray-600 rounded-lg 
-                         bg-white dark:bg-gray-700 
-                         text-gray-900 dark:text-gray-100
-                         focus:outline-none focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-500"
-            />
-            <button
-              type="button"
-              onClick={togglePasswordVisibility}
-              className="absolute top-12 right-3 transform -translate-y-1/2 text-gray-500 dark:text-gray-400"
-            >
-              {showPassword ? <FaEyeSlash size={20} /> : <FaEye size={20} />}
-            </button>
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="Enter your password"
+                required
+                className="w-full px-3 sm:px-4 py-2.5 sm:py-2 mt-1 border border-gray-300 dark:border-gray-600 rounded-lg 
+                           bg-white dark:bg-gray-700 
+                           text-gray-900 dark:text-gray-100 text-sm sm:text-base
+                           focus:outline-none focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-500"
+              />
+              <button
+                type="button"
+                onClick={togglePasswordVisibility}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400"
+              >
+                {showPassword ? <FaEyeSlash size={16} className="sm:w-5 sm:h-5" /> : <FaEye size={16} className="sm:w-5 sm:h-5" />}
+              </button>
+            </div>
           </div>
 
           <button
             type="submit"
             className="w-full bg-blue-500 hover:bg-blue-600 
                        dark:bg-blue-600 dark:hover:bg-blue-700 
-                       text-white font-semibold py-2 rounded-lg 
-                       transition duration-300 ease-in-out"
+                       text-white font-semibold py-2.5 sm:py-2 rounded-lg 
+                       transition duration-300 ease-in-out text-sm sm:text-base"
           >
             Login
           </button>
 
-          <p className="text-sm text-gray-500 dark:text-gray-400 text-center">
+          <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 text-center">
             Don't have an account?{" "}
             <a
               href="/signup"
@@ -462,16 +464,16 @@ function Login() {
           </p>
         </form>
 
-        <div className="mt-6 relative">
+        <div className="mt-4 sm:mt-6 relative">
           <div className="relative flex justify-center items-center">
             <hr className="w-full border-gray-300 dark:border-gray-600" />
-            <span className="px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-sm absolute">
+            <span className="px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-xs sm:text-sm absolute">
               or
             </span>
           </div>
 
           {/* Fixed Google Login Button */}
-          <div className="mt-6 flex justify-center">
+          <div className="mt-4 sm:mt-6 flex justify-center">
             <GoogleLogin
               onSuccess={handleGoogleLogin}
               onError={() => {
@@ -482,14 +484,14 @@ function Login() {
               theme={theme === "dark" ? "filled_black" : "filled_blue"}
               shape="circle"
               text="signin_with"
-              width={300}
+              width={280}
               locale="en"
               context="signin"
             />
           </div>
 
           {/* Mobile WebView Google Login Button */}
-          <div className="mt-4 flex justify-center mobile-webview-only" style={{ display: 'none' }}>
+          <div className="mt-3 sm:mt-4 flex justify-center mobile-webview-only" style={{ display: 'none' }}>
             <button
               type="button"
               onClick={() => {
@@ -507,15 +509,15 @@ function Login() {
                 console.log('Opening Google OAuth for mobile WebView:', googleOAuthUrl);
                 window.location.href = googleOAuthUrl;
               }}
-              className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-lg flex items-center gap-2 transition-colors"
+              className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2.5 sm:py-3 px-4 sm:px-6 rounded-lg flex items-center gap-2 transition-colors text-sm sm:text-base"
             >
-              <FaGoogle className="w-5 h-5" />
+              <FaGoogle className="w-4 h-4 sm:w-5 sm:h-5" />
               Sign in with Google (Mobile)
             </button>
           </div>
           
           {/* Fallback for mobile devices */}
-          <div className="mt-4 text-center">
+          <div className="mt-3 sm:mt-4 text-center">
             <button
               type="button"
               onClick={() => {
@@ -532,7 +534,7 @@ function Login() {
                   console.error("Error clicking Google button:", err);
                 }
               }}
-              className="text-blue-500 text-sm hover:underline"
+              className="text-blue-500 text-xs sm:text-sm hover:underline"
             >
               Having trouble? Try tapping here
             </button>
@@ -540,28 +542,28 @@ function Login() {
         </div>
 
         {showForgotPassword && (
-          <div className="mt-6 bg-gray-50 dark:bg-gray-700 p-6 rounded-lg">
-            <h2 className="text-xl font-semibold mb-4">Reset Password</h2>
+          <div className="mt-4 sm:mt-6 bg-gray-50 dark:bg-gray-700 p-4 sm:p-6 rounded-lg">
+            <h2 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">Reset Password</h2>
             {forgotStatus === "success" ? (
               <div className="text-green-600 dark:text-green-400">
-                <p>
+                <p className="text-sm sm:text-base">
                   If an account with this email exists, a password reset link
                   has been sent.
                 </p>
-                <p className="mt-2">
+                <p className="mt-2 text-sm sm:text-base">
                   Please check your email inbox and follow the instructions.
                 </p>
                 <button
                   onClick={() => setShowForgotPassword(false)}
-                  className="mt-4 w-full bg-blue-500 hover:bg-blue-600 text-white py-2 rounded"
+                  className="mt-3 sm:mt-4 w-full bg-blue-500 hover:bg-blue-600 text-white py-2.5 sm:py-2 rounded text-sm sm:text-base"
                 >
                   Back to Login
                 </button>
               </div>
             ) : (
               <form onSubmit={handleForgotPassword}>
-                <div className="mb-4">
-                  <label className="block text-gray-700 dark:text-gray-300 font-medium mb-1">
+                <div className="mb-3 sm:mb-4">
+                  <label className="block text-gray-700 dark:text-gray-300 font-medium mb-1 text-sm sm:text-base">
                     Email Address
                   </label>
                   <input
@@ -569,15 +571,15 @@ function Login() {
                     value={forgotEmail}
                     onChange={(e) => setForgotEmail(e.target.value)}
                     required
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    className="w-full px-3 sm:px-4 py-2.5 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm sm:text-base"
                     placeholder="Enter your email"
                   />
                 </div>
-                <div className="flex space-x-2">
+                <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
                   <button
                     type="submit"
                     disabled={forgotStatus === "submitting"}
-                    className={`flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-lg transition ${
+                    className={`flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2.5 sm:py-2 rounded-lg transition text-sm sm:text-base ${
                       forgotStatus === "submitting"
                         ? "opacity-70 cursor-not-allowed"
                         : ""
@@ -590,13 +592,13 @@ function Login() {
                   <button
                     type="button"
                     onClick={() => setShowForgotPassword(false)}
-                    className="flex-1 bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 text-gray-800 dark:text-white py-2 rounded-lg"
+                    className="flex-1 bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 text-gray-800 dark:text-white py-2.5 sm:py-2 rounded-lg text-sm sm:text-base"
                   >
                     Cancel
                   </button>
                 </div>
                 {forgotStatus === "error" && (
-                  <p className="mt-2 text-red-500">
+                  <p className="mt-2 text-red-500 text-sm sm:text-base">
                     Something went wrong. Please try again.
                   </p>
                 )}

@@ -24,6 +24,7 @@ import {
   FaChevronDown,
   FaCog,
   FaPlus,
+  FaEnvelope,
 } from "react-icons/fa";
 import { LuBicepsFlexed, LuCalendarClock } from "react-icons/lu";
 import logo from "../assets/Ronjasdrawing.png";
@@ -95,6 +96,7 @@ const NAVIGATION_ITEMS = {
   help: [
     { label: 'About', path: '/about', icon: <FaInfoCircle /> },
     { label: 'FAQ', path: '/faq', icon: <FaQuestionCircle /> },
+    { label: 'Contact', path: '/contact', icon: <FaEnvelope /> },
     { label: 'Privacy Policy', path: '/privacy-policy', icon: <FaLock /> },
     { label: 'Terms of Service', path: '/terms', icon: <FaListAlt /> }
   ]
@@ -785,29 +787,6 @@ function Navbar() {
                 </NavDropdown>
               </div>
 
-              {/* Help dropdown */}
-              <div className="relative" ref={helpDropdownRef}>
-                <button
-                  onClick={toggleHelpDropdown}
-                  className={`flex items-center px-3 py-2 rounded-lg text-card-foreground hover:bg-primary/10 hover:text-primary transition-colors ${
-                    helpDropdownOpen ? 'bg-accent text-accent-foreground' : ''
-                  }`}
-                  aria-expanded={helpDropdownOpen}
-                >
-                  <FaInfoCircle className="mr-1" />
-                  <span className="mr-1">Help</span>
-                  <FaChevronDown className={`w-3 h-3 transform transition-transform ${helpDropdownOpen ? 'rotate-180' : ''}`} />
-                </button>
-                
-                <NavDropdown isOpen={helpDropdownOpen}>
-                  {NAVIGATION_ITEMS.help.map((item) => (
-                    <DropdownItem key={item.path} to={item.path} onClick={() => setHelpDropdownOpen(false)}>
-                      {item.icon}
-                      {item.label}
-                    </DropdownItem>
-                  ))}
-                </NavDropdown>
-              </div>
             </div>
 
             {/* Right side items */}
@@ -881,6 +860,14 @@ function Navbar() {
                       >
                         <FaQuestionCircle className="mr-3 w-4 h-4 text-green-500" />
                         FAQ
+                      </Link>
+                      <Link
+                        to="/contact"
+                        onClick={() => setHelpDropdownOpen(false)}
+                        className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                      >
+                        <FaEnvelope className="mr-3 w-4 h-4 text-blue-500" />
+                        Contact
                       </Link>
                       <Link
                         to="/privacy-policy"
@@ -1380,9 +1367,9 @@ function Navbar() {
 
           {/* Enhanced footer */}
           <div className="p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between">
               <div className="text-sm text-gray-500 dark:text-gray-400">
-                © {new Date().getFullYear()} Chia Ranchber
+                © 2024 FitExplorer. All rights reserved.
               </div>
               <div className="flex items-center space-x-2">
                 <button
@@ -1396,29 +1383,7 @@ function Navbar() {
                     <MoonIcon className="h-5 w-5 text-gray-600 dark:text-gray-400" />
                   )}
                 </button>
-              
-                {isAuthenticated && (
-                  <button
-                    onClick={() => {
-                      setShowNotifications(!showNotifications);
-                      setMobileMenuOpen(false);
-                    }}
-                    className="relative p-2 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-                    aria-label="Notifications"
-                  >
-                    <FaBell className="w-5 h-5" />
-                    {unreadCount > 0 && (
-                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 min-w-[1.25rem] flex items-center justify-center font-semibold">
-                        {unreadCount > 9 ? '9+' : unreadCount}
-                      </span>
-                    )}
-                  </button>
-                )}
-
               </div>
-            </div>
-            <div className="text-xs text-gray-400 dark:text-gray-500 text-center">
-              All rights reserved
             </div>
           </div>
         </div>

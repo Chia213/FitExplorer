@@ -13,13 +13,16 @@ import {
   FaClock,
   FaCalculator,
   FaAppleAlt,
-  FaTools
+  FaTools,
+  FaSignInAlt
 } from 'react-icons/fa';
 import { LuBicepsFlexed} from "react-icons/lu";
+import { useAuth } from '../hooks/useAuth';
 
 const MobileBottomNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { user, isAuthenticated } = useAuth();
   
   // Only show on mobile devices
   const [isMobile, setIsMobile] = React.useState(false);
@@ -121,7 +124,11 @@ const MobileBottomNav = () => {
         { path: '/progress-tracker', icon: <FaChartLine />, label: 'Progress Tracker' },
       ]
     },
-    { path: '/profile', icon: <FaUser className="w-6 h-6" />, label: 'Profile' }
+    // Show Profile tab if user is authenticated, otherwise show Log In tab
+    ...(isAuthenticated 
+      ? [{ path: '/profile', icon: <FaUser className="w-6 h-6" />, label: 'Profile' }] 
+      : [{ path: '/login', icon: <FaSignInAlt className="w-6 h-6" />, label: 'Log In' }]
+    )
   ];
   
   // Check if a route is active
@@ -270,7 +277,7 @@ const MobileBottomNav = () => {
                      item.dropdownType === 'tools' ? toolsButtonRef : null) 
                     : null}
                   className={`flex flex-col items-center justify-center h-full ${item.hasDropdown ? 'cursor-pointer' : ''}`}
-                  style={{ width: '20%' }}
+                  style={{ width: `${100 / navItems.length}%` }}
                   onClick={(e) => item.hasDropdown ? handleNavItemClick(e, item) : null}
                 >
                   <Link

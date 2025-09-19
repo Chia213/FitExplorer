@@ -527,12 +527,12 @@ const AchievementsSection = ({ backendURL = defaultBackendURL }) => {
           Achievements
         </h2>
         
-        <div className="flex space-x-2">
+        <div className="flex space-x-1 sm:space-x-2">
           <div className="relative">
             <button
               onClick={checkAchievementsProgress}
               disabled={isCheckingRef.current}
-              className={`px-3 py-1 rounded text-sm flex items-center ${
+              className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded text-xs sm:text-sm flex items-center ${
                 isCheckingRef.current
                   ? "bg-gray-300 dark:bg-gray-700 cursor-not-allowed"
                   : lastCheckTimestamp && Date.now() - lastCheckTimestamp < 10000
@@ -542,20 +542,23 @@ const AchievementsSection = ({ backendURL = defaultBackendURL }) => {
             >
               {isCheckingRef.current ? (
                 <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
-                  Checking...
+                  <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-t-2 border-b-2 border-white mr-1 sm:mr-2"></div>
+                  <span className="hidden sm:inline">Checking...</span>
+                  <span className="sm:hidden">...</span>
                 </>
               ) : lastCheckTimestamp && Date.now() - lastCheckTimestamp < 10000 ? (
                 <>
-                  <svg className="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <svg className="h-3 w-3 sm:h-4 sm:w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  Updated
+                  <span className="hidden sm:inline">Updated</span>
+                  <span className="sm:hidden">✓</span>
                 </>
               ) : (
                 <>
-                  <FaChartLine className="mr-1" />
-                  Check Progress
+                  <FaChartLine className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">Check Progress</span>
+                  <span className="sm:hidden">Check</span>
                 </>
               )}
             </button>
@@ -570,7 +573,7 @@ const AchievementsSection = ({ backendURL = defaultBackendURL }) => {
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="px-3 py-1 rounded text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600"
+            className="px-2 sm:px-3 py-1 sm:py-1.5 rounded text-xs sm:text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600"
           >
             {categories.map(category => (
               <option key={category} value={category}>
@@ -695,10 +698,11 @@ const AchievementsSection = ({ backendURL = defaultBackendURL }) => {
         <div className="mt-4 text-center">
           <button
             onClick={() => navigate('/achievements')}
-            className="inline-flex items-center px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm sm:text-base"
           >
-            View All Achievements
-            <FaChevronRight className="ml-1" />
+            <span className="hidden sm:inline">View All Achievements</span>
+            <span className="sm:hidden">View All</span>
+            <FaChevronRight className="ml-1 h-3 w-3 sm:h-4 sm:w-4" />
           </button>
         </div>
       )}

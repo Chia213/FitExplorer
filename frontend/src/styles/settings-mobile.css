@@ -1,0 +1,45 @@
+/* Settings Page Mobile Optimizations */
+
+/* Mobile Navigation Tabs - Horizontal Scroll */
+.settings-mobile-nav {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* Internet Explorer 10+ */
+}
+
+.settings-mobile-nav::-webkit-scrollbar {
+    display: none; /* Safari and Chrome */
+}
+
+.settings-mobile-nav .tab-button {
+    flex-shrink: 0;
+    min-width: fit-content;
+    white-space: nowrap;
+}
+
+/* Ensure tabs don't wrap */
+@media (max-width: 1023px) {
+    .settings-mobile-nav {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+    }
+    
+    .settings-mobile-nav .tab-button {
+        display: inline-flex !important;
+        flex-shrink: 0 !important;
+    }
+}
+
+/* Touch-friendly scrolling on mobile */
+@media (max-width: 640px) {
+    .settings-mobile-nav {
+        padding-bottom: 8px;
+        margin-bottom: 12px;
+    }
+}

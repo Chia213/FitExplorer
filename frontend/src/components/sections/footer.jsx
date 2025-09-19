@@ -77,7 +77,7 @@ export function Footer() {
 
         <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
           <p className="text-sm text-muted-foreground">
-            © 2025 Chia Ranchber. All rights reserved.
+            © 2024 FitExplorer. All rights reserved.
           </p>
           <div className="flex items-center space-x-4 text-sm text-muted-foreground">
             <a href="/privacy-policy" className="hover:text-foreground transition-colors">Privacy</a>

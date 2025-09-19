@@ -101,7 +101,7 @@ function Profile() {
   });
   const [personalInfoError, setPersonalInfoError] = useState("");
   const [preferences, setPreferences] = useState({
-    cardColor: "#f0f4ff", // Initialize with default color
+    cardColor: null, // Initialize as null to prevent default color flash
     nameBorderColor: "#3b82f6", // Initialize with default border color
     workoutFrequencyGoal: null,
     goalWeight: null,
@@ -287,11 +287,13 @@ function Profile() {
       if (userData.preferences) {
         console.log("Loading preferences from backend:", userData.preferences);
         setPreferences((prev) => {
+          const savedColor = userData.preferences.card_color || "#f0f4ff";
+          const isCustomColor = userData.preferences.card_color && userData.preferences.card_color !== "#f0f4ff";
           const newPrefs = {
             ...prev,
-            cardColor: userData.preferences.card_color || prev.cardColor,
+            cardColor: savedColor,
             nameBorderColor: userData.preferences.name_border_color || prev.nameBorderColor || "#3b82f6",
-            useCustomCardColor: userData.preferences.use_custom_card_color || false,
+            useCustomCardColor: userData.preferences.use_custom_card_color || isCustomColor || false,
             useCustomNameBorderColor: userData.preferences.use_custom_name_border_color || false,
             enableAnimations: userData.preferences.enable_animations === true,
             animationStyle: userData.preferences.animation_style || "subtle",
@@ -300,6 +302,27 @@ function Profile() {
           console.log("Setting preferences:", newPrefs);
           return newPrefs;
         });
+      } else {
+        // Fallback to localStorage if backend data is not available
+        console.log("No backend preferences, checking localStorage fallback");
+        const cachedPreferences = localStorage.getItem('cachedUserPreferences');
+        if (cachedPreferences) {
+          try {
+            const parsed = JSON.parse(cachedPreferences);
+            if (parsed.cardColor && parsed.cardColor !== "#f0f4ff") {
+              console.log("Using cached preferences:", parsed);
+              setPreferences(prev => ({
+                ...prev,
+                cardColor: parsed.cardColor,
+                useCustomCardColor: true,
+                nameBorderColor: parsed.nameBorderColor || "#3b82f6"
+              }));
+              setCardColor(parsed.cardColor);
+            }
+          } catch (err) {
+            console.warn("Failed to parse cached preferences:", err);
+          }
+        }
         
         // Set card color from backend preferences
         if (userData.preferences.use_custom_card_color) {
@@ -501,10 +524,11 @@ function Profile() {
       } else {
         // No premium theme, use backend card color or default
         const savedColor = user.preferences.card_color || "#f0f4ff";
+        const isCustomColor = user.preferences.card_color && user.preferences.card_color !== "#f0f4ff";
         setCardColor(savedColor);
         setPreferences(prev => ({
           ...prev,
-          useCustomCardColor: false,
+          useCustomCardColor: isCustomColor || user.preferences.use_custom_card_color || false,
           cardColor: savedColor
         }));
       }
@@ -568,6 +592,13 @@ function Profile() {
 
   const handleColorChange = (newColor) => {
     updateCardColor(newColor);
+    // When user manually changes color, enable custom color mode
+    setPreferences(prev => ({
+      ...prev,
+      useCustomCardColor: true,
+      cardColor: newColor
+    }));
+    setPreferencesChanged(true);
   };
 
   const formatJoinDate = (dateString) => {
@@ -657,6 +688,11 @@ function Profile() {
             } catch (notificationError) {
                 // Don't fail the whole update if notification fails
             }
+        }
+
+        // Exit editing mode if we were editing username
+        if (updatedData.username) {
+            setIsEditing(false);
         }
 
         // Refresh user data to ensure everything is in sync
@@ -790,6 +826,12 @@ function Profile() {
 
       if (response.ok) {
         setSuccessMessage("Changes saved successfully!");
+        // Cache preferences to localStorage as fallback
+        localStorage.setItem('cachedUserPreferences', JSON.stringify({
+          cardColor: preferences.cardColor,
+          useCustomCardColor: preferences.useCustomCardColor,
+          nameBorderColor: preferences.nameBorderColor
+        }));
         // If using custom color, we need to clear the premium theme locally
         if (preferences.useCustomCardColor && premiumTheme !== 'default') {
           changePremiumTheme('default');
@@ -1065,7 +1107,7 @@ function Profile() {
     setPreferences(prev => ({
       ...prev,
       useCustomCardColor: enabled,
-      cardColor: enabled ? prev.cardColor : "#f0f4ff"
+      cardColor: enabled ? (prev.cardColor || "#f0f4ff") : (prev.cardColor || "#f0f4ff")
     }));
     setPreferencesChanged(true);
   };
@@ -1182,44 +1224,60 @@ function Profile() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Profile Header - Mobile Optimized */}
         <div 
-          className={`bg-card rounded-lg shadow-lg p-4 sm:p-6 mb-6 sm:mb-8 profile-header-card ${getAnimationClasses()}`} 
+          className={`mx-auto max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl p-2 sm:p-4 md:p-6 rounded-2xl text-center mb-4 sm:mb-6 md:mb-8 profile-header-card border border-gray-200 dark:border-gray-700 sm:border-0 shadow-xl hover:shadow-2xl transition-all duration-300 ${getAnimationClasses()}`} 
           style={{ 
             backgroundColor: preferences.useCustomCardColor 
               ? preferences.cardColor 
               : (premiumTheme && premiumTheme !== "default" && premiumThemes && premiumThemes[premiumTheme])
                 ? premiumThemes[premiumTheme].primary
-                : preferences.cardColor,
+                : (preferences.cardColor || '#f0f4ff'),
             background: preferences.useCustomCardColor 
-              ? preferences.cardColor 
+              ? `linear-gradient(135deg, ${preferences.cardColor}ee, ${preferences.cardColor}cc)`
               : (premiumTheme && premiumTheme !== "default" && premiumThemes && premiumThemes[premiumTheme])
                 ? `linear-gradient(135deg, ${premiumThemes[premiumTheme].primary}dd, ${premiumThemes[premiumTheme].secondary}aa)`
-                : preferences.cardColor,
+                : `linear-gradient(135deg, ${preferences.cardColor || '#f0f4ff'}ee, ${preferences.cardColor || '#f0f4ff'}cc)`,
             color: theme === "dark" ? "white" : "#334155",
             "--animation-duration": preferences.animationSpeed === "slow" ? "4s" : preferences.animationSpeed === "fast" ? "1.5s" : "2.5s"
           }}
         >
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between space-y-4 sm:space-y-0">
-            <div className="flex flex-col sm:flex-row sm:items-center space-y-4 sm:space-y-0 sm:space-x-6">
-              <div className="relative self-center sm:self-auto">
-                <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full overflow-hidden border-4 border-blue-500">
+          <div className="flex flex-row items-center justify-between space-x-3 sm:space-x-4">
+            <div className="flex flex-row items-center space-x-3 sm:space-x-4">
+              <div className="flex flex-col items-center space-y-1">
+                <div className="flex items-center space-x-1">
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="bg-white/20 backdrop-blur-sm text-white p-1.5 rounded-full hover:bg-white/30 hover:scale-110 transition-all duration-200 border border-white/30 shadow-lg"
+                  >
+                    <FaCamera className="w-2.5 h-2.5" />
+                  </button>
+                  {profilePicture && (
+                    <button
+                      onClick={handleRemoveProfilePicture}
+                      className="bg-red-500/80 backdrop-blur-sm text-white p-1.5 rounded-full hover:bg-red-500 hover:scale-110 transition-all duration-200 border border-red-400/50 shadow-lg"
+                    >
+                      <FaTrash className="w-2.5 h-2.5" />
+                    </button>
+                  )}
+                </div>
+                <div className="relative w-16 h-16 sm:w-24 sm:h-24 md:w-32 md:h-32 rounded-full overflow-hidden border-4 border-white/30 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105" style={{ aspectRatio: '1/1' }}>
                   {profilePicture ? (
                     <img
                       src={profilePicture}
                       alt="Profile"
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover object-center"
+                      style={{ 
+                        imageRendering: 'high-quality',
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover'
+                      }}
                     />
                   ) : (
-                    <div className="w-full h-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                    <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800 flex items-center justify-center" style={{ aspectRatio: '1/1' }}>
                       <FaUser className="w-12 h-12 sm:w-16 sm:h-16 text-muted-foreground" />
                     </div>
                   )}
                 </div>
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="absolute bottom-0 right-0 bg-blue-500 text-white p-1.5 sm:p-2 rounded-full hover:bg-blue-600"
-                >
-                  <FaCamera className="w-3 h-3 sm:w-4 sm:h-4" />
-                </button>
                 <input
                   type="file"
                   ref={fileInputRef}
@@ -1228,74 +1286,80 @@ function Profile() {
                   onChange={handleProfilePictureChange}
                 />
               </div>
-              <div className="flex-1 text-center sm:text-left">
-                <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+              <div className="flex-1 text-left">
+                <div className="flex flex-row items-center space-x-2 sm:space-x-3">
                   {isEditing ? (
-                    <div className="flex flex-col w-full">
-                      <div className="flex items-center space-x-2">
-                        <input
-                          type="text"
-                          value={editedUsername}
-                          onChange={(e) => setEditedUsername(e.target.value)}
-                          className="text-lg sm:text-2xl font-bold bg-transparent focus:outline-none flex-1 border-none"
-                          style={{
-                            color: theme === "dark" ? "white" : "#334155"
-                          }}
-                        />
-                        <button
-                          onClick={() => handleUpdateProfile({ username: editedUsername })}
-                          disabled={isSaving}
-                          className="text-accent hover:text-accent/80 p-1"
-                        >
-                          {isSaving ? (
-                            <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-green-700"></div>
-                          ) : (
-                            <FaSave className="w-4 h-4 sm:w-5 sm:h-5" />
-                          )}
-                        </button>
-                        <button
-                          onClick={() => {
+                    <div className="flex flex-row items-center space-x-2 sm:space-x-3">
+                      <input
+                        type="text"
+                        value={editedUsername}
+                        onChange={(e) => setEditedUsername(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && editedUsername.trim() && !isSaving) {
+                            handleUpdateProfile({ username: editedUsername });
+                          } else if (e.key === 'Escape') {
                             setIsEditing(false);
                             setEditedUsername(user.username);
-                            // Clear any errors
-                            setError(null);
-                            // Clear inline errors
-                            const errorElement = document.getElementById('username-error');
-                            if (errorElement) {
-                              errorElement.textContent = '';
-                              errorElement.classList.add('hidden');
-                            }
-                          }}
-                          className="text-destructive hover:text-destructive/80 p-1"
-                        >
-                          <FaTimes className="w-4 h-4 sm:w-5 sm:h-5" />
-                        </button>
-                      </div>
-                      <div id="username-error" className="text-destructive text-sm mt-1 hidden"></div>
+                          }
+                        }}
+                        className="text-lg sm:text-xl md:text-3xl font-bold bg-transparent text-white focus:outline-none focus:ring-2 focus:ring-white/50 flex-1 px-2 py-1 rounded border border-white/30 placeholder-white/70"
+                        placeholder="Enter username"
+                        autoFocus
+                      />
+                      <button
+                        onClick={() => handleUpdateProfile({ username: editedUsername })}
+                        disabled={isSaving || !editedUsername.trim()}
+                        className="text-white/80 hover:text-white p-1.5 rounded-full hover:bg-white/20 transition-all duration-200"
+                        title="Save changes"
+                      >
+                        {isSaving ? (
+                          <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-white"></div>
+                        ) : (
+                          <FaSave className="w-4 h-4 sm:w-5 sm:h-5" />
+                        )}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setIsEditing(false);
+                          setEditedUsername(user.username);
+                          // Clear any errors
+                          setError(null);
+                          // Clear inline errors
+                          const errorElement = document.getElementById('username-error');
+                          if (errorElement) {
+                            errorElement.textContent = '';
+                            errorElement.classList.add('hidden');
+                          }
+                        }}
+                        className="text-white/80 hover:text-white p-1.5 rounded-full hover:bg-white/20 transition-all duration-200"
+                        title="Cancel editing"
+                      >
+                        <FaTimes className="w-4 h-4 sm:w-5 sm:h-5" />
+                      </button>
                     </div>
                   ) : (
                     <>
-                      <h1 className="text-lg sm:text-2xl font-bold flex items-center justify-center sm:justify-start">
+                      <h1 className="text-lg sm:text-xl md:text-3xl font-bold flex items-center justify-start text-white drop-shadow-sm">
                         {user?.username}
                       </h1>
                       <button
                         onClick={() => setIsEditing(true)}
-                        className="text-primary hover:text-primary/80 p-1 self-center sm:self-auto"
+                        className="text-white/80 hover:text-white p-1.5 rounded-full hover:bg-white/20 transition-all duration-200 self-center sm:self-auto"
                       >
                         <FaEdit className="w-4 h-4 sm:w-5 sm:h-5" />
                       </button>
                     </>
                   )}
                 </div>
-                <p className="text-muted-foreground text-sm mt-1 italic">
+                <p className="text-white/90 text-sm sm:text-base mt-2 italic font-medium">
                   {getGreeting()}
                 </p>
-                <p className="text-muted-foreground text-xs mt-1">
+                <p className="text-white/70 text-xs sm:text-sm mt-1 font-medium">
                   Member since {formatJoinDate(user?.created_at)} {getMembershipDuration(user?.created_at)}
                 </p>
               </div>
             </div>
-            <div className="flex flex-col items-center sm:items-end space-y-2 mt-4 sm:mt-0">
+            <div className="relative flex flex-col items-center sm:items-end space-y-2 mt-4 sm:mt-0">
               {/* Theme info and color picker */}
               {premiumTheme && premiumTheme !== "default" ? (
                 <div className="flex flex-col items-center sm:items-end space-y-2">
@@ -1308,7 +1372,7 @@ function Profile() {
                     <div className="w-4 h-4 sm:w-6 sm:h-6 rounded-full" style={{ 
                       backgroundColor: premiumThemes && premiumThemes[premiumTheme] 
                         ? premiumThemes[premiumTheme].primary 
-                        : "#3b82f6" 
+                        : (preferences.cardColor || '#f0f4ff')
                     }}></div>
                     {isAdmin && premiumThemes && premiumThemes[premiumTheme] && premiumThemes[premiumTheme].isPremium && (
                       <span className="text-xs px-2 py-0.5 bg-primary/10 text-primary rounded-full">
@@ -1319,82 +1383,66 @@ function Profile() {
                   <div className="flex items-center space-x-2">
                     <button 
                       onClick={() => setShowColorPicker(!showColorPicker)}
-                      className="text-xs sm:text-sm bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600"
+                      className="text-xs sm:text-sm bg-white/20 backdrop-blur-sm text-white px-4 py-2 rounded-full hover:bg-white/30 hover:scale-105 transition-all duration-200 border border-white/30 shadow-lg font-medium"
                     >
-                      {showColorPicker ? "Hide Options" : "Customize Card"}
+                      {showColorPicker ? "Hide Colors" : "Customize Colors"}
                     </button>
                   </div>
                   
                   {showColorPicker && (
-                    <div className="mt-2 p-3 bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 w-full sm:w-auto">
-                      <label className="flex items-center text-xs sm:text-sm mb-2">
-                        <input
-                          type="checkbox"
-                          checked={preferences.useCustomCardColor}
-                          onChange={(e) => toggleCustomColorMode(e.target.checked)}
-                          className="mr-2 h-3 w-3 sm:h-4 sm:w-4"
-                        />
-                        Use custom color instead
-                      </label>
-                      
-                      {preferences.useCustomCardColor && (
-                        <div className="flex items-center mt-2">
-                          <span className="text-xs sm:text-sm mr-2">Card color:</span>
-                          <input
-                            type="color"
-                            value={preferences.cardColor}
-                            onChange={(e) => handleColorChange(e.target.value)}
-                            className="w-6 h-6 sm:w-8 sm:h-8 rounded cursor-pointer"
-                          />
+                    <div className="absolute top-full right-0 mt-2 p-3 bg-white/95 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 w-64 max-w-[calc(100vw-2rem)] z-10">
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium text-gray-700">Card Color</span>
+                          <label className="flex items-center space-x-2">
+                            <input
+                              type="checkbox"
+                              checked={preferences.useCustomCardColor}
+                              onChange={(e) => toggleCustomColorMode(e.target.checked)}
+                              className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                            />
+                            <span className="text-xs text-gray-600">Custom</span>
+                          </label>
                         </div>
-                      )}
-                      
-                      <label className="flex items-center text-xs sm:text-sm mb-2 mt-3">
-                        <input
-                          type="checkbox"
-                          checked={preferences.useCustomNameBorderColor}
-                          onChange={(e) => {
-                            setPreferences(prev => ({
-                              ...prev,
-                              useCustomNameBorderColor: e.target.checked,
-                              nameBorderColor: e.target.checked ? (prev.nameBorderColor || "#3b82f6") : null
-                            }));
-                            setPreferencesChanged(true);
-                          }}
-                          className="mr-2 h-3 w-3 sm:h-4 sm:w-4"
-                        />
-                        Use custom name border color
-                      </label>
-                      
-                      {preferences.useCustomNameBorderColor && (
-                        <div className="flex items-center mt-2">
-                          <span className="text-xs sm:text-sm mr-2">Name border color:</span>
-                          <input
-                            type="color"
-                            value={preferences.nameBorderColor || "#3b82f6"}
-                            onChange={(e) => {
-                              setPreferences(prev => ({
-                                ...prev,
-                                nameBorderColor: e.target.value
-                              }));
-                              setPreferencesChanged(true);
-                            }}
-                            className="w-6 h-6 sm:w-8 sm:h-8 rounded cursor-pointer"
-                          />
-                        </div>
-                      )}
-                      
-                      {preferencesChanged && (
-                        <div className="mt-2 flex justify-center sm:justify-end">
-                          <button
-                            onClick={handlePreferenceUpdate}
-                            disabled={isSaving}
-                            className="text-xs bg-primary text-white px-2 py-1 rounded hover:bg-primary/90 transition-colors"
-                          >
-                            {isSaving ? "Saving..." : "Save Changes"}
-                          </button>
-                        </div>
-                      )}
+                        
+                        {preferences.useCustomCardColor && (
+                          <div className="space-y-2">
+                            <div className="flex flex-col space-y-2">
+                              <span className="text-xs text-gray-600">Choose Color:</span>
+                              <div className="flex items-center space-x-2">
+                                <input
+                                  type="color"
+                                  value={preferences.cardColor || "#f0f4ff"}
+                                  onChange={(e) => {
+                                    handleColorChange(e.target.value);
+                                    // Ensure custom color mode is enabled when user picks a color
+                                    setPreferences(prev => ({
+                                      ...prev,
+                                      useCustomCardColor: true,
+                                      cardColor: e.target.value
+                                    }));
+                                    setPreferencesChanged(true);
+                                  }}
+                                  className="w-10 h-10 rounded-lg cursor-pointer border-2 border-gray-200 hover:border-gray-300 transition-colors flex-shrink-0"
+                                />
+                                <span className="text-xs text-gray-500 font-mono truncate">{preferences.cardColor || "#f0f4ff"}</span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {preferencesChanged && (
+                          <div className="pt-2 border-t border-gray-200">
+                            <button
+                              onClick={handlePreferenceUpdate}
+                              disabled={isSaving}
+                              className="w-full bg-blue-600 text-white text-sm py-2 px-4 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+                            >
+                              {isSaving ? "Saving..." : "Save Changes"}
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -1402,37 +1450,53 @@ function Profile() {
                 <div className="flex items-center space-x-2">
                   <button 
                     onClick={() => setShowColorPicker(!showColorPicker)}
-                    className="text-xs sm:text-sm bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600"
+                    className="text-xs sm:text-sm bg-white/20 backdrop-blur-sm text-white px-4 py-2 rounded-full hover:bg-white/30 hover:scale-105 transition-all duration-200 border border-white/30 shadow-lg font-medium"
                   >
-                    {showColorPicker ? "Hide Color" : "Change Color"}
+                    {showColorPicker ? "Hide Colors" : "Customize Colors"}
                   </button>
                   
                   {showColorPicker && (
-                    <div className="flex flex-col space-y-2">
-                      <div className="flex items-center space-x-2">
-                        <span className="text-xs sm:text-sm">Card color:</span>
-                        <input
-                          type="color"
-                          value={preferences.cardColor}
-                          onChange={(e) => handleColorChange(e.target.value)}
-                          className="w-6 h-6 sm:w-8 sm:h-8 rounded cursor-pointer"
-                        />
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <span className="text-xs sm:text-sm">Name border:</span>
-                        <input
-                          type="color"
-                          value={preferences.nameBorderColor || "#3b82f6"}
-                          onChange={(e) => {
-                            setPreferences(prev => ({
-                              ...prev,
-                              nameBorderColor: e.target.value,
-                              useCustomNameBorderColor: true
-                            }));
-                            setPreferencesChanged(true);
-                          }}
-                          className="w-6 h-6 sm:w-8 sm:h-8 rounded cursor-pointer"
-                        />
+                    <div className="absolute top-full right-0 mt-2 p-3 bg-white/95 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 w-64 max-w-[calc(100vw-2rem)] z-10">
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium text-gray-700">Card Color</span>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <div className="flex flex-col space-y-2">
+                            <span className="text-xs text-gray-600">Choose Color:</span>
+                            <div className="flex items-center space-x-2">
+                              <input
+                                type="color"
+                                value={preferences.cardColor || "#f0f4ff"}
+                                onChange={(e) => {
+                                  handleColorChange(e.target.value);
+                                  // Ensure custom color mode is enabled when user picks a color
+                                  setPreferences(prev => ({
+                                    ...prev,
+                                    useCustomCardColor: true,
+                                    cardColor: e.target.value
+                                  }));
+                                  setPreferencesChanged(true);
+                                }}
+                                className="w-10 h-10 rounded-lg cursor-pointer border-2 border-gray-200 hover:border-gray-300 transition-colors flex-shrink-0"
+                              />
+                              <span className="text-xs text-gray-500 font-mono truncate">{preferences.cardColor || "#f0f4ff"}</span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {preferencesChanged && (
+                          <div className="pt-2 border-t border-gray-200">
+                            <button
+                              onClick={handlePreferenceUpdate}
+                              disabled={isSaving}
+                              className="w-full bg-blue-600 text-white text-sm py-2 px-4 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+                            >
+                              {isSaving ? "Saving..." : "Save Changes"}
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
@@ -1462,12 +1526,12 @@ function Profile() {
         </div>
 
         {/* Quick Access Grid - Mobile Optimized */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6 mb-6 sm:mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3 md:gap-4 mb-4 sm:mb-6">
           {quickAccessLinks.map((link, index) => (
             <button
               key={index}
               onClick={() => navigate(link.path)}
-              className="bg-card rounded-lg shadow-md p-4 sm:p-6 hover:shadow-lg transition-shadow duration-200 flex items-center space-x-3 sm:space-x-4"
+              className="bg-card rounded-2xl shadow-md p-2 sm:p-4 md:p-6 hover:shadow-lg transition-shadow duration-200 flex items-center space-x-2 sm:space-x-3 md:space-x-4"
             >
               <div className="text-primary text-lg sm:text-xl">{link.icon}</div>
               <span className="text-base sm:text-lg font-medium text-foreground">
@@ -1478,10 +1542,10 @@ function Profile() {
         </div>
 
         {/* Stats and Preferences - Mobile Optimized */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 md:gap-6">
           {/* Personal Information */}
-          <div className="bg-card rounded-lg shadow p-4 sm:p-6 mb-4 sm:mb-6">
-            <div className="flex justify-between items-center mb-4">
+          <div className="bg-card rounded-2xl shadow p-3 sm:p-4 md:p-6 mb-3 sm:mb-4 md:mb-6">
+            <div className="flex justify-between items-center mb-2 sm:mb-3 md:mb-4">
               <h2 className="text-lg sm:text-xl font-bold">Personal Information</h2>
               {!isEditingPersonalInfo ? (
                 <button
@@ -1656,7 +1720,7 @@ function Profile() {
           </div>
 
           {/* Workout Stats - Mobile Optimized */}
-          <div className="bg-card rounded-lg shadow-lg p-4 sm:p-6">
+          <div className="bg-card rounded-2xl shadow-lg p-3 sm:p-4 md:p-6">
             <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-3">
               Workout Statistics
             </h2>
@@ -1869,7 +1933,7 @@ function Profile() {
         </div>
 
         {/* Account Actions */}
-        <div className="mt-8 bg-card rounded-lg shadow-lg p-6">
+        <div className="mt-4 sm:mt-6 md:mt-8 bg-card rounded-2xl shadow-lg p-3 sm:p-4 md:p-6">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
             Account Actions
           </h2>

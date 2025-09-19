@@ -258,105 +258,105 @@ const PrivacyPolicy = () => {
       <Navigation />
       
       {/* Hero Section */}
-      <section className="relative pt-32 pb-20 px-4">
+      <section className="relative pt-20 md:pt-32 pb-12 md:pb-20 px-4">
         <div className="container mx-auto max-w-6xl text-center">
-          <div className="space-y-6 animate-fade-in-up">
-            <Badge variant="outline" className="border-primary/50 text-primary mb-4">
+          <div className="space-y-4 md:space-y-6 animate-fade-in-up">
+            <Badge variant="outline" className="border-primary/50 text-primary mb-2 md:mb-4 text-sm">
               Privacy & Data Protection
             </Badge>
-            <h1 className="text-5xl md:text-7xl font-bold hero-text mb-6">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold hero-text mb-4 md:mb-6 leading-tight">
               Privacy Policy
             </h1>
-            <p className="text-xl md:text-2xl text-muted-foreground max-w-4xl mx-auto leading-relaxed">
+            <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-muted-foreground max-w-4xl mx-auto leading-relaxed px-2">
               Your privacy is important to us. This document explains how we
               collect, use, and protect your personal information with transparency and care.
             </p>
-            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-              <Calendar className="w-4 h-4" />
+            <div className="flex items-center justify-center gap-2 text-xs md:text-sm text-muted-foreground">
+              <Calendar className="w-3 h-3 md:w-4 md:h-4" />
               <span>Last Updated: {lastUpdated}</span>
+            </div>
           </div>
-              </div>
-              </div>
-            </section>
+        </div>
+      </section>
 
       {/* Privacy Principles */}
-      <section className="py-16 px-4">
+      <section className="py-12 md:py-16 px-4">
         <div className="container mx-auto max-w-6xl">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 animate-fade-in">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 animate-fade-in">
             {privacyPrinciples.map((principle, index) => (
-              <Card key={index} className="glass-card text-center p-6">
+              <Card key={index} className="glass-card text-center p-4 md:p-6">
                 <CardContent className="p-0">
-                  <principle.icon className="w-8 h-8 text-primary mx-auto mb-3" />
-                  <div className="text-sm font-medium text-foreground">{principle.text}</div>
+                  <principle.icon className="w-6 h-6 md:w-8 md:h-8 text-primary mx-auto mb-2 md:mb-3" />
+                  <div className="text-xs md:text-sm font-medium text-foreground leading-tight">{principle.text}</div>
                 </CardContent>
               </Card>
             ))}
-                </div>
-              </div>
-            </section>
+          </div>
+        </div>
+      </section>
 
       {/* Introduction */}
-      <section className="py-20 px-4">
+      <section className="py-12 md:py-20 px-4">
         <div className="container mx-auto max-w-4xl text-center">
-          <div className="glass-card p-12 animate-scale-in">
-            <h2 className="text-4xl font-bold mb-6 hero-text">Our Privacy Commitment</h2>
-            <p className="text-lg text-muted-foreground leading-relaxed mb-8">
+          <div className="glass-card p-6 md:p-12 animate-scale-in">
+            <h2 className="text-2xl md:text-4xl font-bold mb-4 md:mb-6 hero-text">Our Privacy Commitment</h2>
+            <p className="text-sm md:text-lg text-muted-foreground leading-relaxed mb-6 md:mb-8 px-2">
               At FitExplorer, we are committed to protecting your privacy and ensuring the security 
               of your personal information. This Privacy Policy explains how we collect, use, 
               disclose, and safeguard your information when you use our fitness platform.
             </p>
-            <div className="bg-primary/10 border border-primary/20 rounded-lg p-6">
+            <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 md:p-6">
               <div className="flex items-start space-x-3">
-                <AlertTriangle className="w-6 h-6 text-primary flex-shrink-0 mt-1" />
+                <AlertTriangle className="w-5 h-5 md:w-6 md:h-6 text-primary flex-shrink-0 mt-1" />
                 <div className="text-left">
-                  <p className="text-primary font-semibold mb-2">Important Notice</p>
-                  <p className="text-muted-foreground">
+                  <p className="text-primary font-semibold mb-2 text-sm md:text-base">Important Notice</p>
+                  <p className="text-muted-foreground text-xs md:text-sm">
                     We will never use your health and fitness data for advertising purposes or 
                     sell it to third parties without your explicit consent.
                   </p>
                 </div>
               </div>
             </div>
-              </div>
-              </div>
-            </section>
+          </div>
+        </div>
+      </section>
 
       {/* Privacy Sections */}
-      <section className="py-20 px-4">
+      <section className="py-12 md:py-20 px-4">
         <div className="container mx-auto max-w-6xl">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold mb-4 hero-text">Privacy Details</h2>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+          <div className="text-center mb-8 md:mb-16">
+            <h2 className="text-2xl md:text-4xl font-bold mb-3 md:mb-4 hero-text">Privacy Details</h2>
+            <p className="text-base md:text-xl text-muted-foreground max-w-3xl mx-auto px-2">
               Comprehensive information about how we handle your personal data
-                </p>
-              </div>
+            </p>
+          </div>
           
-          <div className="space-y-8">
+          <div className="space-y-6 md:space-y-8">
             {sections.map((section, index) => (
               <Card key={index} className="feature-card">
-                <CardContent className="p-8">
-                  <div className="flex items-start space-x-6">
-                    <div className={`w-16 h-16 rounded-2xl bg-gradient-to-r ${section.gradient} flex items-center justify-center flex-shrink-0`}>
-                      <section.icon className="w-8 h-8 text-white" />
-              </div>
-                    <div className="flex-1">
-                      <h3 className="text-2xl font-semibold mb-6 text-foreground">
+                <CardContent className="p-4 md:p-8">
+                  <div className="flex flex-col sm:flex-row items-start space-y-4 sm:space-y-0 sm:space-x-4 md:space-x-6">
+                    <div className={`w-12 h-12 md:w-16 md:h-16 rounded-2xl bg-gradient-to-r ${section.gradient} flex items-center justify-center flex-shrink-0 mx-auto sm:mx-0`}>
+                      <section.icon className="w-6 h-6 md:w-8 md:h-8 text-white" />
+                    </div>
+                    <div className="flex-1 w-full">
+                      <h3 className="text-lg md:text-2xl font-semibold mb-4 md:mb-6 text-foreground text-center sm:text-left">
                         {section.title}
                       </h3>
-                      <div className="space-y-6">
+                      <div className="space-y-4 md:space-y-6">
                         {section.content.map((subsection, subIndex) => (
                           <div key={subIndex}>
-                            <h4 className="text-lg font-semibold mb-3 text-foreground">
+                            <h4 className="text-base md:text-lg font-semibold mb-2 md:mb-3 text-foreground">
                               {subsection.subtitle}
                             </h4>
-                            <ul className="space-y-2">
+                            <ul className="space-y-1.5 md:space-y-2">
                               {subsection.items.map((item, itemIndex) => (
-                                <li key={itemIndex} className="flex items-start space-x-2 text-muted-foreground">
-                                  <CheckCircle className="w-4 h-4 text-primary flex-shrink-0 mt-1" />
+                                <li key={itemIndex} className="flex items-start space-x-2 text-muted-foreground text-sm md:text-base">
+                                  <CheckCircle className="w-3 h-3 md:w-4 md:h-4 text-primary flex-shrink-0 mt-1" />
                                   <span>{item}</span>
-                  </li>
+                                </li>
                               ))}
-                </ul>
+                            </ul>
                           </div>
                         ))}
                       </div>
@@ -366,71 +366,71 @@ const PrivacyPolicy = () => {
               </Card>
             ))}
           </div>
-              </div>
-            </section>
+        </div>
+      </section>
 
       {/* Changes to Policy */}
-      <section className="py-20 px-4">
+      <section className="py-12 md:py-20 px-4">
         <div className="container mx-auto max-w-4xl">
-          <Card className="glass-card p-12">
+          <Card className="glass-card p-6 md:p-12">
             <CardContent className="p-0">
-              <h2 className="text-3xl font-bold mb-8 hero-text text-center">Changes to This Policy</h2>
+              <h2 className="text-xl md:text-3xl font-bold mb-6 md:mb-8 hero-text text-center">Changes to This Policy</h2>
               
-              <div className="space-y-6">
-                <div className="flex items-start space-x-4">
-                  <div className="w-8 h-8 bg-primary/20 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                    <Info className="w-4 h-4 text-primary" />
-              </div>
+              <div className="space-y-4 md:space-y-6">
+                <div className="flex items-start space-x-3 md:space-x-4">
+                  <div className="w-6 h-6 md:w-8 md:h-8 bg-primary/20 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                    <Info className="w-3 h-3 md:w-4 md:h-4 text-primary" />
+                  </div>
                   <div>
-                    <h3 className="text-xl font-semibold mb-3 text-foreground">Policy Updates</h3>
-                    <p className="text-muted-foreground leading-relaxed mb-4">
+                    <h3 className="text-lg md:text-xl font-semibold mb-2 md:mb-3 text-foreground">Policy Updates</h3>
+                    <p className="text-sm md:text-base text-muted-foreground leading-relaxed mb-3 md:mb-4">
                       We may update this Privacy Policy from time to time to reflect changes in our 
                       practices or for other operational, legal, or regulatory reasons. The revised 
                       policy will be effective immediately upon posting on our website.
                     </p>
-                    <p className="text-muted-foreground leading-relaxed">
+                    <p className="text-sm md:text-base text-muted-foreground leading-relaxed">
                       We will notify you of any material changes by posting a notice on our website, 
                       sending an email to the address associated with your account, or displaying a 
                       notification when you access our platform.
-                </p>
-              </div>
+                    </p>
+                  </div>
                 </div>
               </div>
             </CardContent>
           </Card>
-              </div>
-            </section>
+        </div>
+      </section>
 
       {/* Contact Information */}
-      <section className="py-20 px-4">
+      <section className="py-12 md:py-20 px-4">
         <div className="container mx-auto max-w-4xl">
-          <Card className="glass-card p-12">
+          <Card className="glass-card p-6 md:p-12">
             <CardContent className="p-0">
-              <h2 className="text-3xl font-bold mb-8 hero-text text-center">Contact Us</h2>
+              <h2 className="text-xl md:text-3xl font-bold mb-6 md:mb-8 hero-text text-center">Contact Us</h2>
               
-              <div className="space-y-8">
-                <div className="flex items-start space-x-4">
-                  <div className="w-8 h-8 bg-accent/20 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                    <Mail className="w-4 h-4 text-accent" />
-              </div>
+              <div className="space-y-6 md:space-y-8">
+                <div className="flex items-start space-x-3 md:space-x-4">
+                  <div className="w-6 h-6 md:w-8 md:h-8 bg-accent/20 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                    <Mail className="w-3 h-3 md:w-4 md:h-4 text-accent" />
+                  </div>
                   <div>
-                    <h3 className="text-xl font-semibold mb-3 text-foreground">Privacy Questions</h3>
-                    <p className="text-muted-foreground leading-relaxed mb-4">
+                    <h3 className="text-lg md:text-xl font-semibold mb-2 md:mb-3 text-foreground">Privacy Questions</h3>
+                    <p className="text-sm md:text-base text-muted-foreground leading-relaxed mb-3 md:mb-4">
                       If you have any questions, concerns, or requests regarding this Privacy Policy 
                       or our privacy practices, please contact us:
                     </p>
-                    <div className="flex flex-wrap gap-4">
-                      <Button variant="outline" asChild>
+                    <div className="flex flex-col sm:flex-row flex-wrap gap-3 md:gap-4">
+                      <Button variant="outline" size="sm" className="md:size-default" asChild>
                         <a href="mailto:fitexplorer.fitnessapp@gmail.com">
-                          <Mail className="w-4 h-4 mr-2" />
+                          <Mail className="w-3 h-3 md:w-4 md:h-4 mr-2" />
                           Email Support
                         </a>
                       </Button>
-                      <Button variant="outline" asChild>
+                      <Button variant="outline" size="sm" className="md:size-default" asChild>
                         <Link to="/contact">Contact Page</Link>
                       </Button>
                     </div>
-                    <p className="text-sm text-muted-foreground mt-4">
+                    <p className="text-xs md:text-sm text-muted-foreground mt-3 md:mt-4">
                       We will respond to your inquiry within 30 days.
                     </p>
                   </div>
@@ -438,35 +438,35 @@ const PrivacyPolicy = () => {
               </div>
             </CardContent>
           </Card>
-              </div>
-            </section>
+        </div>
+      </section>
 
       {/* Footer Navigation */}
-      <section className="py-16 px-4">
+      <section className="py-12 md:py-16 px-4">
         <div className="container mx-auto max-w-4xl text-center">
-          <h3 className="text-2xl font-semibold mb-6 text-foreground">Related Pages</h3>
-          <div className="flex flex-wrap justify-center gap-4">
-            <Button variant="outline" asChild>
+          <h3 className="text-lg md:text-2xl font-semibold mb-4 md:mb-6 text-foreground">Related Pages</h3>
+          <div className="flex flex-wrap justify-center gap-3 md:gap-4">
+            <Button variant="outline" size="sm" className="md:size-default" asChild>
               <Link to="/terms">Terms of Service</Link>
             </Button>
-            <Button variant="outline" asChild>
+            <Button variant="outline" size="sm" className="md:size-default" asChild>
               <Link to="/about">About Us</Link>
             </Button>
-            <Button variant="outline" asChild>
+            <Button variant="outline" size="sm" className="md:size-default" asChild>
               <Link to="/faq">FAQ</Link>
             </Button>
-            <Button variant="outline" asChild>
+            <Button variant="outline" size="sm" className="md:size-default" asChild>
               <Link to="/contact">Contact</Link>
             </Button>
-                </div>
-              </div>
-            </section>
+          </div>
+        </div>
+      </section>
 
           {/* Footer */}
       <footer className="border-t border-border py-8 px-4">
         <div className="container mx-auto max-w-6xl text-center">
           <p className="text-muted-foreground">
-            © 2025 Chia Ranchber. All rights reserved.
+            © 2024 FitExplorer. All rights reserved.
             </p>
           </div>
       </footer>

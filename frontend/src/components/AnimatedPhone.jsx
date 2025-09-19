@@ -323,7 +323,7 @@ const PhoneShowcase = () => {
           {/* App Header */}
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <div className="w-6 h-6 gradient-primary rounded-lg flex items-center justify-center">
+              <div className="w-6 h-6 gradient-primary rounded-lg flex items-center justify-center hidden sm:flex">
                 <span className="text-white font-bold text-xs">FE</span>
               </div>
               <div>
@@ -347,10 +347,10 @@ const PhoneShowcase = () => {
   );
 
   return (
-    <div className="relative w-full max-w-5xl mx-auto">
+    <div className="relative w-full max-w-5xl mx-auto" style={{ zIndex: 1 }}>
       {/* Mobile View - 3 Phone Carousel */}
       <div className="lg:hidden">
-        <div className="flex items-center justify-center gap-2 relative h-[400px] overflow-hidden">
+        <div className="flex items-center justify-center gap-2 relative h-[400px] overflow-hidden pt-16">
           {[
             phoneScreens[(currentIndex - 1 + phoneScreens.length) % phoneScreens.length], // Previous
             phoneScreens[currentIndex], // Current
@@ -368,17 +368,17 @@ const PhoneShowcase = () => {
             if (isCenter) {
               scale = 0.8;
               opacity = 1;
-              zIndex = 10;
+              zIndex = 1;
             } else if (isLeft) {
               scale = 0.6;
               translateX = -80;
               opacity = 0.6;
-              zIndex = 5;
+              zIndex = 0;
             } else if (isRight) {
               scale = 0.6;
               translateX = 80;
               opacity = 0.6;
-              zIndex = 5;
+              zIndex = 0;
             }
             
             return (
@@ -426,17 +426,17 @@ const PhoneShowcase = () => {
             if (isCenter) {
               scale = 1;
               opacity = 1;
-              zIndex = 10;
+              zIndex = 1;
             } else if (isLeft) {
               scale = 0.85;
               translateX = -180;
               opacity = 0.7;
-              zIndex = 5;
+              zIndex = 0;
             } else if (isRight) {
               scale = 0.85;
               translateX = 180;
               opacity = 0.7;
-              zIndex = 5;
+              zIndex = 0;
             }
             
             return (

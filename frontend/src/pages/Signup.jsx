@@ -184,32 +184,32 @@ function Signup() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
-      <div className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg w-full max-w-md mx-auto">
-        <h1 className="text-3xl font-bold text-center text-gray-800 dark:text-gray-100 mb-6">
+    <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 p-2 sm:p-4">
+      <div className="bg-white dark:bg-gray-800 p-4 sm:p-6 md:p-8 rounded-xl shadow-lg w-full max-w-md mx-auto">
+        <h1 className="text-2xl sm:text-3xl font-bold text-center text-gray-800 dark:text-gray-100 mb-4 sm:mb-6">
           Create Account
         </h1>
 
         {submitStatus === "error" && (
-          <div className="bg-red-100 border border-red-400 text-red-700 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800 px-4 py-3 rounded mb-4">
-            <p className="flex items-center">
-              <FaExclamationCircle className="mr-2" /> {errorMessage}
+          <div className="bg-red-100 border border-red-400 text-red-700 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800 px-3 sm:px-4 py-2.5 sm:py-3 rounded mb-3 sm:mb-4">
+            <p className="flex items-center text-sm sm:text-base">
+              <FaExclamationCircle className="mr-2 w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" /> {errorMessage}
             </p>
           </div>
         )}
 
         {submitStatus === "success" && (
-          <div className="bg-green-100 border border-green-400 text-green-700 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800 px-4 py-3 rounded mb-4">
-            <p className="flex items-center">
-              <FaCheckCircle className="mr-2" /> Registration successful!
+          <div className="bg-green-100 border border-green-400 text-green-700 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800 px-3 sm:px-4 py-2.5 sm:py-3 rounded mb-3 sm:mb-4">
+            <p className="flex items-center text-sm sm:text-base">
+              <FaCheckCircle className="mr-2 w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" /> Registration successful!
               Redirecting you to login...
             </p>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
           <div>
-            <label className="block text-gray-700 dark:text-gray-300 font-medium mb-1">
+            <label className="block text-gray-700 dark:text-gray-300 font-medium mb-1 text-sm sm:text-base">
               Username
             </label>
             <input
@@ -220,16 +220,16 @@ function Signup() {
               disabled={
                 submitStatus === "loading" || submitStatus === "success"
               }
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              className="w-full px-3 sm:px-4 py-2.5 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm sm:text-base"
               placeholder="Choose a username"
             />
             {formErrors.username && (
-              <p className="text-red-500 text-sm mt-1">{formErrors.username}</p>
+              <p className="text-red-500 text-xs sm:text-sm mt-1">{formErrors.username}</p>
             )}
           </div>
 
           <div>
-            <label className="block text-gray-700 dark:text-gray-300 font-medium mb-1">
+            <label className="block text-gray-700 dark:text-gray-300 font-medium mb-1 text-sm sm:text-base">
               Email
             </label>
             <input
@@ -240,16 +240,16 @@ function Signup() {
               disabled={
                 submitStatus === "loading" || submitStatus === "success"
               }
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              className="w-full px-3 sm:px-4 py-2.5 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm sm:text-base"
               placeholder="Enter your email"
             />
             {formErrors.email && (
-              <p className="text-red-500 text-sm mt-1">{formErrors.email}</p>
+              <p className="text-red-500 text-xs sm:text-sm mt-1">{formErrors.email}</p>
             )}
           </div>
 
           <div className="relative">
-            <label className="block text-gray-700 dark:text-gray-300 font-medium mb-1">
+            <label className="block text-gray-700 dark:text-gray-300 font-medium mb-1 text-sm sm:text-base">
               Password
             </label>
             <div className="relative">
@@ -261,7 +261,7 @@ function Signup() {
                 disabled={
                   submitStatus === "loading" || submitStatus === "success"
                 }
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                className="w-full px-3 sm:px-4 py-2.5 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm sm:text-base"
                 placeholder="Create a password"
               />
               <button
@@ -269,22 +269,22 @@ function Signup() {
                 onClick={() => togglePasswordVisibility("password")}
                 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400"
               >
-                {showPassword ? <FaEyeSlash /> : <FaEye />}
+                {showPassword ? <FaEyeSlash size={16} className="sm:w-5 sm:h-5" /> : <FaEye size={16} className="sm:w-5 sm:h-5" />}
               </button>
             </div>
             {formErrors.password && Array.isArray(formErrors.password) ? (
-              <ul className="text-red-500 text-sm mt-1 list-disc pl-5">
+              <ul className="text-red-500 text-xs sm:text-sm mt-1 list-disc pl-4 sm:pl-5">
                 {formErrors.password.map((error, index) => (
                   <li key={index}>{error}</li>
                 ))}
               </ul>
             ) : formErrors.password ? (
-              <p className="text-red-500 text-sm mt-1">{formErrors.password}</p>
+              <p className="text-red-500 text-xs sm:text-sm mt-1">{formErrors.password}</p>
             ) : null}
           </div>
 
           <div className="relative">
-            <label className="block text-gray-700 dark:text-gray-300 font-medium mb-1">
+            <label className="block text-gray-700 dark:text-gray-300 font-medium mb-1 text-sm sm:text-base">
               Confirm Password
             </label>
             <div className="relative">
@@ -296,7 +296,7 @@ function Signup() {
                 disabled={
                   submitStatus === "loading" || submitStatus === "success"
                 }
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                className="w-full px-3 sm:px-4 py-2.5 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm sm:text-base"
                 placeholder="Confirm your password"
               />
               <button
@@ -304,11 +304,11 @@ function Signup() {
                 onClick={() => togglePasswordVisibility("confirm")}
                 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400"
               >
-                {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+                {showConfirmPassword ? <FaEyeSlash size={16} className="sm:w-5 sm:h-5" /> : <FaEye size={16} className="sm:w-5 sm:h-5" />}
               </button>
             </div>
             {formErrors.confirmPassword && (
-              <p className="text-red-500 text-sm mt-1">
+              <p className="text-red-500 text-xs sm:text-sm mt-1">
                 {formErrors.confirmPassword}
               </p>
             )}
@@ -317,7 +317,7 @@ function Signup() {
           <button
             type="submit"
             disabled={submitStatus === "loading" || submitStatus === "success"}
-            className={`w-full py-2 text-white font-medium rounded-lg ${
+            className={`w-full py-2.5 sm:py-2 text-white font-medium rounded-lg text-sm sm:text-base ${
               submitStatus === "loading" || submitStatus === "success"
                 ? "bg-blue-400 cursor-not-allowed"
                 : "bg-blue-500 hover:bg-blue-600"
@@ -326,7 +326,7 @@ function Signup() {
             {submitStatus === "loading" ? "Signing Up..." : "Sign Up"}
           </button>
 
-          <p className="text-sm text-gray-500 dark:text-gray-400 text-center">
+          <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 text-center">
             Already have an account?{" "}
             <a
               href="/login"

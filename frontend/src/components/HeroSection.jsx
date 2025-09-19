@@ -80,7 +80,7 @@ const HeroSection = () => {
           </div>
 
           {/* iPhone Carousel Showcase */}
-          <div className="relative flex justify-center">
+          <div className="relative flex justify-center mt-8">
             {/* Enhanced background for iPhone showcase */}
             <div className="absolute inset-0 flex items-center justify-center">
               {/* Main glow effect behind phones */}

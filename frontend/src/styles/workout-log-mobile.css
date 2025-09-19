@@ -143,22 +143,45 @@
   .exercise-card .exercise-actions button,
   .exercise-card button[title],
   .exercise-card .function-buttons button {
-    min-height: 28px !important;
-    min-width: 28px !important;
-    margin: 0.1rem !important;
+    min-height: 32px !important;
+    min-width: 32px !important;
+    margin: 0.05rem !important;
     padding: 0.25rem !important;
-    border-radius: 0.25rem !important;
+    border-radius: 0.375rem !important;
     display: flex !important;
+    flex-direction: column !important;
     align-items: center !important;
     justify-content: center !important;
     background-color: hsl(var(--muted)) !important;
-    font-size: 0.7rem !important;
+    font-size: 0.6rem !important;
+    gap: 0.125rem !important;
   }
 
   /* Make button icons much smaller */
   .exercise-card svg {
     width: 0.75rem !important;
     height: 0.75rem !important;
+  }
+
+  /* Specific styling for the new compact buttons */
+  .exercise-card .grid button {
+    min-height: 32px !important;
+    min-width: 32px !important;
+    padding: 0.375rem 0.25rem !important;
+    font-size: 0.6rem !important;
+    line-height: 1 !important;
+  }
+
+  .exercise-card .grid button svg {
+    width: 0.75rem !important;
+    height: 0.75rem !important;
+    margin-bottom: 0.125rem !important;
+  }
+
+  .exercise-card .grid button span {
+    font-size: 0.6rem !important;
+    line-height: 1 !important;
+    margin: 0 !important;
   }
 
   /* Specific buttons styling - extra small */

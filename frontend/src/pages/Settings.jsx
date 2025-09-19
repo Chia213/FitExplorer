@@ -18,6 +18,7 @@ import { useTranslation } from "react-i18next";
 import { BsCheck2 } from "react-icons/bs";
 import { FaPlay } from "react-icons/fa";
 import "../styles/theme-animations.css";  // Import the animations CSS
+import "../styles/settings-mobile.css";  // Import the mobile settings CSS
 
 // Import custom emoji assets - SVG placeholders
 // These could be replaced with actual emojis downloaded from slackmojis.com
@@ -592,11 +593,11 @@ function Settings() {
   }, []);
 
   const SectionCard = useCallback(({ title, description, children, className = "" }) => (
-    <div className={`bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 ${className}`}>
-      <div className="p-6">
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">{title}</h2>
-          <p className="text-slate-600 dark:text-slate-400">{description}</p>
+    <div className={`bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 ${className}`}>
+      <div className="p-3 sm:p-4">
+        <div className="mb-3 sm:mb-4">
+          <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white mb-1 text-sm sm:text-base">{title}</h2>
+          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">{description}</p>
         </div>
         {children}
       </div>
@@ -604,10 +605,10 @@ function Settings() {
   ), []);
 
   const SettingCard = useCallback(({ title, description, children, className = "" }) => (
-    <div className={`bg-slate-50 dark:bg-slate-700/50 rounded-lg p-6 ${className}`}>
-      <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">{title}</h3>
+    <div className={`bg-slate-50 dark:bg-slate-700/50 rounded-lg p-3 sm:p-4 ${className}`}>
+      <h3 className="text-sm sm:text-base font-semibold text-slate-900 dark:text-white mb-2 sm:mb-3">{title}</h3>
       {description && (
-        <p className="text-slate-600 dark:text-slate-400 mb-4">{description}</p>
+        <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mb-2 sm:mb-3">{description}</p>
       )}
       {children}
     </div>
@@ -750,23 +751,23 @@ function Settings() {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8">
         {/* Enhanced Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
+        <div className="mb-4 sm:mb-6 lg:mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between space-y-2 sm:space-y-0">
             <div>
-              <h1 className="text-3xl font-bold text-slate-900 dark:text-white flex items-center space-x-3">
-                <FaCog className="w-8 h-8 text-blue-600" />
+              <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white flex items-center space-x-2 sm:space-x-3">
+                <FaCog className="w-6 h-6 sm:w-8 sm:h-8 text-blue-600" />
                 <span>{t("settings")}</span>
-          </h1>
-          <p className="mt-2 text-slate-600 dark:text-slate-400">
-            Manage your account settings and preferences
-          </p>
-        </div>
-            <div className="flex items-center space-x-2 text-sm text-slate-500 dark:text-slate-400">
-              <FaUser className="w-4 h-4" />
+              </h1>
+              <p className="mt-1 sm:mt-2 text-sm sm:text-base text-slate-600 dark:text-slate-400">
+                Manage your account settings and preferences
+              </p>
+            </div>
+            <div className="flex items-center space-x-2 text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+              <FaUser className="w-3 h-3 sm:w-4 sm:h-4" />
               <span>{userData.username || "User"}</span>
-          </div>
+            </div>
           </div>
         </div>
 
@@ -782,26 +783,26 @@ function Settings() {
           onClose={() => updateUiState('success', null)} 
         />
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
           {/* Enhanced Sidebar Navigation */}
           <div className="lg:col-span-1">
             {/* Mobile Navigation - Horizontal Scroll */}
-            <div className="lg:hidden mb-6">
-              <nav className="flex space-x-2 overflow-x-auto pb-2 scrollbar-hide">
+            <div className="lg:hidden mb-3 sm:mb-4">
+              <nav className="settings-mobile-nav space-x-1">
                 {tabs.map((tab) => {
                   const Icon = tab.icon;
                   return (
                     <button
                       key={tab.id}
                       onClick={() => handleTabChange(tab.id)}
-                      className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 whitespace-nowrap ${
+                      className={`tab-button flex items-center justify-center gap-1 px-3 py-2 rounded-md transition-all duration-200 whitespace-nowrap text-xs font-medium ${
                         userData.activeTab === tab.id 
-                          ? "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800" 
+                          ? "bg-blue-500 text-white shadow-sm" 
                           : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200"
                       }`}
                     >
-                      <Icon className="w-4 h-4" />
-                      <span className="font-medium text-sm">{tab.label}</span>
+                      <Icon className="w-4 h-4 flex-shrink-0" />
+                      <span className="hidden sm:inline ml-1">{tab.label}</span>
                     </button>
                   );
                 })}
@@ -837,7 +838,7 @@ function Settings() {
           </div>
 
           {/* Main Content */}
-          <div className="lg:col-span-3">
+          <div className="lg:col-span-3 -mt-2 sm:mt-0">
             {/* Account Settings */}
             {userData.activeTab === "account" && (
               <SectionCard 
@@ -846,25 +847,25 @@ function Settings() {
               >
                 {/* Username Section */}
                 <SettingCard title={t("username")} description="Update your display name">
-                    <div className="flex flex-col sm:flex-row gap-4">
+                    <div className="flex flex-col gap-3">
                       <div className="flex-1">
                         <input
                           type="text"
                         value={userData.username}
                         onChange={(e) => updateUserData('username', e.target.value)}
-                          className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400"
+                          className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400 text-sm"
                           placeholder={t("enterUsername")}
                         />
                       </div>
                       <button
-                      className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
                         onClick={() => savePreferences("account")}
                       disabled={uiState.isSavingPreferences}
                     >
                       {uiState.isSavingPreferences ? (
                         <LoadingSpinner size="sm" />
                       ) : (
-                        <FaSave className="w-4 h-4" />
+                        <FaSave className="w-3 h-3" />
                       )}
                       <span>{uiState.isSavingPreferences ? t("saving") : t("save")}</span>
                       </button>
@@ -876,30 +877,30 @@ function Settings() {
                   title={t("profileEmoji")} 
                   description="Customize your profile emoji and animations"
                 >
-                  <div className="space-y-6">
-                    <div className="flex items-center space-x-3">
+                  <div className="space-y-4">
+                    <div className="flex items-center space-x-2">
                         <input
                           type="checkbox"
                         id="showProfileEmoji"
                           checked={userPreferences.showProfileEmoji}
                           onChange={(e) => handlePreferenceChange("showProfileEmoji", e.target.checked)}
-                          className="w-5 h-5 text-blue-600 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 rounded focus:ring-blue-500 focus:ring-2"
+                          className="w-4 h-4 text-blue-600 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 rounded focus:ring-blue-500 focus:ring-2"
                         />
-                      <label htmlFor="showProfileEmoji" className="text-slate-700 dark:text-slate-300 font-medium cursor-pointer">
+                      <label htmlFor="showProfileEmoji" className="text-slate-700 dark:text-slate-300 font-medium cursor-pointer text-sm">
                         {t("showProfileEmoji")}
                       </label>
                     </div>
                     
                     {userPreferences.showProfileEmoji && (
-                      <div className="space-y-4">
+                      <div className="space-y-3">
                         <div>
-                          <label className="block text-slate-700 dark:text-slate-300 font-medium mb-3">{t("chooseEmoji")}</label>
-                          <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 gap-3">
+                          <label className="block text-slate-700 dark:text-slate-300 font-medium mb-2 text-sm">{t("chooseEmoji")}</label>
+                          <div className="grid grid-cols-8 sm:grid-cols-10 md:grid-cols-12 gap-2">
                             {userPreferences.favoriteEmojis.map((emoji, index) => (
                               <button
                                 key={index}
                                 onClick={() => handlePreferenceChange("profileEmoji", emoji)}
-                                className={`text-2xl p-3 border-2 rounded-lg transition-all duration-200 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                className={`text-lg p-2 border-2 rounded-lg transition-all duration-200 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                                   userPreferences.profileEmoji === emoji 
                                     ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-200 dark:ring-blue-800' 
                                     : 'border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500 bg-white dark:bg-slate-800'
@@ -914,13 +915,13 @@ function Settings() {
                         
                         {/* Animation Settings */}
                         <div>
-                          <label className="block text-slate-700 dark:text-slate-300 font-medium mb-3">Emoji Animation</label>
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                          <label className="block text-slate-700 dark:text-slate-300 font-medium mb-2 text-sm">Emoji Animation</label>
+                          <div className="grid grid-cols-2 gap-2">
                             {["lift", "bounce", "pulse", "wave"].map(animation => (
                               <button
                                 key={animation}
                                 onClick={() => handlePreferenceChange("emojiAnimation", animation)}
-                                className={`px-3 py-2 text-sm rounded-lg border-2 transition-all duration-200 ${
+                                className={`px-2 py-1.5 text-xs rounded-lg border-2 transition-all duration-200 ${
                                   userPreferences.emojiAnimation === animation
                                     ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
                                     : 'border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300'
@@ -947,7 +948,7 @@ function Settings() {
                 
                 {/* Theme Toggle */}
                 <SettingCard title={t("theme")} description="Choose your preferred color scheme">
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-3 gap-2">
                     {[
                       { mode: 'light', icon: '☀️', label: t("light") },
                       { mode: 'dark', icon: '🌙', label: t("dark") },
@@ -955,7 +956,7 @@ function Settings() {
                     ].map(({ mode, icon, label }) => (
                       <button
                         key={mode}
-                        className={`p-4 rounded-lg border-2 transition-all duration-200 flex items-center justify-center space-x-3 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                        className={`p-2 rounded-lg border-2 transition-all duration-200 flex flex-col items-center justify-center space-y-1 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                           theme === mode 
                             ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-200 dark:ring-blue-800' 
                             : 'border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500 bg-white dark:bg-slate-800'
@@ -963,8 +964,8 @@ function Settings() {
                         onClick={() => setThemeMode(mode)}
                         aria-pressed={theme === mode}
                       >
-                        <span className="text-2xl">{icon}</span>
-                        <span className="font-medium text-slate-700 dark:text-slate-300">{label}</span>
+                        <span className="text-lg">{icon}</span>
+                        <span className="font-medium text-slate-700 dark:text-slate-300 text-xs">{label}</span>
                       </button>
                     ))}
                     </div>
@@ -975,27 +976,27 @@ function Settings() {
                   title={t("cardColor")} 
                   description="Customize the color scheme for your cards and interface elements"
                 >
-                  <div className="space-y-6">
-                    <div className="flex items-center space-x-3">
+                  <div className="space-y-4">
+                    <div className="flex items-center space-x-2">
                       <input
                         type="checkbox"
                         id="useCustomCardColor"
                         checked={userPreferences.useCustomCardColor}
                         onChange={(e) => toggleCustomCardColor(e.target.checked)}
-                        className="w-5 h-5 text-blue-600 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 rounded focus:ring-blue-500 focus:ring-2"
+                        className="w-4 h-4 text-blue-600 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 rounded focus:ring-blue-500 focus:ring-2"
                       />
-                      <label htmlFor="useCustomCardColor" className="text-slate-700 dark:text-slate-300 font-medium cursor-pointer">
+                      <label htmlFor="useCustomCardColor" className="text-slate-700 dark:text-slate-300 font-medium cursor-pointer text-sm">
                         {t("useCustomCardColor")}
                     </label>
                     </div>
                     
                     {userPreferences.useCustomCardColor && (
-                      <div className="space-y-4">
-                        <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-3">
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-6 sm:grid-cols-8 gap-2">
                           {['#3b82f6', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6', '#ec4899', '#f97316', '#06b6d4'].map(color => (
                             <button
                               key={color}
-                              className={`h-12 rounded-lg border-2 transition-all duration-200 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                              className={`h-8 rounded-lg border-2 transition-all duration-200 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                                 userPreferences.cardColor === color 
                                   ? 'border-slate-900 dark:border-white ring-2 ring-slate-300 dark:ring-slate-600' 
                                   : 'border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500'
@@ -1006,15 +1007,15 @@ function Settings() {
                             />
                           ))}
                         </div>
-                        <div className="flex items-center space-x-3">
+                        <div className="flex items-center space-x-2">
                           <input
                             type="color"
                             value={userPreferences.cardColor}
                             onChange={(e) => handleColorChange(e.target.value)}
-                            className="w-12 h-12 cursor-pointer rounded-lg border-2 border-slate-200 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-8 h-8 cursor-pointer rounded-lg border-2 border-slate-200 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
                             aria-label="Custom color picker"
                           />
-                          <span className="text-slate-700 dark:text-slate-300 font-medium">{t("custom")}</span>
+                          <span className="text-slate-700 dark:text-slate-300 font-medium text-sm">{t("custom")}</span>
                         </div>
                       </div>
                     )}
@@ -1216,17 +1217,14 @@ function Settings() {
 
             {/* Workout Preferences */}
             {userData.activeTab === "workout" && (
-              <div className="p-6">
-                <div className="mb-8">
-                  <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Workout Preferences</h2>
-                  <p className="text-slate-600 dark:text-slate-400">Customize your default workout settings and preferences</p>
-                </div>
+              <SectionCard 
+                title="Workout Preferences" 
+                description="Customize your default workout settings and preferences"
+              >
 
                 {/* Default Exercise Settings */}
-                <div className="mb-8">
-                  <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-6">
-                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-6">Default Exercise Settings</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <SettingCard title="Default Exercise Settings" description="">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                       <div>
                         <label className="block text-slate-700 dark:text-slate-300 font-medium mb-2">Default Sets</label>
                         <input
@@ -1258,8 +1256,7 @@ function Settings() {
                         />
                       </div>
                     </div>
-                  </div>
-                </div>
+                </SettingCard>
 
                 {/* Unit Preferences */}
                 <div className="mb-8">
@@ -1392,7 +1389,7 @@ function Settings() {
                     <span>{uiState.isSavingPreferences ? t("saving") : t("saveChanges")}</span>
                   </button>
                 </div>
-              </div>
+              </SectionCard>
             )}
 
             {/* Security Settings */}
@@ -1818,15 +1815,12 @@ function Settings() {
 
             {/* Language Settings */}
             {userData.activeTab === "language" && (
-              <div className="p-6">
-                <div className="mb-8">
-                  <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">{t("language")}</h2>
-                  <p className="text-slate-600 dark:text-slate-400">Choose your preferred language for the interface</p>
-                </div>
-
-                <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-6">
-                  <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-6">Select Language</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <SectionCard 
+                title={t("language")} 
+                description="Choose your preferred language for the interface"
+              >
+                <SettingCard title="Select Language" description="">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
                     {["en", "es", "fr", "de", "it", "pt", "zh", "ja", "ko", "ru"].map(lang => (
                       <button
                         key={lang}
@@ -1834,30 +1828,30 @@ function Settings() {
                           handlePreferenceChange("language", lang);
                           changeLanguage(lang);
                         }}
-                        className={`p-4 rounded-lg border-2 transition-all duration-200 flex items-center space-x-3 ${
+                        className={`p-2 rounded-lg border-2 transition-all duration-200 flex flex-col items-center space-y-1 ${
                           userPreferences.language === lang
                             ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-200 dark:ring-blue-800'
                             : 'border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500 bg-white dark:bg-slate-800'
                         }`}
                       >
-                        <span className="text-2xl">{getLanguageFlag(lang)}</span>
-                        <span className="font-medium text-slate-700 dark:text-slate-300">{getLanguageName(lang)}</span>
+                        <span className="text-lg">{getLanguageFlag(lang)}</span>
+                        <span className="font-medium text-xs text-slate-700 dark:text-slate-300">{getLanguageName(lang)}</span>
                       </button>
                     ))}
                   </div>
                   
-                  <div className="flex justify-end mt-8">
+                  <div className="flex justify-end mt-3">
                     <button
-                      className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 flex items-center space-x-2"
+                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 flex items-center space-x-2 text-sm"
                       onClick={() => savePreferences("language")}
                       disabled={uiState.isSavingPreferences}
                     >
-                      <FaSave className="w-4 h-4" />
+                      <FaSave className="w-3 h-3 sm:w-4 sm:h-4" />
                       <span>{uiState.isSavingPreferences ? t("saving") : t("saveChanges")}</span>
                     </button>
                   </div>
-                </div>
-              </div>
+                </SettingCard>
+              </SectionCard>
             )}
 
             {/* Sessions Management */}

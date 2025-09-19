@@ -177,16 +177,16 @@ const FAQ = () => {
       <Navigation />
       
       {/* Hero Section */}
-      <section className="relative pt-32 pb-20 px-4">
+      <section className="relative pt-20 md:pt-32 pb-12 md:pb-20 px-4">
         <div className="container mx-auto max-w-6xl text-center">
-          <div className="space-y-6 animate-fade-in-up">
-            <Badge variant="outline" className="border-primary/50 text-primary mb-4">
+          <div className="space-y-4 md:space-y-6 animate-fade-in-up">
+            <Badge variant="outline" className="border-primary/50 text-primary mb-2 md:mb-4 text-sm">
               Help & Support
             </Badge>
-            <h1 className="text-5xl md:text-7xl font-bold hero-text mb-6">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold hero-text mb-4 md:mb-6 leading-tight">
               Frequently Asked Questions
             </h1>
-            <p className="text-xl md:text-2xl text-muted-foreground max-w-4xl mx-auto leading-relaxed">
+            <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-muted-foreground max-w-4xl mx-auto leading-relaxed px-2">
               Find answers to common questions about FitExplorer. 
               Can't find what you're looking for? Contact us directly.
             </p>
@@ -195,18 +195,17 @@ const FAQ = () => {
       </section>
 
       {/* Search Section */}
-      <section className="py-16 px-4">
+      <section className="py-8 md:py-16 px-4">
         <div className="container mx-auto max-w-4xl">
-          <Card className="glass-card p-8">
+          <Card className="glass-card p-4 md:p-8">
             <CardContent className="p-0">
               <div className="relative">
-                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
                 <input
                   type="text"
                   placeholder="Search questions..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-12 pr-4 py-4 rounded-lg bg-background border border-glass-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                  className="w-full px-4 py-3 md:py-4 rounded-lg bg-background border border-glass-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-base"
                 />
               </div>
             </CardContent>
@@ -215,38 +214,40 @@ const FAQ = () => {
       </section>
 
       {/* FAQ Content */}
-      <section className="py-20 px-4">
+      <section className="py-12 md:py-20 px-4">
         <div className="container mx-auto max-w-6xl">
           {filteredFAQs.length === 0 ? (
-            <Card className="glass-card p-12 text-center">
+            <Card className="glass-card p-6 md:p-12 text-center">
               <CardContent className="p-0">
-                <HelpCircle className="w-16 h-16 text-muted-foreground mx-auto mb-6" />
-                <h2 className="text-2xl font-semibold mb-4 text-foreground">No results found</h2>
-                <p className="text-muted-foreground mb-6">
+                <HelpCircle className="w-12 h-12 md:w-16 md:h-16 text-muted-foreground mx-auto mb-4 md:mb-6" />
+                <h2 className="text-xl md:text-2xl font-semibold mb-3 md:mb-4 text-foreground">No results found</h2>
+                <p className="text-sm md:text-base text-muted-foreground mb-4 md:mb-6 px-2">
                   We couldn't find any FAQs matching your search. Try different keywords or browse all questions below.
                 </p>
                 <Button 
                   onClick={() => setSearchQuery("")}
                   variant="outline"
+                  size="sm"
+                  className="md:size-default"
                 >
                   Clear Search
                 </Button>
               </CardContent>
             </Card>
           ) : (
-            <div className="space-y-8">
+            <div className="space-y-6 md:space-y-8">
               {filteredFAQs.map((category, categoryIndex) => (
                 <Card key={categoryIndex} className="feature-card">
                   <CardContent className="p-0">
-                    <div className="p-8 border-b border-glass-border">
-                      <div className="flex items-center space-x-4">
-                        <div className={`w-12 h-12 rounded-xl bg-gradient-to-r ${category.gradient} flex items-center justify-center`}>
-                          <category.icon className="w-6 h-6 text-white" />
+                    <div className="p-4 md:p-8 border-b border-glass-border">
+                      <div className="flex items-center space-x-3 md:space-x-4">
+                        <div className={`w-10 h-10 md:w-12 md:h-12 rounded-xl bg-gradient-to-r ${category.gradient} flex items-center justify-center flex-shrink-0`}>
+                          <category.icon className="w-5 h-5 md:w-6 md:h-6 text-white" />
                         </div>
-                        <h2 className="text-2xl font-semibold text-foreground">
+                        <h2 className="text-lg md:text-2xl font-semibold text-foreground flex-1 min-w-0">
                           {category.category}
                         </h2>
-                        <Badge variant="secondary" className="ml-auto">
+                        <Badge variant="secondary" className="ml-2 text-xs md:text-sm">
                           {category.questions.length} questions
                         </Badge>
                       </div>
@@ -258,30 +259,30 @@ const FAQ = () => {
                         const isActive = activeIndex === currentIndex;
                         
                         return (
-                          <div key={item.id} className="p-6">
+                          <div key={item.id} className="p-4 md:p-6">
                             <button
                               onClick={() => toggleAccordion(currentIndex)}
-                              className="w-full text-left flex justify-between items-start space-x-4 group"
+                              className="w-full text-left flex justify-between items-start space-x-3 md:space-x-4 group"
                             >
-                              <h3 className="text-lg font-semibold text-foreground group-hover:text-primary transition-colors flex-1">
+                              <h3 className="text-base md:text-lg font-semibold text-foreground group-hover:text-primary transition-colors flex-1 leading-tight">
                                 {item.question}
                               </h3>
-                              <div className="flex-shrink-0">
+                              <div className="flex-shrink-0 mt-1">
                                 {isActive ? (
-                                  <Minus className="w-5 h-5 text-primary" />
+                                  <Minus className="w-4 h-4 md:w-5 md:h-5 text-primary" />
                                 ) : (
-                                  <Plus className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                                  <Plus className="w-4 h-4 md:w-5 md:h-5 text-muted-foreground group-hover:text-primary transition-colors" />
                                 )}
                               </div>
                             </button>
                             
                             <div
                               className={`overflow-hidden transition-all duration-300 ${
-                                isActive ? "max-h-screen mt-4" : "max-h-0"
+                                isActive ? "max-h-screen mt-3 md:mt-4" : "max-h-0"
                               }`}
                             >
-                              <div className="pt-4 border-t border-glass-border">
-                                <p className="text-muted-foreground leading-relaxed">
+                              <div className="pt-3 md:pt-4 border-t border-glass-border">
+                                <p className="text-sm md:text-base text-muted-foreground leading-relaxed">
                                   {item.answer}
                                 </p>
                               </div>
@@ -299,25 +300,25 @@ const FAQ = () => {
       </section>
 
       {/* Contact Section */}
-      <section className="py-20 px-4">
+      <section className="py-12 md:py-20 px-4">
         <div className="container mx-auto max-w-4xl">
-          <Card className="glass-card p-12 text-center glow-effect">
+          <Card className="glass-card p-6 md:p-12 text-center glow-effect">
             <CardContent className="p-0">
-              <h2 className="text-3xl font-bold mb-6 hero-text">
+              <h2 className="text-2xl md:text-3xl font-bold mb-4 md:mb-6 hero-text">
                 Still Have Questions?
               </h2>
-              <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
+              <p className="text-base md:text-xl text-muted-foreground mb-6 md:mb-8 max-w-2xl mx-auto px-2">
                 If you couldn't find the answer to your question, feel free to contact us directly. 
                 We're here to help!
               </p>
-              <div className="flex flex-wrap justify-center gap-4">
-                <Button size="lg" asChild>
+              <div className="flex flex-col sm:flex-row flex-wrap justify-center gap-3 md:gap-4">
+                <Button size="sm" className="md:size-lg" asChild>
                   <a href="mailto:fitexplorer.fitnessapp@gmail.com">
                     <Mail className="w-4 h-4 mr-2" />
                     Email Support
                   </a>
                 </Button>
-                <Button variant="outline" size="lg" asChild>
+                <Button variant="outline" size="sm" className="md:size-lg" asChild>
                   <Link to="/contact">
                     <MessageCircle className="w-4 h-4 mr-2" />
                     Contact Page
@@ -330,20 +331,20 @@ const FAQ = () => {
       </section>
 
       {/* Footer Navigation */}
-      <section className="py-16 px-4">
+      <section className="py-12 md:py-16 px-4">
         <div className="container mx-auto max-w-4xl text-center">
-          <h3 className="text-2xl font-semibold mb-6 text-foreground">Related Pages</h3>
-          <div className="flex flex-wrap justify-center gap-4">
-            <Button variant="outline" asChild>
+          <h3 className="text-xl md:text-2xl font-semibold mb-4 md:mb-6 text-foreground">Related Pages</h3>
+          <div className="flex flex-wrap justify-center gap-2 md:gap-4">
+            <Button variant="outline" size="sm" className="md:size-default" asChild>
               <Link to="/about">About Us</Link>
             </Button>
-            <Button variant="outline" asChild>
+            <Button variant="outline" size="sm" className="md:size-default" asChild>
               <Link to="/privacy-policy">Privacy Policy</Link>
             </Button>
-            <Button variant="outline" asChild>
+            <Button variant="outline" size="sm" className="md:size-default" asChild>
               <Link to="/terms">Terms of Service</Link>
             </Button>
-            <Button variant="outline" asChild>
+            <Button variant="outline" size="sm" className="md:size-default" asChild>
               <Link to="/contact">Contact</Link>
             </Button>
           </div>
@@ -354,7 +355,7 @@ const FAQ = () => {
       <footer className="border-t border-border py-8 px-4">
         <div className="container mx-auto max-w-6xl text-center">
           <p className="text-muted-foreground">
-            © 2025 Chia Ranchber. All rights reserved.
+            © 2024 FitExplorer. All rights reserved.
           </p>
         </div>
       </footer>

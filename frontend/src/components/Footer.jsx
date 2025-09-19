@@ -136,7 +136,7 @@ const Footer = () => {
         {/* Bottom Section */}
         <div className="border-t border-border mt-8 pt-6 flex justify-center">
           <p className="text-sm text-muted-foreground">
-            © 2025 Chia Ranchber. All rights reserved.
+            © 2024 FitExplorer. All rights reserved.
           </p>
         </div>
       </div>
