@@ -65,6 +65,7 @@ export function HeroSection() {
               <Button 
                 size="lg" 
                 className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-glow animate-glow group"
+                onClick={() => window.location.href = '/signup'}
               >
                 Start Your Journey
                 <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
