@@ -74,7 +74,7 @@ function ErrorBoundary({ children, fallback }) {
   }, []);
   
   if (hasError) {
-    return fallback || <div className="text-red-500 p-4 rounded bg-red-50 my-4">Something went wrong loading this component.</div>;
+    return fallback || <div className="text-destructive p-4 rounded bg-destructive/10 my-4">Something went wrong loading this component.</div>;
   }
   
   return children;
@@ -101,10 +101,12 @@ function Profile() {
   });
   const [personalInfoError, setPersonalInfoError] = useState("");
   const [preferences, setPreferences] = useState({
-    cardColor: null, // Initialize as null to prevent default color flash
+    cardColor: "#f0f4ff", // Initialize with default color
+    nameBorderColor: "#3b82f6", // Initialize with default border color
     workoutFrequencyGoal: null,
     goalWeight: null,
     useCustomCardColor: false,
+    useCustomNameBorderColor: false,
     enableAnimations: false,
     animationStyle: "subtle",
     animationSpeed: "medium"
@@ -283,15 +285,19 @@ function Profile() {
 
       // Set user preferences
       if (userData.preferences) {
+        console.log("Loading preferences from backend:", userData.preferences);
         setPreferences((prev) => {
           const newPrefs = {
             ...prev,
             cardColor: userData.preferences.card_color || prev.cardColor,
+            nameBorderColor: userData.preferences.name_border_color || prev.nameBorderColor || "#3b82f6",
             useCustomCardColor: userData.preferences.use_custom_card_color || false,
+            useCustomNameBorderColor: userData.preferences.use_custom_name_border_color || false,
             enableAnimations: userData.preferences.enable_animations === true,
             animationStyle: userData.preferences.animation_style || "subtle",
             animationSpeed: userData.preferences.animation_speed || "medium"
           };
+          console.log("Setting preferences:", newPrefs);
           return newPrefs;
         });
         
@@ -764,17 +770,22 @@ function Profile() {
     setIsSaving(true);
     try {
       const token = localStorage.getItem("token");
+      const requestBody = {
+        use_custom_card_color: preferences.useCustomCardColor,
+        card_color: preferences.cardColor,
+        use_custom_name_border_color: preferences.useCustomNameBorderColor,
+        name_border_color: preferences.nameBorderColor,
+        clear_premium_theme: preferences.useCustomCardColor
+      };
+      console.log("Saving preferences to backend:", requestBody);
+      
       const response = await fetch(`${backendURL}/user/settings`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          use_custom_card_color: preferences.useCustomCardColor,
-          card_color: preferences.cardColor,
-          clear_premium_theme: preferences.useCustomCardColor
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       if (response.ok) {
@@ -1136,7 +1147,7 @@ function Profile() {
     return (
       <div className="min-h-screen">
         <div className="max-w-7xl mx-auto pt-8">
-          <div className="bg-red-100 dark:bg-red-900/30 border border-red-400 text-red-700 dark:text-red-300 px-4 py-3 rounded relative mb-4">
+          <div className="bg-destructive/10 border border-destructive text-destructive px-4 py-3 rounded relative mb-4">
             <strong className="font-bold">Error: </strong>
             <span className="block sm:inline">{error}</span>
           </div>
@@ -1167,11 +1178,11 @@ function Profile() {
   }
 
   return (
-    <div className={`min-h-screen ${theme === "dark" ? "bg-gray-900" : "bg-gray-100"} ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
-      <div className="max-w-7xl mx-auto">
-        {/* Profile Header */}
+    <div className="min-h-screen bg-background text-foreground">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Profile Header - Mobile Optimized */}
         <div 
-          className={`bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8 profile-header-card ${getAnimationClasses()}`} 
+          className={`bg-card rounded-lg shadow-lg p-4 sm:p-6 mb-6 sm:mb-8 profile-header-card ${getAnimationClasses()}`} 
           style={{ 
             backgroundColor: preferences.useCustomCardColor 
               ? preferences.cardColor 
@@ -1187,10 +1198,10 @@ function Profile() {
             "--animation-duration": preferences.animationSpeed === "slow" ? "4s" : preferences.animationSpeed === "fast" ? "1.5s" : "2.5s"
           }}
         >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-6">
-              <div className="relative">
-                <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-blue-500">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between space-y-4 sm:space-y-0">
+            <div className="flex flex-col sm:flex-row sm:items-center space-y-4 sm:space-y-0 sm:space-x-6">
+              <div className="relative self-center sm:self-auto">
+                <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full overflow-hidden border-4 border-blue-500">
                   {profilePicture ? (
                     <img
                       src={profilePicture}
@@ -1199,15 +1210,15 @@ function Profile() {
                     />
                   ) : (
                     <div className="w-full h-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                      <FaUser className="w-16 h-16 text-gray-400" />
+                      <FaUser className="w-12 h-12 sm:w-16 sm:h-16 text-muted-foreground" />
                     </div>
                   )}
                 </div>
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  className="absolute bottom-0 right-0 bg-blue-500 text-white p-2 rounded-full hover:bg-blue-600"
+                  className="absolute bottom-0 right-0 bg-blue-500 text-white p-1.5 sm:p-2 rounded-full hover:bg-blue-600"
                 >
-                  <FaCamera className="w-4 h-4" />
+                  <FaCamera className="w-3 h-3 sm:w-4 sm:h-4" />
                 </button>
                 <input
                   type="file"
@@ -1217,26 +1228,29 @@ function Profile() {
                   onChange={handleProfilePictureChange}
                 />
               </div>
-              <div className="flex-1">
-                <div className="flex items-center space-x-4">
+              <div className="flex-1 text-center sm:text-left">
+                <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
                   {isEditing ? (
-                    <div className="flex flex-col">
+                    <div className="flex flex-col w-full">
                       <div className="flex items-center space-x-2">
                         <input
                           type="text"
                           value={editedUsername}
                           onChange={(e) => setEditedUsername(e.target.value)}
-                          className="text-2xl font-bold bg-transparent border-b-2 border-blue-500 focus:outline-none"
+                          className="text-lg sm:text-2xl font-bold bg-transparent focus:outline-none flex-1 border-none"
+                          style={{
+                            color: theme === "dark" ? "white" : "#334155"
+                          }}
                         />
                         <button
                           onClick={() => handleUpdateProfile({ username: editedUsername })}
                           disabled={isSaving}
-                          className="text-green-500 hover:text-green-600"
+                          className="text-accent hover:text-accent/80 p-1"
                         >
                           {isSaving ? (
-                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-green-700"></div>
+                            <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-green-700"></div>
                           ) : (
-                            <FaSave className="w-5 h-5" />
+                            <FaSave className="w-4 h-4 sm:w-5 sm:h-5" />
                           )}
                         </button>
                         <button
@@ -1252,52 +1266,52 @@ function Profile() {
                               errorElement.classList.add('hidden');
                             }
                           }}
-                          className="text-red-500 hover:text-red-600"
+                          className="text-destructive hover:text-destructive/80 p-1"
                         >
-                          <FaTimes className="w-5 h-5" />
+                          <FaTimes className="w-4 h-4 sm:w-5 sm:h-5" />
                         </button>
                       </div>
-                      <div id="username-error" className="text-red-500 text-sm mt-1 hidden"></div>
+                      <div id="username-error" className="text-destructive text-sm mt-1 hidden"></div>
                     </div>
                   ) : (
                     <>
-                      <h1 className="text-2xl font-bold flex items-center">
+                      <h1 className="text-lg sm:text-2xl font-bold flex items-center justify-center sm:justify-start">
                         {user?.username}
                       </h1>
                       <button
                         onClick={() => setIsEditing(true)}
-                        className="text-blue-500 hover:text-blue-600"
+                        className="text-primary hover:text-primary/80 p-1 self-center sm:self-auto"
                       >
-                        <FaEdit className="w-5 h-5" />
+                        <FaEdit className="w-4 h-4 sm:w-5 sm:h-5" />
                       </button>
                     </>
                   )}
                 </div>
-                <p className="text-gray-600 dark:text-gray-400 text-sm mt-1 italic">
+                <p className="text-muted-foreground text-sm mt-1 italic">
                   {getGreeting()}
                 </p>
-                <p className="text-gray-500 dark:text-gray-400 text-xs mt-1">
+                <p className="text-muted-foreground text-xs mt-1">
                   Member since {formatJoinDate(user?.created_at)} {getMembershipDuration(user?.created_at)}
                 </p>
               </div>
             </div>
-            <div className="flex flex-col items-end space-y-2">
+            <div className="flex flex-col items-center sm:items-end space-y-2 mt-4 sm:mt-0">
               {/* Theme info and color picker */}
               {premiumTheme && premiumTheme !== "default" ? (
-                <div className="flex flex-col items-end space-y-2">
+                <div className="flex flex-col items-center sm:items-end space-y-2">
                   <div className="flex items-center space-x-2">
-                    <span className="text-sm font-medium">
+                    <span className="text-xs sm:text-sm font-medium">
                       {premiumThemes && premiumThemes[premiumTheme] 
                         ? `Using ${premiumThemes[premiumTheme].name} Theme` 
                         : "Using Theme"}
                     </span>
-                    <div className="w-6 h-6 rounded-full" style={{ 
+                    <div className="w-4 h-4 sm:w-6 sm:h-6 rounded-full" style={{ 
                       backgroundColor: premiumThemes && premiumThemes[premiumTheme] 
                         ? premiumThemes[premiumTheme].primary 
                         : "#3b82f6" 
                     }}></div>
                     {isAdmin && premiumThemes && premiumThemes[premiumTheme] && premiumThemes[premiumTheme].isPremium && (
-                      <span className="text-xs px-2 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 rounded-full">
+                      <span className="text-xs px-2 py-0.5 bg-primary/10 text-primary rounded-full">
                         Admin
                       </span>
                     )}
@@ -1305,42 +1319,77 @@ function Profile() {
                   <div className="flex items-center space-x-2">
                     <button 
                       onClick={() => setShowColorPicker(!showColorPicker)}
-                      className="text-sm bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600"
+                      className="text-xs sm:text-sm bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600"
                     >
-                      {showColorPicker ? "Hide Card Options" : "Customize Card"}
+                      {showColorPicker ? "Hide Options" : "Customize Card"}
                     </button>
                   </div>
                   
                   {showColorPicker && (
-                    <div className="mt-2 p-3 bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
-                      <label className="flex items-center text-sm mb-2">
+                    <div className="mt-2 p-3 bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 w-full sm:w-auto">
+                      <label className="flex items-center text-xs sm:text-sm mb-2">
                         <input
                           type="checkbox"
                           checked={preferences.useCustomCardColor}
                           onChange={(e) => toggleCustomColorMode(e.target.checked)}
-                          className="mr-2 h-4 w-4"
+                          className="mr-2 h-3 w-3 sm:h-4 sm:w-4"
                         />
                         Use custom color instead
                       </label>
                       
                       {preferences.useCustomCardColor && (
                         <div className="flex items-center mt-2">
-                          <span className="text-sm mr-2">Select color:</span>
+                          <span className="text-xs sm:text-sm mr-2">Card color:</span>
                           <input
                             type="color"
                             value={preferences.cardColor}
                             onChange={(e) => handleColorChange(e.target.value)}
-                            className="w-8 h-8 rounded cursor-pointer"
+                            className="w-6 h-6 sm:w-8 sm:h-8 rounded cursor-pointer"
+                          />
+                        </div>
+                      )}
+                      
+                      <label className="flex items-center text-xs sm:text-sm mb-2 mt-3">
+                        <input
+                          type="checkbox"
+                          checked={preferences.useCustomNameBorderColor}
+                          onChange={(e) => {
+                            setPreferences(prev => ({
+                              ...prev,
+                              useCustomNameBorderColor: e.target.checked,
+                              nameBorderColor: e.target.checked ? (prev.nameBorderColor || "#3b82f6") : null
+                            }));
+                            setPreferencesChanged(true);
+                          }}
+                          className="mr-2 h-3 w-3 sm:h-4 sm:w-4"
+                        />
+                        Use custom name border color
+                      </label>
+                      
+                      {preferences.useCustomNameBorderColor && (
+                        <div className="flex items-center mt-2">
+                          <span className="text-xs sm:text-sm mr-2">Name border color:</span>
+                          <input
+                            type="color"
+                            value={preferences.nameBorderColor || "#3b82f6"}
+                            onChange={(e) => {
+                              setPreferences(prev => ({
+                                ...prev,
+                                nameBorderColor: e.target.value
+                              }));
+                              setPreferencesChanged(true);
+                            }}
+                            className="w-6 h-6 sm:w-8 sm:h-8 rounded cursor-pointer"
                           />
                         </div>
                       )}
                       
                       {preferencesChanged && (
-                        <div className="mt-2 flex justify-end">
+                        <div className="mt-2 flex justify-center sm:justify-end">
                           <button
                             onClick={handlePreferenceUpdate}
                             disabled={isSaving}
-                            className="text-xs bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600 transition-colors"
+                            className="text-xs bg-primary text-white px-2 py-1 rounded hover:bg-primary/90 transition-colors"
                           >
                             {isSaving ? "Saving..." : "Save Changes"}
                           </button>
@@ -1353,18 +1402,39 @@ function Profile() {
                 <div className="flex items-center space-x-2">
                   <button 
                     onClick={() => setShowColorPicker(!showColorPicker)}
-                    className="text-sm bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600"
+                    className="text-xs sm:text-sm bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600"
                   >
-                    {showColorPicker ? "Hide Card Color" : "Change Card Color"}
+                    {showColorPicker ? "Hide Color" : "Change Color"}
                   </button>
                   
                   {showColorPicker && (
-                    <input
-                      type="color"
-                      value={preferences.cardColor}
-                      onChange={(e) => handleColorChange(e.target.value)}
-                      className="w-8 h-8 rounded cursor-pointer"
-                    />
+                    <div className="flex flex-col space-y-2">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-xs sm:text-sm">Card color:</span>
+                        <input
+                          type="color"
+                          value={preferences.cardColor}
+                          onChange={(e) => handleColorChange(e.target.value)}
+                          className="w-6 h-6 sm:w-8 sm:h-8 rounded cursor-pointer"
+                        />
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-xs sm:text-sm">Name border:</span>
+                        <input
+                          type="color"
+                          value={preferences.nameBorderColor || "#3b82f6"}
+                          onChange={(e) => {
+                            setPreferences(prev => ({
+                              ...prev,
+                              nameBorderColor: e.target.value,
+                              useCustomNameBorderColor: true
+                            }));
+                            setPreferencesChanged(true);
+                          }}
+                          className="w-6 h-6 sm:w-8 sm:h-8 rounded cursor-pointer"
+                        />
+                      </div>
+                    </div>
                   )}
                 </div>
               )}
@@ -1375,7 +1445,7 @@ function Profile() {
                   <button
                     onClick={handlePreferenceUpdate}
                     disabled={isSaving}
-                    className="text-xs bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600 transition-colors"
+                    className="text-xs bg-primary text-white px-2 py-1 rounded hover:bg-primary/90 transition-colors"
                   >
                     {isSaving ? "Saving..." : "Save Changes"}
                   </button>
@@ -1383,7 +1453,7 @@ function Profile() {
               )}
               
               {successMessage && (
-                <div className="text-sm text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30 px-2 py-1 rounded">
+                <div className="text-sm text-accent bg-accent/10 px-2 py-1 rounded">
                   {successMessage}
                 </div>
               )}
@@ -1391,28 +1461,28 @@ function Profile() {
           </div>
         </div>
 
-        {/* Quick Access Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        {/* Quick Access Grid - Mobile Optimized */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6 mb-6 sm:mb-8">
           {quickAccessLinks.map((link, index) => (
             <button
               key={index}
               onClick={() => navigate(link.path)}
-              className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow duration-200 flex items-center space-x-4"
+              className="bg-card rounded-lg shadow-md p-4 sm:p-6 hover:shadow-lg transition-shadow duration-200 flex items-center space-x-3 sm:space-x-4"
             >
-              <div className="text-blue-500">{link.icon}</div>
-              <span className="text-lg font-medium text-gray-900 dark:text-white">
+              <div className="text-primary text-lg sm:text-xl">{link.icon}</div>
+              <span className="text-base sm:text-lg font-medium text-foreground">
                 {link.label}
               </span>
             </button>
           ))}
         </div>
 
-        {/* Stats and Preferences */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Stats and Preferences - Mobile Optimized */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
           {/* Personal Information */}
-          <div className={`${theme === "dark" ? "bg-gray-800" : "bg-white"} rounded-lg shadow p-6 mb-6`}>
+          <div className="bg-card rounded-lg shadow p-4 sm:p-6 mb-4 sm:mb-6">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold">Personal Information</h2>
+              <h2 className="text-lg sm:text-xl font-bold">Personal Information</h2>
               {!isEditingPersonalInfo ? (
                 <button
                   onClick={() => {
@@ -1427,22 +1497,22 @@ function Profile() {
                     setIsEditingPersonalInfo(true);
                     setPersonalInfoError("");
                   }}
-                  className="text-teal-500 hover:text-teal-400"
+                  className="text-accent hover:text-accent/80 p-1"
                 >
-                  <FaEdit />
+                  <FaEdit className="w-4 h-4 sm:w-5 sm:h-5" />
                 </button>
               ) : (
                 <div className="flex space-x-2">
                   <button
                     onClick={() => handlePersonalInfoUpdate(personalInfo)}
-                    className="text-teal-500 hover:text-teal-400"
+                    className="text-accent hover:text-accent/80 p-1"
                     title="Save changes"
                     disabled={isSaving}
                   >
                     {isSaving ? (
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                     ) : (
-                      <FaSave />
+                      <FaSave className="w-4 h-4 sm:w-5 sm:h-5" />
                     )}
                   </button>
                   <button
@@ -1450,10 +1520,10 @@ function Profile() {
                       setIsEditingPersonalInfo(false);
                       setPersonalInfoError("");
                     }}
-                    className="text-gray-500 hover:text-gray-400"
+                    className="text-muted-foreground hover:text-muted-foreground/80 p-1"
                     title="Cancel"
                   >
-                    <FaTimes />
+                    <FaTimes className="w-4 h-4 sm:w-5 sm:h-5" />
                   </button>
                 </div>
               )}
@@ -1464,59 +1534,59 @@ function Profile() {
             )}
 
             {isEditingPersonalInfo ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Height (cm)</label>
+                  <label className="block text-xs sm:text-sm font-medium mb-1">Height (cm)</label>
                   <input
                     type="number"
                     name="height"
                     value={personalInfo.height}
                     onChange={(e) => setPersonalInfo(prev => ({ ...prev, height: e.target.value }))}
-                    className={`w-full px-3 py-2 rounded-lg ${
+                    className={`w-full px-3 py-2 rounded-lg text-sm ${
                       theme === "dark"
                         ? "bg-gray-700 text-white border-gray-600"
-                        : "bg-gray-100 text-gray-900 border-gray-300"
+                        : "bg-muted text-foreground border-border"
                     } border`}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Weight (kg)</label>
+                  <label className="block text-xs sm:text-sm font-medium mb-1">Weight (kg)</label>
                   <input
                     type="number"
                     name="weight"
                     value={personalInfo.weight}
                     onChange={(e) => setPersonalInfo(prev => ({ ...prev, weight: e.target.value }))}
-                    className={`w-full px-3 py-2 rounded-lg ${
+                    className={`w-full px-3 py-2 rounded-lg text-sm ${
                       theme === "dark"
                         ? "bg-gray-700 text-white border-gray-600"
-                        : "bg-gray-100 text-gray-900 border-gray-300"
+                        : "bg-muted text-foreground border-border"
                     } border`}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Age</label>
+                  <label className="block text-xs sm:text-sm font-medium mb-1">Age</label>
                   <input
                     type="number"
                     name="age"
                     value={personalInfo.age}
                     onChange={(e) => setPersonalInfo(prev => ({ ...prev, age: e.target.value }))}
-                    className={`w-full px-3 py-2 rounded-lg ${
+                    className={`w-full px-3 py-2 rounded-lg text-sm ${
                       theme === "dark"
                         ? "bg-gray-700 text-white border-gray-600"
-                        : "bg-gray-100 text-gray-900 border-gray-300"
+                        : "bg-muted text-foreground border-border"
                     } border`}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Gender</label>
+                  <label className="block text-xs sm:text-sm font-medium mb-1">Gender</label>
                   <select
                     name="gender"
                     value={personalInfo.gender}
                     onChange={(e) => setPersonalInfo(prev => ({ ...prev, gender: e.target.value }))}
-                    className={`w-full px-3 py-2 rounded-lg ${
+                    className={`w-full px-3 py-2 rounded-lg text-sm ${
                       theme === "dark"
                         ? "bg-gray-700 text-white border-gray-600"
-                        : "bg-gray-100 text-gray-900 border-gray-300"
+                        : "bg-muted text-foreground border-border"
                     } border`}
                   >
                     <option value="">Select gender</option>
@@ -1526,81 +1596,81 @@ function Profile() {
                     <option value="prefer_not_to_say">Prefer not to say</option>
                   </select>
                 </div>
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium mb-1">Fitness Goals</label>
+                <div className="sm:col-span-2">
+                  <label className="block text-xs sm:text-sm font-medium mb-1">Fitness Goals</label>
                   <textarea
                     name="fitnessGoals"
                     value={personalInfo.fitnessGoals}
                     onChange={(e) => setPersonalInfo(prev => ({ ...prev, fitnessGoals: e.target.value }))}
                     rows="3"
-                    className={`w-full px-3 py-2 rounded-lg ${
+                    className={`w-full px-3 py-2 rounded-lg text-sm ${
                       theme === "dark"
                         ? "bg-gray-700 text-white border-gray-600"
-                        : "bg-gray-100 text-gray-900 border-gray-300"
+                        : "bg-muted text-foreground border-border"
                     } border`}
                   />
                 </div>
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium mb-1">Bio</label>
+                <div className="sm:col-span-2">
+                  <label className="block text-xs sm:text-sm font-medium mb-1">Bio</label>
                   <textarea
                     name="bio"
                     value={personalInfo.bio}
                     onChange={(e) => setPersonalInfo(prev => ({ ...prev, bio: e.target.value }))}
                     rows="3"
-                    className={`w-full px-3 py-2 rounded-lg ${
+                    className={`w-full px-3 py-2 rounded-lg text-sm ${
                       theme === "dark"
                         ? "bg-gray-700 text-white border-gray-600"
-                        : "bg-gray-100 text-gray-900 border-gray-300"
+                        : "bg-muted text-foreground border-border"
                     } border`}
                   />
                 </div>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <p className="text-sm text-gray-500">Height</p>
-                  <p className="font-medium">{user?.height ? `${user.height} cm` : "Not set"}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Weight</p>
-                  <p className="font-medium">{user?.weight ? `${user.weight} kg` : "Not set"}</p>
+                  <p className="text-xs sm:text-sm text-gray-500">Height</p>
+                  <p className="font-medium text-sm sm:text-base">{user?.height ? `${user.height} cm` : "Not set"}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Age</p>
-                  <p className="font-medium">{user?.age || "Not set"}</p>
+                  <p className="text-xs sm:text-sm text-gray-500">Weight</p>
+                  <p className="font-medium text-sm sm:text-base">{user?.weight ? `${user.weight} kg` : "Not set"}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Gender</p>
-                  <p className="font-medium">{user?.gender ? user.gender.charAt(0).toUpperCase() + user.gender.slice(1) : "Not set"}</p>
+                  <p className="text-xs sm:text-sm text-gray-500">Age</p>
+                  <p className="font-medium text-sm sm:text-base">{user?.age || "Not set"}</p>
                 </div>
-                <div className="md:col-span-2">
-                  <p className="text-sm text-gray-500">Fitness Goals</p>
-                  <p className="font-medium">{user?.fitness_goals || "Not set"}</p>
+                <div>
+                  <p className="text-xs sm:text-sm text-gray-500">Gender</p>
+                  <p className="font-medium text-sm sm:text-base">{user?.gender ? user.gender.charAt(0).toUpperCase() + user.gender.slice(1) : "Not set"}</p>
                 </div>
-                <div className="md:col-span-2">
-                  <p className="text-sm text-gray-500">Bio</p>
-                  <p className="font-medium">{user?.bio || "Not set"}</p>
+                <div className="sm:col-span-2">
+                  <p className="text-xs sm:text-sm text-gray-500">Fitness Goals</p>
+                  <p className="font-medium text-sm sm:text-base">{user?.fitness_goals || "Not set"}</p>
+                </div>
+                <div className="sm:col-span-2">
+                  <p className="text-xs sm:text-sm text-gray-500">Bio</p>
+                  <p className="font-medium text-sm sm:text-base">{user?.bio || "Not set"}</p>
                 </div>
               </div>
             )}
           </div>
 
-          {/* Workout Stats */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
+          {/* Workout Stats - Mobile Optimized */}
+          <div className="bg-card rounded-lg shadow-lg p-4 sm:p-6">
+            <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-3">
               Workout Statistics
             </h2>
             {workoutStats && (
               <div className="space-y-3">
                 {/* Weight Goal */}
                 <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between space-y-2 sm:space-y-0">
                     <div className="flex items-center space-x-2">
-                      <FaWeightHanging className="text-purple-500" />
+                      <FaWeightHanging className="text-purple-500 w-4 h-4 sm:w-5 sm:h-5" />
                       <div>
-                        <p className="text-sm text-gray-600 dark:text-gray-300">Weight Goal</p>
+                        <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">Weight Goal</p>
                         <div className="flex items-center space-x-2">
-                          <span className="font-medium text-gray-900 dark:text-white">
+                          <span className="font-medium text-gray-900 dark:text-white text-sm sm:text-base">
                             {preferences.goalWeight || "Not set"} kg
                           </span>
                           <button
@@ -1617,7 +1687,7 @@ function Profile() {
                                 setPreferencesChanged(true);
                               }
                             }}
-                            className="text-purple-500 hover:text-purple-600"
+                            className="text-purple-500 hover:text-purple-600 p-1"
                           >
                             <FaEdit className="w-3 h-3" />
                           </button>
@@ -1625,7 +1695,7 @@ function Profile() {
                       </div>
                     </div>
                     {preferences.goalWeight && workoutStats.currentWeight && (
-                      <span className="text-sm text-gray-600 dark:text-gray-300">
+                      <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">
                         Current: {workoutStats.currentWeight} kg
                       </span>
                     )}
@@ -1635,7 +1705,7 @@ function Profile() {
                       <button
                         onClick={handlePreferenceUpdate}
                         disabled={isSaving}
-                        className="text-xs bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600 transition-colors"
+                        className="text-xs bg-primary text-white px-2 py-1 rounded hover:bg-primary/90 transition-colors"
                       >
                         {isSaving ? "Saving..." : "Save Changes"}
                       </button>
@@ -1692,7 +1762,7 @@ function Profile() {
                               <button
                                 onClick={handlePreferenceUpdate}
                                 disabled={isSaving}
-                                className="text-xs bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600 transition-colors"
+                                className="text-xs bg-primary text-white px-2 py-1 rounded hover:bg-primary/90 transition-colors"
                               >
                                 {isSaving ? "Saving..." : "Save"}
                               </button>
@@ -1799,7 +1869,7 @@ function Profile() {
         </div>
 
         {/* Account Actions */}
-        <div className="mt-8 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+        <div className="mt-8 bg-card rounded-lg shadow-lg p-6">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
             Account Actions
           </h2>
@@ -1825,7 +1895,7 @@ function Profile() {
       {/* Delete Confirmation Modal */}
       {showDeleteConfirmation && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
+          <div className="bg-card rounded-lg p-6 max-w-md w-full mx-4">
             <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
               Delete Account
             </h3>

@@ -3284,11 +3284,11 @@ function WorkoutGenerator() {
                 <label
                   key={gender}
                   className={`
-                    flex items-center justify-center p-6 rounded-lg cursor-pointer transition-all
+                    flex items-center justify-center p-4 rounded-2xl cursor-pointer transition-all shadow-sm
                     ${
                       preferences.gender === gender
-                        ? "bg-blue-500 text-white"
-                        : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                        ? "bg-blue-500 text-white shadow-lg"
+                        : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 hover:shadow-md"
                     }
                   `}
                 >
@@ -3371,11 +3371,11 @@ function WorkoutGenerator() {
                 <label
                   key={goal}
                   className={`
-                      relative flex flex-col items-center justify-center p-6 rounded-lg cursor-pointer transition-all
+                      relative flex flex-col items-center justify-center p-4 rounded-2xl cursor-pointer transition-all shadow-sm
                       ${
                         preferences.fitnessGoal === goal
-                          ? "bg-blue-500 text-white"
-                          : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                          ? "bg-blue-500 text-white shadow-lg"
+                          : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 hover:shadow-md"
                       }
                     `}
                 >
@@ -3396,13 +3396,14 @@ function WorkoutGenerator() {
                       e.preventDefault();
                       setViewingGoalInfo(goal);
                     }}
-                    className={`mt-2 text-xs ${
+                    className={`mt-2 p-0 bg-transparent border-0 outline-none focus:outline-none focus:ring-0 focus:ring-offset-0 ${
                       preferences.fitnessGoal === goal
-                        ? "text-white"
-                        : "text-blue-500"
+                        ? "text-white hover:text-blue-200"
+                        : "text-blue-500 hover:text-blue-700"
                     }`}
+                    style={{ border: 'none', outline: 'none', boxShadow: 'none' }}
                   >
-                    <FaInfoCircle /> More info
+                    <FaInfoCircle />
                   </button>
                 </label>
               ))}
@@ -3446,11 +3447,11 @@ function WorkoutGenerator() {
                   <label
                     key={level}
                     className={`
-                    relative flex flex-col items-center justify-center p-6 rounded-lg cursor-pointer transition-all
+                    relative flex flex-col items-center justify-center p-4 rounded-2xl cursor-pointer transition-all shadow-sm
                     ${
                       preferences.fitnessLevel === level
-                        ? "bg-blue-500 text-white"
-                        : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                        ? "bg-blue-500 text-white shadow-lg"
+                        : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 hover:shadow-md"
                     }
                   `}
                   >
@@ -3473,13 +3474,14 @@ function WorkoutGenerator() {
                         e.preventDefault();
                         setViewingLevelInfo(level);
                       }}
-                      className={`mt-2 text-xs ${
+                      className={`mt-2 p-0 bg-transparent border-0 outline-none focus:outline-none focus:ring-0 focus:ring-offset-0 ${
                         preferences.fitnessLevel === level
-                          ? "text-white"
-                          : "text-blue-500"
+                          ? "text-white hover:text-blue-200"
+                          : "text-blue-500 hover:text-blue-700"
                       }`}
+                      style={{ border: 'none', outline: 'none', boxShadow: 'none' }}
                     >
-                      <FaInfoCircle /> More info
+                      <FaInfoCircle />
                     </button>
                   </label>
                 )
@@ -3553,11 +3555,11 @@ function WorkoutGenerator() {
                       setPreferences({ ...preferences, workoutsPerWeek: num })
                     }
                     className={`
-                      flex items-center justify-center p-3 rounded-lg transition-all
+                      flex items-center justify-center p-2 rounded-2xl transition-all shadow-sm text-sm
                       ${
                         preferences.workoutsPerWeek === num
-                          ? "bg-blue-500 text-white"
-                          : "bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"
+                          ? "bg-blue-500 text-white shadow-lg"
+                          : "bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 hover:shadow-md"
                       }
                     `}
                   >
@@ -3593,11 +3595,11 @@ function WorkoutGenerator() {
                 <label
                   key={equipment}
                   className={`
-                    flex items-center justify-center p-4 rounded-lg cursor-pointer transition-all
+                    flex items-center justify-center p-3 rounded-2xl cursor-pointer transition-all shadow-sm text-sm
                     ${
                       preferences.equipment.includes(equipment)
-                        ? "bg-blue-500 text-white"
-                        : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                        ? "bg-blue-500 text-white shadow-lg"
+                        : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 hover:shadow-md"
                     }
                   `}
                 >
@@ -4106,11 +4108,11 @@ function WorkoutGenerator() {
                     <label
                       key={muscle}
                       className={`
-                    flex items-center justify-center p-3 rounded-lg cursor-pointer transition-all text-sm
+                    flex items-center justify-center p-3 rounded-2xl cursor-pointer transition-all text-sm shadow-sm
                     ${
                       preferences.targetMuscles.includes(muscle)
-                        ? "bg-blue-500 text-white"
-                        : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                        ? "bg-blue-500 text-white shadow-lg"
+                        : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 hover:shadow-md"
                     }
                   `}
                     >
@@ -4254,14 +4256,14 @@ function WorkoutGenerator() {
         </div>
       </div>
 
-      <div className="max-w-2xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-8">
+      <div className="max-w-2xl mx-auto bg-white dark:bg-gray-800 rounded-2xl shadow-md p-4 sm:p-6 mb-8">
         {renderStep()}
 
-        <div className="flex justify-between mt-8">
+        <div className="flex justify-between mt-8 gap-4">
           <button
             type="button"
             onClick={handlePrevStep}
-            className={`px-6 py-2 rounded-lg transition-colors ${
+            className={`px-4 sm:px-6 py-3 rounded-2xl transition-colors text-sm font-medium ${
               currentStep === 1
                 ? "bg-gray-200 text-gray-400 cursor-not-allowed"
                 : "bg-gray-300 hover:bg-gray-400 text-gray-800"
@@ -4274,7 +4276,7 @@ function WorkoutGenerator() {
           <button
             type="button"
             onClick={handleNextStep}
-            className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+            className="px-4 sm:px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl transition-colors text-sm font-medium"
           >
             {currentStep === 7 ? "Generate Workout" : "Next"}
           </button>
@@ -4304,7 +4306,7 @@ function WorkoutGenerator() {
               </button>
               <button
                 onClick={() => navigate("/signup")}
-                className="w-full py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+                className="w-full py-2 bg-primary hover:bg-primary/90 text-white rounded-lg transition-colors"
               >
                 Create an Account
               </button>
@@ -4695,7 +4697,7 @@ function WorkoutGenerator() {
               {workoutVersions.length > 1 && (
                 <button
                   onClick={cycleWorkoutVersion}
-                  className="flex-1 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors flex items-center justify-center"
+                  className="flex-1 py-3 bg-primary hover:bg-primary/90 text-white rounded-lg transition-colors flex items-center justify-center"
                 >
                   Show Alternative Workout (V{workout.versionNumber || currentVersionIndex + 1}/
                   {workoutVersions.length})

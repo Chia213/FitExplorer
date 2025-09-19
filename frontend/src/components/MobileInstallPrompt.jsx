@@ -16,8 +16,8 @@ const MobileInstallPrompt = () => {
     setIsPwa(isPwaMode());
     setIsMobile(isMobileDevice());
     
-    // Only show the prompt if on mobile but not in PWA mode
-    setShowPrompt(isMobileDevice() && !isPwaMode());
+    // Disable the install prompt - never show it
+    setShowPrompt(false);
     
     // Detect orientation changes
     const handleOrientationChange = () => {

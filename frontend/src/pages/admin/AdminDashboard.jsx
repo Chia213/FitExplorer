@@ -706,7 +706,7 @@ function AdminDashboard() {
                   e.stopPropagation();
                   navigate("/admin/exercises");
                 }}
-                className="text-sm bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded transition-colors"
+                className="text-sm bg-primary hover:bg-primary/90 text-white px-3 py-1 rounded transition-colors"
               >
                 View All
               </button>
@@ -863,9 +863,9 @@ function AdminDashboard() {
 
           <button
             onClick={() => navigate("/admin/exercises")}
-            className="p-4 bg-green-50 dark:bg-green-900/30 hover:bg-green-100 dark:hover:bg-green-800/30 rounded-lg transition-colors flex flex-col items-center gap-2"
+            className="p-4 bg-primary/10 dark:bg-primary/20 hover:bg-primary/20 dark:hover:bg-primary/30 rounded-lg transition-colors flex flex-col items-center gap-2"
           >
-            <FaChartBar className="text-2xl text-green-500" />
+            <FaChartBar className="text-2xl text-primary" />
             <span>Exercise Analytics</span>
           </button>
 

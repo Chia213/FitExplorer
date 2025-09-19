@@ -4,6 +4,7 @@ import { useTheme } from "../hooks/useTheme";
 import { useAuth } from "../hooks/useAuth.jsx";
 import { useAchievements } from "../hooks/useAchievements.jsx";
 import { useUser } from "../hooks/useUser.jsx";
+import "../styles/achievements.css";
 import {
   FaTrophy,
   FaDumbbell,
@@ -1282,56 +1283,102 @@ function Achievements() {
 
   return (
     <div className={`min-h-screen ${theme === "dark" ? "bg-gray-900" : "bg-gray-100"} ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-8">
-          <button
-            onClick={() => navigate(-1)}
-            className="flex items-center text-blue-500 hover:text-blue-600"
-          >
-            <FaArrowLeft className="mr-2" />
-            Back
-          </button>
-          <h1 className="text-3xl font-bold flex items-center">
-            <FaTrophy className="mr-2 text-yellow-500" />
-            Achievements
-          </h1>
-          <div className="flex space-x-2">
+      <div className="max-w-7xl mx-auto px-4 py-4 md:py-8">
+        {/* Mobile-optimized header */}
+        <div className="mb-6">
+          {/* Mobile header with back button and title */}
+          <div className="flex items-center justify-between mb-4">
+            <button
+              onClick={() => navigate(-1)}
+              className="flex items-center text-blue-500 hover:text-blue-600 p-2 -ml-2 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+            >
+              <FaArrowLeft className="mr-2 text-lg" />
+              <span className="hidden sm:inline">Back</span>
+            </button>
+            <h1 className="text-2xl md:text-3xl font-bold flex items-center">
+              <FaTrophy className="mr-2 text-yellow-500 text-xl md:text-2xl" />
+              <span className="hidden sm:inline">Achievements</span>
+              <span className="sm:hidden">Achievements</span>
+            </h1>
+            <div className="w-10"></div> {/* Spacer for centering */}
+          </div>
+
+          {/* Mobile-optimized action buttons */}
+          <div className="flex flex-wrap gap-2 justify-center md:justify-end">
             <button
               onClick={() => setShowInsights(true)}
-              className="bg-indigo-500 text-white px-4 py-2 rounded hover:bg-indigo-600 flex items-center"
+              className="bg-indigo-500 text-white px-3 py-2 rounded-lg hover:bg-indigo-600 flex items-center text-sm font-medium min-h-[44px]"
             >
-              <FaChartLine className="mr-2" />
-              Insights
+              <FaChartLine className="mr-1 text-sm" />
+              <span className="hidden sm:inline">Insights</span>
+              <span className="sm:hidden">Stats</span>
             </button>
             <button
               onClick={checkWithDebounce}
               disabled={loading || isProcessingAchievements}
-              className={`bg-blue-500 text-white px-4 py-2 rounded flex items-center ${(loading || isProcessingAchievements) ? 'opacity-70 cursor-not-allowed' : 'hover:bg-blue-600'}`}
+              className={`bg-blue-500 text-white px-3 py-2 rounded-lg flex items-center text-sm font-medium min-h-[44px] ${(loading || isProcessingAchievements) ? 'opacity-70 cursor-not-allowed' : 'hover:bg-blue-600'}`}
             >
-              {loading || isProcessingAchievements ? 'Processing...' : 'Check Progress'}
+              {loading || isProcessingAchievements ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-1"></div>
+                  <span className="hidden sm:inline">Processing...</span>
+                  <span className="sm:hidden">...</span>
+                </>
+              ) : (
+                <>
+                  <FaChartLine className="mr-1 text-sm" />
+                  <span className="hidden sm:inline">Check Progress</span>
+                  <span className="sm:hidden">Check</span>
+                </>
+              )}
             </button>
             <button
               onClick={createDefaultAchievements}
               disabled={creating || loading}
-              className={`bg-green-500 text-white px-4 py-2 rounded flex items-center ${(creating || loading) ? 'opacity-70 cursor-not-allowed' : 'hover:bg-green-600'}`}
+              className={`bg-primary text-white px-3 py-2 rounded-lg flex items-center text-sm font-medium min-h-[44px] ${(creating || loading) ? 'opacity-70 cursor-not-allowed' : 'hover:bg-primary/90'}`}
             >
-              <FaPlus className="mr-2" />
-              {creating ? 'Creating...' : 'Create Default Achievements'}
+              <FaPlus className="mr-1 text-sm" />
+              <span className="hidden sm:inline">Create Default</span>
+              <span className="sm:hidden">Create</span>
             </button>
             <button
               onClick={cleanupDuplicates}
               disabled={loading}
-              className={`bg-yellow-500 text-white px-4 py-2 rounded flex items-center ${loading ? 'opacity-70 cursor-not-allowed' : 'hover:bg-yellow-600'}`}
+              className={`bg-yellow-500 text-white px-3 py-2 rounded-lg flex items-center text-sm font-medium min-h-[44px] ${loading ? 'opacity-70 cursor-not-allowed' : 'hover:bg-yellow-600'}`}
             >
-              {loading ? 'Processing...' : 'Remove Duplicates'}
+              {loading ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-1"></div>
+                  <span className="hidden sm:inline">Processing...</span>
+                  <span className="sm:hidden">...</span>
+                </>
+              ) : (
+                <>
+                  <FaPlus className="mr-1 text-sm" />
+                  <span className="hidden sm:inline">Remove Duplicates</span>
+                  <span className="sm:hidden">Clean</span>
+                </>
+              )}
             </button>
             {showForceCleanup && (
               <button
                 onClick={forceCleanupDuplicates}
                 disabled={loading}
-                className={`bg-red-500 text-white px-4 py-2 rounded flex items-center ${loading ? 'opacity-70 cursor-not-allowed' : 'hover:bg-red-600'}`}
+                className={`bg-red-500 text-white px-3 py-2 rounded-lg flex items-center text-sm font-medium min-h-[44px] ${loading ? 'opacity-70 cursor-not-allowed' : 'hover:bg-red-600'}`}
               >
-                {loading ? 'Processing...' : 'Force Delete Duplicates'}
+                {loading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-1"></div>
+                    <span className="hidden sm:inline">Processing...</span>
+                    <span className="sm:hidden">...</span>
+                  </>
+                ) : (
+                  <>
+                    <FaPlus className="mr-1 text-sm" />
+                    <span className="hidden sm:inline">Force Delete</span>
+                    <span className="sm:hidden">Force</span>
+                  </>
+                )}
               </button>
             )}
           </div>
@@ -1355,7 +1402,7 @@ function Achievements() {
             </div>
             <button 
               onClick={() => setShowHelpMessage(false)}
-              className="text-green-500 hover:text-green-700 dark:hover:text-green-200"
+              className="text-primary hover:text-primary/80 dark:hover:text-primary/80"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -1398,11 +1445,11 @@ function Achievements() {
           </div>
         )}
 
-        {/* Achievement Statistics */}
+        {/* Achievement Statistics - Mobile Optimized */}
         {!loading && achievements.length > 0 && (
-          <div className="mb-8 bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-bold mb-4 flex items-center">
-              <FaTrophy className="mr-2 text-yellow-500" />
+          <div className="mb-6 md:mb-8 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 md:p-6">
+            <h2 className="text-lg md:text-xl font-bold mb-4 flex items-center">
+              <FaTrophy className="mr-2 text-yellow-500 text-lg md:text-xl" />
               Achievement Progress
             </h2>
             
@@ -1412,35 +1459,50 @@ function Achievements() {
               
               return (
                 <>
-                  <div className="grid grid-cols-3 gap-4 mb-6">
-                    <div className="text-center">
-                      <p className="text-3xl font-bold text-blue-500">{stats.achievedCount}</p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Completed</p>
+                  {/* Mobile-optimized stats grid */}
+                  <div className="grid grid-cols-3 gap-3 md:gap-4 mb-4 md:mb-6">
+                    <div className="text-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                      <p className="text-2xl md:text-3xl font-bold text-blue-500">{stats.achievedCount}</p>
+                      <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400">Completed</p>
                     </div>
-                    <div className="text-center">
-                      <p className="text-3xl font-bold text-blue-500">{stats.totalAchievements}</p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Total</p>
+                    <div className="text-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                      <p className="text-2xl md:text-3xl font-bold text-green-500">{stats.totalAchievements}</p>
+                      <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400">Total</p>
                     </div>
-                    <div className="text-center">
-                      <p className="text-3xl font-bold text-blue-500">{stats.completionRate}%</p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Completion</p>
+                    <div className="text-center p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                      <p className="text-2xl md:text-3xl font-bold text-purple-500">{stats.completionRate}%</p>
+                      <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400">Complete</p>
+                    </div>
+                  </div>
+                  
+                  {/* Progress bar for mobile */}
+                  <div className="mb-4 md:mb-6">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Overall Progress</span>
+                      <span className="text-sm font-bold text-blue-500">{stats.completionRate}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+                      <div
+                        className="bg-gradient-to-r from-blue-500 to-purple-500 h-3 rounded-full transition-all duration-500"
+                        style={{ width: `${stats.completionRate}%` }}
+                      ></div>
                     </div>
                   </div>
                   
                   {stats.nextToUnlock.length > 0 && (
                     <div>
-                      <h3 className="text-md font-semibold mb-2">Next Achievements to Unlock:</h3>
+                      <h3 className="text-sm md:text-md font-semibold mb-3 text-gray-700 dark:text-gray-300">Next to Unlock:</h3>
                       <div className="space-y-2">
                         {stats.nextToUnlock.map(achievement => (
-                          <div key={`next-${achievement.id}`} className="flex items-center justify-between">
-                            <div className="flex items-center">
-                              <div className="text-yellow-500 mr-2">
+                          <div key={`next-${achievement.id}`} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                            <div className="flex items-center flex-1 min-w-0">
+                              <div className="text-yellow-500 mr-2 text-lg flex-shrink-0">
                                 {getIcon(achievement.icon)}
                               </div>
-                              <span>{achievement.name}</span>
+                              <span className="text-sm font-medium truncate">{achievement.name}</span>
                             </div>
-                            <div className="text-sm text-gray-500 dark:text-gray-400">
-                              {Math.round((achievement.progress / achievement.requirement) * 100)}% complete
+                            <div className="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0 ml-2">
+                              {Math.round((achievement.progress / achievement.requirement) * 100)}%
                             </div>
                           </div>
                         ))}
@@ -1712,31 +1774,37 @@ function Achievements() {
         {/* Reward Claim Modal */}
         {showRewardModal && <RewardModal />}
 
-        {/* Category Filter */}
-        <div className="flex space-x-4 mb-8">
-          {categories.map((category) => (
-            <button
-              key={category}
-              onClick={() => setSelectedCategory(category)}
-              className={`px-4 py-2 rounded ${
-                selectedCategory === category
-                  ? "bg-blue-500 text-white"
-                  : theme === "dark"
-                  ? "bg-gray-800 text-gray-300"
-                  : "bg-white text-gray-700"
-              }`}
-            >
-              {category.charAt(0).toUpperCase() + category.slice(1)}
-            </button>
-          ))}
+        {/* Category Filter - Mobile Optimized */}
+        <div className="mb-6 md:mb-8">
+          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Filter by Category:</h3>
+          <div className="flex overflow-x-auto space-x-2 pb-2 scrollbar-hide">
+            {categories.map((category) => (
+              <button
+                key={category}
+                onClick={() => setSelectedCategory(category)}
+                className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap min-h-[44px] flex items-center transition-all ${
+                  selectedCategory === category
+                    ? "bg-blue-500 text-white shadow-lg transform scale-105"
+                    : theme === "dark"
+                    ? "bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700"
+                    : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 shadow-sm"
+                }`}
+              >
+                <span className="capitalize">{category}</span>
+                {selectedCategory === category && (
+                  <div className="ml-2 w-2 h-2 bg-white rounded-full"></div>
+                )}
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* Achievements Grid */}
+        {/* Achievements Grid - Mobile Optimized */}
         {filteredAchievements.length === 0 ? (
-          <div className="bg-white dark:bg-gray-800 p-8 rounded-lg text-center">
-            <FaTrophy className="mx-auto text-gray-400 text-4xl mb-4" />
-            <h3 className="text-xl font-medium mb-2">No achievements found</h3>
-            <p className="text-gray-500 dark:text-gray-400 mb-4">
+          <div className="bg-white dark:bg-gray-800 p-6 md:p-8 rounded-xl text-center shadow-lg">
+            <FaTrophy className="mx-auto text-gray-400 text-3xl md:text-4xl mb-4" />
+            <h3 className="text-lg md:text-xl font-medium mb-2">No achievements found</h3>
+            <p className="text-gray-500 dark:text-gray-400 mb-4 text-sm md:text-base">
               {selectedCategory === "all" 
                 ? "There are no achievements available yet." 
                 : `There are no achievements in the "${selectedCategory}" category.`}
@@ -1744,51 +1812,69 @@ function Achievements() {
             {selectedCategory === "all" && (
               <button
                 onClick={createDefaultAchievements}
-                className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 min-h-[44px] font-medium"
               >
                 Create Default Achievements
               </button>
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
             {filteredAchievements.map((achievement) => (
               <div
                 key={achievement.id}
                 className={`${
                   theme === "dark" ? "bg-gray-800" : "bg-white"
-                } rounded-lg shadow-lg p-6 ${
-                  achievement.is_achieved ? "border-2 border-yellow-500" : ""
+                } rounded-xl shadow-lg p-4 md:p-6 transition-all duration-200 hover:shadow-xl ${
+                  achievement.is_achieved ? "border-2 border-yellow-500 bg-yellow-50 dark:bg-yellow-900/10" : "border border-gray-200 dark:border-gray-700"
                 }`}
               >
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center">
-                    <div className="text-yellow-500 mr-3">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center flex-1 min-w-0">
+                    <div className="text-yellow-500 mr-3 text-xl md:text-2xl flex-shrink-0">
                       {getIcon(achievement.icon)}
                     </div>
-                    <h3 className="text-xl font-semibold">{achievement.name}</h3>
+                    <h3 className="text-base md:text-lg font-semibold truncate">{achievement.name}</h3>
                   </div>
                   {achievement.is_achieved && (
-                    <span className="text-green-500">Achieved!</span>
+                    <div className="flex items-center text-green-500 text-xs md:text-sm font-medium flex-shrink-0 ml-2">
+                      <div className="w-2 h-2 bg-green-500 rounded-full mr-1"></div>
+                      <span className="hidden sm:inline">Achieved!</span>
+                      <span className="sm:hidden">✓</span>
+                    </div>
                   )}
                 </div>
-                <p className="text-gray-600 dark:text-gray-300 mb-4">
+                
+                <p className="text-gray-600 dark:text-gray-300 mb-4 text-sm md:text-base line-clamp-2">
                   {achievement.description}
                 </p>
-                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 mb-2">
-                  <div
-                    className="bg-blue-500 h-2.5 rounded-full"
-                    style={{
-                      width: `${(getDisplayProgress(achievement.progress, achievement.requirement) / achievement.requirement) * 100}%`,
-                    }}
-                  ></div>
-                </div>
-                <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400">
-                  <span>Progress: {getDisplayProgress(achievement.progress, achievement.requirement)}/{achievement.requirement}</span>
-                  {achievement.achieved_at && (
-                    <span>
-                      Achieved: {formatDate(achievement.achieved_at)}
+                
+                {/* Progress section */}
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center text-xs md:text-sm">
+                    <span className="text-gray-500 dark:text-gray-400">Progress</span>
+                    <span className="font-medium text-gray-700 dark:text-gray-300">
+                      {getDisplayProgress(achievement.progress, achievement.requirement)}/{achievement.requirement}
                     </span>
+                  </div>
+                  
+                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 md:h-2.5">
+                    <div
+                      className={`h-2 md:h-2.5 rounded-full transition-all duration-500 ${
+                        achievement.is_achieved 
+                          ? "bg-gradient-to-r from-green-500 to-yellow-500" 
+                          : "bg-gradient-to-r from-blue-500 to-purple-500"
+                      }`}
+                      style={{
+                        width: `${(getDisplayProgress(achievement.progress, achievement.requirement) / achievement.requirement) * 100}%`,
+                      }}
+                    ></div>
+                  </div>
+                  
+                  {achievement.achieved_at && (
+                    <div className="text-xs text-gray-500 dark:text-gray-400 text-center">
+                      Achieved: {formatDate(achievement.achieved_at)}
+                    </div>
                   )}
                 </div>
               </div>
@@ -1796,21 +1882,22 @@ function Achievements() {
           </div>
         )}
 
-        {/* Insights Modal */}
+        {/* Insights Modal - Mobile Optimized */}
         {showInsights && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-auto">
-              <div className="p-6">
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-2xl font-bold flex items-center">
-                    <FaChartLine className="mr-2 text-indigo-500" />
-                    Achievement Insights
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 md:p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-4xl max-h-[95vh] overflow-auto">
+              <div className="p-4 md:p-6">
+                <div className="flex justify-between items-center mb-4 md:mb-6">
+                  <h2 className="text-lg md:text-2xl font-bold flex items-center">
+                    <FaChartLine className="mr-2 text-indigo-500 text-lg md:text-xl" />
+                    <span className="hidden sm:inline">Achievement Insights</span>
+                    <span className="sm:hidden">Insights</span>
                   </h2>
                   <button
                     onClick={() => setShowInsights(false)}
-                    className="text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white"
+                    className="text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 min-h-[44px] min-w-[44px] flex items-center justify-center"
                   >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
                     </svg>
                   </button>
@@ -1922,11 +2009,11 @@ function Achievements() {
           </div>
         )}
 
-        {/* Notification Toast */}
+        {/* Notification Toast - Mobile Optimized */}
         {notification.show && (
-          <div className="fixed bottom-5 right-5 z-50 max-w-md">
+          <div className="fixed bottom-4 left-4 right-4 md:bottom-5 md:right-5 md:left-auto z-50 max-w-md md:max-w-sm">
             <div 
-              className={`rounded-lg shadow-lg p-4 flex items-start space-x-3 transition-all duration-300 ${
+              className={`rounded-xl shadow-lg p-4 flex items-start space-x-3 transition-all duration-300 ${
                 notification.type === "success" ? "bg-green-100 text-green-800 border-l-4 border-green-500" :
                 notification.type === "error" ? "bg-red-100 text-red-800 border-l-4 border-red-500" :
                 "bg-blue-100 text-blue-800 border-l-4 border-blue-500"
@@ -1949,14 +2036,14 @@ function Achievements() {
                   </svg>
                 )}
               </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium">{notification.message}</p>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium break-words">{notification.message}</p>
               </div>
               <button 
                 onClick={() => setNotification({...notification, show: false})}
-                className="flex-shrink-0 text-gray-500 hover:text-gray-700 transition-colors"
+                className="flex-shrink-0 text-gray-500 hover:text-gray-700 transition-colors p-1 rounded-lg hover:bg-gray-200 min-h-[32px] min-w-[32px] flex items-center justify-center"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
                 </svg>
               </button>
@@ -2002,7 +2089,7 @@ function Achievements() {
               
               <button
                 onClick={initiateUnlockWorkoutTemplates}
-                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm flex items-center"
+                className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-md text-sm flex items-center"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />

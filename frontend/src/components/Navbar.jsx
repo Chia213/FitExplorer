@@ -23,7 +23,6 @@ import {
   FaRobot,
   FaChevronDown,
   FaCog,
-  FaQrcode,
   FaPlus,
 } from "react-icons/fa";
 import { LuBicepsFlexed, LuCalendarClock } from "react-icons/lu";
@@ -32,41 +31,46 @@ import ThemeToggle from "./ThemeToggle";
 import { useTheme } from "../hooks/useTheme";
 import NotificationDropdown from "./NotificationDropdown";
 import { useNotifications } from "../contexts/NotificationContext";
-import MobileInstallQR from "./MobileInstallQR";
 import "../styles/navHover.css";
 import "../styles/navbar.css";
 import { notifyWorkoutCompleted } from '../utils/notificationsHelpers';
 import { SunIcon, MoonIcon } from "lucide-react";
 
-// Mobile Accordion component for the mobile menu
+// Mobile Accordion component for the mobile menu - Enhanced
 const MobileAccordion = ({ title, icon, items, onItemClick }) => {
   const [isOpen, setIsOpen] = useState(false);
   
   return (
-    <div className="border-b border-gray-200 dark:border-gray-700 pb-3">
+    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center justify-between w-full py-3 px-1 font-medium text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors"
+        className="flex items-center justify-between w-full py-4 px-4 font-semibold text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 group"
       >
         <div className="flex items-center">
           {icon}
-          <span>{title}</span>
+          <span className="ml-3 text-base">{title}</span>
         </div>
-        <FaChevronDown className={`w-3 h-3 transform transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <FaChevronDown className={`w-4 h-4 transform transition-transform duration-200 ${isOpen ? 'rotate-180' : ''} text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300`} />
       </button>
       
-      <div className={`mt-2 ml-2 pl-6 border-l border-gray-200 dark:border-gray-700 space-y-1 ${isOpen ? 'block' : 'hidden'}`}>
-        {items.map((item) => (
-          <Link
-            key={item.path}
-            to={item.path}
-            className="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors text-sm"
-            onClick={onItemClick}
-          >
-            <span className="mr-2">{item.icon}</span>
-            <span>{item.label}</span>
-          </Link>
-        ))}
+      <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
+        <div className="px-4 pb-4 space-y-1">
+          {items.map((item, index) => (
+            <Link
+              key={item.path}
+              to={item.path}
+              className="flex items-center py-3 px-3 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-700 dark:hover:text-blue-300 rounded-lg transition-all duration-200 text-sm font-medium group"
+              onClick={onItemClick}
+              style={{
+                animationDelay: `${index * 50}ms`,
+                animation: isOpen ? 'slideInFromLeft 0.3s ease-out forwards' : 'none'
+              }}
+            >
+              <span className="mr-3 text-gray-500 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{item.icon}</span>
+              <span>{item.label}</span>
+            </Link>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -102,7 +106,7 @@ const NavDropdown = ({ isOpen, children, align = "right" }) => {
   
   return (
     <div 
-      className={`dropdown-menu ${align === "right" ? "right-0" : "left-0"} mt-1 bg-white dark:bg-gray-800 shadow-lg rounded-lg overflow-hidden z-50 w-56 border border-gray-200 dark:border-gray-700 animate-fadeIn`}
+      className={`dropdown-menu ${align === "right" ? "right-0" : "left-0"} mt-1 bg-card shadow-lg rounded-lg overflow-hidden z-50 w-56 border border-border animate-fadeIn`}
       role="menu"
       aria-orientation="vertical"
     >
@@ -120,7 +124,7 @@ const DropdownItem = ({ to, onClick, children, className = "" }) => {
   return (
     <Link
       to={to}
-      className={`block p-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center text-gray-700 dark:text-gray-200 ${className}`}
+      className={`block p-3 hover:bg-primary/10 hover:text-primary transition-colors flex items-center text-card-foreground ${className}`}
       onClick={handleClick}
       role="menuitem"
     >
@@ -136,7 +140,6 @@ function Navbar() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const [showQRModal, setShowQRModal] = useState(false);
   const [emojiPrefs, setEmojiPrefs] = useState(() => {
     // Try to get saved emoji prefs from localStorage first
     try {
@@ -369,6 +372,7 @@ function Navbar() {
       const notificationButton = document.querySelector('[aria-label^="Notifications"]');
       const profileButton = document.querySelector('[aria-label^="Profile"]');
       const themeButton = document.querySelector('[aria-label^="Theme"]');
+      const helpButton = document.querySelector('[aria-label="Help"]');
       
       if (notificationButton && notificationButton.contains(event.target)) {
         return;
@@ -377,6 +381,9 @@ function Navbar() {
         return;
       }
       if (themeButton && themeButton.contains(event.target)) {
+        return;
+      }
+      if (helpButton && helpButton.contains(event.target)) {
         return;
       }
 
@@ -396,10 +403,16 @@ function Navbar() {
         return;
       }
 
+      // Check if click was inside help dropdown using ref
+      if (helpDropdownRef.current && helpDropdownRef.current.contains(event.target)) {
+        return;
+      }
+
       // Close all dropdowns if click was outside
       setShowNotifications(false);
       setShowProfile(false);
       setShowTheme(false);
+      setHelpDropdownOpen(false);
     };
 
     document.addEventListener('mousedown', handleClickOutside);
@@ -675,7 +688,7 @@ function Navbar() {
       {/* Desktop & Tablet Navbar */}
       <header 
         className={`navbar w-full ${
-          isScrolled ? 'navbar-glass shadow-md py-2' : 'bg-white dark:bg-gray-900 py-4'
+          isScrolled ? 'navbar-glass shadow-md py-2' : 'bg-background py-4'
         } transition-all duration-300`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -694,13 +707,12 @@ function Navbar() {
             {/* Search Bar - Desktop */}
             <div className="hidden md:block relative w-64" ref={searchRef}>
               <div className="relative">
-                <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                 <input
                   type="text"
                   placeholder="Search..."
                   value={searchQuery}
                   onChange={handleSearch}
-                  className="w-full py-2 pl-10 pr-4 rounded-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-all desktop-search-input"
+                  className="w-full py-2 px-4 rounded-full border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary transition-all desktop-search-input"
                   autoComplete="off"
                 />
               </div>
@@ -715,7 +727,7 @@ function Navbar() {
                       className="search-result-item flex items-center gap-2"
                       onClick={() => handleResultClick(result.path)}
                     >
-                      <span className="text-blue-500 dark:text-blue-400">{result.icon}</span>
+                      <span className="text-primary">{result.icon}</span>
                       <span>{result.label}</span>
                     </div>
                   ))}
@@ -729,8 +741,8 @@ function Navbar() {
               <div className="relative" ref={workoutDropdownRef}>
                 <button
                   onClick={toggleWorkoutDropdown}
-                  className={`flex items-center px-3 py-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${
-                    workoutDropdownOpen ? 'bg-gray-100 dark:bg-gray-800' : ''
+                  className={`flex items-center px-3 py-2 rounded-lg text-card-foreground hover:bg-primary/10 hover:text-primary transition-colors ${
+                    workoutDropdownOpen ? 'bg-accent text-accent-foreground' : ''
                   }`}
                   aria-expanded={workoutDropdownOpen}
                 >
@@ -753,8 +765,8 @@ function Navbar() {
               <div className="relative" ref={toolsDropdownRef}>
                 <button
                   onClick={toggleToolsDropdown}
-                  className={`flex items-center px-3 py-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${
-                    toolsDropdownOpen ? 'bg-gray-100 dark:bg-gray-800' : ''
+                  className={`flex items-center px-3 py-2 rounded-lg text-card-foreground hover:bg-primary/10 hover:text-primary transition-colors ${
+                    toolsDropdownOpen ? 'bg-accent text-accent-foreground' : ''
                   }`}
                   aria-expanded={toolsDropdownOpen}
                 >
@@ -777,8 +789,8 @@ function Navbar() {
               <div className="relative" ref={helpDropdownRef}>
                 <button
                   onClick={toggleHelpDropdown}
-                  className={`flex items-center px-3 py-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${
-                    helpDropdownOpen ? 'bg-gray-100 dark:bg-gray-800' : ''
+                  className={`flex items-center px-3 py-2 rounded-lg text-card-foreground hover:bg-primary/10 hover:text-primary transition-colors ${
+                    helpDropdownOpen ? 'bg-accent text-accent-foreground' : ''
                   }`}
                   aria-expanded={helpDropdownOpen}
                 >
@@ -800,26 +812,17 @@ function Navbar() {
 
             {/* Right side items */}
             <div className="flex items-center space-x-2">
-              {/* QR Code for mobile install */}
-              <button
-                onClick={() => setShowQRModal(true)}
-                className="p-2 rounded-full text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                aria-label="Install Mobile App"
-                title="Scan to install on mobile"
-              >
-                <FaQrcode className="w-5 h-5" />
-              </button>
               
               {/* Theme toggle */}
               <button
                 onClick={handleThemeToggle}
-                className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
+                className="p-2 rounded-full hover:bg-primary/10 hover:text-primary"
                 aria-label="Toggle theme"
               >
                 {theme === 'dark' ? (
-                  <SunIcon className="h-6 w-6 text-yellow-500" />
+                  <SunIcon className="h-6 w-6 text-primary" />
                 ) : (
-                  <MoonIcon className="h-6 w-6 text-gray-600" />
+                  <MoonIcon className="h-6 w-6 text-muted-foreground" />
                 )}
               </button>
 
@@ -835,7 +838,7 @@ function Navbar() {
                     <div className="relative">
                       <FaBell className="nav-icon" size={20} />
                       {unreadCount > 0 && (
-                        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                        <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-xs rounded-full h-4 w-4 flex items-center justify-center">
                           {unreadCount > 9 ? '9+' : unreadCount}
                         </span>
                       )}
@@ -848,6 +851,57 @@ function Navbar() {
                   />
                 </div>
               )}
+
+              {/* Help Dropdown - positioned next to alerts */}
+              <div className="relative" ref={helpDropdownRef}>
+                <button
+                  onClick={toggleHelpDropdown}
+                  className="nav-item flex flex-col items-center p-3 hover:bg-sky-700/20 dark:hover:bg-sky-700/40 rounded-md transition-all"
+                  aria-label="Help"
+                >
+                  <FaQuestionCircle className="nav-icon" size={20} />
+                  <span className="nav-text text-sm mt-1">Help</span>
+                </button>
+                
+                {helpDropdownOpen && (
+                  <div className="absolute top-full right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50">
+                    <div className="py-2">
+                      <Link
+                        to="/about"
+                        onClick={() => setHelpDropdownOpen(false)}
+                        className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                      >
+                        <FaInfoCircle className="mr-3 w-4 h-4 text-blue-500" />
+                        About
+                      </Link>
+                      <Link
+                        to="/faq"
+                        onClick={() => setHelpDropdownOpen(false)}
+                        className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                      >
+                        <FaQuestionCircle className="mr-3 w-4 h-4 text-green-500" />
+                        FAQ
+                      </Link>
+                      <Link
+                        to="/privacy-policy"
+                        onClick={() => setHelpDropdownOpen(false)}
+                        className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                      >
+                        <FaLock className="mr-3 w-4 h-4 text-purple-500" />
+                        Privacy Policy
+                      </Link>
+                      <Link
+                        to="/terms"
+                        onClick={() => setHelpDropdownOpen(false)}
+                        className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                      >
+                        <FaListAlt className="mr-3 w-4 h-4 text-orange-500" />
+                        Terms of Service
+                      </Link>
+                    </div>
+                  </div>
+                )}
+              </div>
 
               {/* User menu - Desktop */}
               <div className="hidden md:block">
@@ -982,7 +1036,7 @@ function Navbar() {
                       
                       <button
                         onClick={toggleAuthDropdown}
-                        className={`flex items-center px-3 py-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${
+                        className={`flex items-center px-3 py-2 rounded-lg text-card-foreground hover:bg-primary/10 hover:text-primary transition-colors ${
                           authDropdownOpen ? 'bg-gray-100 dark:bg-gray-800' : ''
                         }`}
                         aria-expanded={authDropdownOpen}
@@ -1025,7 +1079,7 @@ function Navbar() {
                         Saved Programs
                       </DropdownItem>
                       <DropdownItem to="/personal-records" onClick={() => setAuthDropdownOpen(false)}>
-                        <FaRunning className="mr-2 text-green-500" />
+                        <FaRunning className="mr-2 text-primary" />
                         Personal Records
                       </DropdownItem>
                       <DropdownItem to="/achievements" onClick={() => setAuthDropdownOpen(false)}>
@@ -1097,89 +1151,110 @@ function Navbar() {
         </div>
       </header>
 
-      {/* Mobile menu */}
+      {/* Mobile menu - Redesigned */}
       <div
         className={`fixed inset-0 z-50 md:hidden transform ${
           mobileMenuOpen ? "translate-x-0" : "translate-x-full"
-        } transition-transform duration-300 ease-in-out`}
+        } transition-all duration-300 ease-in-out`}
       >
-        <div className="absolute inset-0 bg-black/50" onClick={() => setMobileMenuOpen(false)}></div>
-        <div className="absolute right-0 top-0 bottom-0 w-64 bg-white dark:bg-gray-900 shadow-xl flex flex-col h-full">
-          <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-            <div className="flex items-center">
-              <img src={logo} alt="FitExplorer" className="h-12 w-auto dark:invert" />
+        {/* Backdrop with blur effect */}
+        <div 
+          className="absolute inset-0 bg-black/60 backdrop-blur-sm mobile-menu-backdrop mobile-menu-backdrop-blur" 
+          onClick={() => setMobileMenuOpen(false)}
+        ></div>
+        
+        {/* Menu panel - Full width for better mobile experience */}
+        <div className="absolute right-0 top-0 bottom-0 w-full max-w-sm bg-white dark:bg-gray-900 shadow-2xl flex flex-col h-full mobile-menu-panel">
+          {/* Header with gradient background */}
+          <div className="bg-gradient-to-r from-blue-600 to-purple-600 dark:from-gray-800 dark:to-gray-900 p-6 text-white">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center space-x-3">
+                <img src={logo} alt="FitExplorer" className="h-10 w-auto dark:invert" />
+                <div>
+                  <h2 className="text-lg font-bold">FitExplorer</h2>
+                  <p className="text-blue-100 text-sm">Your Fitness Journey</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setMobileMenuOpen(false)}
+                className="p-2 rounded-full hover:bg-white/20 transition-colors"
+                aria-label="Close menu"
+              >
+                <FaTimes className="w-5 h-5" />
+              </button>
             </div>
-            <button
-              onClick={() => setMobileMenuOpen(false)}
-              className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400"
-              aria-label="Close menu"
-            >
-              <FaTimes className="w-5 h-5" />
-            </button>
-          </div>
 
-          {/* Mobile search */}
-          <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+            {/* Enhanced search bar */}
             <div className="relative">
-              <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
                 placeholder="Search..."
                 value={searchQuery}
                 onChange={handleSearch}
-                className="w-full py-2 pl-10 pr-4 rounded-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 mobile-search-input"
+                className="w-full py-3 px-4 text-sm rounded-xl border-0 bg-white/90 dark:bg-gray-800/90 text-gray-900 dark:text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white/50 focus:bg-white dark:focus:bg-gray-800 transition-all"
                 autoComplete="off"
               />
             </div>
+            
+            {/* Search results with better styling */}
             {searchResults.length > 0 && (
-              <div className="search-results mt-2 mobile-search-results">
-                <p className="text-xs p-2 font-medium border-b border-gray-200 dark:border-gray-700">Search Results</p>
-                {searchResults.map((result) => (
-                  <div
-                    key={result.path}
-                    className="search-result-item flex items-center gap-2"
-                    onClick={() => {
-                      handleResultClick(result.path);
-                      setMobileMenuOpen(false);
-                    }}
-                  >
-                    <span className="text-blue-500 dark:text-blue-400">{result.icon}</span>
-                    <span>{result.label}</span>
-                  </div>
-                ))}
+              <div className="absolute top-full left-6 right-6 mt-2 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden z-10">
+                <div className="p-3 border-b border-gray-200 dark:border-gray-700">
+                  <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide">Search Results</p>
+                </div>
+                <div className="max-h-48 overflow-y-auto">
+                  {searchResults.map((result) => (
+                    <div
+                      key={result.path}
+                      className="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                      onClick={() => {
+                        handleResultClick(result.path);
+                        setMobileMenuOpen(false);
+                      }}
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                        <span className="text-blue-600 dark:text-blue-400">{result.icon}</span>
+                      </div>
+                      <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{result.label}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>
 
-          {/* Mobile navigation */}
-          <div className="overflow-y-auto flex-1 p-4">
-            {/* Auth section */}
+          {/* Navigation content with better spacing */}
+          <div className="overflow-y-auto flex-1 p-6">
+            {/* User profile section - Redesigned */}
             {isAuthenticated ? (
-              <div className="mb-6 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                <div className="flex items-center mb-3">
-                  <div className="w-10 h-10 rounded-full bg-blue-500 text-white flex items-center justify-center font-medium mr-3">
+              <div className="mb-6 p-3 sm:p-4 bg-gradient-to-r from-gray-50 to-blue-50 dark:from-gray-800 dark:to-gray-700 rounded-2xl border border-gray-200 dark:border-gray-600">
+                <div className="flex items-center mb-3 sm:mb-4">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 text-white flex items-center justify-center font-bold text-sm sm:text-lg mr-2 sm:mr-3 shadow-lg">
                     {username ? username.charAt(0).toUpperCase() : 'U'}
                   </div>
-                  <div>
-                    <div className="font-medium flex items-center">
+                  <div className="flex-1">
+                    <div className="font-semibold text-gray-900 dark:text-gray-100 flex items-center text-sm sm:text-base">
                       {username}
                       {emojiPrefs.show && (
                         <span 
-                          className={`profile-emoji ${emojiPrefs.animation}`}
+                          className={`profile-emoji ${emojiPrefs.animation} ml-1 sm:ml-2 text-base sm:text-lg`}
                           data-emoji={emojiPrefs.emoji}
                         ></span>
                       )}
                     </div>
-                    {isAdmin && <div className="admin-badge mt-1">ADMIN</div>}
+                    {isAdmin && (
+                      <div className="inline-block px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-xs font-semibold rounded-full mt-1">
+                        ADMIN
+                      </div>
+                    )}
                   </div>
                 </div>
                 
-                {/* Quick Emoji Settings in Mobile View */}
-                <div className="mb-3 p-2 bg-white dark:bg-gray-700 rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium">Profile Emoji</span>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-xs text-gray-500 dark:text-gray-400">Show</span>
+                {/* Simplified emoji settings */}
+                {emojiPrefs.show && (
+                  <div className="mb-3 sm:mb-4 p-2 sm:p-3 bg-white dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600">
+                    <div className="flex items-center justify-between mb-2 sm:mb-3">
+                      <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">Profile Emoji</span>
                       <label className="relative inline-flex items-center cursor-pointer">
                         <input
                           type="checkbox"
@@ -1187,117 +1262,75 @@ function Navbar() {
                           onChange={(e) => toggleEmojiSetting('show', e.target.checked)}
                           className="sr-only peer"
                         />
-                        <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                        <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
                       </label>
                     </div>
+                    
+                    <div className="flex flex-wrap gap-2">
+                      {["🏋️‍♂️", "💪", "🏃‍♂️", "🏃‍♀️", "🚴", "🏊‍♂️", "⚽", "🏀", "🐻", "🦁"].map(emoji => (
+                        <button
+                          key={emoji}
+                          onClick={() => toggleEmojiSetting('emoji', emoji)}
+                          className={`w-8 h-8 flex items-center justify-center text-lg rounded-lg transition-all ${
+                            emojiPrefs.emoji === emoji 
+                              ? "bg-blue-100 dark:bg-blue-900/30 scale-110 shadow-md" 
+                              : "bg-gray-100 dark:bg-gray-600 hover:bg-gray-200 dark:hover:bg-gray-500 hover:scale-105"
+                          }`}
+                        >
+                          {emoji}
+                        </button>
+                      ))}
+                    </div>
+                    
+                    <div className="mt-3 text-center">
+                      <Link 
+                        to="/settings?tab=appearance" 
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium flex items-center justify-center"
+                      >
+                        <span className="mr-1">More emoji options</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                        </svg>
+                      </Link>
+                    </div>
                   </div>
-                  
-                  {emojiPrefs.show && (
-                    <>
-                      <div className="mb-2">
-                        <div className="mb-1 text-xs font-medium text-gray-700 dark:text-gray-300">
-                          Choose Emoji
-                        </div>
-                        <div className="flex flex-wrap gap-1">
-                          {["🏋️‍♂️", "💪", "🏃‍♂️", "🏃‍♀️", "🚴", "🏊‍♂️", "⚽", "🏀", "🐻", "🦁"].map(emoji => (
-                            <button
-                              key={emoji}
-                              onClick={() => toggleEmojiSetting('emoji', emoji)}
-                              className={`w-8 h-8 flex items-center justify-center text-lg rounded ${
-                                emojiPrefs.emoji === emoji 
-                                  ? "bg-blue-100 dark:bg-blue-900/30" 
-                                  : "bg-gray-100 dark:bg-gray-600 hover:bg-gray-200 dark:hover:bg-gray-500"
-                              }`}
-                            >
-                              {emoji}
-                            </button>
-                          ))}
-                        </div>
-                        <div className="mt-2 text-center">
-                          <Link 
-                            to="/settings?tab=appearance" 
-                            onClick={() => setMobileMenuOpen(false)}
-                            className="text-xs text-blue-500 hover:text-blue-700 flex items-center justify-center"
-                          >
-                            <span className="mr-1">More emoji options</span>
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
-                              <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
-                            </svg>
-                          </Link>
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <div className="mb-1 text-xs font-medium text-gray-700 dark:text-gray-300">
-                          Animation
-                        </div>
-                        <div className="flex flex-wrap gap-1">
-                          {[
-                            { id: "lift", label: "Lift" },
-                            { id: "bounce", label: "Bounce" },
-                            { id: "spin", label: "Spin" },
-                            { id: "pulse", label: "Pulse" },
-                            { id: "wave", label: "Wave" },
-                            { id: "shake", label: "Shake" },
-                            { id: "flip", label: "Flip" },
-                            { id: "rotate", label: "Rotate" },
-                            { id: "sparkle", label: "Sparkle" },
-                            { id: "float", label: "Float" },
-                            { id: "wiggle", label: "Wiggle" },
-                            { id: "zoom", label: "Zoom" },
-                            { id: "workout", label: "Workout" }
-                          ].map(animation => (
-                            <button
-                              key={animation.id}
-                              onClick={() => toggleEmojiSetting('animation', animation.id)}
-                              className={`px-2 py-1 text-xs rounded ${
-                                emojiPrefs.animation === animation.id
-                                  ? "bg-blue-100 dark:bg-blue-900/30 font-medium"
-                                  : "bg-gray-100 dark:bg-gray-600 hover:bg-gray-200 dark:hover:bg-gray-500"
-                              }`}
-                            >
-                              {animation.label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </div>
+                )}
                 
-                <div className="grid grid-cols-2 gap-2">
+                {/* Action buttons with better design */}
+                <div className="grid grid-cols-2 gap-2 sm:gap-3">
                   <Link
                     to="/profile"
-                    className="text-sm px-3 py-2 rounded-lg flex items-center justify-center bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                    className="flex items-center justify-center px-3 sm:px-4 py-2 sm:py-3 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 rounded-xl transition-all shadow-sm border border-gray-200 dark:border-gray-600 group"
                     onClick={() => setMobileMenuOpen(false)}
                   >
-                    <FaUser className="mr-1" />
-                    Profile
+                    <FaUser className="mr-1 sm:mr-2 w-3 h-3 sm:w-4 sm:h-4 text-blue-600 dark:text-blue-400" />
+                    <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">Profile</span>
                   </Link>
                   <button
                     onClick={() => {
                       handleLogout();
                       setMobileMenuOpen(false);
                     }}
-                    className="text-sm px-3 py-2 rounded-lg flex items-center justify-center bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-800/30 text-red-600 dark:text-red-400 transition-colors"
+                    className="flex items-center justify-center px-3 sm:px-4 py-2 sm:py-3 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-xl transition-all shadow-sm border border-red-200 dark:border-red-800 group"
                   >
-                    <FaSignOutAlt className="mr-1" />
-                    Sign Out
+                    <FaSignOutAlt className="mr-1 sm:mr-2 w-3 h-3 sm:w-4 sm:h-4 text-red-600 dark:text-red-400" />
+                    <span className="text-xs sm:text-sm font-medium text-red-600 dark:text-red-400">Sign Out</span>
                   </button>
                 </div>
               </div>
             ) : (
-              <div className="mb-6 grid grid-cols-2 gap-2">
+              <div className="mb-6 grid grid-cols-2 gap-3">
                 <Link
                   to="/login"
-                  className="py-2 rounded-lg flex items-center justify-center bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-gray-900 dark:text-gray-100"
+                  className="py-3 px-4 rounded-xl flex items-center justify-center bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all text-gray-900 dark:text-gray-100 font-medium shadow-sm border border-gray-200 dark:border-gray-600"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Sign In
                 </Link>
                 <Link
                   to="/signup"
-                  className="py-2 rounded-lg flex items-center justify-center bg-blue-600 hover:bg-blue-700 transition-colors text-white"
+                  className="py-3 px-4 rounded-xl flex items-center justify-center bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transition-all text-white font-medium shadow-lg"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Sign Up
@@ -1305,39 +1338,39 @@ function Navbar() {
               </div>
             )}
 
-            {/* Mobile menu accordion sections */}
-            <div className="space-y-3">
+            {/* Navigation sections with improved design */}
+            <div className="space-y-4">
               <MobileAccordion 
                 title="Workouts" 
-                icon={<FaDumbbell className="mr-2" />}
+                icon={<FaDumbbell className="mr-3 w-5 h-5 text-blue-600 dark:text-blue-400" />}
                 items={NAVIGATION_ITEMS.workout}
                 onItemClick={() => setMobileMenuOpen(false)}
               />
               
               <MobileAccordion 
                 title="Tools" 
-                icon={<FaTools className="mr-2" />}
+                icon={<FaTools className="mr-3 w-5 h-5 text-green-600 dark:text-green-400" />}
                 items={NAVIGATION_ITEMS.tools}
                 onItemClick={() => setMobileMenuOpen(false)}
               />
               
               <MobileAccordion 
                 title="Help" 
-                icon={<FaInfoCircle className="mr-2" />}
+                icon={<FaInfoCircle className="mr-3 w-5 h-5 text-orange-600 dark:text-orange-400" />}
                 items={NAVIGATION_ITEMS.help}
                 onItemClick={() => setMobileMenuOpen(false)}
               />
 
               {isAuthenticated && (
                 <MobileAccordion 
-                  title="User" 
-                  icon={<FaUser className="mr-2" />}
+                  title="Account" 
+                  icon={<FaUser className="mr-3 w-5 h-5 text-purple-600 dark:text-purple-400" />}
                   items={[
-                    { label: 'Settings', path: '/settings', icon: <FaCog className="mr-2" /> },
-                    { label: 'Saved Programs', path: '/saved-programs', icon: <FaSave className="mr-2" /> },
-                    { label: 'Personal Records', path: '/personal-records', icon: <FaRunning className="mr-2" /> },
-                    { label: 'Achievements', path: '/achievements', icon: <FaAtlas className="mr-2" /> },
-                    ...(isAdmin ? [{ label: 'Admin Dashboard', path: '/admin', icon: <FaLock className="mr-2" /> }] : [])
+                    { label: 'Settings', path: '/settings', icon: <FaCog className="mr-2 w-4 h-4" /> },
+                    { label: 'Saved Programs', path: '/saved-programs', icon: <FaSave className="mr-2 w-4 h-4" /> },
+                    { label: 'Personal Records', path: '/personal-records', icon: <FaRunning className="mr-2 w-4 h-4" /> },
+                    { label: 'Achievements', path: '/achievements', icon: <FaAtlas className="mr-2 w-4 h-4" /> },
+                    ...(isAdmin ? [{ label: 'Admin Dashboard', path: '/admin', icon: <FaLock className="mr-2 w-4 h-4" /> }] : [])
                   ]}
                   onItemClick={() => setMobileMenuOpen(false)}
                 />
@@ -1345,55 +1378,52 @@ function Navbar() {
             </div>
           </div>
 
-          {/* Mobile footer */}
-          <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
-            <div className="text-sm text-gray-500 dark:text-gray-400">
-              © {new Date().getFullYear()}
-            </div>
-            <div className="flex items-center space-x-3">
-              <button
-                onClick={() => setShowQRModal(true)}
-                className="p-2 rounded-full text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                aria-label="Install Mobile App"
-              >
-                <FaQrcode className="w-5 h-5" />
-              </button>
-            
-              <button
-                onClick={handleThemeToggle}
-                className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
-                aria-label="Toggle theme"
-              >
-                {theme === 'dark' ? (
-                  <SunIcon className="h-6 w-6 text-yellow-500" />
-                ) : (
-                  <MoonIcon className="h-6 w-6 text-gray-600" />
-                )}
-              </button>
-            
-              {isAuthenticated && (
+          {/* Enhanced footer */}
+          <div className="p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+            <div className="flex items-center justify-between mb-4">
+              <div className="text-sm text-gray-500 dark:text-gray-400">
+                © {new Date().getFullYear()} Chia Ranchber
+              </div>
+              <div className="flex items-center space-x-2">
                 <button
-                  onClick={() => {
-                    setShowNotifications(!showNotifications);
-                    setMobileMenuOpen(false);
-                  }}
-                  className="relative p-2 rounded-full text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                  aria-label="Notifications"
+                  onClick={handleThemeToggle}
+                  className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                  aria-label="Toggle theme"
                 >
-                  <FaBell className="w-5 h-5" />
-                  {unreadCount > 0 && (
-                    <span className="notification-badge bg-red-500 text-white w-5 h-5 min-w-[1.25rem]">
-                      {unreadCount > 9 ? '9+' : unreadCount}
-                    </span>
+                  {theme === 'dark' ? (
+                    <SunIcon className="h-5 w-5 text-yellow-500" />
+                  ) : (
+                    <MoonIcon className="h-5 w-5 text-gray-600 dark:text-gray-400" />
                   )}
                 </button>
-              )}
+              
+                {isAuthenticated && (
+                  <button
+                    onClick={() => {
+                      setShowNotifications(!showNotifications);
+                      setMobileMenuOpen(false);
+                    }}
+                    className="relative p-2 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                    aria-label="Notifications"
+                  >
+                    <FaBell className="w-5 h-5" />
+                    {unreadCount > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 min-w-[1.25rem] flex items-center justify-center font-semibold">
+                        {unreadCount > 9 ? '9+' : unreadCount}
+                      </span>
+                    )}
+                  </button>
+                )}
+
+              </div>
+            </div>
+            <div className="text-xs text-gray-400 dark:text-gray-500 text-center">
+              All rights reserved
             </div>
           </div>
         </div>
       </div>
 
-      <MobileInstallQR isOpen={showQRModal} onClose={() => setShowQRModal(false)} />
     </>
   );
 }

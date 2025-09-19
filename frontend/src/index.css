@@ -5,60 +5,125 @@
 @tailwind components;
 @tailwind utilities;
 
-/* FitExplorer Design System - Modern Dark Blue Theme */
+/* Gradient animation for text */
+@keyframes gradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-gradient {
+  animation: gradient 3s ease infinite;
+}
+
+/* FitExplorer Design System - Fitness-focused colors and gradients */
 
 @layer base {
   :root {
-    /* Dark blue theme inspired by FitExplorer */
-    --background: 220 25% 8%;
-    --foreground: 210 40% 98%;
+    /* Dark fitness theme with vibrant accents */
+    --background: 222 20% 6%;
+    --foreground: 0 0% 98%;
 
-    --card: 220 20% 12%;
-    --card-foreground: 210 40% 98%;
+    --card: 225 15% 8%;
+    --card-foreground: 0 0% 95%;
 
-    --popover: 220 20% 12%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 225 15% 10%;
+    --popover-foreground: 0 0% 95%;
 
-    --primary: 217 91% 60%;
-    --primary-foreground: 220 25% 8%;
+    /* Primary brand colors - Electric blue fitness theme */
+    --primary: 217 100% 60%;
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 217 100% 70%;
 
-    --secondary: 220 20% 16%;
-    --secondary-foreground: 210 40% 98%;
+    /* Secondary for highlights */
+    --secondary: 225 15% 12%;
+    --secondary-foreground: 0 0% 90%;
 
-    --muted: 220 15% 20%;
-    --muted-foreground: 217 10% 64%;
+    --muted: 225 10% 15%;
+    --muted-foreground: 0 0% 60%;
 
-    --accent: 217 91% 60%;
-    --accent-foreground: 220 25% 8%;
+    /* Accent colors for energy */
+    --accent: 142 76% 36%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 0 0% 98%;
 
-    --border: 220 15% 20%;
-    --input: 220 15% 20%;
-    --ring: 217 91% 60%;
+    --border: 225 10% 18%;
+    --input: 225 10% 15%;
+    --ring: 217 100% 60%;
 
-    /* Hero gradient */
-    --hero-gradient: linear-gradient(135deg, hsl(220, 25%, 8%) 0%, hsl(217, 30%, 15%) 50%, hsl(217, 91%, 20%) 100%);
-    
-    /* Glass effect */
-    --glass-bg: 220 20% 12% / 0.8;
-    --glass-border: 217 91% 60% / 0.2;
-    
-    /* Shadows */
-    --shadow-glow: 0 0 30px hsl(217 91% 60% / 0.3);
-    --shadow-card: 0 4px 6px -1px hsl(220 25% 8% / 0.3), 0 2px 4px -1px hsl(220 25% 8% / 0.06);
-    
     --radius: 0.75rem;
 
-    --sidebar-background: 220 20% 12%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 217 91% 60%;
-    --sidebar-primary-foreground: 220 25% 8%;
-    --sidebar-accent: 220 15% 20%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 220 15% 20%;
-    --sidebar-ring: 217 91% 60%;
+    /* Fitness-specific gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(217 100% 60%), hsl(217 100% 70%));
+    --gradient-hero: linear-gradient(135deg, hsl(222 20% 6%) 0%, hsl(225 15% 10%) 50%, hsl(217 100% 10%) 100%);
+    --gradient-feature: linear-gradient(145deg, hsl(225 15% 8%) 0%, hsl(225 15% 12%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(142 76% 36%), hsl(166 76% 40%));
+    
+    /* Shadows with fitness theme */
+    --shadow-glow: 0 0 40px hsl(217 100% 60% / 0.3);
+    --shadow-feature: 0 10px 30px -10px hsl(0 0% 0% / 0.5);
+    
+    /* Animation */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  /* Light mode for fitness theme */
+  .light {
+    --background: 0 0% 98%;
+    --foreground: 222 20% 15%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 20% 15%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 20% 15%;
+    --primary: 217 100% 55%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 222 20% 15%;
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 45%;
+    --accent: 142 76% 40%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 90%;
+    --input: 0 0% 96%;
+    --ring: 217 100% 55%;
+    --gradient-hero: linear-gradient(135deg, hsl(0 0% 98%) 0%, hsl(217 30% 95%) 50%, hsl(217 100% 95%) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(217 100% 55%), hsl(217 100% 65%));
+    --gradient-feature: linear-gradient(145deg, hsl(0 0% 100%) 0%, hsl(0 0% 96%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(142 76% 40%), hsl(166 76% 45%));
+    --shadow-glow: 0 0 40px hsl(217 100% 55% / 0.2);
+    --shadow-feature: 0 10px 30px -10px hsl(0 0% 0% / 0.1);
+  }
+  
+  /* Ensure proper contrast in light mode */
+  .light .text-muted-foreground {
+    color: hsl(0 0% 35%) !important;
+  }
+  
+  .light .bg-muted {
+    background-color: hsl(0 0% 96%) !important;
+  }
+  
+  .light .border-border {
+    border-color: hsl(0 0% 90%) !important;
   }
 }
 
@@ -68,9 +133,117 @@
   }
 
   body {
-    @apply bg-background text-foreground font-sans antialiased;
-    background: var(--hero-gradient);
-    min-height: 100vh;
+    @apply bg-background text-foreground font-sans;
+    background: hsl(var(--background));
+  }
+  
+  /* Fitness-themed custom classes */
+  .gradient-primary {
+    background: var(--gradient-primary);
+  }
+  
+  .gradient-hero {
+    background: var(--gradient-hero);
+  }
+  
+  .gradient-feature {
+    background: var(--gradient-feature);
+  }
+  
+  .gradient-accent {
+    background: var(--gradient-accent);
+  }
+  
+  .shadow-glow {
+    box-shadow: var(--shadow-glow);
+  }
+  
+  .shadow-feature {
+    box-shadow: var(--shadow-feature);
+  }
+  
+  .perspective-1000 {
+    perspective: 1000px;
+  }
+  
+  /* Floating animations */
+  @keyframes float {
+    0%, 100% {
+      transform: translateY(0px) scale(1);
+    }
+    50% {
+      transform: translateY(-20px) scale(1.05);
+    }
+  }
+  
+  @keyframes float-delayed {
+    0%, 100% {
+      transform: translateY(0px) translateX(0px) scale(1);
+    }
+    33% {
+      transform: translateY(-15px) translateX(10px) scale(1.02);
+    }
+    66% {
+      transform: translateY(-5px) translateX(-5px) scale(0.98);
+    }
+  }
+  
+  @keyframes twinkle {
+    0%, 100% {
+      opacity: 0.4;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1.2);
+    }
+  }
+  
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+  
+  .animate-float-delayed {
+    animation: float-delayed 8s ease-in-out infinite;
+  }
+  
+  .animate-twinkle {
+    animation: twinkle 3s ease-in-out infinite;
+  }
+  
+  /* Mobile optimizations */
+  .touch-manipulation {
+    touch-action: manipulation;
+  }
+  
+  /* Preload critical fonts */
+  @font-face {
+    font-family: system-ui;
+    font-display: swap;
+  }
+  
+  /* Performance optimizations */
+  .will-change-transform {
+    will-change: transform;
+  }
+  
+  .will-change-opacity {
+    will-change: opacity;
+  }
+  
+  /* Reduce motion for accessibility */
+  @media (prefers-reduced-motion: reduce) {
+    .animate-pulse,
+    .animate-float,
+    .animate-float-delayed,
+    .animate-twinkle {
+      animation: none;
+    }
+    
+    * {
+      transition-duration: 0.01ms !important;
+      animation-duration: 0.01ms !important;
+    }
   }
   
   html {
@@ -293,6 +466,38 @@ a, button, input[type="button"], input[type="submit"], input[type="reset"] {
   input[type="radio"] {
     transform: scale(1.2);
     margin: 0.2rem;
+  }
+  
+  /* Mobile-specific text sizing improvements */
+  .text-4xl {
+    font-size: 2rem; /* 32px */
+  }
+  
+  .text-3xl {
+    font-size: 1.75rem; /* 28px */
+  }
+  
+  .text-2xl {
+    font-size: 1.5rem; /* 24px */
+  }
+  
+  /* Better mobile spacing */
+  .p-6 {
+    padding: 1rem;
+  }
+  
+  .p-8 {
+    padding: 1.5rem;
+  }
+  
+  /* Mobile grid improvements */
+  .grid-cols-1 {
+    gap: 1rem;
+  }
+  
+  /* Mobile card improvements */
+  .card {
+    margin-bottom: 1rem;
   }
 }
 

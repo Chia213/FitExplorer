@@ -412,7 +412,7 @@ function WorkoutHistory() {
 
       setDeletingAll(true);
       const response = await fetch(
-        `${API_BASE_URL}/api/workouts-delete-all`,
+        `${API_BASE_URL}/workouts/${workoutToDelete}`,
         {
           method: "DELETE",
           headers: {
@@ -423,19 +423,20 @@ function WorkoutHistory() {
 
       if (response.ok) {
         // Filter out the deleted workout
-        setWorkoutHistory([]);
+        setWorkoutHistory(prev => prev.filter(workout => workout.id !== workoutToDelete));
         
         // Success haptic feedback on successful deletion
         haptic.success();
         
-        setShowDeleteAllConfirmation(false);
+        setShowDeleteConfirmation(false);
+        setWorkoutToDelete(null);
       } else {
         const error = await response.json();
-        throw new Error(error.message || "Failed to delete workouts");
+        throw new Error(error.message || "Failed to delete workout");
       }
     } catch (error) {
-      console.error("Error deleting workouts:", error);
-      alert(`Error deleting workouts: ${error.message}`);
+      console.error("Error deleting workout:", error);
+      alert(`Error deleting workout: ${error.message}`);
     } finally {
       setDeletingAll(false);
     }
@@ -567,9 +568,8 @@ function WorkoutHistory() {
     let matchesSearch = true;
 
     if (filterDate) {
-      const workoutDate = new Date(workout.date || workout.start_time)
-        .toISOString()
-        .split("T")[0];
+      const workoutDateObj = new Date(workout.date || workout.start_time);
+      const workoutDate = `${workoutDateObj.getFullYear()}-${String(workoutDateObj.getMonth() + 1).padStart(2, '0')}-${String(workoutDateObj.getDate()).padStart(2, '0')}`;
       matchesDate = workoutDate === filterDate;
     }
 
@@ -835,6 +835,49 @@ function WorkoutHistory() {
     setShowDeleteAllConfirmation(true);
   };
 
+  const confirmDeleteAllWorkouts = async () => {
+    try {
+      // Use error haptic pattern for destructive action confirmation
+      haptic.error();
+      
+      const token = localStorage.getItem("access_token");
+      if (!token) {
+        alert("You need to be logged in to delete workouts.");
+        navigate("/login");
+        return;
+      }
+
+      setDeletingAll(true);
+      const response = await fetch(
+        `${API_BASE_URL}/api/workouts-delete-all`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.ok) {
+        // Clear all workouts
+        setWorkoutHistory([]);
+        
+        // Success haptic feedback on successful deletion
+        haptic.success();
+        
+        setShowDeleteAllConfirmation(false);
+      } else {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to delete all workouts");
+      }
+    } catch (error) {
+      console.error("Error deleting all workouts:", error);
+      alert(`Error deleting all workouts: ${error.message}`);
+    } finally {
+      setDeletingAll(false);
+    }
+  };
+
   const handleSelectWorkout = (workoutId) => {
     setSelectedWorkouts(prev => {
       if (prev.includes(workoutId)) {
@@ -904,10 +947,10 @@ function WorkoutHistory() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-6">
+    <div className="min-h-screen bg-background p-6">
       <div className="max-w-4xl mx-auto">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          <h1 className="text-2xl font-bold text-foreground">
             Workout History
           </h1>
           <div className="flex space-x-1.5">
@@ -915,8 +958,8 @@ function WorkoutHistory() {
               onClick={() => setViewMode("list")}
               className={`px-2 py-1 rounded text-xs ${
                 viewMode === "list"
-                  ? "bg-blue-500 text-white"
-                  : "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground"
               }`}
             >
               List View
@@ -925,8 +968,8 @@ function WorkoutHistory() {
               onClick={() => setViewMode("calendar")}
               className={`px-2 py-1 rounded text-xs ${
                 viewMode === "calendar"
-                  ? "bg-blue-500 text-white"
-                  : "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground"
               }`}
             >
               Calendar
@@ -941,12 +984,12 @@ function WorkoutHistory() {
         )}
         
         {/* Action Bar */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-3 mb-4 shadow">
+        <div className="bg-card rounded-lg p-3 mb-4 shadow">
           <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-2">
             <div className="flex flex-wrap gap-1.5 items-center">
               <button
                 onClick={handleSelectAllWorkouts}
-                className="flex items-center text-xs bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 px-1.5 py-1 rounded"
+                className="flex items-center text-xs bg-muted hover:bg-accent hover:text-accent-foreground text-foreground px-1.5 py-1 rounded"
               >
                 <FaCheckSquare className="mr-1 text-xs" />
                 {selectedWorkouts.length === filteredWorkouts.length && filteredWorkouts.length > 0 
@@ -959,8 +1002,8 @@ function WorkoutHistory() {
                 disabled={selectedWorkouts.length === 0}
                 className={`flex items-center text-xs ${
                   selectedWorkouts.length > 0
-                    ? "bg-red-500 hover:bg-red-600 text-white"
-                    : "bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed"
+                    ? "bg-destructive hover:bg-destructive/80 text-destructive-foreground"
+                    : "bg-muted text-muted-foreground cursor-not-allowed"
                 } px-1.5 py-1 rounded`}
               >
                 <FaTrash className="mr-1 text-xs" />
@@ -969,7 +1012,7 @@ function WorkoutHistory() {
               
               <button
                 onClick={handleDeleteAllWorkouts}
-                className="flex items-center text-xs bg-red-500 hover:bg-red-600 text-white px-1.5 py-1 rounded"
+                className="flex items-center text-xs bg-destructive hover:bg-destructive/80 text-destructive-foreground px-1.5 py-1 rounded"
               >
                 <FaTrash className="mr-1 text-xs" />
                 Del All
@@ -977,7 +1020,7 @@ function WorkoutHistory() {
               
               <button
                 onClick={() => navigate('/personal-records')}
-                className="flex items-center text-xs bg-green-500 hover:bg-green-600 text-white px-1.5 py-1 rounded"
+                className="flex items-center text-xs bg-accent hover:bg-accent/80 text-accent-foreground px-1.5 py-1 rounded"
               >
                 <FaTrophy className="mr-1 text-xs" />
                 Records
@@ -987,7 +1030,7 @@ function WorkoutHistory() {
             <div className="flex items-center mt-2 md:mt-0">
               <button
                 onClick={toggleWeightUnit}
-                className="flex items-center text-xs bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded font-medium"
+                className="flex items-center text-xs bg-primary hover:bg-primary/80 text-primary-foreground px-2 py-1 rounded font-medium"
               >
                 <FaBalanceScale className="mr-1 text-xs" />
                 {weightUnit === "kg" ? "→ LBS" : "→ KG"}
@@ -998,7 +1041,7 @@ function WorkoutHistory() {
           {/* Filters */}
           <div className="mt-1.5 flex flex-col space-y-1">
             <div className="flex flex-col">
-              <label htmlFor="search-query" className="text-gray-700 dark:text-gray-300 text-[10px] font-medium mb-0.5">
+              <label htmlFor="search-query" className="text-foreground text-[10px] font-medium mb-0.5">
                 Search:
               </label>
               <div className="relative">
@@ -1008,15 +1051,14 @@ function WorkoutHistory() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search workouts..."
-                  className="w-full rounded border border-gray-300 dark:border-gray-500 bg-white dark:bg-gray-800 text-gray-800 dark:text-white px-2 py-1 text-[11px] focus:ring-blue-500 focus:border-blue-500 shadow-sm"
+                  className="w-full rounded border border-border bg-background text-foreground px-3 py-1 text-[11px] focus:ring-primary focus:border-primary shadow-sm"
                 />
-                <FaSearch className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-300 text-[10px]" />
               </div>
             </div>
             
             <div className="grid grid-cols-2 gap-1">
               <div className="flex flex-col">
-                <label htmlFor="filter-date" className="text-gray-700 dark:text-gray-300 text-[10px] font-medium mb-0.5">
+                <label htmlFor="filter-date" className="text-foreground text-[10px] font-medium mb-0.5">
                   Date:
                 </label>
                 <input
@@ -1024,19 +1066,19 @@ function WorkoutHistory() {
                   id="filter-date"
                   value={filterDate}
                   onChange={(e) => setFilterDate(e.target.value)}
-                  className="w-full rounded border border-gray-300 dark:border-gray-500 bg-white dark:bg-gray-800 text-gray-800 dark:text-white px-2 py-1 text-[11px] focus:ring-blue-500 focus:border-blue-500 shadow-sm"
+                  className="w-full rounded border border-border bg-background text-foreground px-2 py-1 text-[11px] focus:ring-primary focus:border-primary shadow-sm"
                 />
               </div>
               
               <div className="flex flex-col">
-                <label htmlFor="filter-exercise" className="text-gray-700 dark:text-gray-300 text-[10px] font-medium mb-0.5">
+                <label htmlFor="filter-exercise" className="text-foreground text-[10px] font-medium mb-0.5">
                   Exercise:
                 </label>
                 <select
                   id="filter-exercise"
                   value={filterExercise}
                   onChange={(e) => setFilterExercise(e.target.value)}
-                  className="w-full rounded border border-gray-300 dark:border-gray-500 bg-white dark:bg-gray-800 text-gray-800 dark:text-white px-2 py-1 text-[11px] focus:ring-blue-500 focus:border-blue-500 shadow-sm appearance-none bg-no-repeat bg-right pr-7"
+                  className="w-full rounded border border-border bg-background text-foreground px-2 py-1 text-[11px] focus:ring-primary focus:border-primary shadow-sm appearance-none bg-no-repeat bg-right pr-7"
                   style={{ backgroundImage: 'url("data:image/svg+xml,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 fill=%27none%27 viewBox=%270 0 20 20%27%3e%3cpath stroke=%27%236b7280%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27 stroke-width=%271.5%27 d=%27M6 8l4 4 4-4%27/%3e%3c/svg%3e")' }}
                 >
                   <option value="">All Exercises</option>
@@ -1052,20 +1094,20 @@ function WorkoutHistory() {
         </div>
         
         {loading ? (
-          <div className="text-center py-8 bg-white dark:bg-gray-800 rounded-lg shadow">
+          <div className="text-center py-8 bg-card rounded-lg shadow">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-500 mx-auto"></div>
-            <p className="mt-4 text-gray-600 dark:text-gray-400">
+            <p className="mt-4 text-muted-foreground">
               Loading workout history...
             </p>
           </div>
         ) : (
           <>
             {workoutStats && (
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 mb-4">
+              <div className="bg-card rounded-lg shadow p-3 mb-4">
                 <h2 className="text-sm font-semibold mb-2">Your Workout Summary</h2>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                   <div className="bg-blue-50 dark:bg-blue-900/30 p-2 rounded-lg">
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                    <p className="text-xs text-muted-foreground">
                       Total Workouts
                     </p>
                     <p className="text-lg font-bold">
@@ -1073,13 +1115,13 @@ function WorkoutHistory() {
                     </p>
                   </div>
                   <div className="bg-green-50 dark:bg-green-900/30 p-2 rounded-lg">
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                    <p className="text-xs text-muted-foreground">
                       This Month
                     </p>
                     <p className="text-lg font-bold">{workoutStats.thisMonth}</p>
                   </div>
                   <div className="bg-purple-50 dark:bg-purple-900/30 p-2 rounded-lg">
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                    <p className="text-xs text-muted-foreground">
                       Avg Duration
                     </p>
                     <p className="text-lg font-bold">
@@ -1087,7 +1129,7 @@ function WorkoutHistory() {
                     </p>
                   </div>
                   <div className="bg-yellow-50 dark:bg-yellow-900/30 p-2 rounded-lg">
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                    <p className="text-xs text-muted-foreground">
                       Favorite Exercise
                     </p>
                     <p className="text-sm font-bold truncate">
@@ -1099,7 +1141,7 @@ function WorkoutHistory() {
             )}
 
             {viewMode === "calendar" && (
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-2 mb-4">
+              <div className="bg-card rounded-lg shadow p-2 mb-4">
                 <div className="mb-2 flex justify-between items-center">
                   <button
                     onClick={() => {
@@ -1144,8 +1186,8 @@ function WorkoutHistory() {
                       key={i}
                       className={`p-0.5 min-h-[40px] border rounded text-[10px] ${
                         day.isCurrentMonth
-                          ? "border-gray-200 dark:border-gray-700"
-                          : "border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 text-gray-400"
+                          ? "border-border"
+                          : "border-border bg-muted text-muted-foreground"
                       } ${day.isToday ? "ring-1 ring-blue-500" : ""}`}
                     >
                       <div className="text-right mb-0.5">{day.date.getDate()}</div>
@@ -1155,18 +1197,26 @@ function WorkoutHistory() {
                             <div 
                               key={idx}
                               onClick={() => {
-                                // Format date as YYYY-MM-DD for filter
-                                const formattedDate = day.date.toISOString().split('T')[0];
+                                // Format date as YYYY-MM-DD for filter (avoid timezone issues)
+                                const formattedDate = `${day.date.getFullYear()}-${String(day.date.getMonth() + 1).padStart(2, '0')}-${String(day.date.getDate()).padStart(2, '0')}`;
                                 setFilterDate(formattedDate);
                                 // Clear other filters that might interfere
                                 setFilterExercise("");
                                 setSearchQuery("");
                                 // Switch to list view and expand the workout
                                 setViewMode("list");
+                                // Expand the specific workout
                                 setExpandedWorkouts(prev => ({
                                   ...prev,
                                   [workout.id]: true
                                 }));
+                                // Scroll to the workout after a short delay to ensure it's rendered
+                                setTimeout(() => {
+                                  const workoutElement = document.querySelector(`[data-workout-id="${workout.id}"]`);
+                                  if (workoutElement) {
+                                    workoutElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                  }
+                                }, 100);
                               }}
                               className="text-[9px] p-0.5 rounded bg-blue-100 dark:bg-blue-900/30 cursor-pointer truncate hover:bg-blue-200 dark:hover:bg-blue-800/30"
                             >
@@ -1184,9 +1234,9 @@ function WorkoutHistory() {
             )}
 
             {viewMode === "list" && (
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+              <div className="bg-card rounded-lg shadow overflow-hidden">
                 {filteredWorkouts.length === 0 ? (
-                  <div className="p-4 text-center text-gray-500 dark:text-gray-400">
+                  <div className="p-4 text-center text-muted-foreground">
                     No workouts found matching your criteria.
                   </div>
                 ) : (
@@ -1194,10 +1244,11 @@ function WorkoutHistory() {
                     {filteredWorkouts.map((workout) => (
                       <div
                         key={workout.id}
-                        className="border-b dark:border-gray-700 last:border-b-0"
+                        data-workout-id={workout.id}
+                        className="border-b border-border last:border-b-0"
                       >
                         <div
-                          className="p-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
+                          className="p-3 cursor-pointer"
                           onClick={() => toggleWorkoutExpansion(workout.id)}
                         >
                           <div className="flex items-start">
@@ -1209,13 +1260,13 @@ function WorkoutHistory() {
                                   e.stopPropagation();
                                   handleSelectWorkout(workout.id);
                                 }}
-                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 dark:focus:ring-blue-600 rounded"
+                                className="h-4 w-4 text-primary focus:ring-primary rounded"
                               />
                             </div>
                             
                             <div className="flex-1">
                               <div className="flex items-center justify-between">
-                                <h3 className="text-base font-semibold text-gray-900 dark:text-white truncate pr-2">
+                                <h3 className="text-base font-semibold text-foreground truncate pr-2">
                                   {workout.name}
                                 </h3>
                                 <div className="flex flex-shrink-0 space-x-1">
@@ -1224,7 +1275,7 @@ function WorkoutHistory() {
                                       e.stopPropagation();
                                       handleDeleteWorkout(workout.id);
                                     }}
-                                    className="text-red-500 hover:text-red-700 dark:hover:text-red-400 p-1.5 rounded-full bg-gray-100 dark:bg-gray-700"
+                                    className="text-destructive hover:text-destructive/80 p-1.5 rounded-full bg-muted"
                                     title="Delete workout"
                                   >
                                     <FaTrash className="text-xs" />
@@ -1234,14 +1285,14 @@ function WorkoutHistory() {
                                       e.stopPropagation();
                                       handleSaveAsRoutine(workout);
                                     }}
-                                    className="text-blue-500 hover:text-blue-700 dark:hover:text-blue-400 p-1.5 rounded-full bg-gray-100 dark:bg-gray-700"
+                                    className="text-primary hover:text-primary/80 p-1.5 rounded-full bg-muted"
                                     title="Save as Routine"
                                   >
                                     <FaSave className="text-xs" />
                                   </button>
                                 </div>
                               </div>
-                              <div className="flex flex-wrap text-xs text-gray-600 dark:text-gray-300 mt-1">
+                              <div className="flex flex-wrap text-xs text-muted-foreground mt-1">
                                 <span className="flex items-center mr-2 mb-1">
                                   <FaCalendarAlt className="mr-1" />
                                   {formatDate(workout.date || workout.start_time)}
@@ -1266,31 +1317,31 @@ function WorkoutHistory() {
                                 )}
                               </div>
                               <div className="flex items-center justify-between mt-1">
-                                <span className="text-xs text-gray-600 dark:text-gray-400">
+                                <span className="text-xs text-muted-foreground">
                                   {workout.exercises && workout.exercises.length > 0 
                                     ? `${workout.exercises.length} exercise${workout.exercises.length > 1 ? "s" : ""}`
                                     : "No exercises"}
                                 </span>
                                 {expandedWorkouts[workout.id] ? (
-                                  <FaChevronUp className="text-gray-500 dark:text-gray-400" />
+                                  <FaChevronUp className="text-muted-foreground" />
                                 ) : (
-                                  <FaChevronDown className="text-gray-500 dark:text-gray-400" />
+                                  <FaChevronDown className="text-muted-foreground" />
                                 )}
                               </div>
                             </div>
                           </div>
                         </div>
                         {expandedWorkouts[workout.id] && (
-                          <div className="p-3 border-t border-gray-200 dark:border-gray-700 text-sm">
+                          <div className="p-3 border-t border-border text-sm">
                             {workout.notes && (
-                              <div className="mb-3 bg-gray-50 dark:bg-gray-700 p-2 rounded">
-                                <p className="text-gray-600 dark:text-gray-300 text-xs">
+                              <div className="mb-3 bg-muted p-2 rounded">
+                                <p className="text-muted-foreground text-xs">
                                   {workout.notes}
                                 </p>
                               </div>
                             )}
 
-                            <div className="text-xs text-gray-600 dark:text-gray-400 mb-3">
+                            <div className="text-xs text-muted-foreground mb-3">
                               <div className="grid grid-cols-2 gap-2">
                                 <div>
                                   <span className="font-medium">Started:</span>{" "}
@@ -1305,7 +1356,7 @@ function WorkoutHistory() {
                               </div>
                             </div>
 
-                            <h3 className="font-medium text-base text-gray-800 dark:text-gray-200 mb-2">
+                            <h3 className="font-medium text-base text-foreground mb-2">
                               Exercises
                             </h3>
 
@@ -1316,42 +1367,42 @@ function WorkoutHistory() {
                                 {workout.exercises.map((exercise, eIndex) => (
                                   <div
                                     key={eIndex}
-                                    className="bg-gray-50 dark:bg-gray-700 p-3 rounded"
+                                    className="bg-muted p-3 rounded"
                                   >
-                                    <h4 className="font-medium text-gray-800 dark:text-gray-200 mb-2 text-sm">
+                                    <h4 className="font-medium text-foreground mb-2 text-sm">
                                       {exercise.name}{" "}
                                       {exercise.is_cardio ? "(Cardio)" : ""}
                                     </h4>
 
                                     <div className="overflow-x-auto -mx-3">
                                       <div className="inline-block min-w-full align-middle px-3">
-                                        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-600 text-xs">
-                                          <thead className="bg-gray-100 dark:bg-gray-800">
+                                        <table className="min-w-full divide-y divide-border text-xs">
+                                          <thead className="bg-muted">
                                             <tr>
-                                              <th scope="col" className="py-1 pl-1 pr-2 text-left font-medium text-gray-600 dark:text-gray-300 tracking-wider">#</th>
+                                              <th scope="col" className="py-1 pl-1 pr-2 text-left font-medium text-muted-foreground tracking-wider">#</th>
                                               {exercise.is_cardio ? (
                                                 <>
-                                                  <th scope="col" className="py-1 px-2 text-left font-medium text-gray-600 dark:text-gray-300 tracking-wider">Distance</th>
-                                                  <th scope="col" className="py-1 px-2 text-left font-medium text-gray-600 dark:text-gray-300 tracking-wider">Duration</th>
-                                                  <th scope="col" className="py-1 px-2 text-left font-medium text-gray-600 dark:text-gray-300 tracking-wider">Intensity</th>
+                                                  <th scope="col" className="py-1 px-2 text-left font-medium text-muted-foreground tracking-wider">Distance</th>
+                                                  <th scope="col" className="py-1 px-2 text-left font-medium text-muted-foreground tracking-wider">Duration</th>
+                                                  <th scope="col" className="py-1 px-2 text-left font-medium text-muted-foreground tracking-wider">Intensity</th>
                                                 </>
                                               ) : (
                                                 <>
-                                                  <th scope="col" className="py-1 px-2 text-left font-medium text-gray-600 dark:text-gray-300 tracking-wider">Weight</th>
-                                                  <th scope="col" className="py-1 px-2 text-left font-medium text-gray-600 dark:text-gray-300 tracking-wider">Reps</th>
+                                                  <th scope="col" className="py-1 px-2 text-left font-medium text-muted-foreground tracking-wider">Weight</th>
+                                                  <th scope="col" className="py-1 px-2 text-left font-medium text-muted-foreground tracking-wider">Reps</th>
                                                 </>
                                               )}
-                                              <th scope="col" className="py-1 px-2 text-left font-medium text-gray-600 dark:text-gray-300 tracking-wider">Set Type</th>
-                                              <th scope="col" className="py-1 px-2 text-left font-medium text-gray-600 dark:text-gray-300 tracking-wider">Notes</th>
+                                              <th scope="col" className="py-1 px-2 text-left font-medium text-muted-foreground tracking-wider">Set Type</th>
+                                              <th scope="col" className="py-1 px-2 text-left font-medium text-muted-foreground tracking-wider">Notes</th>
                                             </tr>
                                           </thead>
-                                          <tbody className="bg-white dark:bg-gray-700 divide-y divide-gray-200 dark:divide-gray-600">
+                                          <tbody className="bg-card divide-y divide-border">
                                             {exercise.sets &&
                                             Array.isArray(exercise.sets) ? (
                                               exercise.sets.map((set, sIndex) => (
                                                 <tr
                                                   key={sIndex}
-                                                  className={sIndex % 2 === 0 ? "bg-white dark:bg-gray-700" : "bg-gray-50 dark:bg-gray-650"}
+                                                  className={sIndex % 2 === 0 ? "bg-card" : "bg-muted"}
                                                 >
                                                   <td className="py-1 pl-1 pr-2 whitespace-nowrap">{sIndex + 1}</td>
                                                   {exercise.is_cardio ? (
@@ -1431,9 +1482,9 @@ function WorkoutHistory() {
                                               ))
                                             ) : (
                                               <tr>
-                                                <td
+                                                  <td
                                                   colSpan="5"
-                                                  className="py-2 text-center text-gray-500"
+                                                  className="py-2 text-center text-muted-foreground"
                                                 >
                                                   No sets recorded
                                                 </td>
@@ -1447,7 +1498,7 @@ function WorkoutHistory() {
                                 ))}
                               </div>
                             ) : (
-                              <p className="text-gray-500 dark:text-gray-400 text-xs">
+                              <p className="text-muted-foreground text-xs">
                                 No exercises recorded for this workout.
                               </p>
                             )}
@@ -1465,24 +1516,24 @@ function WorkoutHistory() {
 
       {showSaveRoutineModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-4">
-            <h2 className="text-lg font-bold mb-3 text-gray-900 dark:text-white">
+          <div className="bg-card rounded-lg shadow-xl max-w-md w-full p-4">
+            <h2 className="text-lg font-bold mb-3 text-foreground">
               Save as Routine
             </h2>
-            <p className="text-gray-600 dark:text-gray-400 mb-3 text-sm">
+            <p className="text-muted-foreground mb-3 text-sm">
               Save this workout as a reusable routine template. You can access
               and start this routine from the Routines page.
             </p>
 
             <div className="mb-3">
-              <label className="block text-gray-700 dark:text-gray-300 mb-1 text-sm">
+              <label className="block text-foreground mb-1 text-sm">
                 Routine Name
               </label>
               <input
                 type="text"
                 value={routineName}
                 onChange={(e) => setRoutineName(e.target.value)}
-                className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white text-sm"
+                className="w-full bg-muted p-2 rounded-lg text-foreground text-sm"
                 placeholder="Enter routine name"
               />
             </div>
@@ -1490,12 +1541,12 @@ function WorkoutHistory() {
             <div className="flex space-x-2">
               <button
                 onClick={handleSaveRoutine}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg flex items-center justify-center text-sm"
+                className="flex-1 bg-primary hover:bg-primary/80 text-primary-foreground py-2 rounded-lg flex items-center justify-center text-sm"
                 disabled={savingRoutine}
               >
                 {savingRoutine ? (
                   <>
-                    <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-2"></div>
+                    <div className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full mr-2"></div>
                     Saving...
                   </>
                 ) : (
@@ -1504,7 +1555,7 @@ function WorkoutHistory() {
               </button>
               <button
                 onClick={() => setShowSaveRoutineModal(false)}
-                className="flex-1 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-white py-2 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500 text-sm"
+                className="flex-1 bg-muted text-foreground py-2 rounded-lg hover:bg-accent hover:text-accent-foreground text-sm"
                 disabled={savingRoutine}
               >
                 Cancel
@@ -1516,19 +1567,19 @@ function WorkoutHistory() {
 
       {showDeleteAllConfirmation && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-4">
-            <h2 className="text-lg font-bold mb-3 text-red-600 dark:text-red-500">
+          <div className="bg-card rounded-lg shadow-xl max-w-md w-full p-4">
+            <h2 className="text-lg font-bold mb-3 text-destructive">
               Delete All Workouts
             </h2>
-            <p className="text-gray-600 dark:text-gray-400 mb-3 text-sm">
+            <p className="text-muted-foreground mb-3 text-sm">
               Are you sure you want to delete all workouts? This action cannot
               be undone.
             </p>
 
             <div className="flex space-x-2">
               <button
-                onClick={confirmDeleteWorkout}
-                className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg text-sm"
+                onClick={confirmDeleteAllWorkouts}
+                className="flex-1 bg-destructive hover:bg-destructive/80 text-destructive-foreground py-2 rounded-lg text-sm"
               >
                 Delete All
               </button>
@@ -1536,9 +1587,56 @@ function WorkoutHistory() {
                 onClick={() => {
                   setShowDeleteAllConfirmation(false);
                 }}
-                className="flex-1 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-white py-2 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500 text-sm"
+                className="flex-1 bg-muted text-foreground py-2 rounded-lg hover:bg-accent hover:text-accent-foreground text-sm"
               >
                 Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Single Workout Confirmation Modal */}
+      {showDeleteConfirmation && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 max-w-md w-full">
+            <div className="flex items-center text-red-500 mb-3">
+              <FaExclamationTriangle className="text-xl mr-2" />
+              <h3 className="text-lg font-bold">Delete Workout</h3>
+            </div>
+            <p className="text-foreground mb-4 text-sm">
+              Are you sure you want to delete this workout? This action cannot be undone.
+            </p>
+            <div className="flex justify-end space-x-2">
+              <button
+                onClick={() => {
+                  setShowDeleteConfirmation(false);
+                  setWorkoutToDelete(null);
+                }}
+                className="px-4 py-2 bg-muted text-foreground rounded-lg hover:bg-accent hover:text-accent-foreground text-sm"
+                disabled={deletingAll}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDeleteWorkout}
+                className="px-4 py-2 bg-destructive text-destructive-foreground rounded-lg hover:bg-destructive/80 flex items-center text-sm"
+                disabled={deletingAll}
+              >
+                {deletingAll ? (
+                  <>
+                    <svg className="animate-spin h-4 w-4 mr-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <FaTrash className="mr-2" />
+                    Delete
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -1553,20 +1651,20 @@ function WorkoutHistory() {
               <FaExclamationTriangle className="text-xl mr-2" />
               <h3 className="text-lg font-bold">Delete Selected</h3>
             </div>
-            <p className="text-gray-700 dark:text-gray-300 mb-4 text-sm">
+            <p className="text-foreground mb-4 text-sm">
               Are you sure you want to delete {selectedWorkouts.length} selected workout{selectedWorkouts.length === 1 ? '' : 's'}? This action cannot be undone.
             </p>
             <div className="flex justify-end space-x-2">
               <button
                 onClick={() => setShowDeleteSelectedConfirmation(false)}
-                className="px-4 py-2 bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-600 text-sm"
+                className="px-4 py-2 bg-muted text-foreground rounded-lg hover:bg-accent hover:text-accent-foreground text-sm"
                 disabled={deletingSelected}
               >
                 Cancel
               </button>
               <button
                 onClick={confirmDeleteSelectedWorkouts}
-                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 flex items-center text-sm"
+                className="px-4 py-2 bg-destructive text-destructive-foreground rounded-lg hover:bg-destructive/80 flex items-center text-sm"
                 disabled={deletingSelected}
               >
                 {deletingSelected ? (

@@ -141,10 +141,10 @@ const CustomExerciseManager = () => {
   if (error) {
     return (
       <div className="p-4 text-center">
-        <p className="text-red-500">{error}</p>
+        <p className="text-destructive">{error}</p>
         <button 
           onClick={fetchExercises}
-          className="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+          className="mt-4 gradient-primary text-primary-foreground px-4 py-2 rounded shadow-glow hover:shadow-glow transition"
         >
           Try Again
         </button>
@@ -155,10 +155,10 @@ const CustomExerciseManager = () => {
   return (
     <div className={`custom-exercise-manager ${isMobile ? 'mobile' : ''}`}>
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold">My Custom Exercises</h2>
+        <h2 className="text-xl font-bold text-foreground">My Custom Exercises</h2>
         <button
           onClick={() => handleOpenModal()}
-          className={`bg-blue-600 text-white ${isMobile ? 'p-2' : 'px-4 py-2'} rounded flex items-center`}
+          className={`gradient-primary text-primary-foreground ${isMobile ? 'p-2' : 'px-4 py-2'} rounded flex items-center shadow-glow hover:shadow-glow transition`}
         >
           <PlusIcon className="h-5 w-5 mr-1" />
           <span className={isMobile ? 'text-sm' : ''}>Add Exercise</span>
@@ -167,14 +167,14 @@ const CustomExerciseManager = () => {
 
       {loading ? (
         <div className="flex justify-center my-8">
-          <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
+          <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-primary"></div>
         </div>
       ) : exercises.length === 0 ? (
-        <div className="bg-gray-100 rounded p-4 text-center my-4">
-          <p className="text-gray-600">You haven't created any custom exercises yet.</p>
+        <div className="bg-muted rounded p-4 text-center my-4">
+          <p className="text-muted-foreground">You haven't created any custom exercises yet.</p>
           <button
             onClick={() => handleOpenModal()}
-            className="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+            className="mt-4 gradient-primary text-primary-foreground px-4 py-2 rounded shadow-glow hover:shadow-glow transition"
           >
             Create Your First Exercise
           </button>
@@ -182,22 +182,22 @@ const CustomExerciseManager = () => {
       ) : (
         <div className={`grid ${isMobile ? 'grid-cols-1 gap-3' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'}`}>
           {exercises.map(exercise => (
-            <div key={exercise.id} className="bg-white rounded-lg shadow p-4 border border-gray-200">
+            <div key={exercise.id} className="bg-card rounded-lg shadow p-4 border border-border">
               <div className="flex justify-between items-start">
                 <div>
-                  <h3 className={`font-semibold ${isMobile ? 'text-base' : 'text-lg'}`}>{exercise.name}</h3>
-                  <p className={`text-gray-600 ${isMobile ? 'text-xs' : 'text-sm'}`}>{exercise.category}</p>
+                  <h3 className={`font-semibold text-card-foreground ${isMobile ? 'text-base' : 'text-lg'}`}>{exercise.name}</h3>
+                  <p className={`text-muted-foreground ${isMobile ? 'text-xs' : 'text-sm'}`}>{exercise.category}</p>
                 </div>
                 <div className="flex">
                   <button
                     onClick={() => handleOpenModal(exercise)}
-                    className={`text-blue-600 hover:text-blue-800 ${isMobile ? 'p-1' : 'p-2'}`}
+                    className={`text-primary hover:text-primary/80 ${isMobile ? 'p-1' : 'p-2'}`}
                   >
                     <PencilIcon className={`h-5 w-5 ${isMobile ? 'h-4 w-4' : ''}`} />
                   </button>
                   <button
                     onClick={() => handleDelete(exercise.id)}
-                    className={`text-red-600 hover:text-red-800 ${isMobile ? 'p-1' : 'p-2'}`}
+                    className={`text-destructive hover:text-destructive/80 ${isMobile ? 'p-1' : 'p-2'}`}
                   >
                     <TrashIcon className={`h-5 w-5 ${isMobile ? 'h-4 w-4' : ''}`} />
                   </button>
@@ -210,37 +210,37 @@ const CustomExerciseManager = () => {
 
       {/* Add/Edit Exercise Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div 
-            className={`bg-white rounded-lg shadow-lg ${isIPhone ? 'w-full max-w-[350px]' : isMobile ? 'w-full max-w-[90%]' : 'w-full max-w-md'}`}
+            className={`bg-card rounded-lg shadow-lg ${isIPhone ? 'w-full max-w-[350px]' : isMobile ? 'w-full max-w-[90%]' : 'w-full max-w-md'}`}
           >
-            <div className="p-4 border-b">
-              <h3 className="text-lg font-semibold">
+            <div className="p-4 border-b border-border">
+              <h3 className="text-lg font-semibold text-card-foreground">
                 {editingExercise ? 'Edit Exercise' : 'Add New Exercise'}
               </h3>
             </div>
             
             <form onSubmit={handleSubmit} className="p-4">
               <div className="mb-4">
-                <label className="block text-sm font-medium mb-1">Exercise Name</label>
+                <label className="block text-sm font-medium mb-1 text-card-foreground">Exercise Name</label>
                 <input
                   type="text"
                   name="name"
                   value={exerciseForm.name}
                   onChange={handleInputChange}
-                  className={`w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:border-blue-300 ${isIPhone ? 'text-base' : ''}`}
+                  className={`w-full px-3 py-2 border border-border rounded bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary ${isIPhone ? 'text-base' : ''}`}
                   placeholder="Enter exercise name"
                   required
                 />
               </div>
               
               <div className="mb-4">
-                <label className="block text-sm font-medium mb-1">Category</label>
+                <label className="block text-sm font-medium mb-1 text-card-foreground">Category</label>
                 <select
                   name="category"
                   value={exerciseForm.category}
                   onChange={handleInputChange}
-                  className={`w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:border-blue-300 ${isIPhone ? 'text-base' : ''}`}
+                  className={`w-full px-3 py-2 border border-border rounded bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary ${isIPhone ? 'text-base' : ''}`}
                 >
                   {EXERCISE_CATEGORIES.map(category => (
                     <option key={category} value={category}>{category}</option>
@@ -252,13 +252,13 @@ const CustomExerciseManager = () => {
                 <button
                   type="button"
                   onClick={handleCloseModal}
-                  className={`px-4 py-2 border rounded hover:bg-gray-100 ${isMobile ? 'text-sm' : ''}`}
+                  className={`px-4 py-2 border border-border rounded bg-card text-card-foreground hover:bg-accent hover:text-accent-foreground ${isMobile ? 'text-sm' : ''}`}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className={`px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 ${isMobile ? 'text-sm' : ''}`}
+                  className={`px-4 py-2 gradient-primary text-primary-foreground rounded shadow-glow hover:shadow-glow ${isMobile ? 'text-sm' : ''}`}
                 >
                   {editingExercise ? 'Update' : 'Create'}
                 </button>

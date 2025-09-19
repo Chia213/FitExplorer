@@ -5456,6 +5456,14 @@ function ExploreMuscleGuide() {
     isIPhone: false // Track if we're on an iPhone
   });
 
+  // Touch gesture state for modal closing
+  const [touchState, setTouchState] = useState({
+    startY: 0,
+    currentY: 0,
+    isDragging: false,
+    modalOffset: 0
+  });
+
   const exerciseModalContentRef = useRef(null);
   const imageRef = useRef(null);
 
@@ -5609,6 +5617,59 @@ function ExploreMuscleGuide() {
       }
     }
   }, [state.viewingExercise, state.viewingAlternativeExercise, state.activeMuscleIndex, handleResetView]);
+
+  // Touch gesture handlers for modal closing
+  const handleTouchStart = useCallback((e) => {
+    if (!state.isMobile || (!state.viewingExercise && !state.viewingAlternativeExercise)) return;
+    
+    const touch = e.touches[0];
+    setTouchState({
+      startY: touch.clientY,
+      currentY: touch.clientY,
+      isDragging: true,
+      modalOffset: 0
+    });
+  }, [state.isMobile, state.viewingExercise, state.viewingAlternativeExercise]);
+
+  const handleTouchMove = useCallback((e) => {
+    if (!state.isMobile || !touchState.isDragging || (!state.viewingExercise && !state.viewingAlternativeExercise)) return;
+    
+    e.preventDefault();
+    const touch = e.touches[0];
+    const deltaY = touch.clientY - touchState.startY;
+    
+    // Only allow downward swipes
+    if (deltaY > 0) {
+      setTouchState(prev => ({
+        ...prev,
+        currentY: touch.clientY,
+        modalOffset: Math.min(deltaY, 200) // Limit the offset
+      }));
+    }
+  }, [state.isMobile, touchState.isDragging, touchState.startY, state.viewingExercise, state.viewingAlternativeExercise]);
+
+  const handleTouchEnd = useCallback((e) => {
+    if (!state.isMobile || !touchState.isDragging || (!state.viewingExercise && !state.viewingAlternativeExercise)) return;
+    
+    const deltaY = touchState.currentY - touchState.startY;
+    
+    // Close modal if swiped down more than 100px
+    if (deltaY > 100) {
+      setState(prev => ({
+        ...prev,
+        viewingExercise: null,
+        viewingAlternativeExercise: null
+      }));
+    }
+    
+    // Reset touch state
+    setTouchState({
+      startY: 0,
+      currentY: 0,
+      isDragging: false,
+      modalOffset: 0
+    });
+  }, [state.isMobile, touchState.isDragging, touchState.currentY, touchState.startY, state.viewingExercise, state.viewingAlternativeExercise]);
 
   useEffect(() => {
     document.addEventListener("keydown", handleKeyDown);
@@ -5932,86 +5993,74 @@ function ExploreMuscleGuide() {
   }, [state.selectedMuscleGroup, state.bodyType]);
 
   return (
-    <div className="min-h-screen py-2 px-2 sm:py-4 sm:px-4 max-w-6xl mx-auto" role="main" aria-label="Interactive Muscle Guide">
-      <h1 className="text-xl sm:text-2xl md:text-3xl font-bold mb-3 sm:mb-6 text-center">
-        Interactive Muscle Guide
-      </h1>
-
-      <p className="text-center mb-3 sm:mb-5 text-sm sm:text-base">
-        {state.isMobile ? "Tap on any muscle area to explore exercises" : "Hover over or click on any muscle area to explore exercises"}
-      </p>    
-
-      <div className="flex flex-col md:flex-row gap-3 sm:gap-6">
-        {/* Left sidebar with filters */}
-        <div className={`${state.isMobile ? 'flex flex-row justify-center gap-2' : 'flex flex-col gap-4'} md:w-1/4`}>
-          {/* Body Type Toggle */}
-          <div className="bg-gray-100 dark:bg-gray-800 p-2 sm:p-4 rounded-lg shadow-sm flex-1">
-            <h3 className="text-base sm:text-lg font-semibold mb-1 sm:mb-3 text-center md:text-left">Body Type</h3>
-            <div className="flex justify-center">
+    <div className="min-h-screen py-2 px-2 sm:py-4 sm:px-4 md:py-6 md:px-6 max-w-7xl mx-auto" role="main" aria-label="Interactive Muscle Guide">
+      {/* Mobile-optimized header */}
+      <div className="mb-4 sm:mb-6">
+        <div className={`flex items-center ${state.isMobile ? 'justify-between' : 'justify-center'} mb-2 sm:mb-3`}>
+          {state.isMobile && (
+            <div className="flex-shrink-0">
               <BodyTypeToggle 
                 bodyType={state.bodyType} 
                 onToggle={toggleBodyType} 
               />
             </div>
-          </div>
+          )}
+          <h1 className={`${state.isMobile ? 'text-lg' : 'text-xl sm:text-2xl md:text-3xl lg:text-4xl'} font-bold text-center text-gray-900 dark:text-white ${state.isMobile ? 'flex-1' : ''}`}>
+            Interactive Muscle Guide
+          </h1>
+          {state.isMobile && (
+            <div className="flex-shrink-0 w-8"></div>
+          )}
+        </div>
 
-          {/* Equipment Filter - Collapsed on mobile unless expanded */}
-          <div className="bg-gray-100 dark:bg-gray-800 p-2 sm:p-4 rounded-lg shadow-sm flex-1">
-            <h3 className="text-base sm:text-lg font-semibold mb-1 sm:mb-3 text-center md:text-left">Equipment</h3>
-            <div className={`flex ${state.isMobile ? 'flex-row flex-wrap justify-center' : 'flex-col'} gap-1`}>
-              {equipmentTypes.slice(0, state.isMobile ? 3 : equipmentTypes.length).map(equipment => (
-                <button
-                  key={equipment}
-                  onClick={() => handleEquipmentChange(equipment)}
-                  className={`px-2 sm:px-3 py-1 sm:py-2 text-xs sm:text-sm rounded transition-colors ${state.isMobile ? 'text-center' : 'text-left'} ${
-                    state.selectedEquipment === equipment
-                      ? 'bg-blue-500 text-white'
-                      : 'bg-white dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'
-                  }`}
-                >
-                  {equipment === "All Equipment" && state.isMobile ? "All" : equipment}
-                </button>
-              ))}
-              {state.isMobile && equipmentTypes.length > 3 && (
-                <div className="relative group">
-                  <button 
-                    className="px-2 sm:px-3 py-1 sm:py-2 text-xs sm:text-sm rounded transition-colors bg-white dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"
-                  >
-                    More
-                  </button>
-                  <div className="hidden group-hover:block absolute z-50 top-full left-0 mt-1 bg-white dark:bg-gray-800 rounded shadow-lg">
-                    <div className="p-1 flex flex-col">
-                      {equipmentTypes.slice(3).map(equipment => (
-                        <button
-                          key={equipment}
-                          onClick={() => handleEquipmentChange(equipment)}
-                          className={`px-3 py-1 text-xs rounded transition-colors text-left whitespace-nowrap ${
-                            state.selectedEquipment === equipment
-                              ? 'bg-blue-500 text-white'
-                              : 'hover:bg-gray-200 dark:hover:bg-gray-600'
-                          }`}
-                        >
-                          {equipment}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
+        <p className="text-center mb-3 sm:mb-4 text-sm sm:text-base text-gray-600 dark:text-gray-400">
+          {state.isMobile ? "Tap on any muscle area to explore exercises" : "Hover over or click on any muscle area to explore exercises"}
+        </p>
+      </div>    
+
+      <div className="flex flex-col lg:flex-row gap-4 sm:gap-6">
+        {/* Mobile-optimized filters */}
+        <div className={`${state.isMobile ? 'order-2' : 'order-1'} ${state.isMobile ? 'flex flex-row gap-2' : 'flex flex-col gap-3'} lg:w-1/4`}>
+          {/* Body Type Toggle - Desktop only */}
+          {!state.isMobile && (
+            <div className="bg-white dark:bg-gray-800 p-2 sm:p-3 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 flex-1">
+              <h3 className="text-xs sm:text-sm font-medium mb-1 text-center lg:text-left text-gray-900 dark:text-white">Body Type</h3>
+              <div className="flex justify-center lg:justify-start">
+                <BodyTypeToggle 
+                  bodyType={state.bodyType} 
+                  onToggle={toggleBodyType} 
+                />
+              </div>
             </div>
+          )}
+
+          {/* Equipment Filter Dropdown */}
+          <div className="bg-white dark:bg-gray-800 p-2 sm:p-3 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 flex-1">
+            <h3 className="text-xs sm:text-sm font-medium mb-1 text-center lg:text-left text-gray-900 dark:text-white">Equipment</h3>
+            <select
+              value={state.selectedEquipment}
+              onChange={(e) => handleEquipmentChange(e.target.value)}
+              className="w-full p-2 text-xs sm:text-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg border border-gray-200 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+            >
+              {equipmentTypes.map(equipment => (
+                <option key={equipment} value={equipment}>
+                  {equipment === "All Equipment" ? "All Equipment" : equipment}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 
-        {/* Middle section with body image - responsive height based on device */}
-        <div className="md:w-2/5 relative">
-          <div className={`relative mx-auto ${state.isIPhone ? 'h-[350px]' : 'h-[450px] sm:h-[500px]'} flex items-center justify-center`}>
+        {/* Mobile-optimized muscle image section */}
+        <div className={`${state.isMobile ? 'order-1' : 'order-2'} ${state.isMobile ? 'w-full' : 'lg:w-2/5'} relative`}>
+          <div className={`relative mx-auto ${state.isMobile ? 'h-[280px] sm:h-[320px]' : 'h-[350px] sm:h-[400px] lg:h-[450px]'} flex items-center justify-center bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700`}>
             {imageLoading && (
-              <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-800">
+              <div className="absolute inset-0 flex items-center justify-center bg-gray-50 dark:bg-gray-900 rounded-xl">
                 <LoadingSpinner />
               </div>
             )}
             <div
-              className="absolute inset-0 z-20 cursor-pointer"
+              className="absolute inset-0 z-20 cursor-pointer rounded-xl"
               onClick={handleImageClick}
               onMouseMove={state.isMobile ? undefined : handleMouseMove}
               onMouseLeave={state.isMobile ? undefined : handleMouseLeave}
@@ -6024,7 +6073,7 @@ function ExploreMuscleGuide() {
               key={state.bodyType}
               src={bodyImages[state.bodyType]}
               alt={`${state.bodyType.charAt(0).toUpperCase() + state.bodyType.slice(1)} Muscle Anatomy`}
-              className={`max-h-full max-w-full object-contain transition-opacity duration-300 ${imageLoading ? 'opacity-0' : 'opacity-100'}`}
+              className={`max-h-full max-w-full object-contain transition-opacity duration-300 rounded-xl ${imageLoading ? 'opacity-0' : 'opacity-100'}`}
               onLoad={handleImageLoad}
               loading="lazy"
             />
@@ -6044,7 +6093,7 @@ function ExploreMuscleGuide() {
               </div>
             )}
 
-            {/* Active muscle group dots - scale appropriately for mobile */}
+            {/* Mobile-optimized active muscle group dots */}
             {state.activeMuscleIndex !== null && (
               <div key={`active-dots-${state.activeMuscleIndex}`}>
                 {allMuscles[state.activeMuscleIndex].positions.map(
@@ -6063,13 +6112,13 @@ function ExploreMuscleGuide() {
                       <div
                         className="relative"
                         style={{
-                          width: state.isIPhone ? "12px" : "16px",
-                          height: state.isIPhone ? "12px" : "16px",
+                          width: state.isMobile ? "14px" : "18px",
+                          height: state.isMobile ? "14px" : "18px",
                           backgroundColor: "#ff6600",
                           borderRadius: "50%",
-                          border: "2px solid white",
-                          boxShadow: "0 0 4px rgba(0,0,0,0.4)",
-                          transform: state.isIPhone ? "scale(1.1)" : "scale(1.3)",
+                          border: "3px solid white",
+                          boxShadow: "0 0 6px rgba(0,0,0,0.5)",
+                          transform: state.isMobile ? "scale(1.2)" : "scale(1.4)",
                         }}
                       ></div>
                     </div>
@@ -6115,52 +6164,40 @@ function ExploreMuscleGuide() {
                 ))}
           </div>
 
-          {/* Mobile muscle selector - only visible on mobile */}
+          {/* Mobile-optimized muscle selector dropdown */}
           {state.isMobile && !state.activeMuscleIndex && (
-            <div className="mt-2 bg-gray-100 dark:bg-gray-800 p-2 rounded-lg">
-              <p className="text-xs text-center mb-1">Quick select muscle:</p>
-              <div className="flex flex-wrap justify-center gap-1">
-                {allMuscles.slice(0, 8).map((muscle, index) => (
-                  <button
-                    key={`quick-muscle-${index}`}
-                    onClick={() => handleMobileSelectMuscle(index)}
-                    className="px-2 py-1 text-xs bg-white dark:bg-gray-700 rounded"
-                  >
+            <div className="mt-3 bg-white dark:bg-gray-800 p-3 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+              <p className="text-sm font-medium text-center mb-2 text-gray-700 dark:text-gray-300">Quick select muscle:</p>
+              <select
+                onChange={(e) => {
+                  const index = parseInt(e.target.value);
+                  if (index >= 0) {
+                    handleMobileSelectMuscle(index);
+                  }
+                }}
+                className="w-full p-3 text-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg border border-gray-200 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                defaultValue=""
+              >
+                <option value="" disabled>Select a muscle group...</option>
+                {allMuscles.map((muscle, index) => (
+                  <option key={`dropdown-muscle-${index}`} value={index}>
                     {muscle.name}
-                  </button>
+                  </option>
                 ))}
-                {allMuscles.length > 8 && (
-                  <div className="relative group">
-                    <button className="px-2 py-1 text-xs bg-white dark:bg-gray-700 rounded">
-                      More
-                    </button>
-                    <div className="hidden group-hover:flex group-active:flex absolute z-10 top-full left-0 mt-1 bg-white dark:bg-gray-800 shadow-lg rounded p-1 flex-wrap justify-center gap-1 max-w-[200px]">
-                      {allMuscles.slice(8).map((muscle, index) => (
-                        <button
-                          key={`quick-muscle-more-${index}`}
-                          onClick={() => handleMobileSelectMuscle(index + 8)}
-                          className="px-2 py-1 text-xs bg-white dark:bg-gray-700 rounded whitespace-nowrap"
-                        >
-                          {muscle.name}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
+              </select>
             </div>
           )}
         </div>
 
-        {/* Right section with muscle group selection or exercise details - adjust for mobile */}
-        <div className={`${state.scrolled && !state.isMobile ? "md:hidden" : ""} md:w-1/3`}>
+        {/* Mobile-optimized exercise details section */}
+        <div className={`${state.isMobile ? 'order-3' : 'order-3'} ${state.scrolled && !state.isMobile ? "lg:hidden" : ""} ${state.isMobile ? 'w-full' : 'lg:w-1/3'}`}>
           {state.activeMuscleIndex !== null ? (
-            <div className={`bg-gray-100 dark:bg-gray-800 p-2 sm:p-4 rounded-lg shadow-sm ${state.isIPhone ? 'max-h-[350px]' : 'min-h-[400px] sm:min-h-[500px]'} overflow-auto`}>
-              <div className="flex justify-between items-center mb-2">
-                <h2 className="text-lg sm:text-xl font-bold">
+            <div className={`bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 ${state.isMobile ? 'max-h-[400px]' : 'max-h-[500px] lg:min-h-[500px]'} overflow-auto`}>
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 dark:text-white">
                   {allMuscles[state.activeMuscleIndex].name}
                   {state.selectedEquipment !== "All Equipment" && (
-                    <span className="text-xs sm:text-sm font-normal ml-1 sm:ml-2 text-blue-600">
+                    <span className="text-sm font-normal ml-2 text-blue-600 dark:text-blue-400">
                       ({state.selectedEquipment})
                     </span>
                   )}
@@ -6168,37 +6205,33 @@ function ExploreMuscleGuide() {
                 {state.isMobile && (
                   <button 
                     onClick={handleResetView}
-                    className="text-xs bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded"
+                    className="text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-3 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors font-medium min-h-[40px] flex items-center justify-center"
                   >
                     Back
                   </button>
                 )}
               </div>
               
-              {/* Secondary filter - only show when All Equipment is selected */}
+              {/* Mobile-optimized secondary filter dropdown */}
               {state.selectedEquipment === "All Equipment" && (
-                <div className="mb-3 sm:mb-4">
-                  <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1">Filter by equipment:</p>
-                  <div className="flex flex-wrap gap-1 max-h-24 sm:max-h-32 overflow-y-auto pb-1">
+                <div className="mb-4">
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Filter by equipment:</p>
+                  <select
+                    value={state.muscleExerciseFilter}
+                    onChange={(e) => handleMuscleExerciseFilterChange(e.target.value)}
+                    className="w-full p-2 text-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg border border-gray-200 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  >
                     {getAvailableEquipmentForMuscle(getCurrentMuscleName()).map(equipment => (
-                      <button
-                        key={equipment}
-                        onClick={() => handleMuscleExerciseFilterChange(equipment)}
-                        className={`px-2 py-1 text-xs rounded transition-colors ${
-                          state.muscleExerciseFilter === equipment
-                            ? 'bg-blue-500 text-white'
-                            : 'bg-white dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'
-                        }`}
-                      >
-                        {equipment === "All Equipment" && state.isMobile ? "All" : equipment}
-                      </button>
+                      <option key={equipment} value={equipment}>
+                        {equipment === "All Equipment" ? "All Equipment" : equipment}
+                      </option>
                     ))}
-                  </div>
+                  </select>
                 </div>
               )}
               
-              {/* Exercise List - optimized for mobile */}
-              <div className={`${state.isIPhone ? 'max-h-[240px]' : 'max-h-[350px] sm:max-h-[400px]'} overflow-y-auto pb-2`}>
+              {/* Mobile-optimized exercise list */}
+              <div className={`${state.isMobile ? 'max-h-[300px]' : 'max-h-[400px]'} overflow-y-auto pb-2`}>
                 {(() => {
                   const filteredExercises = getFilteredExercisesWithSecondaryFilter(
                     allMuscles[state.activeMuscleIndex]
@@ -6213,21 +6246,21 @@ function ExploreMuscleGuide() {
                   }
                   
                   return (
-                    <div className="flex flex-col gap-2">
+                    <div className="flex flex-col gap-3">
                       {filteredExercises.map((exercise, idx) => (
                         <button
                           key={idx}
                           onClick={() => handleViewExercise(exercise)}
-                          className={`p-2 sm:p-3 rounded-md text-left bg-white dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center ${state.isIPhone ? 'gap-1' : 'gap-2'}`}
+                          className="p-4 rounded-xl text-left bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition-all duration-200 flex items-center gap-3 border border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 hover:shadow-md"
                         >
                           <div className="flex-1">
-                            <p className="font-medium text-sm sm:text-base">{exercise}</p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                            <p className="font-semibold text-sm sm:text-base text-gray-900 dark:text-white mb-1">{exercise}</p>
+                            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                               {getExerciseDetails(exercise).equipment} • {getExerciseDetails(exercise).difficulty}
                             </p>
                           </div>
-                          <div className="text-blue-500">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-4 h-4 sm:w-5 sm:h-5">
+                          <div className="text-blue-500 dark:text-blue-400">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-5 h-5 sm:w-6 sm:h-6">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                             </svg>
                           </div>
@@ -6239,75 +6272,61 @@ function ExploreMuscleGuide() {
               </div>
             </div>
           ) : (
-            <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded-lg shadow-sm min-h-[500px]">
-              <h2 className="text-lg font-semibold mb-2">Select a Muscle Group</h2>
+            <div className="bg-white dark:bg-gray-800 p-2 rounded-lg shadow-sm border border-gray-100 dark:border-gray-600">
+              <h2 className="text-sm font-bold mb-2 text-gray-900 dark:text-white">Select a Muscle Group</h2>
 
-              <div className="grid grid-cols-1 gap-1">
-                {allMuscles.map((muscle, idx) => {
-                  // Check if this muscle has exercises for the selected equipment
-                  const hasExercisesForEquipment = hasMuscleExercisesForEquipment(muscle.name);
-                  
-                  return (
-                  <button
-                    key={idx}
-                    onClick={() => {
-                        if (hasExercisesForEquipment) {
+              <select
+                onChange={(e) => {
+                  const index = parseInt(e.target.value);
+                  if (index >= 0) {
+                    const muscle = allMuscles[index];
+                    const hasExercisesForEquipment = hasMuscleExercisesForEquipment(muscle.name);
+                    if (hasExercisesForEquipment) {
                       setState(prev => ({
                         ...prev,
-                        activeMuscleIndex: idx,
+                        activeMuscleIndex: index,
                         hoveredMuscle: muscle.name
                       }));
-                        }
-                    }}
-                    onMouseEnter={() => {
-                      if (state.activeMuscleIndex === null) {
-                        setState(prev => ({
-                          ...prev,
-                          highlightedAreas: { [muscle.name]: true },
-                          hoveredMuscle: muscle.name
-                        }));
-                      }
-                    }}
-                    onMouseLeave={() => {
-                      if (state.activeMuscleIndex === null) {
-                        setState(prev => ({
-                          ...prev,
-                          highlightedAreas: {}
-                        }));
-                      }
-                    }}
-                      className={`text-left py-1.5 px-2 text-sm bg-white dark:bg-gray-700 rounded-md 
-                        ${hasExercisesForEquipment 
-                          ? 'hover:bg-blue-50 dark:hover:bg-gray-600' 
-                          : 'opacity-50 cursor-not-allowed'
-                        }`}
+                    }
+                  }
+                }}
+                className="w-full p-2 text-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg border border-gray-200 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                defaultValue=""
+              >
+                <option value="" disabled>Choose a muscle group...</option>
+                {allMuscles.map((muscle, idx) => {
+                  const hasExercisesForEquipment = hasMuscleExercisesForEquipment(muscle.name);
+                  return (
+                    <option 
+                      key={idx} 
+                      value={idx}
                       disabled={!hasExercisesForEquipment}
-                  >
-                    {muscle.name}
-                      {state.selectedEquipment !== "All Equipment" && !hasExercisesForEquipment && (
-                        <span className="ml-1 text-xs text-red-500">
-                          (no exercises)
-                        </span>
-                      )}
-                  </button>
+                      className={!hasExercisesForEquipment ? 'text-gray-400' : ''}
+                    >
+                      {muscle.name}{!hasExercisesForEquipment ? ' (no exercises)' : ''}
+                    </option>
                   );
                 })}
+              </select>
+              
+              <div className="mt-2 text-xs text-gray-600 dark:text-gray-400">
+                <p>💡 <strong>Tip:</strong> You can also click directly on the muscle areas in the image above to select them!</p>
               </div>
             </div>
           )}
         </div>
       </div>
 
-      {/* Floating Exercise Window when scrolled - update to show filtered exercises */}
-      {state.activeMuscleIndex !== null && state.scrolled && (
+      {/* Mobile-optimized floating exercise window */}
+      {state.activeMuscleIndex !== null && state.scrolled && !state.isMobile && (
         <div 
-          className="fixed bottom-4 right-4 z-50 w-72 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden"
+          className="fixed bottom-4 right-4 z-50 w-80 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden"
           role="dialog"
           aria-label={`${getCurrentMuscleName()} exercises`}
         >
           <div className="bg-gray-50 dark:bg-gray-700 px-4 py-3 border-b border-gray-200 dark:border-gray-600">
             <div className="flex justify-between items-center">
-              <h3 className="font-bold text-gray-800 dark:text-white">
+              <h3 className="font-bold text-gray-800 dark:text-white text-sm">
                 {allMuscles[state.activeMuscleIndex].name}
                 {state.selectedEquipment !== "All Equipment" && (
                   <span className="text-xs font-normal ml-2 text-blue-600">
@@ -6317,7 +6336,7 @@ function ExploreMuscleGuide() {
               </h3>
               <button
                 onClick={handleResetView}
-                className="text-xs bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded"
+                className="text-xs bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg font-medium transition-colors"
               >
                 Reset
               </button>
@@ -6361,9 +6380,9 @@ function ExploreMuscleGuide() {
         </div>
       )}
 
-      {/* Exercise viewing modal */}
+      {/* Mobile-optimized exercise viewing modal */}
       {(state.viewingExercise || state.viewingAlternativeExercise) && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 overflow-hidden">
+        <div className={`fixed inset-0 z-50 flex items-center justify-center ${state.isMobile ? 'p-4' : 'p-2 sm:p-4'} overflow-hidden`}>
           <div className="absolute inset-0 bg-black opacity-60" onClick={() => {
             setState(prev => ({
               ...prev,
@@ -6373,13 +6392,25 @@ function ExploreMuscleGuide() {
           }}></div>
           
           <div 
-            className={`relative bg-white dark:bg-gray-800 rounded-lg shadow-xl flex flex-col max-w-2xl w-full mx-auto max-h-[90vh] overflow-hidden ${state.isIPhone ? 'max-h-[95vh]' : ''}`}
+            className={`relative bg-white dark:bg-gray-800 rounded-xl shadow-xl flex flex-col ${state.isMobile ? 'w-full max-w-sm' : 'max-w-2xl w-full mx-auto'} ${state.isMobile ? 'max-h-[85vh]' : 'max-h-[90vh]'} overflow-hidden transition-transform duration-200`}
+            style={state.isMobile ? { 
+              transform: `translateY(${touchState.modalOffset}px)`,
+              opacity: touchState.modalOffset > 50 ? Math.max(0.3, 1 - (touchState.modalOffset / 200)) : 1
+            } : {}}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
             role="dialog"
             aria-modal="true"
           >
-            {/* Modal header */}
-            <div className="bg-gray-100 dark:bg-gray-700 p-3 sm:p-4 flex justify-between items-center">
-              <h3 className="font-bold text-lg sm:text-xl">
+            {/* Mobile-optimized modal header */}
+            <div className={`bg-gray-100 dark:bg-gray-700 ${state.isMobile ? 'p-2' : 'p-3 sm:p-4'} flex justify-between items-center ${state.isMobile ? 'min-h-[50px]' : ''}`}>
+              {/* Drag handle for mobile */}
+              {state.isMobile && (
+                <div className="absolute top-1 left-1/2 transform -translate-x-1/2 w-8 h-1 bg-gray-400 dark:bg-gray-500 rounded-full"></div>
+              )}
+              
+              <h3 className={`font-bold ${state.isMobile ? 'text-base' : 'text-lg sm:text-xl'} text-gray-900 dark:text-white flex-1 pr-2`}>
                 {state.viewingExercise || state.viewingAlternativeExercise}
               </h3>
               <button 
@@ -6390,17 +6421,17 @@ function ExploreMuscleGuide() {
                     viewingAlternativeExercise: null
                   }));
                 }}
-                className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
+                className={`text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white ${state.isMobile ? 'p-3 bg-gray-200 dark:bg-gray-600 rounded-full' : ''} transition-colors`}
                 aria-label="Close"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <svg className={`${state.isMobile ? 'w-6 h-6' : 'w-5 h-5'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
                 </svg>
               </button>
             </div>
             
-            {/* Modal content */}
-            <div ref={exerciseModalContentRef} className="flex-1 overflow-y-auto p-3 sm:p-4">
+            {/* Mobile-optimized modal content */}
+            <div ref={exerciseModalContentRef} className={`flex-1 overflow-y-auto ${state.isMobile ? 'p-1' : 'p-3 sm:p-4'}`}>
               {(() => {
                 const exerciseName = state.viewingExercise || state.viewingAlternativeExercise;
                 const exerciseDetails = state.viewingExercise 
@@ -6408,10 +6439,10 @@ function ExploreMuscleGuide() {
                   : getAlternativeExerciseAsset(exerciseName);
                 
                 return (
-                  <div className="flex flex-col gap-3 sm:gap-4">
-                    {/* Image/animation and info */}
-                    <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-                      <div className={`flex-1 min-h-[200px] ${state.isIPhone ? 'max-h-[250px]' : ''} relative bg-gray-200 dark:bg-gray-700 rounded-lg overflow-hidden flex items-center justify-center`}>
+                  <div className={`flex flex-col ${state.isMobile ? 'gap-2' : 'gap-3 sm:gap-4'}`}>
+                    {/* Mobile-optimized image/animation and info */}
+                    <div className={`flex ${state.isMobile ? 'flex-col' : 'flex-col sm:flex-row'} ${state.isMobile ? 'gap-2' : 'gap-3 sm:gap-4'}`}>
+                      <div className={`flex-1 ${state.isMobile ? 'min-h-[140px] max-h-[180px]' : `min-h-[200px] ${state.isIPhone ? 'max-h-[250px]' : ''}`} relative bg-gray-200 dark:bg-gray-700 ${state.isMobile ? 'rounded-lg' : 'rounded-lg'} overflow-hidden flex items-center justify-center`}>
                         <ExerciseImage 
                           src={exerciseDetails.src} 
                           alt={exerciseName} 
@@ -6419,44 +6450,44 @@ function ExploreMuscleGuide() {
                         />
                       </div>
                       
-                      <div className="flex-1 flex flex-col gap-2">
-                        <div>
-                          <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Equipment</p>
-                          <p className="text-base">{exerciseDetails.equipment}</p>
+                      <div className={`flex-1 flex ${state.isMobile ? 'flex-row gap-2' : 'flex-col gap-2'}`}>
+                        <div className={`${state.isMobile ? 'flex-1' : ''}`}>
+                          <p className={`${state.isMobile ? 'text-xs' : 'text-sm'} font-semibold text-gray-700 dark:text-gray-300 mb-1`}>Equipment</p>
+                          <p className={`${state.isMobile ? 'text-sm' : 'text-base'} text-gray-900 dark:text-white`}>{exerciseDetails.equipment}</p>
                         </div>
                         
-                        <div>
-                          <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Difficulty</p>
-                          <p className="text-base">{exerciseDetails.difficulty}</p>
+                        <div className={`${state.isMobile ? 'flex-1' : ''}`}>
+                          <p className={`${state.isMobile ? 'text-xs' : 'text-sm'} font-semibold text-gray-700 dark:text-gray-300 mb-1`}>Difficulty</p>
+                          <p className={`${state.isMobile ? 'text-sm' : 'text-base'} text-gray-900 dark:text-white`}>{exerciseDetails.difficulty}</p>
                         </div>
                       </div>
                     </div>
                     
-                    {/* Description */}
+                    {/* Mobile-optimized description */}
                     <div>
-                      <h4 className="font-semibold text-lg mb-1">Instructions</h4>
-                      <p className="text-sm sm:text-base">{exerciseDetails.description}</p>
+                      <h4 className={`font-semibold ${state.isMobile ? 'text-base' : 'text-lg'} ${state.isMobile ? 'mb-1' : 'mb-2'} text-gray-900 dark:text-white`}>Instructions</h4>
+                      <p className={`${state.isMobile ? 'text-sm' : 'text-sm sm:text-base'} text-gray-700 dark:text-gray-300 ${state.isMobile ? 'leading-normal' : 'leading-relaxed'}`}>{exerciseDetails.description}</p>
                     </div>
                     
-                    {/* Alternative exercises */}
+                    {/* Mobile-optimized alternative exercises */}
                     {exerciseDetails.alternatives && exerciseDetails.alternatives.length > 0 && (
                       <div>
-                        <h4 className="font-semibold text-lg mb-1">Alternative Exercises</h4>
-                        <div className="flex flex-col gap-2">
+                        <h4 className={`font-semibold ${state.isMobile ? 'text-base' : 'text-lg'} ${state.isMobile ? 'mb-2' : 'mb-3'} text-gray-900 dark:text-white`}>Alternative Exercises</h4>
+                        <div className={`flex flex-col ${state.isMobile ? 'gap-2' : 'gap-2'}`}>
                           {exerciseDetails.alternatives.map((alt, idx) => (
                             <button
                               key={idx}
                               onClick={() => handleViewAlternative(alt, state.viewingExercise)}
-                              className="p-2 sm:p-3 rounded-md text-left bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center gap-2"
+                              className={`${state.isMobile ? 'p-2' : 'p-2 sm:p-3'} ${state.isMobile ? 'rounded-lg' : 'rounded-md'} text-left bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition-all duration-200 flex items-center gap-2 border border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 hover:shadow-md`}
                             >
                               <div className="flex-1">
-                                <p className="font-medium text-sm sm:text-base">{alt}</p>
-                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                <p className={`font-semibold ${state.isMobile ? 'text-sm' : 'text-sm sm:text-base'} text-gray-900 dark:text-white mb-1`}>{alt}</p>
+                                <p className={`${state.isMobile ? 'text-xs' : 'text-xs'} text-gray-500 dark:text-gray-400`}>
                                   {getExerciseEquipment(alt)} • {getExerciseAssetByGender(alt, state.bodyType)?.difficulty || "Intermediate"}
                                 </p>
                               </div>
-                              <div className="text-blue-500">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-4 h-4 sm:w-5 sm:h-5">
+                              <div className="text-blue-500 dark:text-blue-400">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className={`${state.isMobile ? 'w-4 h-4' : 'w-4 h-4 sm:w-5 sm:h-5'}`}>
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                                 </svg>
                               </div>
@@ -6470,14 +6501,14 @@ function ExploreMuscleGuide() {
               })()}
             </div>
             
-            {/* Back button shown when viewing an alternative */}
+            {/* Mobile-optimized back button shown when viewing an alternative */}
             {state.viewingAlternativeExercise && (
-              <div className="bg-gray-100 dark:bg-gray-700 p-3 sm:p-4 flex justify-between">
+              <div className={`bg-gray-100 dark:bg-gray-700 ${state.isMobile ? 'p-4' : 'p-3 sm:p-4'} flex justify-between ${state.isMobile ? 'min-h-[60px]' : ''}`}>
                 <button
                   onClick={() => handleViewAlternative(null)}
-                  className="flex items-center gap-1 text-blue-600 px-2 py-1 text-sm rounded hover:bg-gray-200 dark:hover:bg-gray-600"
+                  className={`flex items-center gap-2 text-blue-600 dark:text-blue-400 ${state.isMobile ? 'px-4 py-3' : 'px-2 py-1'} ${state.isMobile ? 'text-base' : 'text-sm'} ${state.isMobile ? 'rounded-lg' : 'rounded'} hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors font-medium`}
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-4 h-4">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className={`${state.isMobile ? 'w-5 h-5' : 'w-4 h-4'}`}>
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                   </svg>
                   Back to {state.navigationHistory[state.navigationHistory.length - 1]}

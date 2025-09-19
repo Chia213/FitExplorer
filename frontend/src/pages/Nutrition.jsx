@@ -1349,7 +1349,7 @@ function Nutrition() {
                   </h4>
                   <button
                     onClick={() => setShowAddCustomFoodModal(true)}
-                    className="text-xs px-2 py-1 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors flex items-center"
+                    className="text-xs px-2 py-1 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors flex items-center"
                   >
                     <FaPlus className="mr-1" /> Add Custom Food
                   </button>
@@ -1775,7 +1775,7 @@ function Nutrition() {
                   </div>
                   <button
                     onClick={() => handleSaveMealPlanToDay(selectedDate, generatedMealPlan)}
-                    className="px-3 py-1 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors flex items-center"
+                    className="px-3 py-1 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors flex items-center"
                   >
                     <FaPlus className="mr-1" /> Save to Selected Date
                   </button>

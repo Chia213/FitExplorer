@@ -683,21 +683,21 @@ function AddExercise({ onClose, onSelectExercise }) {
           <h3 className={`${isIPhone ? "text-sm" : "text-base"} font-semibold`}>Select Category</h3>
               <button
             onClick={() => setActiveTab("search")}
-            className="text-blue-500 flex items-center text-xs font-medium"
+            className="text-primary flex items-center text-xs font-medium"
           >
             <FaSearch className={`${isIPhone ? "text-xs" : ""} mr-0.5`} /> Search
               </button>
         </div>
         
         {!isAuthenticated && (
-          <div className={`bg-yellow-50 border border-yellow-200 rounded-lg ${isIPhone ? "p-1.5 mb-1.5 text-2xs" : "p-2 mb-2 text-xs"} text-yellow-800`}>
+          <div className={`bg-accent/10 border border-accent/20 rounded-lg ${isIPhone ? "p-1.5 mb-1.5 text-2xs" : "p-2 mb-2 text-xs"} text-accent`}>
             <div className="flex items-center">
-              <FaExclamationTriangle className={`mr-1 text-yellow-600 flex-shrink-0 ${isIPhone ? "text-2xs" : "text-xs"}`} />
+              <FaExclamationTriangle className={`mr-1 text-accent flex-shrink-0 ${isIPhone ? "text-2xs" : "text-xs"}`} />
               <span className="font-medium">Login required for custom exercises</span>
             </div>
             <button 
               onClick={redirectToLogin}
-              className="w-full bg-blue-500 text-white py-1 mt-1 rounded-md text-2xs flex items-center justify-center"
+              className="w-full gradient-primary text-primary-foreground py-1 mt-1 rounded-md text-2xs flex items-center justify-center"
             >
               <FaSignInAlt className="mr-0.5" /> Login
             </button>
@@ -716,7 +716,7 @@ function AddExercise({ onClose, onSelectExercise }) {
                 ${isIPhone ? "text-2xs" : isMobile ? "text-xs" : "text-sm"}
                 ${selectedCategory === category 
                   ? `bg-gradient-to-br ${getCategoryColor(category)} border-transparent text-white shadow-md transform scale-105`
-                  : "bg-white border-gray-300 hover:bg-gray-100 text-gray-700"}
+                  : "bg-card border-border hover:bg-accent text-card-foreground"}
               `}
             >
               <span className={`${isIPhone ? "text-base mb-0.5" : isMobile ? "text-lg mb-1" : "text-2xl mb-2"}`}>{getCategoryIcon(category)}</span>
@@ -735,7 +735,7 @@ function AddExercise({ onClose, onSelectExercise }) {
             }
             setIsAddingCustom(true);
           }}
-          className={`w-full ${isIPhone ? "py-1.5 text-xs" : isMobile ? "py-2 text-sm" : "py-3"} rounded-md ${isAuthenticated ? "bg-green-500 hover:bg-green-600" : "bg-gray-400"} text-white font-semibold flex items-center justify-center`}
+          className={`w-full ${isIPhone ? "py-1.5 text-xs" : isMobile ? "py-2 text-sm" : "py-3"} rounded-md ${isAuthenticated ? "bg-primary hover:bg-primary/90" : "bg-gray-400"} text-white font-semibold flex items-center justify-center`}
         >
           <FaPlus className="mr-1" /> {isIPhone ? "Create Custom" : "Create Custom Exercise"}
               </button>
@@ -768,7 +768,7 @@ function AddExercise({ onClose, onSelectExercise }) {
           <div className="flex items-center mb-2">
               <button
               onClick={() => setActiveTab("categories")}
-              className="mr-2 text-blue-500"
+              className="mr-2 text-primary"
               >
               <FaArrowLeft size={isIPhone ? 16 : 18} />
               </button>
@@ -777,7 +777,7 @@ function AddExercise({ onClose, onSelectExercise }) {
             </h3>
             <button
               onClick={() => setActiveTab("search")}
-              className="text-blue-500"
+              className="text-primary"
             >
               <FaSearch size={isIPhone ? 16 : 18} />
             </button>
@@ -786,14 +786,14 @@ function AddExercise({ onClose, onSelectExercise }) {
           <div className={`${isIPhone ? "max-h-[350px]" : "max-h-[400px]"} overflow-y-auto pr-1 mb-3`}>
             {isLoading ? (
               <div className="flex justify-center py-8">
-                <FaSync className="animate-spin text-blue-500 text-xl" />
+                <FaSync className="animate-spin text-primary text-xl" />
               </div>
             ) : selectedCategory === "Custom" ? (
               <>
                 <div className="mb-2">
                   <button
                     onClick={() => setIsAddingCustom(true)}
-                    className={`w-full ${isIPhone ? "py-1.5 text-sm" : "py-2"} rounded-lg bg-green-500 text-white font-medium flex items-center justify-center`}
+                    className={`w-full ${isIPhone ? "py-1.5 text-sm" : "py-2"} rounded-lg gradient-accent text-accent-foreground font-medium flex items-center justify-center`}
                   >
                     <FaPlus className="mr-1" /> Create New Custom Exercise
                   </button>
@@ -817,8 +817,8 @@ function AddExercise({ onClose, onSelectExercise }) {
                             ${isIPhone ? "min-h-[54px]" : ""}
                             ${
                               selectedExercise === exercise.name
-                                ? "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"
-                                : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                                ? "bg-primary/10 text-primary"
+                                : "bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                             }
                           `}
                         >
@@ -836,7 +836,7 @@ function AddExercise({ onClose, onSelectExercise }) {
                               <span className={`${isIPhone ? "text-base" : ""}`}>{exercise.name}</span>
                             </span>
                             {selectedCategory === "Custom" && assignedCategory !== "Custom" && (
-                              <span className="text-xs text-gray-500 ml-6">
+                              <span className="text-xs text-muted-foreground ml-6">
                                 {assignedCategory} {exercise.category === "Cardio" ? "(Cardio)" : "(Strength)"}
                               </span>
                             )}
@@ -844,14 +844,14 @@ function AddExercise({ onClose, onSelectExercise }) {
                           <div className="flex">
                             <button
                               onClick={() => handleEditExercise(exercise)}
-                              className="text-blue-500 p-2 min-h-[44px] min-w-[44px] flex items-center justify-center"
+                              className="text-primary p-2 min-h-[44px] min-w-[44px] flex items-center justify-center"
                               title="Edit Exercise"
                             >
                               <FaEdit />
                             </button>
                             <button
                               onClick={() => handleRemoveExercise(exercise.name)}
-                              className="text-red-500 p-2 min-h-[44px] min-w-[44px] flex items-center justify-center"
+                              className="text-destructive p-2 min-h-[44px] min-w-[44px] flex items-center justify-center"
                               title="Delete Exercise"
                             >
                               <FaTrash />
@@ -862,7 +862,7 @@ function AddExercise({ onClose, onSelectExercise }) {
                     })}
                   </ul>
                 ) : (
-                  <div className="text-center py-8 text-gray-500">
+                  <div className="text-center py-8 text-muted-foreground">
                     <p className="mb-4">No custom exercises found</p>
                   </div>
                 )}
@@ -876,7 +876,7 @@ function AddExercise({ onClose, onSelectExercise }) {
                       setNewExerciseCategory(selectedCategory === "Cardio" ? "Cardio" : "Strength");
                       setIsAddingCustom(true);
                     }}
-                    className={`w-full ${isIPhone ? "py-1.5 text-sm" : "py-2"} rounded-lg bg-green-500 text-white font-medium flex items-center justify-center`}
+                    className={`w-full ${isIPhone ? "py-1.5 text-sm" : "py-2"} rounded-lg gradient-accent text-accent-foreground font-medium flex items-center justify-center`}
                   >
                     <FaPlus className="mr-1" /> Create New {selectedCategory} Exercise
                   </button>
@@ -885,7 +885,7 @@ function AddExercise({ onClose, onSelectExercise }) {
                 {/* Default category exercises */}
                 {exercises[selectedCategory].length > 0 && (
                   <div className="mb-4">
-                    <h4 className="text-sm font-semibold mb-2 text-gray-500">Default Exercises</h4>
+                    <h4 className="text-sm font-semibold mb-2 text-muted-foreground">Default Exercises</h4>
                     <ul className={`space-y-2 ${isIPhone ? "px-0.5" : ""}`}>
                       {exercises[selectedCategory].map((exercise, index) => (
                         <li
@@ -895,8 +895,8 @@ function AddExercise({ onClose, onSelectExercise }) {
                             ${isIPhone ? "min-h-[54px]" : ""}
                             ${
                               selectedExercise === exercise
-                                ? "bg-blue-100 text-blue-700"
-                                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                                ? "bg-primary/10 text-primary"
+                                : "bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                             }
                           `}
                         >
@@ -919,7 +919,7 @@ function AddExercise({ onClose, onSelectExercise }) {
                 {/* Custom exercises for this category */}
                 {categoryCustomExercises.length > 0 && (
             <div>
-                    <h4 className="text-sm font-semibold mb-2 text-gray-500 dark:text-gray-400">Your Custom {selectedCategory} Exercises</h4>
+                    <h4 className="text-sm font-semibold mb-2 text-muted-foreground">Your Custom {selectedCategory} Exercises</h4>
                     <ul className={`space-y-2 ${isIPhone ? "px-0.5" : ""}`}>
                       {categoryCustomExercises.map((exercise) => (
                         <li
@@ -929,8 +929,8 @@ function AddExercise({ onClose, onSelectExercise }) {
                             ${isIPhone ? "min-h-[54px]" : ""}
                             ${
                               selectedExercise === exercise.name
-                                ? "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"
-                                : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                                ? "bg-primary/10 text-primary"
+                                : "bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                             }
                           `}
                         >
@@ -944,14 +944,14 @@ function AddExercise({ onClose, onSelectExercise }) {
                           <div className="flex">
                             <button
                               onClick={() => handleEditExercise(exercise)}
-                              className="text-blue-500 p-2 min-h-[44px] min-w-[44px] flex items-center justify-center"
+                              className="text-primary p-2 min-h-[44px] min-w-[44px] flex items-center justify-center"
                               title="Edit Exercise"
                             >
                               <FaEdit />
                             </button>
                             <button
                               onClick={() => handleRemoveExercise(exercise.name)}
-                              className="text-red-500 p-2 min-h-[44px] min-w-[44px] flex items-center justify-center"
+                              className="text-destructive p-2 min-h-[44px] min-w-[44px] flex items-center justify-center"
                               title="Delete Exercise"
                             >
                               <FaTrash />
@@ -964,7 +964,7 @@ function AddExercise({ onClose, onSelectExercise }) {
                 )}
                 
                 {exercises[selectedCategory].length === 0 && categoryCustomExercises.length === 0 && (
-                  <div className="text-center py-8 text-gray-500">
+                  <div className="text-center py-8 text-muted-foreground">
                     <p className="mb-4">No exercises found in this category</p>
                   </div>
                 )}
@@ -996,7 +996,7 @@ function AddExercise({ onClose, onSelectExercise }) {
               setActiveTab(selectedCategory ? "exercises" : "categories");
               setSearchTerm("");
             }}
-            className="mr-2 text-blue-500"
+            className="mr-2 text-primary"
           >
             <FaArrowLeft />
           </button>
@@ -1018,13 +1018,11 @@ function AddExercise({ onClose, onSelectExercise }) {
           {searchTerm ? (
             <button
               onClick={() => setSearchTerm("")}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500"
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground"
             >
               <FaTimes />
             </button>
-          ) : (
-            <FaSearch className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-          )}
+          ) : null}
         </div>
 
         {searchTerm.trim() !== "" && (
@@ -1039,7 +1037,7 @@ function AddExercise({ onClose, onSelectExercise }) {
                   return acc;
                 }, {})).map(([category, exercises]) => (
                   <div key={category} className="mb-4">
-                    <h3 className="font-semibold text-sm text-gray-600 mb-2">{category}</h3>
+                    <h3 className="font-semibold text-sm text-foreground mb-2">{category}</h3>
                     {exercises.map((exercise, index) => (
                       <div
                         key={`${exercise.name}-${index}`}
@@ -1049,11 +1047,11 @@ function AddExercise({ onClose, onSelectExercise }) {
                         <div className="flex flex-col">
                           <span className="font-medium">{exercise.name}</span>
                           {exercise.isCustom && (
-                            <span className="text-xs text-blue-500">Custom Exercise</span>
+                            <span className="text-xs text-primary">Custom Exercise</span>
                           )}
                         </div>
                         <button
-                          className="p-1 text-blue-500 hover:text-blue-700 focus:outline-none"
+                          className="p-1 text-primary hover:text-primary/80 focus:outline-none"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleSelectExercise(exercise);
@@ -1070,7 +1068,7 @@ function AddExercise({ onClose, onSelectExercise }) {
               </div>
             ) : (
               <div className="p-4 text-center">
-                <p className="text-gray-500">No exercises found. Would you like to create a custom exercise?</p>
+                <p className="text-muted-foreground">No exercises found. Would you like to create a custom exercise?</p>
                 <button
                   onClick={() => {
                     setActiveTab("addCustom");
@@ -1094,7 +1092,7 @@ function AddExercise({ onClose, onSelectExercise }) {
         <div className="flex items-center mb-2">
                           <button
             onClick={() => setActiveTab("exercises")}
-            className="mr-2 text-blue-500"
+            className="mr-2 text-primary"
                           >
             <FaArrowLeft size={isIPhone ? 16 : 18} />
                           </button>
@@ -1103,11 +1101,11 @@ function AddExercise({ onClose, onSelectExercise }) {
           </h3>
         </div>
         
-        <div className={`bg-blue-50 ${isIPhone ? "p-3" : "p-4"} rounded-lg mb-3`}>
-          <h4 className="font-semibold text-blue-800 mb-1 text-center">
+        <div className={`bg-primary/10 ${isIPhone ? "p-3" : "p-4"} rounded-lg mb-3`}>
+          <h4 className="font-semibold text-primary mb-1 text-center">
             {selectedExercise || "No exercise selected"}
           </h4>
-          <p className={`text-blue-600 ${isIPhone ? "text-xs" : "text-sm"} text-center`}>
+          <p className={`text-primary ${isIPhone ? "text-xs" : "text-sm"} text-center`}>
             {selectedCategory || ""}
           </p>
         </div>
@@ -1116,17 +1114,17 @@ function AddExercise({ onClose, onSelectExercise }) {
           <label className={`block ${isIPhone ? "text-xs" : "text-sm"} font-medium text-gray-700 mb-2`}>
             How many sets would you like to add?
           </label>
-          <div className="flex items-center justify-between bg-gray-100 rounded-lg p-2">
+          <div className="flex items-center justify-between bg-muted rounded-lg p-2">
                             <button
               onClick={() => setInitialSets(Math.max(1, initialSets - 1))}
-              className={`${isIPhone ? "w-8 h-8" : "w-10 h-10"} flex items-center justify-center text-blue-600 bg-white rounded-lg shadow`}
+              className={`${isIPhone ? "w-8 h-8" : "w-10 h-10"} flex items-center justify-center text-primary bg-card rounded-lg shadow`}
                             >
               -
                             </button>
             <span className="text-2xl font-bold">{initialSets}</span>
                             <button
               onClick={() => setInitialSets(initialSets + 1)}
-              className={`${isIPhone ? "w-8 h-8" : "w-10 h-10"} flex items-center justify-center text-blue-600 bg-white rounded-lg shadow`}
+              className={`${isIPhone ? "w-8 h-8" : "w-10 h-10"} flex items-center justify-center text-primary bg-card rounded-lg shadow`}
                             >
               +
                             </button>
@@ -1149,7 +1147,7 @@ function AddExercise({ onClose, onSelectExercise }) {
       <div className={`bg-gradient-to-br from-white to-gray-100 dark:from-gray-800 dark:to-gray-900 rounded-lg w-full ${isIPhone ? "max-w-[300px]" : isMobile ? "max-w-[330px]" : "max-w-md"} p-4 max-h-[85vh] overflow-y-auto shadow-xl`}>
         <div className="flex justify-between items-center mb-3 border-b pb-2">
           <h3 className={`${isIPhone ? "text-sm" : "text-base"} font-bold flex items-center`}>
-            <FaPlus className="mr-2 text-blue-500" /> Create Custom Exercise
+            <FaPlus className="mr-2 text-primary" /> Create Custom Exercise
           </h3>
           <button
             onClick={() => {
@@ -1157,16 +1155,16 @@ function AddExercise({ onClose, onSelectExercise }) {
               setNewExerciseName("");
               setCreateError("");
             }}
-            className="text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white min-h-[36px] min-w-[36px] flex items-center justify-center"
+            className="text-muted-foreground hover:text-foreground min-h-[36px] min-w-[36px] flex items-center justify-center"
           >
             <FaTimes size={isIPhone ? 14 : 16} />
           </button>
                   </div>
         
         {!isAuthenticated && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-2 mb-3 text-xs text-red-800">
+          <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-2 mb-3 text-xs text-destructive">
             <div className="flex items-center mb-1">
-              <FaExclamationTriangle className="mr-1 text-red-500 flex-shrink-0" />
+              <FaExclamationTriangle className="mr-1 text-destructive flex-shrink-0" />
               <span className="font-medium">Authentication Required</span>
               </div>
             <p className={`${isIPhone ? "text-2xs" : "text-xs"} mb-1`}>
@@ -1183,7 +1181,7 @@ function AddExercise({ onClose, onSelectExercise }) {
         
         <div className="space-y-3">
           <div>
-            <label htmlFor="custom-exercise-name" className={`block ${isIPhone ? "text-xs" : "text-sm"} font-medium mb-1 text-gray-700 dark:text-gray-300`}>
+            <label htmlFor="custom-exercise-name" className={`block ${isIPhone ? "text-xs" : "text-sm"} font-medium mb-1 text-foreground`}>
               Exercise Name
             </label>
                   <input
@@ -1191,7 +1189,7 @@ function AddExercise({ onClose, onSelectExercise }) {
                     type="text"
               value={newExerciseName}
               onChange={(e) => setNewExerciseName(e.target.value)}
-              className={`w-full ${isIPhone ? "p-2 text-sm" : "p-3 text-base"} border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white`}
+              className={`w-full ${isIPhone ? "p-2 text-sm" : "p-3 text-base"} border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary bg-background text-foreground`}
               placeholder="Enter exercise name"
               style={{ fontSize: '16px' }} 
               autoFocus={!isMobile}
@@ -1200,14 +1198,14 @@ function AddExercise({ onClose, onSelectExercise }) {
           </div>
           
           <div>
-            <label htmlFor="custom-exercise-category" className={`block ${isIPhone ? "text-xs" : "text-sm"} font-medium mb-1 text-gray-700 dark:text-gray-300`}>
+            <label htmlFor="custom-exercise-category" className={`block ${isIPhone ? "text-xs" : "text-sm"} font-medium mb-1 text-foreground`}>
               Category
             </label>
             <select
               id="custom-exercise-category"
               value={newExerciseCategory}
               onChange={(e) => setNewExerciseCategory(e.target.value)}
-              className={`w-full ${isIPhone ? "p-2 text-sm" : "p-3 text-base"} border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white`}
+              className={`w-full ${isIPhone ? "p-2 text-sm" : "p-3 text-base"} border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary bg-background text-foreground`}
               style={{ fontSize: '16px' }}
               disabled={!isAuthenticated}
             >
@@ -1217,14 +1215,14 @@ function AddExercise({ onClose, onSelectExercise }) {
           </div>
           
           <div>
-            <label htmlFor="custom-exercise-muscle-group" className={`block ${isIPhone ? "text-xs" : "text-sm"} font-medium mb-1 text-gray-700 dark:text-gray-300`}>
+            <label htmlFor="custom-exercise-muscle-group" className={`block ${isIPhone ? "text-xs" : "text-sm"} font-medium mb-1 text-foreground`}>
               Target Muscle Group
             </label>
             <select
               id="custom-exercise-muscle-group"
               value={selectedCategory && ["Abs", "Back", "Biceps", "Cardio", "Chest", "Legs", "Shoulders", "Triceps"].includes(selectedCategory) ? selectedCategory : "Custom"}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className={`w-full ${isIPhone ? "p-2 text-sm" : "p-3 text-base"} border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white`}
+              className={`w-full ${isIPhone ? "p-2 text-sm" : "p-3 text-base"} border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary bg-background text-foreground`}
               style={{ fontSize: '16px' }}
               disabled={newExerciseCategory === "Cardio" || !isAuthenticated}
             >
@@ -1257,14 +1255,14 @@ function AddExercise({ onClose, onSelectExercise }) {
               setNewExerciseName("");
               setCreateError("");
             }}
-            className={`px-3 py-1.5 bg-gray-200 dark:bg-gray-700 rounded-lg text-gray-700 dark:text-white min-h-[36px] min-w-[70px] ${isIPhone ? "text-xs" : "text-sm"} hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors`}
+            className={`px-3 py-1.5 bg-muted rounded-lg text-muted-foreground min-h-[36px] min-w-[70px] ${isIPhone ? "text-xs" : "text-sm"} hover:bg-accent hover:text-accent-foreground transition-colors`}
           >
             Cancel
           </button>
                   <button
                     onClick={handleAddCustomExercise}
             disabled={isCreating || !newExerciseName.trim() || !isAuthenticated}
-            className={`px-3 py-1.5 bg-blue-600 text-white rounded-lg font-medium min-h-[36px] min-w-[90px] ${isCreating || !newExerciseName.trim() || !isAuthenticated ? "opacity-70" : "hover:bg-blue-700"} transition-colors`}
+            className={`px-3 py-1.5 gradient-primary text-primary-foreground rounded-lg font-medium min-h-[36px] min-w-[90px] ${isCreating || !newExerciseName.trim() || !isAuthenticated ? "opacity-70" : "hover:shadow-glow"} transition-colors`}
                   >
             {isCreating ? "Creating..." : "Create"}
                   </button>
@@ -1278,7 +1276,7 @@ function AddExercise({ onClose, onSelectExercise }) {
       <div className={`bg-gradient-to-br from-white to-gray-100 dark:from-gray-800 dark:to-gray-900 rounded-lg w-full ${isIPhone ? "max-w-[350px]" : "max-w-md"} p-5 max-h-[90vh] overflow-y-auto shadow-xl`}>
         <div className="flex justify-between items-center mb-4 border-b pb-2">
           <h3 className="text-lg font-bold flex items-center">
-            <FaEdit className="mr-2 text-blue-500" /> Edit Custom Exercise
+            <FaEdit className="mr-2 text-primary" /> Edit Custom Exercise
           </h3>
           <button
             onClick={() => {
@@ -1288,7 +1286,7 @@ function AddExercise({ onClose, onSelectExercise }) {
               setEditExerciseCategory("");
               setEditError("");
             }}
-            className="text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white min-h-[44px] min-w-[44px] flex items-center justify-center"
+            className="text-muted-foreground hover:text-foreground min-h-[44px] min-w-[44px] flex items-center justify-center"
           >
             <FaTimes />
           </button>
@@ -1296,7 +1294,7 @@ function AddExercise({ onClose, onSelectExercise }) {
         
         <div className="space-y-3">
           <div>
-            <label htmlFor="edit-exercise-name" className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+            <label htmlFor="edit-exercise-name" className="block text-sm font-medium mb-1 text-foreground">
               Exercise Name
                 </label>
                 <input
@@ -1304,7 +1302,7 @@ function AddExercise({ onClose, onSelectExercise }) {
               type="text"
               value={editExerciseName}
               onChange={(e) => setEditExerciseName(e.target.value)}
-              className="w-full p-3 border rounded-lg text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              className="w-full p-3 border border-border rounded-lg text-base focus:ring-2 focus:ring-primary focus:border-primary bg-background text-foreground"
               placeholder="Enter exercise name"
               style={{ fontSize: '16px' }}
               autoFocus={!isMobile}
@@ -1312,14 +1310,14 @@ function AddExercise({ onClose, onSelectExercise }) {
               </div>
 
           <div>
-            <label htmlFor="edit-exercise-category" className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+            <label htmlFor="edit-exercise-category" className="block text-sm font-medium mb-1 text-foreground">
               Category
             </label>
             <select
               id="edit-exercise-category"
               value={editExerciseCategory}
               onChange={(e) => setEditExerciseCategory(e.target.value)}
-              className="w-full p-3 border rounded-lg text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              className="w-full p-3 border border-border rounded-lg text-base focus:ring-2 focus:ring-primary focus:border-primary bg-background text-foreground"
               style={{ fontSize: '16px' }}
             >
               <option value="Strength">Strength</option>
@@ -1328,14 +1326,14 @@ function AddExercise({ onClose, onSelectExercise }) {
           </div>
           
           <div>
-            <label htmlFor="edit-exercise-muscle-group" className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+            <label htmlFor="edit-exercise-muscle-group" className="block text-sm font-medium mb-1 text-foreground">
               Target Muscle Group
             </label>
             <select
               id="edit-exercise-muscle-group"
               value={selectedCategory && ["Abs", "Back", "Biceps", "Cardio", "Chest", "Legs", "Shoulders", "Triceps"].includes(selectedCategory) ? selectedCategory : "Custom"}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="w-full p-3 border rounded-lg text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              className="w-full p-3 border border-border rounded-lg text-base focus:ring-2 focus:ring-primary focus:border-primary bg-background text-foreground"
               style={{ fontSize: '16px' }}
               disabled={editExerciseCategory === "Cardio"}
             >
@@ -1370,13 +1368,13 @@ function AddExercise({ onClose, onSelectExercise }) {
               setEditExerciseCategory("");
               setEditError("");
             }}
-            className="px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded-lg text-gray-700 dark:text-white min-h-[44px] min-w-[80px] hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+            className="px-4 py-2 bg-muted rounded-lg text-muted-foreground min-h-[44px] min-w-[80px] hover:bg-accent hover:text-accent-foreground transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={handleUpdateExercise}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium min-h-[44px] min-w-[120px] hover:bg-blue-700 transition-colors"
+            className="px-4 py-2 gradient-primary text-primary-foreground rounded-lg font-medium min-h-[44px] min-w-[120px] hover:shadow-glow transition-colors"
           >
             Update Exercise
               </button>
@@ -1413,10 +1411,10 @@ function AddExercise({ onClose, onSelectExercise }) {
         </div>
         
         {activeTab === "categories" && (
-          <div className={`${isIPhone ? "p-2" : isMobile ? "p-3" : "p-4"} border-t bg-gray-50 dark:bg-gray-800 rounded-b-lg`}>
+          <div className={`${isIPhone ? "p-2" : isMobile ? "p-3" : "p-4"} border-t bg-muted rounded-b-lg`}>
             <button
               onClick={onClose}
-              className={`w-full ${isIPhone ? "py-1.5 text-xs" : "py-2"} bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 border-none rounded-md text-gray-700 dark:text-white min-h-[36px] transition-colors`}
+              className={`w-full ${isIPhone ? "py-1.5 text-xs" : "py-2"} bg-muted hover:bg-accent hover:text-accent-foreground border-none rounded-md text-muted-foreground min-h-[36px] transition-colors`}
             >
               Cancel
             </button>

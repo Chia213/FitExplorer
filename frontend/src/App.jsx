@@ -9,6 +9,8 @@ import ScrollToTop from "./components/ScrollToTop";
 import MobileBottomNav from "./components/MobileBottomNav";
 import { NotificationProvider } from "./contexts/NotificationContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
+import { WorkoutSessionProvider } from "./contexts/WorkoutSessionContext";
+import WorkoutSessionIndicator from "./components/WorkoutSessionIndicator";
 import { Toaster } from 'react-hot-toast';
 
 // Components
@@ -134,9 +136,11 @@ function App() {
       <LanguageProvider>
         <WelcomeProvider>
           <NotificationProvider>
-            <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
-              <Navbar />
-              <Layout>
+            <WorkoutSessionProvider>
+              <div className="min-h-screen bg-background text-foreground">
+                <Navbar />
+                <WorkoutSessionIndicator />
+                <Layout>
                 <ScrollToTop />
                 <OAuthHandler />
                 <PageTransition>
@@ -210,7 +214,8 @@ function App() {
                   },
                 },
               }} />
-            </div>
+              </div>
+            </WorkoutSessionProvider>
           </NotificationProvider>
         </WelcomeProvider>
       </LanguageProvider>

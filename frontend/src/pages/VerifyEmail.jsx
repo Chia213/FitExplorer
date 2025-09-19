@@ -87,7 +87,7 @@ function VerifyEmail() {
             <p className="text-gray-600 dark:text-gray-300 mb-6">{message}</p>
             <button
               onClick={() => navigate("/login")}
-              className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg"
+              className="bg-primary hover:bg-primary/90 text-white font-bold py-2 px-6 rounded-lg"
             >
               Go to Login
             </button>

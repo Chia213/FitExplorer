@@ -1751,7 +1751,7 @@ function ProgramTracker() {
             
             <button
               onClick={completeAllExercises}
-              className="flex items-center justify-center p-3 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-lg hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors"
+              className="flex items-center justify-center p-3 bg-primary/10 dark:bg-primary/20 text-primary dark:text-primary rounded-lg hover:bg-primary/20 dark:hover:bg-primary/30 transition-colors"
             >
               <FaCheckSquare className="mr-2" /> Complete All
             </button>
@@ -2007,7 +2007,7 @@ function ProgramTracker() {
             {/* Weight Unit Toggle Button */}
             <button
               onClick={toggleWeightUnit}
-              className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 px-3 py-1 rounded-full flex items-center transition-colors hover:bg-green-200 dark:hover:bg-green-800"
+              className="bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary px-3 py-1 rounded-full flex items-center transition-colors hover:bg-primary/20 dark:hover:bg-primary/30"
               title={`Switch to ${weightUnit === "kg" ? "lbs" : "kg"}`}
             >
               <FaExchangeAlt className="mr-1" size={14} />
@@ -2232,7 +2232,7 @@ function ProgramTracker() {
                                 {/* Complete all button */}
                         <button
                                   onClick={() => completeDayExercises(day.exercises)}
-                                  className="text-sm px-3 py-1 rounded bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors focus:outline-none"
+                                  className="text-sm px-3 py-1 rounded bg-primary/10 dark:bg-primary/20 text-primary dark:text-primary hover:bg-primary/20 dark:hover:bg-primary/30 transition-colors focus:outline-none"
                         >
                                   <FaCheck className="inline-block mr-1" /> Complete All
                         </button>
@@ -2527,7 +2527,7 @@ function ProgramTracker() {
                 <div className="mt-6">
                   <button
                     onClick={completeWeek}
-                    className="w-full py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors flex items-center justify-center"
+                    className="w-full py-3 bg-primary hover:bg-primary/90 text-white rounded-lg transition-colors flex items-center justify-center"
                   >
                     <FaCheckCircle className="mr-2" /> Complete Week{" "}
                     {programProgress.currentWeek}

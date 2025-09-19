@@ -808,109 +808,120 @@ function Routines() {
     });
   };
 
-  // Add the filter UI right after the header buttons
+  // Mobile-optimized filter UI
   const renderFilterBar = () => (
-    <div className="filter-bar flex flex-wrap gap-2 items-center">
+    <div className="space-y-3">
       {/* Create New Folder Button */}
-      <button
-        onClick={handleCreateNewFolder}
-        className={`px-3 py-2 rounded-lg border flex items-center gap-2 ${
-          theme === "dark"
-            ? "bg-gray-700 text-white border-gray-600 hover:bg-gray-600"
-            : "bg-gray-100 text-gray-900 border-gray-300 hover:bg-gray-200"
-        }`}
-        title="Create New Folder"
-      >
-        <FaFolderPlus className="svg-icon" />
-        <span className="hidden sm:inline">New Folder</span>
-      </button>
-      
-      {/* Last Updated Filter */}
-      <div className="flex items-center">
-        <select
-          value={filterOptions.lastUpdated}
-          onChange={(e) => setFilterOptions(prev => ({ ...prev, lastUpdated: e.target.value }))}
-          className={`rounded-lg px-3 py-2 ${
-            theme === "dark"
-              ? "bg-gray-700 text-white border-gray-600"
-              : "bg-gray-100 text-gray-900 border-gray-300"
-          } border`}
-        >
-          <option value="all">All Time</option>
-          <option value="today">Updated Today</option>
-          <option value="week">Last 7 Days</option>
-          <option value="month">Last 30 Days</option>
-        </select>
-      </div>
-
-      {/* Exercise Count Filter */}
-      <div className="flex items-center">
-        <select
-          value={filterOptions.exerciseCount}
-          onChange={(e) => setFilterOptions(prev => ({ ...prev, exerciseCount: e.target.value }))}
-          className={`rounded-lg px-3 py-2 ${
-            theme === "dark"
-              ? "bg-gray-700 text-white border-gray-600"
-              : "bg-gray-100 text-gray-900 border-gray-300"
-          } border`}
-        >
-          <option value="all">Any Exercises</option>
-          <option value="none">No Exercises</option>
-          <option value="1-3">1-3 Exercises</option>
-          <option value="4-6">4-6 Exercises</option>
-          <option value="7+">7+ Exercises</option>
-        </select>
-      </div>
-
-      {/* Type Filter */}
-      <div className="flex items-center">
-        <select
-          value={filterOptions.type}
-          onChange={(e) => setFilterOptions(prev => ({ ...prev, type: e.target.value }))}
-          className={`rounded-lg px-3 py-2 ${
-            theme === "dark"
-              ? "bg-gray-700 text-white border-gray-600"
-              : "bg-gray-100 text-gray-900 border-gray-300"
-          } border`}
-        >
-          <option value="all">All Types</option>
-          <option value="cardio">Cardio Only</option>
-          <option value="strength">Strength Only</option>
-          <option value="mixed">Mixed</option>
-        </select>
-      </div>
-
-      {/* Sort Options */}
-      <div className="flex gap-2">
-        <select
-          value={filterOptions.sortBy}
-          onChange={(e) => setFilterOptions(prev => ({ ...prev, sortBy: e.target.value }))}
-          className={`rounded-lg px-3 py-2 ${
-            theme === "dark"
-              ? "bg-gray-700 text-white border-gray-600"
-              : "bg-gray-100 text-gray-900 border-gray-300"
-          } border`}
-        >
-          <option value="updated">Sort by Last Updated</option>
-          <option value="created">Sort by Created Date</option>
-          <option value="name">Sort by Name</option>
-          <option value="exercises">Sort by Exercise Count</option>
-        </select>
-
+      <div className="flex justify-center">
         <button
-          onClick={() => setFilterOptions(prev => ({ 
-            ...prev, 
-            sortOrder: prev.sortOrder === "asc" ? "desc" : "asc" 
-          }))}
-          className={`px-3 py-2 rounded-lg border ${
+          onClick={handleCreateNewFolder}
+          className={`px-4 py-2 rounded-lg border flex items-center gap-2 text-sm font-medium min-h-[44px] ${
             theme === "dark"
               ? "bg-gray-700 text-white border-gray-600 hover:bg-gray-600"
               : "bg-gray-100 text-gray-900 border-gray-300 hover:bg-gray-200"
-          }`}
-          title={filterOptions.sortOrder === "asc" ? "Ascending" : "Descending"}
+          } transition-all`}
+          title="Create New Folder"
         >
-          <FaSort className={`svg-icon ${filterOptions.sortOrder === "asc" ? "transform rotate-180" : ""}`} />
+          <FaFolderPlus className="text-sm" />
+          <span>New Folder</span>
         </button>
+      </div>
+      
+      {/* Filter Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        {/* Last Updated Filter */}
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-gray-600 dark:text-gray-400">Last Updated</label>
+          <select
+            value={filterOptions.lastUpdated}
+            onChange={(e) => setFilterOptions(prev => ({ ...prev, lastUpdated: e.target.value }))}
+            className={`w-full rounded-lg px-3 py-2 text-sm font-medium min-h-[44px] ${
+              theme === "dark"
+                ? "bg-gray-700 text-white border-gray-600 focus:border-teal-500"
+                : "bg-gray-50 text-gray-900 border-gray-300 focus:border-teal-500"
+            } border focus:outline-none focus:ring-2 focus:ring-teal-500/20 transition-all`}
+          >
+            <option value="all">All Time</option>
+            <option value="today">Updated Today</option>
+            <option value="week">Last 7 Days</option>
+            <option value="month">Last 30 Days</option>
+          </select>
+        </div>
+
+        {/* Exercise Count Filter */}
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-gray-600 dark:text-gray-400">Exercise Count</label>
+          <select
+            value={filterOptions.exerciseCount}
+            onChange={(e) => setFilterOptions(prev => ({ ...prev, exerciseCount: e.target.value }))}
+            className={`w-full rounded-lg px-3 py-2 text-sm font-medium min-h-[44px] ${
+              theme === "dark"
+                ? "bg-gray-700 text-white border-gray-600 focus:border-teal-500"
+                : "bg-gray-50 text-gray-900 border-gray-300 focus:border-teal-500"
+            } border focus:outline-none focus:ring-2 focus:ring-teal-500/20 transition-all`}
+          >
+            <option value="all">Any Exercises</option>
+            <option value="none">No Exercises</option>
+            <option value="1-3">1-3 Exercises</option>
+            <option value="4-6">4-6 Exercises</option>
+            <option value="7+">7+ Exercises</option>
+          </select>
+        </div>
+
+        {/* Type Filter */}
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-gray-600 dark:text-gray-400">Type</label>
+          <select
+            value={filterOptions.type}
+            onChange={(e) => setFilterOptions(prev => ({ ...prev, type: e.target.value }))}
+            className={`w-full rounded-lg px-3 py-2 text-sm font-medium min-h-[44px] ${
+              theme === "dark"
+                ? "bg-gray-700 text-white border-gray-600 focus:border-teal-500"
+                : "bg-gray-50 text-gray-900 border-gray-300 focus:border-teal-500"
+            } border focus:outline-none focus:ring-2 focus:ring-teal-500/20 transition-all`}
+          >
+            <option value="all">All Types</option>
+            <option value="cardio">Cardio Only</option>
+            <option value="strength">Strength Only</option>
+            <option value="mixed">Mixed</option>
+          </select>
+        </div>
+
+        {/* Sort Options */}
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-gray-600 dark:text-gray-400">Sort By</label>
+          <div className="flex gap-2">
+            <select
+              value={filterOptions.sortBy}
+              onChange={(e) => setFilterOptions(prev => ({ ...prev, sortBy: e.target.value }))}
+              className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium min-h-[44px] ${
+                theme === "dark"
+                  ? "bg-gray-700 text-white border-gray-600 focus:border-teal-500"
+                  : "bg-gray-50 text-gray-900 border-gray-300 focus:border-teal-500"
+              } border focus:outline-none focus:ring-2 focus:ring-teal-500/20 transition-all`}
+            >
+              <option value="updated">Last Updated</option>
+              <option value="created">Created Date</option>
+              <option value="name">Name</option>
+              <option value="exercises">Exercise Count</option>
+            </select>
+
+            <button
+              onClick={() => setFilterOptions(prev => ({ 
+                ...prev, 
+                sortOrder: prev.sortOrder === "asc" ? "desc" : "asc" 
+              }))}
+              className={`px-3 py-2 rounded-lg border text-sm font-medium min-h-[44px] min-w-[44px] flex items-center justify-center ${
+                theme === "dark"
+                  ? "bg-gray-700 text-white border-gray-600 hover:bg-gray-600"
+                  : "bg-gray-50 text-gray-900 border-gray-300 hover:bg-gray-200"
+              } transition-all`}
+              title={filterOptions.sortOrder === "asc" ? "Ascending" : "Descending"}
+            >
+              <FaSort className={`text-sm ${filterOptions.sortOrder === "asc" ? "transform rotate-180" : ""}`} />
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -1011,7 +1022,7 @@ function Routines() {
       <div className="space-y-4">
         {filteredRoutines.length === 0 ? (
           <div
-            className={`text-center p-6 rounded-lg ${
+            className={`text-center p-4 sm:p-6 rounded-lg ${
               theme === "dark" ? "bg-gray-800" : "bg-white"
             }`}
           >
@@ -1031,39 +1042,62 @@ function Routines() {
               key={routine.id}
               className={`${
                 theme === "dark" ? "bg-gray-800" : "bg-white"
-              } rounded-lg overflow-hidden shadow`}
+              } rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-200`}
             >
-              <div className="p-4">
-                <div className="flex justify-between items-center">
-                  <h3 className="text-xl font-semibold">{routine.name}</h3>
-                  <div className="flex space-x-2 routine-actions">
+              <div className="p-4 md:p-6">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-lg md:text-xl font-semibold text-gray-900 dark:text-white truncate">{routine.name}</h3>
+                    <div className="flex items-center gap-2 mt-1 text-sm text-gray-500 dark:text-gray-400">
+                      <span>
+                        {routine.exercises?.length 
+                          ? `${routine.exercises.length} Exercise${
+                              routine.exercises.length !== 1 ? "s" : ""
+                            }`
+                          : "0 Exercises"}
+                      </span>
+                      {routine.created_at && (
+                        <>
+                          <span>•</span>
+                          <span>Created {new Date(routine.created_at).toLocaleDateString('en-GB')}</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Mobile-optimized action buttons */}
+                  <div className="flex flex-wrap gap-2 sm:gap-3">
                     <button
                       onClick={() => handleStartWorkout(routine)}
-                      className="bg-teal-500 hover:bg-teal-600 text-white p-2 rounded-full routine-card-button"
+                      className="bg-teal-500 hover:bg-teal-600 text-white px-3 py-2 rounded-lg flex items-center gap-2 text-sm font-medium min-h-[44px] transition-all shadow-md hover:shadow-lg"
                       title="Start routine"
                     >
-                      <FaPlay />
+                      <FaPlay className="text-sm" />
+                      <span className="hidden sm:inline">Start</span>
                     </button>
                     <button
                       onClick={() => openFolderModal(routine.id)}
-                      className="bg-yellow-500 hover:bg-yellow-600 text-white p-2 rounded-full routine-card-button"
+                      className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-2 rounded-lg flex items-center gap-2 text-sm font-medium min-h-[44px] transition-all shadow-md hover:shadow-lg"
                       title="Move to folder"
                     >
-                      <FaFolder />
+                      <FaFolder className="text-sm" />
+                      <span className="hidden sm:inline">Folder</span>
                     </button>
                     <button
                       onClick={() => handleStartEditRoutine(routine)}
-                      className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-full routine-card-button"
+                      className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-lg flex items-center gap-2 text-sm font-medium min-h-[44px] transition-all shadow-md hover:shadow-lg"
                       title="Edit routine"
                     >
-                      <FaEdit />
+                      <FaEdit className="text-sm" />
+                      <span className="hidden sm:inline">Edit</span>
                     </button>
                     <button
                       onClick={() => handleDeleteRoutine(routine.id)}
-                      className="bg-red-500 hover:bg-red-600 text-white p-2 rounded-full routine-card-button"
+                      className="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg flex items-center gap-2 text-sm font-medium min-h-[44px] transition-all shadow-md hover:shadow-lg"
                       title="Delete routine"
                     >
-                      <FaTrash />
+                      <FaTrash className="text-sm" />
+                      <span className="hidden sm:inline">Delete</span>
                     </button>
                   </div>
                 </div>
@@ -1104,7 +1138,7 @@ function Routines() {
                       {routine.exercises?.map((exercise, index) => (
                         <div
                           key={index}
-                          className={`p-3 rounded ${
+                          className={`p-2 sm:p-3 rounded ${
                             theme === "dark" ? "bg-gray-800" : "bg-white"
                           }`}
                         >
@@ -1123,8 +1157,8 @@ function Routines() {
                           <div className="mt-2">
                             <h6 className="text-sm mb-1">Sets:</h6>
                             
-                            {/* Table Header Based on Exercise Type */}
-                            <div className="grid gap-2 mb-2 text-xs font-semibold">
+                            {/* Mobile-optimized table headers */}
+                            <div className="hidden sm:grid gap-2 mb-2 text-xs font-semibold">
                               {exercise.is_cardio ? (
                                 <div className="grid grid-cols-6 gap-2">
                                   <div>Set</div>
@@ -1145,116 +1179,112 @@ function Routines() {
                               )}
                             </div>
                             
-                            <div className="space-y-1">
-                              {exercise.sets?.map((set, setIndex) => (
-                                <div
-                                  key={setIndex}
-                                  className={`text-sm p-1 rounded ${
-                                    set.is_warmup 
-                                      ? theme === "dark" ? "bg-blue-900/30" : "bg-blue-100"
-                                      : set.is_drop_set
-                                      ? theme === "dark" ? "bg-red-900/30" : "bg-red-100" 
-                                      : set.is_superset
-                                      ? theme === "dark" ? "bg-purple-900/30" : "bg-purple-100"
-                                      : set.is_amrap
-                                      ? theme === "dark" ? "bg-green-900/30" : "bg-green-100"
-                                      : set.is_restpause
-                                      ? theme === "dark" ? "bg-yellow-900/30" : "bg-yellow-100"
-                                      : theme === "dark"
-                                      ? "bg-gray-700/50"
-                                      : "bg-gray-50"
-                                  }`}
-                                >
-                                  {exercise.is_cardio ? (
-                                    <div className="grid grid-cols-6 gap-2 items-center">
-                                      <div className="font-medium">Set {setIndex + 1}</div>
-                                      <div>{set.duration ? `${set.duration} min` : '-'}</div>
-                                      <div>{set.distance ? `${set.distance} km` : '-'}</div>
-                                      <div>{set.intensity || 'Medium'}</div>
-                                      <div>
-                                        {(set.is_warmup || set.is_drop_set || set.is_superset || 
-                                         set.is_amrap || set.is_restpause || set.is_pyramid || set.is_giant) ? (
-                                          <span className={`text-xs px-1.5 py-0.5 rounded-full ${
-                                            set.is_warmup 
-                                              ? "bg-blue-500 text-white" 
-                                              : set.is_drop_set 
-                                              ? "bg-red-500 text-white"
-                                              : set.is_superset
-                                              ? "bg-purple-500 text-white"
-                                              : set.is_amrap
-                                              ? "bg-green-500 text-white"
-                                              : set.is_restpause
-                                              ? "bg-yellow-500 text-black"
-                                              : set.is_pyramid
-                                              ? "bg-orange-500 text-white"
-                                              : "bg-pink-500 text-white"
-                                          }`}>
-                                            {set.is_warmup 
-                                              ? "Warm-up" 
-                                              : set.is_drop_set 
-                                              ? `Drop Set${set.drop_number ? ` #${set.drop_number}` : ""}`
-                                              : set.is_superset
-                                              ? `Superset${set.superset_with ? ` with ${set.superset_with}` : ""}`
-                                              : set.is_amrap
-                                              ? "AMRAP"
-                                              : set.is_restpause
-                                              ? `Rest-Pause${set.rest_pauses ? ` (${set.rest_pauses})` : ""}`
-                                              : set.is_pyramid
-                                              ? `Pyramid${set.pyramid_type ? ` (${set.pyramid_type})` : ""}${set.pyramid_step ? ` Step ${set.pyramid_step}` : ""}`
-                                              : `Giant Set${Array.isArray(set.giant_with) && set.giant_with.length > 0 ? ` with ${set.giant_with.join(", ")}` : ""}`}
-                                          </span>
-                                        ) : (
-                                          <span>Normal</span>
-                                        )}
-                                      </div>
-                                      <div className="italic text-gray-500">{set.notes || '-'}</div>
-                                    </div>
-                                  ) : (
-                                    <div className="grid grid-cols-5 gap-2 items-center">
-                                      <div className="font-medium">Set {setIndex + 1}</div>
-                                      <div>{set.weight ? `${set.weight} ${routine.weight_unit || 'kg'}` : '-'}</div>
-                                      <div>{set.reps ? `${set.reps}` : '-'}</div>
-                                      <div>
-                                        {(set.is_warmup || set.is_drop_set || set.is_superset || 
-                                         set.is_amrap || set.is_restpause || set.is_pyramid || set.is_giant) ? (
-                                          <span className={`text-xs px-1.5 py-0.5 rounded-full ${
-                                            set.is_warmup 
-                                              ? "bg-blue-500 text-white" 
-                                              : set.is_drop_set 
-                                              ? "bg-red-500 text-white"
-                                              : set.is_superset
-                                              ? "bg-purple-500 text-white"
-                                              : set.is_amrap
-                                              ? "bg-green-500 text-white"
-                                              : set.is_restpause
-                                              ? "bg-yellow-500 text-black"
-                                              : set.is_pyramid
-                                              ? "bg-orange-500 text-white"
-                                              : "bg-pink-500 text-white"
-                                          }`}>
-                                            {set.is_warmup 
-                                              ? "Warm-up" 
-                                              : set.is_drop_set 
-                                              ? `Drop Set${set.drop_number ? ` #${set.drop_number}` : ""}`
-                                              : set.is_superset
-                                              ? `Superset${set.superset_with ? ` with ${set.superset_with}` : ""}`
-                                              : set.is_amrap
-                                              ? "AMRAP"
-                                              : set.is_restpause
-                                              ? `Rest-Pause${set.rest_pauses ? ` (${set.rest_pauses})` : ""}`
-                                              : set.is_pyramid
-                                              ? `Pyramid${set.pyramid_type ? ` (${set.pyramid_type})` : ""}${set.pyramid_step ? ` Step ${set.pyramid_step}` : ""}`
-                                              : `Giant Set${Array.isArray(set.giant_with) && set.giant_with.length > 0 ? ` with ${set.giant_with.join(", ")}` : ""}`}
-                                          </span>
-                                        ) : (
-                                          <span>Normal</span>
-                                        )}
-                                      </div>
-                                      <div className="italic text-gray-500">{set.notes || '-'}</div>
-                                    </div>
-                                  )}
-                                </div>
-                              ))}
+                            {/* History-style table layout */}
+                            <div className="overflow-x-auto -mx-3">
+                              <div className="inline-block min-w-full align-middle px-3">
+                                <table className="min-w-full divide-y divide-border text-xs">
+                                  <thead className="bg-muted">
+                                    <tr>
+                                      <th scope="col" className="py-1 pl-1 pr-2 text-left font-medium text-muted-foreground tracking-wider">#</th>
+                                      {exercise.is_cardio ? (
+                                        <>
+                                          <th scope="col" className="py-1 px-2 text-left font-medium text-muted-foreground tracking-wider">Distance</th>
+                                          <th scope="col" className="py-1 px-2 text-left font-medium text-muted-foreground tracking-wider">Duration</th>
+                                          <th scope="col" className="py-1 px-2 text-left font-medium text-muted-foreground tracking-wider">Intensity</th>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <th scope="col" className="py-1 px-2 text-left font-medium text-muted-foreground tracking-wider">Weight</th>
+                                          <th scope="col" className="py-1 px-2 text-left font-medium text-muted-foreground tracking-wider">Reps</th>
+                                        </>
+                                      )}
+                                      <th scope="col" className="py-1 px-2 text-left font-medium text-muted-foreground tracking-wider">Set Type</th>
+                                      <th scope="col" className="py-1 px-2 text-left font-medium text-muted-foreground tracking-wider">Notes</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody className="bg-card divide-y divide-border">
+                                    {exercise.sets && Array.isArray(exercise.sets) ? (
+                                      exercise.sets.map((set, sIndex) => (
+                                        <tr
+                                          key={sIndex}
+                                          className={sIndex % 2 === 0 ? "bg-card" : "bg-muted"}
+                                        >
+                                          <td className="py-1 pl-1 pr-2 whitespace-nowrap">{sIndex + 1}</td>
+                                          {exercise.is_cardio ? (
+                                            <>
+                                              <td className="py-1 px-2 whitespace-nowrap">
+                                                {set.distance ? `${set.distance} km` : "-"}
+                                              </td>
+                                              <td className="py-1 px-2 whitespace-nowrap">
+                                                {set.duration ? `${set.duration} min` : "-"}
+                                              </td>
+                                              <td className="py-1 px-2 whitespace-nowrap">
+                                                {set.intensity !== undefined ? set.intensity : "-"}
+                                              </td>
+                                            </>
+                                          ) : (
+                                            <>
+                                              <td className="py-1 px-2 whitespace-nowrap">
+                                                {set.weight ? `${set.weight} ${routine.weight_unit || 'kg'}` : "-"}
+                                              </td>
+                                              <td className="py-1 px-2 whitespace-nowrap">
+                                                {set.reps || "-"}
+                                              </td>
+                                            </>
+                                          )}
+                                          <td className="py-1 px-2 whitespace-nowrap">
+                                            {set.is_warmup ? (
+                                              <span className="inline-flex px-1 text-[10px] rounded-full bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200">
+                                                Warm
+                                              </span>
+                                            ) : set.is_drop_set ? (
+                                              <span className="inline-flex px-1 text-[10px] rounded-full bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200">
+                                                Drop
+                                              </span>
+                                            ) : set.is_superset ? (
+                                              <span className="inline-flex px-1 text-[10px] rounded-full bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200">
+                                                Super
+                                              </span>
+                                            ) : set.is_amrap ? (
+                                              <span className="inline-flex px-1 text-[10px] rounded-full bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">
+                                                AMRAP
+                                              </span>
+                                            ) : set.is_restpause ? (
+                                              <span className="inline-flex px-1 text-[10px] rounded-full bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200">
+                                                Rest-P
+                                              </span>
+                                            ) : set.is_pyramid ? (
+                                              <span className="inline-flex px-1 text-[10px] rounded-full bg-pink-100 dark:bg-pink-900 text-pink-800 dark:text-pink-200">
+                                                Pyra
+                                              </span>
+                                            ) : set.is_giant ? (
+                                              <span className="inline-flex px-1 text-[10px] rounded-full bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200">
+                                                Giant
+                                              </span>
+                                            ) : (
+                                              <span className="inline-flex px-1 text-[10px] rounded-full bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-300">
+                                                Normal
+                                              </span>
+                                            )}
+                                          </td>
+                                          <td className="py-1 px-2 text-xs max-w-[150px] truncate">
+                                            {set.notes || "-"}
+                                          </td>
+                                        </tr>
+                                      ))
+                                    ) : (
+                                      <tr>
+                                        <td
+                                          colSpan={exercise.is_cardio ? "5" : "4"}
+                                          className="py-2 text-center text-muted-foreground"
+                                        >
+                                          No sets recorded
+                                        </td>
+                                      </tr>
+                                    )}
+                                  </tbody>
+                                </table>
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -1618,121 +1648,128 @@ function Routines() {
       theme === "dark" ? "bg-gray-900" : "bg-gray-100"
     } ${theme === "dark" ? "text-white" : "text-gray-900"} routines-container`}>
       {successMessage && (
-        <div className="bg-green-500 text-white p-3 rounded mb-4">
+        <div className="bg-green-500 text-white p-3 rounded-lg mb-4 text-sm mx-4 mt-4 shadow-lg">
           {successMessage}
         </div>
       )}
 
       {/* Error message */}
       {error && (
-        <div className="bg-red-500 text-white p-3 rounded mb-4">{error}</div>
+        <div className="bg-red-500 text-white p-3 rounded-lg mb-4 text-sm mx-4 mt-4 shadow-lg">{error}</div>
       )}
 
-      <div className="max-w-4xl mx-auto p-6 routines-page">
-        <div className="flex flex-wrap justify-between items-center mb-6 routines-header">
-          <h1 className="text-2xl font-bold mb-2 sm:mb-0">My Routines</h1>
-          <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+      <div className="max-w-4xl mx-auto p-4 md:p-6 routines-page">
+        {/* Mobile-optimized header */}
+        <div className="mb-6">
+          {/* Title and view toggle */}
+          <div className="flex items-center justify-between mb-4">
+            <h1 className="text-xl md:text-2xl font-bold">My Routines</h1>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={toggleWeightUnit}
+                className={`flex items-center px-3 py-2 rounded-lg transition-colors text-sm font-medium min-h-[44px] ${
+                  theme === "dark"
+                    ? "bg-gray-700 text-gray-200 hover:bg-gray-600"
+                    : "bg-gray-200 text-gray-800 hover:bg-gray-300"
+                }`}
+              >
+                <FaBalanceScale className="mr-2 text-sm" />
+                <span>{weightUnit.toUpperCase()}</span>
+              </button>
+            </div>
+          </div>
+
+          {/* View toggle buttons */}
+          <div className="mb-4">
             <div
               className={`${
                 theme === "dark" ? "bg-gray-800" : "bg-white"
-              } rounded-lg overflow-hidden flex shadow`}
+              } rounded-xl overflow-hidden flex shadow-lg`}
             >
               <button
                 onClick={() => setActiveView("all")}
-                className={`px-4 py-2 ${
+                className={`px-4 py-3 text-sm font-medium flex-1 min-h-[44px] transition-all ${
                   activeView === "all"
-                    ? "bg-teal-500 text-white"
+                    ? "bg-teal-500 text-white shadow-lg"
                     : theme === "dark"
-                    ? "hover:bg-gray-700"
-                    : "hover:bg-gray-100"
+                    ? "hover:bg-gray-700 text-gray-300"
+                    : "hover:bg-gray-100 text-gray-700"
                 }`}
               >
                 All Routines
               </button>
               <button
                 onClick={() => setActiveView("folders")}
-                className={`px-4 py-2 ${
+                className={`px-4 py-3 text-sm font-medium flex-1 min-h-[44px] transition-all ${
                   activeView === "folders"
-                    ? "bg-teal-500 text-white"
+                    ? "bg-teal-500 text-white shadow-lg"
                     : theme === "dark"
-                    ? "hover:bg-gray-700"
-                    : "hover:bg-gray-100"
+                    ? "hover:bg-gray-700 text-gray-300"
+                    : "hover:bg-gray-100 text-gray-700"
                 }`}
               >
                 By Folder
               </button>
             </div>
-            <button
-              onClick={toggleWeightUnit}
-              className={`flex items-center ${
-                theme === "dark"
-                  ? "bg-gray-700 text-gray-200 hover:bg-gray-600"
-                  : "bg-gray-200 text-gray-800 hover:bg-gray-300"
-              } px-3 py-2 rounded-lg transition-colors`}
-            >
-              <FaBalanceScale className="mr-2" />
-              <span>{weightUnit.toUpperCase()}</span>
-            </button>
           </div>
-          <div className="flex flex-wrap gap-2 mt-2 w-full sm:w-auto sm:mt-0 routines-action-buttons">
+
+          {/* Action buttons */}
+          <div className="flex flex-wrap gap-2 mb-4">
             <button
               onClick={() => navigate("/create-routine")}
-              className="bg-blue-500 hover:bg-blue-600 px-4 py-2 text-white rounded flex-grow sm:flex-grow-0"
+              className="bg-blue-500 hover:bg-blue-600 px-4 py-3 text-white rounded-lg flex items-center justify-center flex-1 sm:flex-none text-sm font-medium min-h-[44px] shadow-lg transition-all"
             >
-              <span className="flex items-center justify-center">
-                <FaPlus className="mr-2" />
-                Create New
-              </span>
+              <FaPlus className="mr-2 text-sm" />
+              Create New Routine
             </button>
             {routines.length > 0 && (
-              <button
-                onClick={() => setShowDeleteAllModal(true)}
-                className="bg-red-500 hover:bg-red-600 px-4 py-2 text-white rounded flex items-center justify-center flex-grow sm:flex-grow-0"
-                title="Delete all routines"
-              >
-                <FaTrash className="mr-2" />
-                <span className="hidden sm:inline">Delete All</span>
-                <span className="sm:hidden">Delete</span>
-              </button>
-            )}
-            {routines.length > 0 && (
-              <button
-                onClick={() => {
-                  setShowPersonalRecordsModal(true);
-                  fetchPersonalRecords();
-                }}
-                className="bg-green-500 hover:bg-green-600 px-4 py-2 text-white rounded flex items-center justify-center flex-grow sm:flex-grow-0"
-                title="View personal records"
-              >
-                <FaTrophy className="mr-2" />
-                <span className="hidden sm:inline">Personal Records</span>
-                <span className="sm:hidden">PRs</span>
-              </button>
+              <>
+                <button
+                  onClick={() => setShowDeleteAllModal(true)}
+                  className="bg-red-500 hover:bg-red-600 px-4 py-3 text-white rounded-lg flex items-center justify-center flex-1 sm:flex-none text-sm font-medium min-h-[44px] shadow-lg transition-all"
+                  title="Delete all routines"
+                >
+                  <FaTrash className="mr-2 text-sm" />
+                  <span className="hidden sm:inline">Delete All</span>
+                  <span className="sm:hidden">Delete All</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setShowPersonalRecordsModal(true);
+                    fetchPersonalRecords();
+                  }}
+                  className="bg-primary hover:bg-primary/90 px-4 py-3 text-white rounded-lg flex items-center justify-center flex-1 sm:flex-none text-sm font-medium min-h-[44px] shadow-lg transition-all"
+                  title="View personal records"
+                >
+                  <FaTrophy className="mr-2 text-sm" />
+                  <span className="hidden sm:inline">Personal Records</span>
+                  <span className="sm:hidden">PRs</span>
+                </button>
+              </>
             )}
           </div>
         </div>
 
-        {/* Enhanced search with responsive design */}
-        <div className={`mb-4 ${
+        {/* Mobile-optimized search and filters */}
+        <div className={`mb-6 ${
           theme === "dark" ? "bg-gray-800" : "bg-white"
-        } rounded-lg p-3 shadow-sm routines-filters`}>
-          <div className="relative mb-2">
-            <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+        } rounded-xl p-4 shadow-lg routines-filters`}>
+          <div className="relative mb-4">
             <input
               type="text"
-              placeholder="Search routines..."
+              placeholder="Search Routines..."
               value={filterOptions.search}
               onChange={(e) =>
                 setFilterOptions({ ...filterOptions, search: e.target.value })
               }
-              className={`w-full pl-10 pr-4 py-2 rounded-lg ${
+              className={`w-full px-4 py-3 rounded-lg text-sm font-medium min-h-[44px] ${
                 theme === "dark"
-                  ? "bg-gray-700 text-white border-gray-600"
-                  : "bg-gray-50 text-gray-900 border-gray-300"
-              } border routines-search-input`}
+                  ? "bg-gray-700 text-white border-gray-600 focus:border-teal-500"
+                  : "bg-gray-50 text-gray-900 border-gray-300 focus:border-teal-500"
+              } border focus:outline-none focus:ring-2 focus:ring-teal-500/20 transition-all`}
             />
           </div>
-          <div className="mt-2 sm:mt-0">
+          <div className="space-y-3">
             {renderFilterBar()}
           </div>
         </div>
@@ -1752,7 +1789,7 @@ function Routines() {
             </p>
             <button
               onClick={() => navigate("/create-routine")}
-              className="mt-4 bg-teal-500 hover:bg-teal-600 px-4 py-2 text-white rounded"
+              className="mt-4 bg-teal-500 hover:bg-teal-600 px-3 sm:px-4 py-1.5 sm:py-2 text-white rounded text-sm"
             >
               Create First Routine
             </button>

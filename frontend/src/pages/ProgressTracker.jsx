@@ -300,32 +300,33 @@ function ProgressTracker() {
 
     return (
       <>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div className="bg-white dark:bg-gray-700 rounded-lg shadow p-4">
-            <h3 className="text-sm text-gray-500 dark:text-gray-400 mb-1">
+        {/* Mobile-optimized weight stats cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
+          <div className="bg-white dark:bg-gray-700 rounded-xl shadow-sm border border-gray-200 dark:border-gray-600 p-4">
+            <h3 className="text-sm text-gray-600 dark:text-gray-400 mb-2 font-medium">
               Current Weight
             </h3>
-            <p className="text-2xl font-bold">
+            <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
               {weightData.length > 0
                 ? `${weightData[weightData.length - 1].bodyweight} kg`
                 : "N/A"}
             </p>
           </div>
 
-          <div className="bg-white dark:bg-gray-700 rounded-lg shadow p-4">
-            <h3 className="text-sm text-gray-500 dark:text-gray-400 mb-1">
+          <div className="bg-white dark:bg-gray-700 rounded-xl shadow-sm border border-gray-200 dark:border-gray-600 p-4">
+            <h3 className="text-sm text-gray-600 dark:text-gray-400 mb-2 font-medium">
               Change
             </h3>
-            <p className="text-2xl font-bold flex items-center">
+            <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white flex items-center">
               {weightChange.value} kg {renderChangeIndicator(weightChange)}
             </p>
           </div>
 
-          <div className="bg-white dark:bg-gray-700 rounded-lg shadow p-4">
-            <h3 className="text-sm text-gray-500 dark:text-gray-400 mb-1">
+          <div className="bg-white dark:bg-gray-700 rounded-xl shadow-sm border border-gray-200 dark:border-gray-600 p-4">
+            <h3 className="text-sm text-gray-600 dark:text-gray-400 mb-2 font-medium">
               Total Change
             </h3>
-            <p className="text-2xl font-bold">
+            <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
               {weightData.length > 0
                 ? `${(
                     weightData[weightData.length - 1].bodyweight -
@@ -335,14 +336,14 @@ function ProgressTracker() {
             </p>
           </div>
 
-          <div className="bg-white dark:bg-gray-700 rounded-lg shadow p-4">
-            <h3 className="text-sm text-gray-500 dark:text-gray-400 mb-1">
+          <div className="bg-white dark:bg-gray-700 rounded-xl shadow-sm border border-gray-200 dark:border-gray-600 p-4">
+            <h3 className="text-sm text-gray-600 dark:text-gray-400 mb-2 font-medium">
               Weight Goal
             </h3>
             {goals.weight.target ? (
               <>
-                <p className="text-2xl font-bold">{goals.weight.target} kg</p>
-                <p className="text-sm text-gray-500">
+                <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{goals.weight.target} kg</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                   By {new Date(goals.weight.deadline).toLocaleDateString()}
                 </p>
                 <button 
@@ -350,7 +351,7 @@ function ProgressTracker() {
                     setActiveGoal('weight');
                     setShowGoalModal(true);
                   }}
-                  className="text-blue-500 text-sm mt-2 hover:underline"
+                  className="text-blue-500 text-xs sm:text-sm mt-1 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
                 >
                   Update Goal
                 </button>
@@ -361,7 +362,7 @@ function ProgressTracker() {
                   setActiveGoal('weight');
                   setShowGoalModal(true);
                 }}
-                className="mt-2 text-blue-500 hover:underline"
+                className="mt-1 text-blue-500 text-xs sm:text-sm hover:underline dark:text-blue-400 dark:hover:text-blue-300"
               >
                 Set Goal
               </button>
@@ -369,20 +370,20 @@ function ProgressTracker() {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-700 rounded-lg shadow p-4 mb-6">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold">Weight Progression</h3>
+        <div className="bg-white dark:bg-gray-700 rounded shadow p-2 sm:p-3 md:p-4 mb-4 sm:mb-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 sm:mb-4">
+            <h3 className="text-base sm:text-lg font-semibold mb-2 sm:mb-0">Weight Progression</h3>
             <div className="flex items-center">
-              <label className="mr-2 text-sm">Compare with previous period</label>
+              <label className="mr-2 text-xs sm:text-sm">Compare with previous period</label>
               <input
                 type="checkbox"
                 checked={compareMode}
                 onChange={toggleCompareMode}
-                className="form-checkbox h-5 w-5 text-blue-500"
+                className="form-checkbox h-4 w-4 sm:h-5 sm:w-5 text-blue-500"
               />
             </div>
           </div>
-          <div className="h-72">
+          <div className="h-48 sm:h-60 md:h-72">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart>
                 <CartesianGrid strokeDasharray="3 3" />
@@ -415,20 +416,20 @@ function ProgressTracker() {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-700 rounded-lg shadow p-4 mb-6">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold">Weight Progression</h3>
+        <div className="bg-white dark:bg-gray-700 rounded shadow p-2 sm:p-3 md:p-4 mb-4 sm:mb-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 sm:mb-4">
+            <h3 className="text-base sm:text-lg font-semibold mb-2 sm:mb-0">Weight Progression</h3>
             <div className="flex items-center">
-              <label className="mr-2 text-sm">Smooth data</label>
+              <label className="mr-2 text-xs sm:text-sm">Smooth data</label>
               <input
                 type="checkbox"
                 checked={smoothData}
                 onChange={() => setSmoothData(!smoothData)}
-                className="form-checkbox h-5 w-5 text-blue-500"
+                className="form-checkbox h-4 w-4 sm:h-5 sm:w-5 text-blue-500"
               />
             </div>
           </div>
-          <div className="h-72">
+          <div className="h-48 sm:h-60 md:h-72">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart>
                 <CartesianGrid strokeDasharray="3 3" />
@@ -483,48 +484,48 @@ function ProgressTracker() {
 
     return (
       <>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div className="bg-white dark:bg-gray-700 rounded-lg shadow p-4">
-            <h3 className="text-sm text-gray-500 dark:text-gray-400 mb-1">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-2 sm:gap-3 md:gap-4 mb-4 sm:mb-6">
+          <div className="bg-white dark:bg-gray-700 rounded shadow p-2 sm:p-3 md:p-4">
+            <h3 className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-1">
               Bench Press
             </h3>
-            <p className="text-2xl font-bold">
+            <p className="text-lg sm:text-xl md:text-2xl font-bold">
               {strengthData[strengthData.length - 1].benchPress} kg
             </p>
-            <p className="text-sm flex items-center mt-1">
+            <p className="text-xs sm:text-sm flex items-center mt-1">
               {benchChange.value} kg {renderChangeIndicator(benchChange, true)}
             </p>
           </div>
 
-          <div className="bg-white dark:bg-gray-700 rounded-lg shadow p-4">
-            <h3 className="text-sm text-gray-500 dark:text-gray-400 mb-1">
+          <div className="bg-white dark:bg-gray-700 rounded shadow p-2 sm:p-3 md:p-4">
+            <h3 className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-1">
               Squat
             </h3>
-            <p className="text-2xl font-bold">
+            <p className="text-lg sm:text-xl md:text-2xl font-bold">
               {strengthData[strengthData.length - 1].squat} kg
             </p>
-            <p className="text-sm flex items-center mt-1">
+            <p className="text-xs sm:text-sm flex items-center mt-1">
               {squatChange.value} kg {renderChangeIndicator(squatChange, true)}
             </p>
           </div>
 
-          <div className="bg-white dark:bg-gray-700 rounded-lg shadow p-4">
-            <h3 className="text-sm text-gray-500 dark:text-gray-400 mb-1">
+          <div className="bg-white dark:bg-gray-700 rounded shadow p-2 sm:p-3 md:p-4">
+            <h3 className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-1">
               Deadlift
             </h3>
-            <p className="text-2xl font-bold">
+            <p className="text-lg sm:text-xl md:text-2xl font-bold">
               {strengthData[strengthData.length - 1].deadlift} kg
             </p>
-            <p className="text-sm flex items-center mt-1">
+            <p className="text-xs sm:text-sm flex items-center mt-1">
               {deadliftChange.value} kg{" "}
               {renderChangeIndicator(deadliftChange, true)}
             </p>
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-700 rounded-lg shadow p-4 mb-6">
-          <h3 className="text-lg font-semibold mb-4">Strength Progression</h3>
-          <div className="h-72">
+        <div className="bg-white dark:bg-gray-700 rounded shadow p-2 sm:p-3 md:p-4 mb-4 sm:mb-6">
+          <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Strength Progression</h3>
+          <div className="h-48 sm:h-60 md:h-72">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={processedData}>
                 <CartesianGrid strokeDasharray="3 3" />
@@ -576,37 +577,37 @@ function ProgressTracker() {
 
     return (
       <>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          <div className="bg-white dark:bg-gray-700 rounded-lg shadow p-4">
-            <h3 className="text-sm text-gray-500 dark:text-gray-400 mb-1">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-3 md:gap-4 mb-4 sm:mb-6">
+          <div className="bg-white dark:bg-gray-700 rounded shadow p-2 sm:p-3 md:p-4">
+            <h3 className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-1">
               Running Pace
             </h3>
-            <p className="text-2xl font-bold">
+            <p className="text-lg sm:text-xl md:text-2xl font-bold">
               {cardioData[cardioData.length - 1].runningPace} min/km
             </p>
-            <p className="text-sm flex items-center mt-1">
+            <p className="text-xs sm:text-sm flex items-center mt-1">
               {paceChange.value} min/km{" "}
               {renderChangeIndicator(paceChange, true)}
             </p>
           </div>
 
-          <div className="bg-white dark:bg-gray-700 rounded-lg shadow p-4">
-            <h3 className="text-sm text-gray-500 dark:text-gray-400 mb-1">
+          <div className="bg-white dark:bg-gray-700 rounded shadow p-2 sm:p-3 md:p-4">
+            <h3 className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-1">
               Running Distance
             </h3>
-            <p className="text-2xl font-bold">
+            <p className="text-lg sm:text-xl md:text-2xl font-bold">
               {cardioData[cardioData.length - 1].runningDistance} km
             </p>
-            <p className="text-sm flex items-center mt-1">
+            <p className="text-xs sm:text-sm flex items-center mt-1">
               {distanceChange.value} km{" "}
               {renderChangeIndicator(distanceChange, true)}
             </p>
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-700 rounded-lg shadow p-4 mb-6">
-          <h3 className="text-lg font-semibold mb-4">Cardio Progression</h3>
-          <div className="h-72">
+        <div className="bg-white dark:bg-gray-700 rounded shadow p-2 sm:p-3 md:p-4 mb-4 sm:mb-6">
+          <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Cardio Progression</h3>
+          <div className="h-48 sm:h-60 md:h-72">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={processedData}>
                 <CartesianGrid strokeDasharray="3 3" />
@@ -644,8 +645,8 @@ function ProgressTracker() {
     
     return (
       <>
-        <h2 className="text-2xl font-bold mb-2">Workout Consistency</h2>
-        <p className="text-gray-600 dark:text-gray-400 mb-6">
+        <h2 className="text-lg sm:text-xl md:text-2xl font-bold mb-1 sm:mb-2">Workout Consistency</h2>
+        <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mb-4 sm:mb-6">
           Track how consistently you're working out over time. This helps you identify patterns
           and maintain a regular exercise routine.
         </p>
@@ -655,31 +656,31 @@ function ProgressTracker() {
           <div className="flex justify-between items-center mb-4">
             <div className="w-full">
               <h3 className="font-semibold mb-3">Workout Consistency Stats</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-2">
-                <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
-                  <p className="text-sm text-gray-500 dark:text-gray-400">This Week</p>
-                  <p className="text-xl font-bold">{calculateWorkoutsInPeriod(7)} workouts</p>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 md:gap-4 mt-2">
+                <div className="bg-blue-50 dark:bg-blue-900/20 p-2 sm:p-3 rounded">
+                  <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">This Week</p>
+                  <p className="text-lg sm:text-xl font-bold">{calculateWorkoutsInPeriod(7)} workouts</p>
                 </div>
-                <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
-                  <p className="text-sm text-gray-500 dark:text-gray-400">This Month</p>
-                  <p className="text-xl font-bold">{calculateWorkoutsInPeriod(30)} workouts</p>
+                <div className="bg-blue-50 dark:bg-blue-900/20 p-2 sm:p-3 rounded">
+                  <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">This Month</p>
+                  <p className="text-lg sm:text-xl font-bold">{calculateWorkoutsInPeriod(30)} workouts</p>
                 </div>
-                <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Avg. Per Week</p>
-                  <p className="text-xl font-bold">{calculateAverageWorkoutsPerWeek().toFixed(1)}</p>
+                <div className="bg-blue-50 dark:bg-blue-900/20 p-2 sm:p-3 rounded">
+                  <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Avg. Per Week</p>
+                  <p className="text-lg sm:text-xl font-bold">{calculateAverageWorkoutsPerWeek().toFixed(1)}</p>
                 </div>
-                <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Longest Streak</p>
-                  <p className="text-xl font-bold">{calculateLongestStreak()} days</p>
+                <div className="bg-blue-50 dark:bg-blue-900/20 p-2 sm:p-3 rounded">
+                  <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Longest Streak</p>
+                  <p className="text-lg sm:text-xl font-bold">{calculateLongestStreak()} days</p>
                 </div>
               </div>
             </div>
           </div>
           
           {/* Existing chart */}
-          <div className="mt-8 mb-8">
-            <h3 className="font-semibold mb-3">Workout Frequency Over Time</h3>
-            <div className="h-72 bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
+          <div className="mt-4 sm:mt-6 md:mt-8 mb-4 sm:mb-6 md:mb-8">
+            <h3 className="text-sm sm:text-base font-semibold mb-2 sm:mb-3">Workout Frequency Over Time</h3>
+            <div className="h-48 sm:h-60 md:h-72 bg-white dark:bg-gray-800 p-2 sm:p-3 md:p-4 rounded shadow">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={workoutData}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -700,27 +701,27 @@ function ProgressTracker() {
           </div>
           
           {/* Add a workout heatmap calendar view */}
-          <div className="mb-8">
-            <h3 className="font-semibold mb-3">Workout Calendar (Last 4 Weeks)</h3>
-            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
+          <div className="mb-4 sm:mb-6 md:mb-8">
+            <h3 className="text-sm sm:text-base font-semibold mb-2 sm:mb-3">Workout Calendar (Last 4 Weeks)</h3>
+            <div className="bg-white dark:bg-gray-800 p-2 sm:p-3 md:p-4 rounded shadow">
               <div className="grid grid-cols-7 gap-1">
                 {renderWorkoutHeatmap()}
               </div>
-              <div className="mt-4 flex items-center justify-end gap-4">
+              <div className="mt-2 sm:mt-4 flex flex-wrap items-center justify-center sm:justify-end gap-2 sm:gap-4">
                 <div className="flex items-center">
-                  <div className="w-4 h-4 bg-gray-100 dark:bg-gray-700 rounded-sm mr-2"></div>
+                  <div className="w-3 h-3 sm:w-4 sm:h-4 bg-gray-100 dark:bg-gray-700 rounded-sm mr-1 sm:mr-2"></div>
                   <span className="text-xs">No workout</span>
                 </div>
                 <div className="flex items-center">
-                  <div className="w-4 h-4 bg-blue-200 dark:bg-blue-800 rounded-sm mr-2"></div>
+                  <div className="w-3 h-3 sm:w-4 sm:h-4 bg-blue-200 dark:bg-blue-800 rounded-sm mr-1 sm:mr-2"></div>
                   <span className="text-xs">1 workout</span>
                 </div>
                 <div className="flex items-center">
-                  <div className="w-4 h-4 bg-blue-300 dark:bg-blue-700 rounded-sm mr-2"></div>
+                  <div className="w-3 h-3 sm:w-4 sm:h-4 bg-blue-300 dark:bg-blue-700 rounded-sm mr-1 sm:mr-2"></div>
                   <span className="text-xs">2 workouts</span>
                 </div>
                 <div className="flex items-center">
-                  <div className="w-4 h-4 bg-blue-500 dark:bg-blue-600 rounded-sm mr-2"></div>
+                  <div className="w-3 h-3 sm:w-4 sm:h-4 bg-blue-500 dark:bg-blue-600 rounded-sm mr-1 sm:mr-2"></div>
                   <span className="text-xs">3+ workouts</span>
                 </div>
               </div>
@@ -728,10 +729,10 @@ function ProgressTracker() {
           </div>
           
           {/* Workout consistency insights */}
-          <div className="mb-8">
-            <h3 className="font-semibold mb-3">Consistency Insights</h3>
-            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="mb-4 sm:mb-6 md:mb-8">
+            <h3 className="text-sm sm:text-base font-semibold mb-2 sm:mb-3">Consistency Insights</h3>
+            <div className="bg-white dark:bg-gray-800 p-2 sm:p-3 md:p-4 rounded shadow">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-3 md:gap-4">
                 <div>
                   <h4 className="text-sm font-medium mb-2">Most Active Days</h4>
                   {renderMostActiveDays()}
@@ -750,32 +751,32 @@ function ProgressTracker() {
           </div>
         </div>
 
-        <div className="mb-8">
-          <h3 className="font-semibold mb-3">Recent Workouts</h3>
-          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
+        <div className="mb-4 sm:mb-6 md:mb-8">
+          <h3 className="text-sm sm:text-base font-semibold mb-2 sm:mb-3">Recent Workouts</h3>
+          <div className="bg-white dark:bg-gray-800 p-2 sm:p-3 md:p-4 rounded shadow">
             {progressData.workouts.length > 0 ? (
-              <div className="space-y-3">
+              <div className="space-y-2 sm:space-y-3">
                 {progressData.workouts
                   .filter(workout => workout.count > 0)
                   .sort((a, b) => new Date(b.date) - new Date(a.date))
                   .slice(0, 5)
                   .map((workout, index) => (
-                    <div key={index} className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
+                    <div key={index} className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 pb-1 sm:pb-2">
                       <div>
-                        <div className="font-medium">
+                        <div className="text-sm sm:text-base font-medium">
                           {new Date(workout.date).toLocaleDateString('en-GB', {
                             weekday: 'long',
                             month: 'short',
                             day: 'numeric'
                           })}
                         </div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400">
+                        <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                           {workout.count} workout{workout.count !== 1 ? 's' : ''}
                         </div>
                       </div>
                       <Link 
                         to={`/workout-history?date=${workout.date}`}
-                        className="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full text-sm hover:bg-blue-200 dark:hover:bg-blue-800"
+                        className="px-2 sm:px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full text-xs sm:text-sm hover:bg-blue-200 dark:hover:bg-blue-800"
                       >
                         View Details
                       </Link>
@@ -1783,20 +1784,23 @@ function ProgressTracker() {
 
   return (
     <div
-      className={`container mx-auto px-4 py-8 ${
+      className={`container mx-auto px-3 sm:px-4 py-3 sm:py-4 md:py-8 ${
         theme === "dark" ? "text-white" : "text-gray-900"
       } print:text-black print:bg-white`}
     >
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
-        <h1 className="text-3xl font-bold mb-4 md:mb-0 flex items-center">
-          <FaChartLine className="mr-3 text-blue-500 print:text-black" /> Progress Tracker
+      {/* Mobile-optimized header */}
+      <div className="mb-4 sm:mb-6 md:mb-8">
+        <h1 className="text-lg sm:text-2xl md:text-3xl font-bold mb-3 sm:mb-4 flex items-center text-gray-900 dark:text-white">
+          <FaChartLine className="mr-2 sm:mr-3 text-blue-500 print:text-black text-lg sm:text-xl md:text-2xl" /> 
+          Progress Tracker
         </h1>
 
-        <div className="flex flex-col sm:flex-row gap-4 print:hidden">
+        {/* Mobile-optimized controls */}
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 print:hidden">
           <select
             value={dateRange}
             onChange={(e) => setDateRange(e.target.value)}
-            className="px-4 py-2 bg-white dark:bg-gray-700 rounded-lg border border-gray-300 dark:border-gray-600"
+            className="px-3 py-2 bg-white dark:bg-gray-700 rounded-lg text-sm border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors min-h-[40px]"
           >
             <option value="1m">Last Month</option>
             <option value="3m">Last 3 Months</option>
@@ -1805,81 +1809,88 @@ function ProgressTracker() {
             <option value="all">All Time</option>
           </select>
           
-          <button
-            onClick={exportProgressData}
-            className="px-4 py-2 bg-blue-500 text-white rounded-lg flex items-center justify-center hover:bg-blue-600 transition-colors"
-          >
-            <FaDownload className="mr-2" /> Export Data
-          </button>
-          
-          <button
-            onClick={handlePrint}
-            className="px-4 py-2 bg-green-500 text-white rounded-lg flex items-center justify-center hover:bg-green-600 transition-colors"
-          >
-            <FaPrint className="mr-2" /> Print Report
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={exportProgressData}
+              className="flex-1 px-3 py-2 bg-blue-500 text-white rounded-lg text-sm flex items-center justify-center hover:bg-blue-600 transition-colors min-h-[40px]"
+            >
+              <FaDownload className="mr-2 text-sm" /> 
+              <span className="hidden sm:inline">Export Data</span>
+              <span className="sm:hidden">Export</span>
+            </button>
+            
+            <button
+              onClick={handlePrint}
+              className="flex-1 px-3 py-2 bg-primary text-white rounded-lg text-sm flex items-center justify-center hover:bg-primary/90 transition-colors min-h-[40px]"
+            >
+              <FaPrint className="mr-2 text-sm" /> 
+              <span className="hidden sm:inline">Print Report</span>
+              <span className="sm:hidden">Print</span>
+            </button>
+          </div>
         </div>
       </div>
 
-      <div className="print:hidden grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      {/* Mobile-optimized metric selection */}
+      <div className="print:hidden grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 sm:gap-3 mb-4 sm:mb-6">
         <button
           onClick={() => setActiveMetric("weight")}
-          className={`p-4 rounded-lg text-center transition-colors ${
+          className={`p-3 sm:p-4 rounded-lg text-center transition-all duration-200 min-h-[60px] flex flex-col items-center justify-center ${
             activeMetric === "weight"
-              ? "bg-blue-500 text-white"
-              : "bg-white dark:bg-gray-700 hover:bg-blue-100 dark:hover:bg-gray-600"
+              ? "bg-blue-500 text-white shadow-md"
+              : "bg-white dark:bg-gray-700 hover:bg-blue-50 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600"
           }`}
         >
-          <FaWeight className="mx-auto text-2xl mb-2" />
-          <span className="block">Weight</span>
+          <FaWeight className="text-lg sm:text-xl mb-1" />
+          <span className="text-xs sm:text-sm font-medium">Weight</span>
         </button>
 
         <button
           onClick={() => setActiveMetric("strength")}
-          className={`p-4 rounded-lg text-center transition-colors ${
+          className={`p-3 sm:p-4 rounded-lg text-center transition-all duration-200 min-h-[60px] flex flex-col items-center justify-center ${
             activeMetric === "strength"
-              ? "bg-blue-500 text-white"
-              : "bg-white dark:bg-gray-700 hover:bg-blue-100 dark:hover:bg-gray-600"
+              ? "bg-blue-500 text-white shadow-md"
+              : "bg-white dark:bg-gray-700 hover:bg-blue-50 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600"
           }`}
         >
-          <FaDumbbell className="mx-auto text-2xl mb-2" />
-          <span className="block">Strength</span>
+          <FaDumbbell className="text-lg sm:text-xl mb-1" />
+          <span className="text-xs sm:text-sm font-medium">Strength</span>
         </button>
 
         <button
           onClick={() => setActiveMetric("cardio")}
-          className={`p-4 rounded-lg text-center transition-colors ${
+          className={`p-3 sm:p-4 rounded-lg text-center transition-all duration-200 min-h-[60px] flex flex-col items-center justify-center ${
             activeMetric === "cardio"
-              ? "bg-blue-500 text-white"
-              : "bg-white dark:bg-gray-700 hover:bg-blue-100 dark:hover:bg-gray-600"
+              ? "bg-blue-500 text-white shadow-md"
+              : "bg-white dark:bg-gray-700 hover:bg-blue-50 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600"
           }`}
         >
-          <FaRunning className="mx-auto text-2xl mb-2" />
-          <span className="block">Cardio</span>
+          <FaRunning className="text-lg sm:text-xl mb-1" />
+          <span className="text-xs sm:text-sm font-medium">Cardio</span>
         </button>
 
         <button
           onClick={() => setActiveMetric("frequency")}
-          className={`flex flex-col items-center p-4 rounded-lg transition-colors ${
+          className={`p-3 sm:p-4 rounded-lg text-center transition-all duration-200 min-h-[60px] flex flex-col items-center justify-center ${
             activeMetric === "frequency"
-              ? "bg-blue-500 text-white"
-              : "bg-white dark:bg-gray-700 hover:bg-blue-100 dark:hover:bg-gray-600"
+              ? "bg-blue-500 text-white shadow-md"
+              : "bg-white dark:bg-gray-700 hover:bg-blue-50 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600"
           }`}
         >
-          <FaCalendarAlt className="mx-auto text-2xl mb-2" />
-          <span className="block">Workout Consistency</span>
+          <FaCalendarAlt className="text-lg sm:text-xl mb-1" />
+          <span className="text-xs sm:text-sm font-medium">Consistency</span>
         </button>
 
         <button
           onClick={() => setActiveMetric("dashboard")}
-          className={`p-4 rounded-lg text-center transition-colors ${
+          className={`p-3 sm:p-4 rounded-lg text-center transition-all duration-200 min-h-[60px] flex flex-col items-center justify-center col-span-2 sm:col-span-1 ${
             activeMetric === "dashboard"
-              ? "bg-blue-500 text-white"
-              : "bg-white dark:bg-gray-700 hover:bg-blue-100 dark:hover:bg-gray-600"
+              ? "bg-blue-500 text-white shadow-md"
+              : "bg-white dark:bg-gray-700 hover:bg-blue-50 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600"
           }`}
         >
-          <FaChartPie className="mx-auto text-2xl mb-2" />
-          <span className="block">Dashboard</span>
+          <FaChartPie className="text-lg sm:text-xl mb-1" />
+          <span className="text-xs sm:text-sm font-medium">Dashboard</span>
         </button>
       </div>
 

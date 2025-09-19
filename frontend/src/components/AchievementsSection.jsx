@@ -536,7 +536,7 @@ const AchievementsSection = ({ backendURL = defaultBackendURL }) => {
                 isCheckingRef.current
                   ? "bg-gray-300 dark:bg-gray-700 cursor-not-allowed"
                   : lastCheckTimestamp && Date.now() - lastCheckTimestamp < 10000
-                  ? "bg-green-500 hover:bg-green-600 text-white"
+                  ? "bg-primary hover:bg-primary/90 text-white"
                   : "bg-blue-500 hover:bg-blue-600 text-white"
               }`}
             >

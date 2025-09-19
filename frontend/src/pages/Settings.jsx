@@ -1664,7 +1664,7 @@ function Settings() {
                               <p className="text-sm text-slate-600 dark:text-slate-400">Sync nutrition data</p>
                             </div>
                           </div>
-                          <button className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors duration-200">
+                          <button className="px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg text-sm font-medium transition-colors duration-200">
                             Connect
                           </button>
                         </div>

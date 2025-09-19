@@ -273,14 +273,14 @@ const FitnessCalculator = () => {
         return (
           <div>
             <h2 className="text-xl font-semibold mb-4">Body Mass Index (BMI) Calculator</h2>
-            <p className="mb-4 text-gray-600 dark:text-gray-400">
+            <p className="mb-4 text-muted-foreground">
               BMI is a measure of body fat based on height and weight that applies to adult men and women.
             </p>
             
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Weight</label>
+                  <label className="block text-sm font-medium mb-1 text-foreground">Weight</label>
                   <div className="flex">
                     <input
                       type="number"
@@ -288,14 +288,14 @@ const FitnessCalculator = () => {
                       value={formData.weight}
                       onChange={handleInputChange}
                       placeholder="Enter weight"
-                      className="flex-grow p-2 border border-gray-300 dark:border-gray-600 rounded-l bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                      className="flex-grow p-2 border border-border rounded-l bg-background text-foreground placeholder-muted-foreground"
                       required
                     />
                     <select
                       name="weightUnit"
                       value={formData.weightUnit}
                       onChange={handleInputChange}
-                      className="p-2 border border-l-0 border-gray-300 dark:border-gray-600 rounded-r bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      className="p-2 border border-l-0 border-border rounded-r bg-background text-foreground"
                     >
                       <option value="kg">kg</option>
                       <option value="lbs">lbs</option>
@@ -304,7 +304,7 @@ const FitnessCalculator = () => {
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Height</label>
+                  <label className="block text-sm font-medium mb-1 text-foreground">Height</label>
                   <div className="flex">
                     <input
                       type="number"
@@ -312,14 +312,14 @@ const FitnessCalculator = () => {
                       value={formData.height}
                       onChange={handleInputChange}
                       placeholder="Enter height"
-                      className="flex-grow p-2 border border-gray-300 dark:border-gray-600 rounded-l bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                      className="flex-grow p-2 border border-border rounded-l bg-background text-foreground placeholder-muted-foreground"
                       required
                     />
                     <select
                       name="heightUnit"
                       value={formData.heightUnit}
                       onChange={handleInputChange}
-                      className="p-2 border border-l-0 border-gray-300 dark:border-gray-600 rounded-r bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      className="p-2 border border-l-0 border-border rounded-r bg-background text-foreground"
                     >
                       <option value="cm">cm</option>
                       <option value="ft">ft</option>
@@ -330,29 +330,29 @@ const FitnessCalculator = () => {
               
               <button
                 type="submit"
-                className="w-full py-2 px-4 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
+                className="w-full py-2 px-4 gradient-primary text-primary-foreground rounded shadow-glow hover:shadow-glow transition"
               >
                 Calculate BMI
               </button>
             </form>
             
             {results.bmi && (
-              <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900 rounded-lg">
+              <div className="mt-6 p-4 bg-primary/10 rounded-lg">
                 <div className="text-center">
                   <h3 className="text-lg font-semibold mb-2">Your BMI Result</h3>
-                  <div className="text-4xl font-bold text-blue-600 dark:text-blue-400">
+                  <div className="text-4xl font-bold text-primary">
                     {results.bmi.value}
                   </div>
                   <div className={`mt-2 text-lg font-medium ${
                     results.bmi.category === "Healthy" 
-                      ? "text-green-600 dark:text-green-400" 
-                      : "text-red-600 dark:text-red-400"
+                      ? "text-accent" 
+                      : "text-destructive"
                   }`}>
                     {results.bmi.category}
                   </div>
                 </div>
                 
-                <div className="mt-4 text-sm text-gray-600 dark:text-gray-400">
+                <div className="mt-4 text-sm text-muted-foreground">
                   <div className="mb-2">BMI Categories:</div>
                   <ul className="space-y-1">
                     <li>Under 18.5: Underweight</li>
@@ -370,14 +370,14 @@ const FitnessCalculator = () => {
         return (
           <div>
             <h2 className="text-xl font-semibold mb-4">Body Fat Percentage Calculator</h2>
-            <p className="mb-4 text-gray-600 dark:text-gray-400">
+            <p className="mb-4 text-muted-foreground">
               Estimate your body fat percentage using the U.S. Navy method, which requires circumference measurements.
             </p>
             
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Gender</label>
+                  <label className="block text-sm font-medium mb-1 text-foreground">Gender</label>
                   <div className="flex space-x-4">
                     <label className="flex items-center">
                       <input
@@ -405,67 +405,67 @@ const FitnessCalculator = () => {
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Height (cm)</label>
+                  <label className="block text-sm font-medium mb-1 text-foreground">Height (cm)</label>
                   <input
                     type="number"
                     name="height"
                     value={formData.height}
                     onChange={handleInputChange}
                     placeholder="Enter height in cm"
-                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                    className="w-full p-2 border border-border rounded bg-background text-foreground placeholder-muted-foreground"
                     required
                   />
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Age</label>
+                  <label className="block text-sm font-medium mb-1 text-foreground">Age</label>
                   <input
                     type="number"
                     name="age"
                     value={formData.age}
                     onChange={handleInputChange}
                     placeholder="Enter age in years"
-                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                    className="w-full p-2 border border-border rounded bg-background text-foreground placeholder-muted-foreground"
                     required
                   />
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Neck Circumference (cm)</label>
+                  <label className="block text-sm font-medium mb-1 text-foreground">Neck Circumference (cm)</label>
                   <input
                     type="number"
                     name="neck"
                     value={formData.neck}
                     onChange={handleInputChange}
                     placeholder="Measure at the narrowest point"
-                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                    className="w-full p-2 border border-border rounded bg-background text-foreground placeholder-muted-foreground"
                     required
                   />
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Waist Circumference (cm)</label>
+                  <label className="block text-sm font-medium mb-1 text-foreground">Waist Circumference (cm)</label>
                   <input
                     type="number"
                     name="waist"
                     value={formData.waist}
                     onChange={handleInputChange}
                     placeholder="Measure at the navel"
-                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                    className="w-full p-2 border border-border rounded bg-background text-foreground placeholder-muted-foreground"
                     required
                   />
                 </div>
                 
                 {formData.gender === "female" && (
                   <div>
-                    <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Hip Circumference (cm)</label>
+                    <label className="block text-sm font-medium mb-1 text-foreground">Hip Circumference (cm)</label>
                     <input
                       type="number"
                       name="hip"
                       value={formData.hip}
                       onChange={handleInputChange}
                       placeholder="Measure at the widest point"
-                      className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                      className="w-full p-2 border border-border rounded bg-background text-foreground placeholder-muted-foreground"
                       required
                     />
                   </div>
@@ -474,17 +474,17 @@ const FitnessCalculator = () => {
               
               <button
                 type="submit"
-                className="w-full py-2 px-4 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
+                className="w-full py-2 px-4 gradient-primary text-primary-foreground rounded shadow-glow hover:shadow-glow transition"
               >
                 Calculate Body Fat
               </button>
             </form>
             
             {results.bodyFat && (
-              <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900 rounded-lg">
+              <div className="mt-6 p-4 bg-primary/10 rounded-lg">
                 <div className="text-center">
                   <h3 className="text-lg font-semibold mb-2">Your Body Fat Percentage</h3>
-                  <div className="text-4xl font-bold text-blue-600 dark:text-blue-400">
+                  <div className="text-4xl font-bold text-primary">
                     {results.bodyFat.value}%
                   </div>
                   <div className="mt-2 text-lg font-medium">
@@ -492,7 +492,7 @@ const FitnessCalculator = () => {
                   </div>
                 </div>
                 
-                <div className="mt-4 text-sm text-gray-600 dark:text-gray-400">
+                <div className="mt-4 text-sm text-muted-foreground">
                   <div className="mb-2">Body Fat Categories ({formData.gender === "male" ? "Men" : "Women"}):</div>
                   {formData.gender === "male" ? (
                     <ul className="space-y-1">
@@ -521,14 +521,14 @@ const FitnessCalculator = () => {
         return (
           <div>
             <h2 className="text-xl font-semibold mb-4">Total Daily Energy Expenditure (TDEE) Calculator</h2>
-            <p className="mb-4 text-gray-600 dark:text-gray-400">
+            <p className="mb-4 text-muted-foreground">
               TDEE is an estimation of how many calories you burn per day when exercise is taken into account.
             </p>
             
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Weight</label>
+                  <label className="block text-sm font-medium mb-1 text-foreground">Weight</label>
                   <div className="flex">
                     <input
                       type="number"
@@ -536,14 +536,14 @@ const FitnessCalculator = () => {
                       value={formData.weight}
                       onChange={handleInputChange}
                       placeholder="Enter weight"
-                      className="flex-grow p-2 border border-gray-300 dark:border-gray-600 rounded-l bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                      className="flex-grow p-2 border border-border rounded-l bg-background text-foreground placeholder-muted-foreground"
                       required
                     />
                     <select
                       name="weightUnit"
                       value={formData.weightUnit}
                       onChange={handleInputChange}
-                      className="p-2 border border-l-0 border-gray-300 dark:border-gray-600 rounded-r bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      className="p-2 border border-l-0 border-border rounded-r bg-background text-foreground"
                     >
                       <option value="kg">kg</option>
                       <option value="lbs">lbs</option>
@@ -552,7 +552,7 @@ const FitnessCalculator = () => {
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Height</label>
+                  <label className="block text-sm font-medium mb-1 text-foreground">Height</label>
                   <div className="flex">
                     <input
                       type="number"
@@ -560,14 +560,14 @@ const FitnessCalculator = () => {
                       value={formData.height}
                       onChange={handleInputChange}
                       placeholder="Enter height"
-                      className="flex-grow p-2 border border-gray-300 dark:border-gray-600 rounded-l bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                      className="flex-grow p-2 border border-border rounded-l bg-background text-foreground placeholder-muted-foreground"
                       required
                     />
                     <select
                       name="heightUnit"
                       value={formData.heightUnit}
                       onChange={handleInputChange}
-                      className="p-2 border border-l-0 border-gray-300 dark:border-gray-600 rounded-r bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      className="p-2 border border-l-0 border-border rounded-r bg-background text-foreground"
                     >
                       <option value="cm">cm</option>
                       <option value="ft">ft</option>
@@ -576,20 +576,20 @@ const FitnessCalculator = () => {
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Age</label>
+                  <label className="block text-sm font-medium mb-1 text-foreground">Age</label>
                   <input
                     type="number"
                     name="age"
                     value={formData.age}
                     onChange={handleInputChange}
                     placeholder="Enter age in years"
-                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                    className="w-full p-2 border border-border rounded bg-background text-foreground placeholder-muted-foreground"
                     required
                   />
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Gender</label>
+                  <label className="block text-sm font-medium mb-1 text-foreground">Gender</label>
                   <div className="flex space-x-4">
                     <label className="flex items-center">
                       <input
@@ -617,12 +617,12 @@ const FitnessCalculator = () => {
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Activity Level</label>
+                  <label className="block text-sm font-medium mb-1 text-foreground">Activity Level</label>
                   <select
                     name="activityLevel"
                     value={formData.activityLevel}
                     onChange={handleInputChange}
-                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                    className="w-full p-2 border border-border rounded bg-background text-foreground placeholder-muted-foreground"
                   >
                     <option value="sedentary">Sedentary (office job, little exercise)</option>
                     <option value="light">Light Activity (1-2 days of exercise)</option>
@@ -633,12 +633,12 @@ const FitnessCalculator = () => {
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Goal</label>
+                  <label className="block text-sm font-medium mb-1 text-foreground">Goal</label>
                   <select
                     name="goal"
                     value={formData.goal}
                     onChange={handleInputChange}
-                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                    className="w-full p-2 border border-border rounded bg-background text-foreground placeholder-muted-foreground"
                   >
                     <option value="lose">Lose Weight</option>
                     <option value="maintain">Maintain Weight</option>
@@ -649,35 +649,35 @@ const FitnessCalculator = () => {
               
               <button
                 type="submit"
-                className="w-full py-2 px-4 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
+                className="w-full py-2 px-4 gradient-primary text-primary-foreground rounded shadow-glow hover:shadow-glow transition"
               >
                 Calculate TDEE
               </button>
             </form>
             
             {results.tdee && (
-              <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900 rounded-lg">
+              <div className="mt-6 p-4 bg-primary/10 rounded-lg">
                 <div className="text-center">
                   <h3 className="text-lg font-semibold mb-4">Your Daily Calorie Needs</h3>
                   
                   <div className="grid grid-cols-3 gap-4">
-                    <div className="p-3 bg-white dark:bg-gray-800 rounded shadow-sm">
-                      <div className="text-sm text-gray-500 dark:text-gray-400">BMR</div>
+                    <div className="p-3 bg-card rounded shadow-sm">
+                      <div className="text-sm text-muted-foreground">BMR</div>
                       <div className="text-xl font-bold">{results.tdee.bmr} kcal</div>
                       <div className="text-xs mt-1">Calories at complete rest</div>
                     </div>
                     
-                    <div className="p-3 bg-white dark:bg-gray-800 rounded shadow-sm">
-                      <div className="text-sm text-gray-500 dark:text-gray-400">Maintenance</div>
+                    <div className="p-3 bg-card rounded shadow-sm">
+                      <div className="text-sm text-muted-foreground">Maintenance</div>
                       <div className="text-xl font-bold">{results.tdee.maintenance} kcal</div>
                       <div className="text-xs mt-1">Calories to maintain weight</div>
                     </div>
                     
-                    <div className="p-3 bg-white dark:bg-gray-800 rounded shadow-sm">
-                      <div className="text-sm text-gray-500 dark:text-gray-400">
+                    <div className="p-3 bg-card rounded shadow-sm">
+                      <div className="text-sm text-muted-foreground">
                         {formData.goal === "lose" ? "Weight Loss" : formData.goal === "gain" ? "Weight Gain" : "Maintenance"}
                       </div>
-                      <div className="text-xl font-bold text-blue-600 dark:text-blue-400">
+                      <div className="text-xl font-bold text-primary">
                         {results.tdee.goal} kcal
                       </div>
                       <div className="text-xs mt-1">Recommended daily intake</div>
@@ -703,19 +703,19 @@ const FitnessCalculator = () => {
         return (
           <div>
             <h2 className="text-xl font-semibold mb-4">One-Rep Max (1RM) Calculator</h2>
-            <p className="mb-4 text-gray-600 dark:text-gray-400">
+            <p className="mb-4 text-muted-foreground">
               Calculate your one-rep max and see how much weight you should lift for different rep ranges.
             </p>
             
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Exercise</label>
+                  <label className="block text-sm font-medium mb-1 text-foreground">Exercise</label>
                   <select
                     name="exercise"
                     value={formData.exercise}
                     onChange={handleInputChange}
-                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                    className="w-full p-2 border border-border rounded bg-background text-foreground placeholder-muted-foreground"
                   >
                     <option value="bench">Bench Press</option>
                     <option value="squat">Squat</option>
@@ -726,7 +726,7 @@ const FitnessCalculator = () => {
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Weight Lifted</label>
+                  <label className="block text-sm font-medium mb-1 text-foreground">Weight Lifted</label>
                   <div className="flex">
                     <input
                       type="number"
@@ -734,14 +734,14 @@ const FitnessCalculator = () => {
                       value={formData.liftWeight}
                       onChange={handleInputChange}
                       placeholder="Enter weight"
-                      className="flex-grow p-2 border border-gray-300 dark:border-gray-600 rounded-l bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                      className="flex-grow p-2 border border-border rounded-l bg-background text-foreground placeholder-muted-foreground"
                       required
                     />
                     <select
                       name="weightUnit"
                       value={formData.weightUnit}
                       onChange={handleInputChange}
-                      className="p-2 border border-l-0 border-gray-300 dark:border-gray-600 rounded-r bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      className="p-2 border border-l-0 border-border rounded-r bg-background text-foreground"
                     >
                       <option value="kg">kg</option>
                       <option value="lbs">lbs</option>
@@ -750,7 +750,7 @@ const FitnessCalculator = () => {
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Reps Performed</label>
+                  <label className="block text-sm font-medium mb-1 text-foreground">Reps Performed</label>
                   <input
                     type="number"
                     name="reps"
@@ -759,10 +759,10 @@ const FitnessCalculator = () => {
                     placeholder="Enter number of reps"
                     min="1"
                     max="12"
-                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                    className="w-full p-2 border border-border rounded bg-background text-foreground placeholder-muted-foreground"
                     required
                   />
-                  <div className="text-xs text-gray-500 mt-1">
+                  <div className="text-xs text-muted-foreground mt-1">
                     Enter between 1-12 reps for accurate calculations
                   </div>
                 </div>
@@ -770,17 +770,17 @@ const FitnessCalculator = () => {
               
               <button
                 type="submit"
-                className="w-full py-2 px-4 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
+                className="w-full py-2 px-4 gradient-primary text-primary-foreground rounded shadow-glow hover:shadow-glow transition"
               >
                 Calculate 1RM
               </button>
             </form>
             
             {results.oneRepMax && (
-              <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900 rounded-lg">
+              <div className="mt-6 p-4 bg-primary/10 rounded-lg">
                 <div className="text-center mb-4">
                   <h3 className="text-lg font-semibold mb-2">Your One-Rep Max ({formData.exercise})</h3>
-                  <div className="text-4xl font-bold text-blue-600 dark:text-blue-400">
+                  <div className="text-4xl font-bold text-primary">
                     {results.oneRepMax.max} {formData.weightUnit}
                   </div>
                 </div>
@@ -789,13 +789,13 @@ const FitnessCalculator = () => {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                   {Object.entries(results.oneRepMax.percentages).map(([reps, weight]) => (
                     <div key={reps} className="p-2 bg-white dark:bg-gray-800 rounded shadow-sm text-center">
-                      <div className="text-sm text-gray-500 dark:text-gray-400">{reps}</div>
+                      <div className="text-sm text-muted-foreground">{reps}</div>
                       <div className="font-bold">{weight} {formData.weightUnit}</div>
                     </div>
                   ))}
                 </div>
                 
-                <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">
+                <p className="mt-4 text-sm text-muted-foreground">
                   These calculations are estimates based on the Brzycki formula. Actual performance may vary based on individual factors.
                 </p>
               </div>
@@ -809,10 +809,10 @@ const FitnessCalculator = () => {
   };
 
   return (
-    <div className={`min-h-screen p-6 ${theme === "dark" ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-800"}`}>
+    <div className="min-h-screen p-6 bg-background text-foreground">
       <div className="max-w-4xl mx-auto">
         <h1 className="text-3xl font-bold mb-6 flex items-center">
-          <FaCalculator className="mr-3 text-blue-500" /> Fitness Calculators
+          <FaCalculator className="mr-3 text-primary" /> Fitness Calculators
         </h1>
         
         <div className="flex overflow-x-auto pb-2 mb-6">
@@ -822,8 +822,8 @@ const FitnessCalculator = () => {
               onClick={() => setActiveCalculator(calc.id)}
               className={`flex items-center py-2 px-4 mr-2 rounded-lg whitespace-nowrap transition ${
                 activeCalculator === calc.id
-                  ? "bg-blue-500 text-white"
-                  : "bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  ? "gradient-primary text-primary-foreground"
+                  : "bg-card hover:bg-accent hover:text-accent-foreground"
               }`}
             >
               <span className="mr-2">{calc.icon}</span>
@@ -832,7 +832,7 @@ const FitnessCalculator = () => {
           ))}
         </div>
         
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+        <div className="bg-card rounded-lg shadow-sm p-6">
           {renderCalculator()}
         </div>
       </div>

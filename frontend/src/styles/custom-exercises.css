@@ -2,9 +2,9 @@
 
 .custom-exercise-manager {
   padding: 1rem;
-  background-color: #f9fafb;
+  background-color: hsl(var(--muted));
   border-radius: 0.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 3px hsl(var(--foreground) / 0.1);
 }
 
 /* Mobile Optimizations */
@@ -23,7 +23,7 @@
 
 .custom-exercise-manager .exercise-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 6px hsl(var(--foreground) / 0.1);
 }
 
 /* Modal Touch-friendly adjustments */
@@ -69,15 +69,15 @@
 .custom-exercise-manager .empty-state {
   padding: 2rem;
   text-align: center;
-  background-color: #f3f4f6;
+  background-color: hsl(var(--muted));
   border-radius: 0.5rem;
   margin: 1rem 0;
 }
 
 /* Loading spinner adjustments */
 .custom-exercise-manager .loading-spinner {
-  border-top-color: #3b82f6;
-  border-bottom-color: #3b82f6;
+  border-top-color: hsl(var(--primary));
+  border-bottom-color: hsl(var(--primary));
 }
 
 /* Fix button spacing and dimensions for mobile */

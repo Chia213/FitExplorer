@@ -119,7 +119,7 @@ const MobileInstallQR = ({ isOpen, onClose }) => {
                           href="https://expo.dev/@chia94/FitExplorerApp" 
                           target="_blank" 
                           rel="noopener noreferrer"
-                          className="inline-block bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700 transition-colors"
+                          className="inline-block bg-primary text-white px-3 py-1 rounded text-sm hover:bg-primary/90 transition-colors"
                         >
                           Open FitExplorer App
                         </a>

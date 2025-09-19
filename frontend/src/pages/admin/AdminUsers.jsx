@@ -683,7 +683,7 @@ function AdminUsers() {
         <div className="flex flex-wrap gap-2 mt-4 sm:mt-0">
           <button
             onClick={handleCreateUser}
-            className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-md"
+            className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white px-3 py-2 rounded-md"
           >
             <FaUserPlus /> New User
           </button>
@@ -772,13 +772,12 @@ function AdminUsers() {
       <div className="mb-6 bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="relative col-span-2">
-            <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
             <input
               type="text"
               placeholder="Search users by name or email..."
               value={searchQuery}
               onChange={handleSearch}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
@@ -1014,7 +1013,7 @@ function AdminUsers() {
                       ) : (
                         <button
                           onClick={() => toggleAdminStatus(user.id, true)}
-                          className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
+                          className="text-primary hover:text-primary/80 dark:text-primary dark:hover:text-primary/80"
                           title="Make admin"
                         >
                           <FaStar />
@@ -1025,7 +1024,7 @@ function AdminUsers() {
                         user.is_verified ? (
                           <button
                             onClick={() => toggleVerificationStatus(user.id, false)}
-                            className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300 flex items-center border border-green-300 rounded-md px-2 py-1"
+                            className="text-primary hover:text-primary/80 dark:text-primary dark:hover:text-primary/80 flex items-center border border-primary/30 rounded-md px-2 py-1"
                             title="Mark as unverified"
                           >
                             <FaCheckCircle className="mr-1" />
@@ -1397,7 +1396,7 @@ function AdminUsers() {
                 </button>
                 <button
                   type="submit"
-                  className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+                  className="bg-primary hover:bg-primary/90 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
                 >
                   Create User
                 </button>

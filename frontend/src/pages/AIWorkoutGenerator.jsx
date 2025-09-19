@@ -1411,10 +1411,10 @@ function AIWorkoutGenerator() {
     });
     
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-md w-full">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-xl font-bold dark:text-white">
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white">
               Equipment for {dayEquipment.day} - {dayEquipment.focus}
             </h3>
             <button 
@@ -1453,10 +1453,10 @@ function AIWorkoutGenerator() {
     if (!isOpen || !exercise) return null;
     
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-md w-full">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-xl font-bold dark:text-white">
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white">
               {exercise.name} Guidance
             </h3>
             <button 
@@ -1562,10 +1562,10 @@ function AIWorkoutGenerator() {
     if (!isOpen) return null;
     
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-md w-full">
           <div className="flex justify-between items-center mb-2">
-            <h3 className="text-xl font-bold dark:text-white">
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white">
               Workout Saved Successfully
           </h3>
             <button
@@ -1601,7 +1601,7 @@ function AIWorkoutGenerator() {
                 startWorkoutProgram();
                 onClose();
               }}
-              className="w-full py-2 bg-green-600 hover:bg-green-700 text-white rounded transition-colors flex items-center justify-center"
+              className="w-full py-2 bg-primary hover:bg-primary/90 text-white rounded transition-colors flex items-center justify-center"
             >
               <FaPlay className="mr-2" /> Start This Program Now
             </button>
@@ -1629,10 +1629,10 @@ function AIWorkoutGenerator() {
     }
     
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-md w-full">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-xl font-bold dark:text-white">
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white">
               {guidance.title}
             </h3>
             <button 
@@ -1678,43 +1678,46 @@ function AIWorkoutGenerator() {
 
   // Main component render
   return (
-    <div className="container mx-auto p-4 max-w-6xl">
-      <header className="text-center mb-8">
-        <h1 className="text-3xl font-bold mb-2 flex items-center justify-center">
-          <FaRobot className="mr-3 text-blue-500" /> AI Workout Generator
-        </h1>
-        <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-          Create personalized workout plans tailored to your fitness goals, experience level, and available equipment.
-        </p>
-      </header>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="container mx-auto px-3 py-4 max-w-6xl">
+        <header className="text-center mb-2 md:mb-6">
+          <h1 className="text-lg md:text-3xl font-bold mb-1 flex items-center justify-center">
+            <FaRobot className="mr-1 md:mr-3 text-blue-500 text-lg md:text-2xl" /> 
+            <span className="text-lg md:text-3xl">AI Workout Generator</span>
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto text-xs md:text-base px-1 hidden md:block">
+            Create personalized workout plans tailored to your fitness goals, experience level, and available equipment.
+          </p>
+        </header>
 
       {!generatedWorkout ? (
-        <div className="grid md:grid-cols-5 gap-6">
-          <div className="md:col-span-3 bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-semibold mb-4 flex items-center">
-              <FaDumbbell className="mr-2 text-blue-500" /> Create Your Workout
+        <div className="grid md:grid-cols-5 gap-4 md:gap-6">
+          <div className="md:col-span-3 bg-white dark:bg-gray-800 rounded-lg shadow-md p-2 md:p-6">
+            <h2 className="text-base md:text-xl font-semibold mb-2 flex items-center">
+              <FaDumbbell className="mr-1 text-blue-500 text-sm" /> 
+              <span className="text-sm md:text-xl">Create Your Workout</span>
             </h2>
             
             {error && (
-              <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded-md flex items-start">
+              <div className="bg-red-100 dark:bg-red-900/20 border-l-4 border-red-500 dark:border-red-400 text-red-700 dark:text-red-300 p-4 mb-6 rounded-md flex items-start">
                 <FaExclamationTriangle className="mr-2 mt-1 flex-shrink-0" />
                 <span>{error}</span>
               </div>
             )}
             
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit} className="space-y-2">
               <div>
-                <label className="block text-gray-700 dark:text-gray-300 mb-2 font-medium">
+                <label className="block text-gray-700 dark:text-gray-300 mb-1 font-medium text-xs">
                   Fitness Goal
                 </label>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-1">
+                <div className="grid grid-cols-1 gap-1 mb-1">
               <button 
                     type="button"
                     onClick={() => setFormData({...formData, fitnessGoal: "strength"})}
-                    className={`flex items-center justify-center p-3 border rounded-lg transition-all ${
+                    className={`flex items-center justify-center p-2 border rounded-lg transition-all text-xs ${
                       formData.fitnessGoal === "strength" 
                         ? "bg-blue-100 border-blue-500 text-blue-800 dark:bg-blue-900 dark:text-blue-200" 
-                        : "bg-white border-gray-300 hover:bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-650"
+                        : "bg-gray-50 dark:bg-gray-700 border-gray-400 dark:border-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100"
                     }`}
                   >
                     <FaWeightHanging className="mr-2" />
@@ -1723,10 +1726,10 @@ function AIWorkoutGenerator() {
               <button 
                     type="button"
                     onClick={() => setFormData({...formData, fitnessGoal: "hypertrophy"})}
-                    className={`flex items-center justify-center p-3 border rounded-lg transition-all ${
+                    className={`flex items-center justify-center p-2 border rounded-lg transition-all text-xs ${
                       formData.fitnessGoal === "hypertrophy" 
                         ? "bg-blue-100 border-blue-500 text-blue-800 dark:bg-blue-900 dark:text-blue-200" 
-                        : "bg-white border-gray-300 hover:bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-650"
+                        : "bg-gray-50 dark:bg-gray-700 border-gray-400 dark:border-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100"
                     }`}
                   >
                     <GiMuscleUp className="mr-2" />
@@ -1735,24 +1738,24 @@ function AIWorkoutGenerator() {
               <button 
                     type="button"
                     onClick={() => setFormData({...formData, fitnessGoal: "endurance"})}
-                    className={`flex items-center justify-center p-3 border rounded-lg transition-all ${
+                    className={`flex items-center justify-center p-2 border rounded-lg transition-all text-xs ${
                       formData.fitnessGoal === "endurance" 
                         ? "bg-blue-100 border-blue-500 text-blue-800 dark:bg-blue-900 dark:text-blue-200" 
-                        : "bg-white border-gray-300 hover:bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-650"
+                        : "bg-gray-50 dark:bg-gray-700 border-gray-400 dark:border-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100"
                     }`}
                   >
                     <FaRunning className="mr-2" />
                     <span>Endurance</span>
               </button>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <button 
                     type="button"
                     onClick={() => setFormData({...formData, fitnessGoal: "weight_loss"})}
-                    className={`flex items-center justify-center p-3 border rounded-lg transition-all ${
+                    className={`flex items-center justify-center p-2 border rounded-lg transition-all text-xs ${
                       formData.fitnessGoal === "weight_loss" 
                         ? "bg-blue-100 border-blue-500 text-blue-800 dark:bg-blue-900 dark:text-blue-200" 
-                        : "bg-white border-gray-300 hover:bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-650"
+                        : "bg-gray-50 dark:bg-gray-700 border-gray-400 dark:border-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100"
                     }`}
                   >
                     <FaBolt className="mr-2" />
@@ -1761,10 +1764,10 @@ function AIWorkoutGenerator() {
               <button 
                     type="button"
                     onClick={() => setFormData({...formData, fitnessGoal: "general_fitness"})}
-                    className={`flex items-center justify-center p-3 border rounded-lg transition-all ${
+                    className={`flex items-center justify-center p-2 border rounded-lg transition-all text-xs ${
                       formData.fitnessGoal === "general_fitness" 
                         ? "bg-blue-100 border-blue-500 text-blue-800 dark:bg-blue-900 dark:text-blue-200" 
-                        : "bg-white border-gray-300 hover:bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-650"
+                        : "bg-gray-50 dark:bg-gray-700 border-gray-400 dark:border-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100"
                     }`}
                   >
                     <FaHeart className="mr-2" />
@@ -1773,16 +1776,16 @@ function AIWorkoutGenerator() {
             </div>
           </div>
           
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="grid grid-cols-1 gap-2 md:grid-cols-2 md:gap-4">
                 <div>
-                  <label className="block text-gray-700 dark:text-gray-300 mb-2 font-medium">
+                  <label className="block text-gray-700 dark:text-gray-300 mb-1 font-medium text-xs">
                 Experience Level
               </label>
               <select
                 name="experienceLevel"
                 value={formData.experienceLevel}
                 onChange={handleChange}
-                    className="w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 p-1.5 text-xs"
               >
                 <option value="beginner">Beginner</option>
                 <option value="intermediate">Intermediate</option>
@@ -1791,14 +1794,14 @@ function AIWorkoutGenerator() {
             </div>
 
                 <div>
-                  <label className="block text-gray-700 dark:text-gray-300 mb-2 font-medium">
+                  <label className="block text-gray-700 dark:text-gray-300 mb-1 font-medium text-xs">
                 Workout Duration (minutes)
               </label>
               <select
                 name="workoutDuration"
                 value={formData.workoutDuration}
                 onChange={handleChange}
-                    className="w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 p-1.5 text-xs"
               >
                     <option value="20">20 minutes</option>
                 <option value="30">30 minutes</option>
@@ -1810,16 +1813,16 @@ function AIWorkoutGenerator() {
                 </div>
             </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="grid grid-cols-1 gap-2 md:grid-cols-2 md:gap-4">
                 <div>
-                  <label className="block text-gray-700 dark:text-gray-300 mb-2 font-medium">
+                  <label className="block text-gray-700 dark:text-gray-300 mb-1 font-medium text-xs">
                 Days Per Week
               </label>
               <select
                 name="daysPerWeek"
                 value={formData.daysPerWeek}
                 onChange={handleChange}
-                    className="w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 p-1.5 text-xs"
               >
                     <option value="1">1 day</option>
                     <option value="2">2 days</option>
@@ -1832,14 +1835,14 @@ function AIWorkoutGenerator() {
             </div>
 
                 <div>
-                  <label className="block text-gray-700 dark:text-gray-300 mb-2 font-medium">
+                  <label className="block text-gray-700 dark:text-gray-300 mb-1 font-medium text-xs">
                 Available Equipment
               </label>
               <select
                 name="equipment"
                 value={formData.equipment}
                 onChange={handleChange}
-                    className="w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 p-1.5 text-xs"
               >
                     <option value="none">Bodyweight Only</option>
                     <option value="basic">Basic (Dumbbells, Bands)</option>
@@ -1850,7 +1853,7 @@ function AIWorkoutGenerator() {
             </div>
 
               <div>
-                <label className="block text-gray-700 dark:text-gray-300 mb-2 font-medium">
+                <label className="block text-gray-700 dark:text-gray-300 mb-1 font-medium text-xs">
                   Injuries/Limitations (Optional)
               </label>
                 <input
@@ -1859,12 +1862,12 @@ function AIWorkoutGenerator() {
                 value={formData.injuries}
                 onChange={handleChange}
                   placeholder="e.g., Knee pain, shoulder injury"
-                  className="w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"
                 />
             </div>
 
               <div>
-                <label className="block text-gray-700 dark:text-gray-300 mb-2 font-medium">
+                <label className="block text-gray-700 dark:text-gray-300 mb-1 font-medium text-xs">
                   Additional Preferences (Optional)
               </label>
               <textarea
@@ -1873,7 +1876,7 @@ function AIWorkoutGenerator() {
                 onChange={handleChange}
                   placeholder="e.g., Include HIIT, focus on core, avoid squats"
                   rows="3"
-                  className="w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"
               ></textarea>
             </div>
 
@@ -1897,7 +1900,7 @@ function AIWorkoutGenerator() {
             <button
               type="submit"
               disabled={isLoading}
-                  className={`w-full py-3 px-6 flex items-center justify-center rounded-lg text-white font-medium transition-all ${
+                  className={`w-full py-2 px-3 flex items-center justify-center rounded-lg text-white font-medium transition-all text-xs ${
                     isLoading 
                       ? "bg-gray-400 cursor-not-allowed" 
                       : "bg-blue-600 hover:bg-blue-700 shadow-md hover:shadow-lg"
@@ -1921,73 +1924,74 @@ function AIWorkoutGenerator() {
           
           {/* Preview Panel */}
           <div className="md:col-span-2">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
-              <h2 className="text-xl font-semibold mb-4 flex items-center">
-                <FaLightbulb className="mr-2 text-yellow-500" /> Workout Preview
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-2 md:p-6 mb-2 md:mb-6">
+              <h2 className="text-sm md:text-xl font-semibold mb-2 flex items-center">
+                <FaLightbulb className="mr-1 text-yellow-500 text-sm" /> 
+                <span className="text-xs md:text-xl">Workout Preview</span>
               </h2>
               
               {workoutPreview && (
-                <div className="space-y-4">
-                  <p className="text-gray-600 dark:text-gray-400">
+                <div className="space-y-2">
+                  <p className="text-gray-600 dark:text-gray-400 text-xs">
                     Based on your selections, we'll generate:
                   </p>
                   
-                  <div className="space-y-2">
+                  <div className="space-y-1">
                     <div className="flex items-start">
-                      <div className="bg-blue-100 dark:bg-blue-900 p-2 rounded-full mr-3">
-                        <FaDumbbell className="text-blue-600 dark:text-blue-300" />
+                      <div className="bg-blue-100 dark:bg-blue-900 p-1 rounded-full mr-2">
+                        <FaDumbbell className="text-blue-600 dark:text-blue-300 text-xs" />
                       </div>
                       <div>
-                        <h3 className="font-medium text-gray-900 dark:text-gray-100">Workout Focus</h3>
-                        <p className="text-gray-600 dark:text-gray-400 text-sm">
+                        <h3 className="font-medium text-gray-900 dark:text-gray-100 text-xs">Workout Focus</h3>
+                        <p className="text-gray-600 dark:text-gray-400 text-xs">
                           A program focusing on {workoutPreview.focus}
                         </p>
                       </div>
                     </div>
                     
                     <div className="flex items-start">
-                      <div className="bg-green-100 dark:bg-green-900 p-2 rounded-full mr-3">
-                        <FaUserAlt className="text-green-600 dark:text-green-300" />
+                      <div className="bg-green-100 dark:bg-green-900 p-1 rounded-full mr-2">
+                        <FaUserAlt className="text-green-600 dark:text-green-300 text-xs" />
                       </div>
                       <div>
-                        <h3 className="font-medium text-gray-900 dark:text-gray-100">Difficulty Level</h3>
-                        <p className="text-gray-600 dark:text-gray-400 text-sm">
+                        <h3 className="font-medium text-gray-900 dark:text-gray-100 text-xs">Difficulty Level</h3>
+                        <p className="text-gray-600 dark:text-gray-400 text-xs">
                           Designed for {formData.experienceLevel}s with {workoutPreview.level}
                         </p>
                       </div>
                     </div>
                     
                     <div className="flex items-start">
-                      <div className="bg-purple-100 dark:bg-purple-900 p-2 rounded-full mr-3">
-                        <FaCalendarAlt className="text-purple-600 dark:text-purple-300" />
+                      <div className="bg-purple-100 dark:bg-purple-900 p-1 rounded-full mr-2">
+                        <FaCalendarAlt className="text-purple-600 dark:text-purple-300 text-xs" />
                       </div>
                       <div>
-                        <h3 className="font-medium text-gray-900 dark:text-gray-100">Structure</h3>
-                        <p className="text-gray-600 dark:text-gray-400 text-sm">
+                        <h3 className="font-medium text-gray-900 dark:text-gray-100 text-xs">Structure</h3>
+                        <p className="text-gray-600 dark:text-gray-400 text-xs">
                           {formData.daysPerWeek} days per week using {workoutPreview.structure}
                         </p>
                       </div>
                     </div>
                     
                     <div className="flex items-start">
-                      <div className="bg-orange-100 dark:bg-orange-900 p-2 rounded-full mr-3">
-                        <GiWeightLiftingUp className="text-orange-600 dark:text-orange-300" />
+                      <div className="bg-orange-100 dark:bg-orange-900 p-1 rounded-full mr-2">
+                        <GiWeightLiftingUp className="text-orange-600 dark:text-orange-300 text-xs" />
                       </div>
                       <div>
-                        <h3 className="font-medium text-gray-900 dark:text-gray-100">Exercises</h3>
-                        <p className="text-gray-600 dark:text-gray-400 text-sm">
+                        <h3 className="font-medium text-gray-900 dark:text-gray-100 text-xs">Exercises</h3>
+                        <p className="text-gray-600 dark:text-gray-400 text-xs">
                           Approximately {workoutPreview.exercises} exercises per session using {workoutPreview.equipment}
                         </p>
                       </div>
                     </div>
                     
                     <div className="flex items-start">
-                      <div className="bg-red-100 dark:bg-red-900 p-2 rounded-full mr-3">
-                        <FaRunning className="text-red-600 dark:text-red-300" />
+                      <div className="bg-red-100 dark:bg-red-900 p-1 rounded-full mr-2">
+                        <FaRunning className="text-red-600 dark:text-red-300 text-xs" />
                       </div>
                       <div>
-                        <h3 className="font-medium text-gray-900 dark:text-gray-100">Session Length</h3>
-                        <p className="text-gray-600 dark:text-gray-400 text-sm">
+                        <h3 className="font-medium text-gray-900 dark:text-gray-100 text-xs">Session Length</h3>
+                        <p className="text-gray-600 dark:text-gray-400 text-xs">
                           {workoutPreview.duration}
                         </p>
                       </div>
@@ -2037,19 +2041,19 @@ function AIWorkoutGenerator() {
         </div>
       ) : (
         <div className="max-w-6xl mx-auto">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-              <h2 className="text-2xl font-bold">{generatedWorkout.name}</h2>
-              <div className="flex flex-wrap gap-2">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-3 md:p-6 mb-3 md:mb-6">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+              <h2 className="text-xl md:text-2xl font-bold text-center md:text-left">{generatedWorkout.name}</h2>
+              <div className="flex flex-wrap gap-2 justify-center md:justify-start">
                 <button 
                   onClick={saveWorkout}
-                  className="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-md shadow-sm transition duration-300 flex items-center"
+                  className="bg-primary hover:bg-primary/90 text-white py-1.5 px-2 rounded-md shadow-sm transition duration-300 flex items-center text-xs"
                 >
                   <FaDumbbell className="mr-2" /> Save Program
                 </button>
                 <button 
                   onClick={toggleViewMode}
-                  className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-md shadow-sm transition duration-300 flex items-center"
+                  className="bg-blue-500 hover:bg-blue-600 text-white py-1.5 px-2 rounded-md shadow-sm transition duration-300 flex items-center text-xs"
                 >
                   {viewMode === "list" ? (
                     <><FaCalendarAlt className="mr-2" /> Calendar View</>
@@ -2060,20 +2064,20 @@ function AIWorkoutGenerator() {
                 {isSharingSupported && (
                   <button 
                     onClick={shareWorkout}
-                    className="bg-purple-500 hover:bg-purple-600 text-white py-2 px-4 rounded-md shadow-sm transition duration-300 flex items-center"
+                    className="bg-purple-500 hover:bg-purple-600 text-white py-1.5 px-2 rounded-md shadow-sm transition duration-300 flex items-center text-xs"
                   >
                     <FaShare className="mr-2" /> Share
                   </button>
                 )}
                 <button 
                   onClick={downloadWorkout}
-                  className="bg-cyan-600 hover:bg-cyan-700 text-white py-2 px-4 rounded-md shadow-sm transition duration-300 flex items-center"
+                  className="bg-cyan-600 hover:bg-cyan-700 text-white py-1.5 px-2 rounded-md shadow-sm transition duration-300 flex items-center text-xs"
                 >
                   <FaDownload className="mr-2" /> Download
                 </button>
                 <button 
                   onClick={() => setGeneratedWorkout(null)}
-                  className="bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded-md shadow-sm transition duration-300"
+                  className="bg-gray-500 hover:bg-gray-600 text-white py-1.5 px-2 rounded-md shadow-sm transition duration-300 text-xs"
                 >
                   Start Over
                 </button>
@@ -2215,6 +2219,7 @@ function AIWorkoutGenerator() {
       {showSuccessModal && (
         <SuccessModal isOpen={showSuccessModal} onClose={() => setShowSuccessModal(false)} savedProgramId={savedProgramId} />
       )}
+      </div>
     </div>
   );
 }

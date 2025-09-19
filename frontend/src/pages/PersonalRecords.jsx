@@ -1013,9 +1013,8 @@ function PersonalRecords() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search exercises..."
-                className="w-full bg-gray-200 dark:bg-gray-700 rounded p-1.5 pl-7 text-xs"
+                className="w-full bg-gray-200 dark:bg-gray-700 rounded p-1.5 px-3 text-xs"
               />
-              <FaSearch className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 text-xs" />
             </div>
 
             {/* Add toggle for frequency analysis */}

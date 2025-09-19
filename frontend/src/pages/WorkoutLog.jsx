@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useWorkoutSession } from "../contexts/WorkoutSessionContext";
 import {
   FaTrash,
   FaPlus,
@@ -89,6 +90,17 @@ const getCurrentTimeForInput = () => {
 };
 
 const WorkoutLog = () => {
+  const { 
+    activeWorkout, 
+    isWorkoutActive, 
+    startWorkout, 
+    updateWorkout, 
+    addExercise, 
+    updateExercise, 
+    removeExercise, 
+    finishWorkout 
+  } = useWorkoutSession();
+
   const [workoutName, setWorkoutName] = useState("");
   const [startTime, setStartTime] = useState(getCurrentTimeForInput());
   const [endTime, setEndTime] = useState("");
@@ -158,6 +170,39 @@ const WorkoutLog = () => {
     // Then try to load from backend (will override localStorage values)
     fetchExerciseMemory();
   }, []);
+
+  // Sync with active workout session
+  useEffect(() => {
+    if (activeWorkout && isWorkoutActive) {
+      setWorkoutName(activeWorkout.workoutName || "");
+      setStartTime(activeWorkout.startTime ? new Date(activeWorkout.startTime).toISOString().slice(0, 16) : getCurrentTimeForInput());
+      setNotes(activeWorkout.notes || "");
+      setWorkoutExercises(activeWorkout.exercises || []);
+    }
+  }, [activeWorkout, isWorkoutActive]);
+
+  // Start workout session when user begins logging
+  const startWorkoutSession = () => {
+    if (!isWorkoutActive) {
+      startWorkout({
+        workoutName: workoutName || "Custom Workout",
+        startTime: startTime || getCurrentTimeForInput(),
+        notes: notes,
+        exercises: workoutExercises
+      });
+    }
+  };
+
+  // Update workout session when workout data changes
+  useEffect(() => {
+    if (isWorkoutActive && activeWorkout) {
+      updateWorkout({
+        workoutName: workoutName,
+        notes: notes,
+        exercises: workoutExercises
+      });
+    }
+  }, [workoutName, notes, workoutExercises, isWorkoutActive, activeWorkout, updateWorkout]);
   
   // Function to fetch exercise memory from backend
   const fetchExerciseMemory = async () => {
@@ -829,6 +874,11 @@ const WorkoutLog = () => {
       alert("Workout saved successfully!");
       notifyWorkoutCompleted(workoutName);
       
+      // Finish workout session
+      if (isWorkoutActive) {
+        finishWorkout();
+      }
+      
       // Reset the form
       setWorkoutName("");
       setStartTime(new Date().toISOString().slice(0, 16));
@@ -1167,16 +1217,26 @@ const WorkoutLog = () => {
     }
     
     // Add the new exercise to the workout
-    setWorkoutExercises([
-      ...workoutExercises,
-      newExercise
-    ]);
+    const updatedExercises = [...workoutExercises, newExercise];
+    setWorkoutExercises(updatedExercises);
+    
+    // Start workout session if not already active
+    if (!isWorkoutActive) {
+      startWorkoutSession();
+    } else {
+      // Update workout session if active
+      addExercise(newExercise);
+    }
   };
 
   const handleDeleteExercise = (exerciseIndex) => {
-    setWorkoutExercises(
-      workoutExercises.filter((_, index) => index !== exerciseIndex)
-    );
+    const updatedExercises = workoutExercises.filter((_, index) => index !== exerciseIndex);
+    setWorkoutExercises(updatedExercises);
+
+    // Update workout session if active
+    if (isWorkoutActive) {
+      removeExercise(exerciseIndex);
+    }
 
     setCollapsedExercises((prev) => {
       const updated = { ...prev };
@@ -2084,6 +2144,11 @@ const WorkoutLog = () => {
       // Show success message and reset form
       alert("Workout saved successfully!");
       
+      // Finish workout session
+      if (isWorkoutActive) {
+        finishWorkout();
+      }
+      
       // Reset the form
       setWorkoutName("");
       setStartTime(new Date().toISOString().slice(0, 16));
@@ -2604,16 +2669,30 @@ const WorkoutLog = () => {
 
   return (
     <div className="workout-log-container p-4 md:p-6 pb-32">
-      <div className="flex flex-col sm:flex-row justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4 sm:mb-0">Workout Log</h1>
-        <div className="flex space-x-2 w-full sm:w-auto">
+      {/* Mobile-optimized header */}
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <h1 className="text-xl md:text-2xl font-bold text-foreground">Workout Log</h1>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={toggleWeightUnit}
+              className="flex items-center bg-muted px-3 py-2 rounded-lg text-foreground hover:bg-accent hover:text-accent-foreground transition-colors text-sm font-medium min-h-[44px]"
+            >
+              <FaBalanceScale className="mr-2 text-sm" />
+              <span>{weightUnit.toUpperCase()}</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile-optimized action buttons */}
+        <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setShowHistory(true)}
-            className="bg-indigo-500 hover:bg-indigo-400 text-white py-1.5 px-3 rounded-lg text-xs flex items-center justify-center flex-1 sm:flex-none"
+            className="bg-indigo-500 hover:bg-indigo-400 text-white py-3 px-4 rounded-lg text-sm font-medium flex items-center justify-center flex-1 sm:flex-none min-h-[44px] shadow-md"
             title="View Workout History"
           >
-            <FaHistory className="text-sm" />
-            <span className="ml-1">History</span>
+            <FaHistory className="text-sm mr-2" />
+            <span>History</span>
           </button>
           
           <button
@@ -2621,129 +2700,132 @@ const WorkoutLog = () => {
               fetchRoutines();
               setShowRoutinesSelector(true);
             }}
-            className="bg-blue-500 hover:bg-blue-400 text-white py-1.5 px-3 rounded-lg text-xs flex items-center justify-center flex-1 sm:flex-none"
+            className="bg-blue-500 hover:bg-blue-400 text-white py-3 px-4 rounded-lg text-sm font-medium flex items-center justify-center flex-1 sm:flex-none min-h-[44px] shadow-md"
             title="Select Routine"
           >
-            <FaListAlt className="text-sm" />
-            <span className="ml-1">Routines</span>
+            <FaListAlt className="text-sm mr-2" />
+            <span>Routines</span>
           </button>
           
           {/* Only show Add Exercise button in header if there are already exercises */}
           {workoutExercises.length > 0 && (
             <button
               onClick={() => setShowExerciseSelection(true)}
-              className="bg-teal-500 hover:bg-teal-400 text-white py-1.5 px-3 rounded-lg text-xs flex items-center justify-center flex-1 sm:flex-none"
+              className="bg-teal-500 hover:bg-teal-400 text-white py-3 px-4 rounded-lg text-sm font-medium flex items-center justify-center flex-1 sm:flex-none min-h-[44px] shadow-md"
               title="Add Exercise"
             >
-              <FaDumbbell className="text-sm" />
-              <span className="ml-1">Add Exercise</span>
+              <FaDumbbell className="text-sm mr-2" />
+              <span>Add Exercise</span>
             </button>
           )}
         </div>
       </div>
 
-      {/* Workout name input */}
-      <div className="mb-4">
-        <input
-          type="text"
-          value={workoutName}
-          onChange={(e) => setWorkoutName(e.target.value)}
-          placeholder="Workout Name"
-          className="w-full p-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-lg font-semibold"
-        />
-      </div>
-
-      <div className="w-full max-w-lg bg-white dark:bg-gray-800 p-4 rounded-lg mt-4 space-y-4">
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center">
-          <p className="text-gray-700 dark:text-gray-300 mb-1 sm:mb-0">Start Time</p>
-          <div className="relative w-full sm:w-auto">
-            <div 
-              className="bg-gray-200 dark:bg-gray-600 p-2 rounded-lg cursor-pointer pr-10 flex items-center"
-              onClick={() => {
-                try {
-                  // Don't update time automatically when clicking if workout has started
-                  document.getElementById('start-time-picker').showPicker();
-                } catch (error) {
-                  // Fallback for browsers/PWAs that don't support showPicker()
-                  document.getElementById('start-time-picker').focus();
-                }
-              }}
-            >
-              <span>{startTime ? formatDateTimeForDisplay(startTime) : "Select date & time"}</span>
-              <FaCalendarAlt className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500" />
-            </div>
-            <input
-              id="start-time-picker"
-              type="datetime-local"
-              value={startTime}
-              onChange={(e) => setStartTime(e.target.value)}
-              className="absolute inset-0 opacity-0 cursor-pointer"
-            />
-          </div>
-        </div>
-
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center">
-          <p className="text-gray-700 dark:text-gray-300 mb-1 sm:mb-0">End Time</p>
-          <div className="relative w-full sm:w-auto">
-            <div 
-              className="bg-gray-200 dark:bg-gray-600 p-2 rounded-lg cursor-pointer pr-10 flex items-center"
-              onClick={() => {
-                try {
-                  document.getElementById('end-time-picker').showPicker();
-                } catch (error) {
-                  // Fallback for browsers/PWAs that don't support showPicker()
-                  document.getElementById('end-time-picker').focus();
-                }
-              }}
-            >
-              <span>{endTime ? formatDateTimeForDisplay(endTime) : "Select date & time"}</span>
-              <FaCalendarAlt className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500" />
-            </div>
-            <input
-              id="end-time-picker"
-              type="datetime-local"
-              value={endTime}
-              onChange={(e) => setEndTime(e.target.value)}
-              className="absolute inset-0 opacity-0 cursor-pointer"
-            />
-          </div>
-        </div>
-
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center">
-          <p className="text-gray-700 dark:text-gray-300 mb-1 sm:mb-0">
-            Bodyweight ({weightUnit})
-          </p>
+      {/* Mobile-optimized workout form */}
+      <div className="bg-card rounded-xl p-4 md:p-6 shadow-lg mb-6">
+        {/* Workout name input */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-muted-foreground mb-2">Workout Name</label>
           <input
-            type="number"
-            value={bodyweight}
-            onChange={(e) => setBodyweight(e.target.value)}
-            className="bg-gray-200 dark:bg-gray-600 p-2 rounded-lg w-full sm:w-auto"
+            type="text"
+            value={workoutName}
+            onChange={(e) => setWorkoutName(e.target.value)}
+            placeholder="Enter workout name..."
+            className="w-full p-4 bg-muted border border-border rounded-lg text-lg font-semibold min-h-[48px] focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
           />
         </div>
 
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center">
-          <p className="text-gray-700 dark:text-gray-300 mb-1 sm:mb-0">Weight Unit</p>
-          <button
-            onClick={toggleWeightUnit}
-            className="flex items-center bg-gray-200 dark:bg-gray-600 px-3 py-2 rounded-lg text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors"
-          >
-            <FaBalanceScale className="mr-2" />
-            <span>{weightUnit.toUpperCase()}</span>
-          </button>
-        </div>
+        {/* Mobile-optimized form fields */}
+        <div className="space-y-4">
+          {/* Start Time */}
+          <div>
+            <label className="block text-sm font-medium text-muted-foreground mb-2">Start Time</label>
+            <div className="relative">
+              <div 
+                className="bg-muted p-4 rounded-lg cursor-pointer pr-12 flex items-center min-h-[48px] border border-border hover:border-teal-500/50 transition-colors"
+                onClick={() => {
+                  try {
+                    document.getElementById('start-time-picker').showPicker();
+                  } catch (error) {
+                    document.getElementById('start-time-picker').focus();
+                  }
+                }}
+              >
+                <span className="text-foreground font-medium">
+                  {startTime ? formatDateTimeForDisplay(startTime) : "Select date & time"}
+                </span>
+                <FaCalendarAlt className="absolute right-4 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+              </div>
+              <input
+                id="start-time-picker"
+                type="datetime-local"
+                value={startTime}
+                onChange={(e) => setStartTime(e.target.value)}
+                className="absolute inset-0 opacity-0 cursor-pointer"
+              />
+            </div>
+          </div>
 
-        <textarea
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          placeholder="Add any notes..."
-          className="w-full h-24 p-2 bg-gray-200 dark:bg-gray-600 rounded-lg resize-none"
-        />
+          {/* End Time */}
+          <div>
+            <label className="block text-sm font-medium text-muted-foreground mb-2">End Time</label>
+            <div className="relative">
+              <div 
+                className="bg-muted p-4 rounded-lg cursor-pointer pr-12 flex items-center min-h-[48px] border border-border hover:border-teal-500/50 transition-colors"
+                onClick={() => {
+                  try {
+                    document.getElementById('end-time-picker').showPicker();
+                  } catch (error) {
+                    document.getElementById('end-time-picker').focus();
+                  }
+                }}
+              >
+                <span className="text-foreground font-medium">
+                  {endTime ? formatDateTimeForDisplay(endTime) : "Select date & time"}
+                </span>
+                <FaCalendarAlt className="absolute right-4 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+              </div>
+              <input
+                id="end-time-picker"
+                type="datetime-local"
+                value={endTime}
+                onChange={(e) => setEndTime(e.target.value)}
+                className="absolute inset-0 opacity-0 cursor-pointer"
+              />
+            </div>
+          </div>
+
+          {/* Bodyweight */}
+          <div>
+            <label className="block text-sm font-medium text-muted-foreground mb-2">
+              Bodyweight ({weightUnit})
+            </label>
+            <input
+              type="number"
+              value={bodyweight}
+              onChange={(e) => setBodyweight(e.target.value)}
+              placeholder={`Enter bodyweight in ${weightUnit}`}
+              className="w-full p-4 bg-muted border border-border rounded-lg min-h-[48px] focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+            />
+          </div>
+
+          {/* Notes */}
+          <div>
+            <label className="block text-sm font-medium text-muted-foreground mb-2">Notes</label>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Add any notes about your workout..."
+              className="w-full h-24 p-4 bg-muted border border-border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+            />
+          </div>
+        </div>
         
         {/* Add Exercise button when no exercises exist */}
         {workoutExercises.length === 0 && (
           <button
             onClick={() => setShowExerciseSelection(true)}
-            className="w-full bg-teal-500 hover:bg-teal-400 text-white py-2 px-4 rounded-lg text-sm flex items-center justify-center mt-4"
+            className="w-full bg-teal-500 hover:bg-teal-400 text-white py-4 px-6 rounded-lg text-base font-medium flex items-center justify-center mt-6 min-h-[48px] shadow-md"
           >
             <FaPlus className="mr-2" />
             Add Exercise
@@ -2754,106 +2836,100 @@ const WorkoutLog = () => {
       {workoutExercises.map((exercise, exerciseIndex) => (
         <div
           key={`${exercise.name}-${exerciseIndex}`}
-          className="exercise-card"
+          className="bg-card rounded-xl p-4 md:p-6 shadow-lg mb-6"
         >
-          {/* Exercise header */}
-          <div className="flex flex-wrap items-center mb-2">
-            <div className="flex-grow mr-2 mb-2 sm:mb-0 w-full">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+          {/* Mobile-optimized exercise header */}
+          <div className="mb-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-lg md:text-xl font-bold text-foreground">
                 {exercise.name}
               </h3>
+              <button
+                onClick={() => toggleExerciseCollapse(exerciseIndex)}
+                className="text-muted-foreground hover:text-foreground bg-muted hover:bg-accent p-2 rounded-lg transition-colors min-h-[40px] min-w-[40px] flex items-center justify-center"
+              >
+                {collapsedExercises[exerciseIndex] ? (
+                  <FaChevronDown className="text-sm" />
+                ) : (
+                  <FaChevronUp className="text-sm" />
+                )}
+              </button>
             </div>
-            {/* Exercise control buttons */}
-            <div className="flex flex-wrap gap-1 mt-1">
+
+            {/* Mobile-optimized action buttons */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
               <button
                 onClick={() => handleShowReorderModal()}
-                className="text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white bg-gray-200 dark:bg-gray-700 p-2 rounded flex items-center"
+                className="text-card-foreground hover:text-foreground bg-muted hover:bg-accent hover:text-accent-foreground p-3 rounded-lg flex items-center justify-center min-h-[44px] text-sm font-medium"
                 title="Reorder Exercises"
               >
-                <FaSort className="mr-1" />
-                <span className="text-xs">Reorder</span>
+                <FaSort className="mr-2 text-sm" />
+                <span className="hidden sm:inline">Reorder</span>
               </button>
               
               {/* Only show Set Type button for strength exercises, not cardio */}
               {!exercise.is_cardio && (
                 <button
                   onClick={() => handleShowSetTypeModal(exercise)}
-                  className="text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white bg-gray-200 dark:bg-gray-700 p-2 rounded flex items-center"
+                  className="text-card-foreground hover:text-foreground bg-muted hover:bg-accent hover:text-accent-foreground p-3 rounded-lg flex items-center justify-center min-h-[44px] text-sm font-medium"
                   title="Set Type"
                 >
-                  <FaLayerGroup className="mr-1" />
-                  <span className="text-xs">Set Type</span>
+                  <FaLayerGroup className="mr-2 text-sm" />
+                  <span className="hidden sm:inline">Set Type</span>
                 </button>
               )}
               
               <button
                 onClick={() => handleShowExerciseHistory(exercise)}
-                className="text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white bg-gray-200 dark:bg-gray-700 p-2 rounded flex items-center"
+                className="text-card-foreground hover:text-foreground bg-muted hover:bg-accent hover:text-accent-foreground p-3 rounded-lg flex items-center justify-center min-h-[44px] text-sm font-medium"
                 title="Exercise History"
               >
-                <FaHistory className="mr-1" />
-                <span className="text-xs">History</span>
+                <FaHistory className="mr-2 text-sm" />
+                <span className="hidden sm:inline">History</span>
               </button>
               
               <button
                 onClick={() => handleShowExerciseCharts(exercise)}
-                className="text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white bg-gray-200 dark:bg-gray-700 p-2 rounded flex items-center"
+                className="text-card-foreground hover:text-foreground bg-muted hover:bg-accent hover:text-accent-foreground p-3 rounded-lg flex items-center justify-center min-h-[44px] text-sm font-medium"
                 title="Exercise Charts"
               >
-                <FaChartLine className="mr-1" />
-                <span className="text-xs">Charts</span>
+                <FaChartLine className="mr-2 text-sm" />
+                <span className="hidden sm:inline">Charts</span>
               </button>
               
               <button
                 onClick={() => handleShowPersonalRecords(exercise)}
-                className="text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white bg-gray-200 dark:bg-gray-700 p-2 rounded flex items-center"
+                className="text-card-foreground hover:text-foreground bg-muted hover:bg-accent hover:text-accent-foreground p-3 rounded-lg flex items-center justify-center min-h-[44px] text-sm font-medium"
                 title="Personal Records"
               >
-                <FaTrophy className="mr-1" />
-                <span className="text-xs">Records</span>
-              </button>
-              
-              <button
-                onClick={() => toggleExerciseCollapse(exerciseIndex)}
-                className="text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white bg-gray-200 dark:bg-gray-700 p-2 rounded flex items-center"
-              >
-                {collapsedExercises[exerciseIndex] ? (
-                  <>
-                    <FaChevronDown className="mr-1" />
-                    <span className="text-xs">Expand</span>
-                  </>
-                ) : (
-                  <>
-                    <FaChevronUp className="mr-1" />
-                    <span className="text-xs">Collapse</span>
-                  </>
-                )}
+                <FaTrophy className="mr-2 text-sm" />
+                <span className="hidden sm:inline">Records</span>
               </button>
               
               <button
                 onClick={() => handleDeleteExercise(exerciseIndex)}
-                className="text-red-500 hover:text-red-600 bg-gray-200 dark:bg-gray-700 p-2 rounded flex items-center"
+                className="text-destructive hover:text-destructive/80 bg-muted hover:bg-accent hover:text-accent-foreground p-3 rounded-lg flex items-center justify-center min-h-[44px] text-sm font-medium"
               >
-                <FaTrash className="mr-1" />
-                <span className="text-xs">Delete</span>
+                <FaTrash className="mr-2 text-sm" />
+                <span className="hidden sm:inline">Delete</span>
               </button>
               
               <button
                 onClick={() => handleStartRestTimer(exercise)}
-                className="text-teal-500 hover:text-teal-600 bg-gray-200 dark:bg-gray-700 p-2 rounded flex items-center"
+                className="text-accent hover:text-accent/80 bg-muted hover:bg-accent hover:text-accent-foreground p-3 rounded-lg flex items-center justify-center min-h-[44px] text-sm font-medium"
               >
-                <FaClock className="mr-1" />
-                <span className="text-xs">Timer</span>
+                <FaClock className="mr-2 text-sm" />
+                <span className="hidden sm:inline">Timer</span>
               </button>
             </div>
           </div>
 
           {!collapsedExercises[exerciseIndex] && (
             <>
-              {/* Exercise sets section */}
-              <div className="mt-3 exercise-set-container">
-                {/* Set headers for each column - these will be hidden on mobile but visible on desktop */}
-                <div className={`grid ${exercise.is_cardio ? 'grid-cols-4' : 'grid-cols-4'} gap-1 text-sm font-semibold mb-1 text-gray-600 dark:text-gray-300 items-center px-1 set-headers desktop-only`}>
+              {/* Mobile-optimized exercise sets section */}
+              <div className="mt-4">
+                {/* Desktop headers - hidden on mobile */}
+                <div className={`hidden md:grid ${exercise.is_cardio ? 'grid-cols-4' : 'grid-cols-4'} gap-1 text-sm font-semibold mb-3 text-muted-foreground items-center px-1`}>
                   {!exercise.is_cardio ? (
                     <>
                       <div>Set</div>
@@ -2872,15 +2948,15 @@ const WorkoutLog = () => {
                 </div>
 
                 {/* Exercise sets */}
-                <div className="exercise-sets">
+                <div className="space-y-4">
                   {exercise && exercise.sets && exercise.sets.length > 0 ? (
                     exercise.sets.map((set, setIndex) => (
-                      <div key={setIndex} className="set-row mb-3 pb-3 border-b border-gray-200 dark:border-gray-700">
-                        {/* Set header showing set number and type */}
-                        <div className="set-number-heading w-full mb-2 flex justify-between items-center">
-                          <div className="flex items-center">
-                            <span className="font-medium">Set {setIndex + 1}</span>
-                            <div className="ml-2">
+                      <div key={setIndex} className="bg-muted/50 rounded-lg p-4 border border-border">
+                        {/* Mobile-optimized set header */}
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <span className="font-bold text-lg text-foreground">Set {setIndex + 1}</span>
+                            <label className="flex items-center gap-2 cursor-pointer">
                               <input
                                 type="checkbox"
                                 checked={set.completed || false}
@@ -2892,145 +2968,152 @@ const WorkoutLog = () => {
                                     e.target.checked
                                   )
                                 }
-                                className="h-4 w-4 text-blue-600 border-gray-300 rounded"
+                                className="h-5 w-5 text-primary border-border rounded focus:ring-2 focus:ring-primary/20"
                               />
-                            </div>
+                              <span className="text-sm font-medium text-muted-foreground">Completed</span>
+                            </label>
                           </div>
-                          <div className="set-type-controls flex items-center">
+                          <div className="flex items-center gap-2">
                             {set.is_warmup ? (
-                              <span className="set-type-badge bg-yellow-200 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 text-xs py-1 px-2 rounded-full">
+                              <span className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 text-xs py-1.5 px-3 rounded-full font-medium">
                                 Warm-up
                               </span>
                             ) : set.is_drop_set ? (
-                              <span className="set-type-badge bg-red-200 text-red-800 dark:bg-red-900 dark:text-red-200 text-xs py-1 px-2 rounded-full">
+                              <span className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 text-xs py-1.5 px-3 rounded-full font-medium">
                                 Drop {set.drop_number}
                               </span>
                             ) : (
-                              <span className="set-type-badge bg-blue-200 text-blue-800 dark:bg-blue-900 dark:text-blue-200 text-xs py-1 px-2 rounded-full">
+                              <span className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 text-xs py-1.5 px-3 rounded-full font-medium">
                                 Normal
                               </span>
                             )}
                             <button
                               onClick={() => handleEditSet(exerciseIndex, setIndex, "is_warmup", !set.is_warmup)}
-                              className="set-type-toggle ml-2 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200 text-xs"
+                              className="text-muted-foreground hover:text-foreground text-xs font-medium px-2 py-1 rounded hover:bg-muted transition-colors"
                             >
                               {set.is_warmup ? "Mark Normal" : "Mark Warm-up"}
                             </button>
                           </div>
                         </div>
                       
-                        {/* Set inputs */}
-                        <div className={`grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-2`}>
+                        {/* Mobile-optimized set inputs */}
+                        <div className="space-y-4">
                           {!exercise || !exercise.is_cardio ? (
                             <>
-                              <div>
-                                <label className="block text-gray-700 dark:text-gray-300 text-sm font-medium mb-1">
-                                  Weight ({weightUnit})
-                                </label>
-                                <input
-                                  type="number"
-                                  value={set.weight}
-                                  onChange={(e) =>
-                                    handleEditSet(
-                                      exerciseIndex,
-                                      setIndex,
-                                      "weight",
-                                      e.target.value
-                                    )
-                                  }
-                                  placeholder="0"
-                                  className="w-full p-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm"
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-gray-700 dark:text-gray-300 text-sm font-medium mb-1">
-                                  Reps
-                                </label>
-                                <input
-                                  type="number"
-                                  value={set.reps}
-                                  onChange={(e) =>
-                                    handleEditSet(
-                                      exerciseIndex,
-                                      setIndex,
-                                      "reps",
-                                      e.target.value
-                                    )
-                                  }
-                                  placeholder="0"
-                                  className="w-full p-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm"
-                                />
+                              {/* Strength exercise fields */}
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                  <label className="block text-foreground text-sm font-medium mb-2">
+                                    Weight ({weightUnit})
+                                  </label>
+                                  <input
+                                    type="number"
+                                    value={set.weight}
+                                    onChange={(e) =>
+                                      handleEditSet(
+                                        exerciseIndex,
+                                        setIndex,
+                                        "weight",
+                                        e.target.value
+                                      )
+                                    }
+                                    placeholder="0"
+                                    className="w-full p-3 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary min-h-[44px]"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-foreground text-sm font-medium mb-2">
+                                    Reps
+                                  </label>
+                                  <input
+                                    type="number"
+                                    value={set.reps}
+                                    onChange={(e) =>
+                                      handleEditSet(
+                                        exerciseIndex,
+                                        setIndex,
+                                        "reps",
+                                        e.target.value
+                                      )
+                                    }
+                                    placeholder="0"
+                                    className="w-full p-3 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary min-h-[44px]"
+                                  />
+                                </div>
                               </div>
                             </>
                           ) : (
                             <>
-                              {/* Cardio fields */}
-                              <div>
-                                <label className="block text-gray-700 dark:text-gray-300 text-sm font-medium mb-1">
-                                  Distance (km)
-                                </label>
-                                <input
-                                  type="number"
-                                  value={set.distance || ""}
-                                  onChange={(e) =>
-                                    handleEditSet(
-                                      exerciseIndex,
-                                      setIndex,
-                                      "distance",
-                                      e.target.value
-                                    )
-                                  }
-                                  placeholder="0"
-                                  className="w-full p-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm"
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-gray-700 dark:text-gray-300 text-sm font-medium mb-1">
-                                  Duration (min)
-                                </label>
-                                <input
-                                  type="number"
-                                  value={set.duration || ""}
-                                  onChange={(e) =>
-                                    handleEditSet(
-                                      exerciseIndex,
-                                      setIndex,
-                                      "duration",
-                                      e.target.value
-                                    )
-                                  }
-                                  placeholder="0"
-                                  className="w-full p-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm"
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-gray-700 dark:text-gray-300 text-sm font-medium mb-1">
-                                  Intensity
-                                </label>
-                                <select
-                                  value={set.intensity || ""}
-                                  onChange={(e) =>
-                                    handleEditSet(
-                                      exerciseIndex,
-                                      setIndex,
-                                      "intensity",
-                                      e.target.value
-                                    )
-                                  }
-                                  className="w-full p-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm"
-                                >
-                                  <option value="">-</option>
-                                  <option value="Low">Low</option>
-                                  <option value="Medium">Medium</option>
-                                  <option value="High">High</option>
-                                  <option value="Very High">Very High</option>
-                                </select>
+                              {/* Cardio exercise fields */}
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                  <label className="block text-foreground text-sm font-medium mb-2">
+                                    Distance (km)
+                                  </label>
+                                  <input
+                                    type="number"
+                                    value={set.distance || ""}
+                                    onChange={(e) =>
+                                      handleEditSet(
+                                        exerciseIndex,
+                                        setIndex,
+                                        "distance",
+                                        e.target.value
+                                      )
+                                    }
+                                    placeholder="0"
+                                    className="w-full p-3 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary min-h-[44px]"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-foreground text-sm font-medium mb-2">
+                                    Duration (min)
+                                  </label>
+                                  <input
+                                    type="number"
+                                    value={set.duration || ""}
+                                    onChange={(e) =>
+                                      handleEditSet(
+                                        exerciseIndex,
+                                        setIndex,
+                                        "duration",
+                                        e.target.value
+                                      )
+                                    }
+                                    placeholder="0"
+                                    className="w-full p-3 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary min-h-[44px]"
+                                  />
+                                </div>
+                                <div className="sm:col-span-2">
+                                  <label className="block text-foreground text-sm font-medium mb-2">
+                                    Intensity
+                                  </label>
+                                  <select
+                                    value={set.intensity || ""}
+                                    onChange={(e) =>
+                                      handleEditSet(
+                                        exerciseIndex,
+                                        setIndex,
+                                        "intensity",
+                                        e.target.value
+                                      )
+                                    }
+                                    className="w-full p-3 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary min-h-[44px]"
+                                  >
+                                    <option value="">Select intensity</option>
+                                    <option value="Low">Low</option>
+                                    <option value="Medium">Medium</option>
+                                    <option value="High">High</option>
+                                    <option value="Very High">Very High</option>
+                                  </select>
+                                </div>
                               </div>
                             </>
                           )}
 
+                          {/* Notes field */}
                           <div>
-                            <label className="block text-gray-700 dark:text-gray-300 text-sm font-medium mb-1">
+                            <label className="block text-foreground text-sm font-medium mb-2">
                               Notes
                             </label>
                             <input
@@ -3044,37 +3127,39 @@ const WorkoutLog = () => {
                                   e.target.value
                                 )
                               }
-                              placeholder="Notes (optional)"
-                              className="w-full p-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm"
+                              placeholder="Add notes (optional)"
+                              className="w-full p-3 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary min-h-[44px]"
                             />
                           </div>
                                 
-                          <div className="flex justify-end items-center space-x-1 col-span-1 set-actions">
+                          {/* Mobile-optimized action buttons */}
+                          <div className="flex justify-end items-center pt-2 border-t border-border">
                             <button
                               onClick={() => handleDeleteSet(exerciseIndex, setIndex)}
-                              className="p-2 text-red-500 hover:text-red-600 bg-gray-100 dark:bg-gray-700 rounded"
+                              className="flex items-center gap-2 px-4 py-2 text-destructive hover:text-destructive/80 bg-muted hover:bg-destructive/10 rounded-lg transition-colors min-h-[44px] font-medium"
                               title="Delete Set"
                             >
-                              <FaTrash />
+                              <FaTrash className="text-sm" />
+                              <span className="text-sm">Delete Set</span>
                             </button>
                           </div>
                         </div>
                       </div>
                     ))
                   ) : (
-                    <div className="text-center py-4 text-gray-500 dark:text-gray-400">
+                    <div className="text-center py-4 text-muted-foreground">
                       No sets added yet.
                     </div>
                   )}
                 </div>
 
-                {/* Add Set button after all sets */}
-                <div className="mt-3 text-center">
+                {/* Mobile-optimized Add Set button */}
+                <div className="mt-6 text-center">
                   <button
                     onClick={() => handleAddSet(exerciseIndex)}
-                    className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg text-sm flex items-center justify-center w-full sm:w-auto mx-auto"
+                    className="bg-blue-500 hover:bg-blue-600 text-white py-3 px-6 rounded-lg text-base font-medium flex items-center justify-center w-full min-h-[48px] shadow-md transition-colors"
                   >
-                    <FaPlus className="mr-1" />
+                    <FaPlus className="mr-2" />
                     Add Set
                   </button>
                 </div>
@@ -3084,12 +3169,12 @@ const WorkoutLog = () => {
         </div>
       ))}
 
-      {/* Add Exercise button at the bottom if exercises exist */}
+      {/* Mobile-optimized Add Exercise button */}
       {workoutExercises.length > 0 && (
-        <div className="mt-4 mb-16 sm:mb-4 text-center">
+        <div className="mt-6 mb-20 text-center">
           <button
             onClick={() => setShowExerciseSelection(true)}
-            className="bg-teal-500 hover:bg-teal-400 text-white py-3 sm:py-2 px-6 sm:px-4 rounded-lg text-base sm:text-sm inline-flex items-center justify-center w-full sm:w-auto sticky bottom-4 sm:static shadow-lg sm:shadow-none"
+            className="bg-teal-500 hover:bg-teal-400 text-white py-4 px-8 rounded-lg text-base font-medium inline-flex items-center justify-center w-full min-h-[48px] shadow-lg transition-colors"
           >
             <FaPlus className="mr-2" />
             Add Another Exercise
@@ -3102,10 +3187,10 @@ const WorkoutLog = () => {
         <div className="fixed bottom-20 right-4 sm:hidden z-10">
           <button
             onClick={() => setShowExerciseSelection(true)}
-            className="bg-teal-500 hover:bg-teal-400 text-white p-4 rounded-full shadow-lg flex items-center justify-center"
+            className="bg-teal-500 hover:bg-teal-400 text-white p-4 rounded-full shadow-xl flex items-center justify-center min-h-[56px] min-w-[56px] transition-all hover:scale-105"
             aria-label="Add Exercise"
           >
-            <FaPlus size={24} />
+            <FaPlus size={20} />
           </button>
         </div>
       )}
@@ -3131,14 +3216,14 @@ const WorkoutLog = () => {
       {/* Routines Selector Modal */}
       {showRoutinesSelector && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
+          <div className="bg-card rounded-lg shadow-xl max-w-md w-full p-6">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+              <h2 className="text-xl font-bold text-foreground">
                 Select a Routine
               </h2>
               <button
                 onClick={() => setShowRoutinesSelector(false)}
-                className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                className="text-muted-foreground hover:text-foreground"
               >
                 <FaTimes className="text-xl" />
               </button>
@@ -3153,10 +3238,10 @@ const WorkoutLog = () => {
 
             {loadingRoutines ? (
               <div className="flex justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
               </div>
             ) : routines.length === 0 ? (
-              <div className="text-center py-6 bg-gray-100 dark:bg-gray-700 rounded-lg">
+              <div className="text-center py-6 bg-muted rounded-lg">
                 <p className="text-gray-600 dark:text-gray-400">
                   You don't have any saved routines yet.
                 </p>
@@ -3176,7 +3261,7 @@ const WorkoutLog = () => {
                   {routines.map((routine) => (
                     <div
                       key={routine.id}
-                      className="bg-gray-100 dark:bg-gray-700 rounded-lg p-3 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors cursor-pointer"
+                      className="bg-muted rounded-lg p-3 hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer"
                       onClick={() => handleSelectRoutine(routine)}
                     >
                       <div className="flex justify-between items-center">
@@ -3231,7 +3316,7 @@ const WorkoutLog = () => {
       {/* Save Routine Modal */}
       {showSaveRoutineModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
+          <div className="bg-card rounded-lg shadow-xl max-w-md w-full p-6">
             <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">
               Save as Routine
             </h2>
@@ -3248,7 +3333,7 @@ const WorkoutLog = () => {
                 type="text"
                 value={routineName}
                 onChange={(e) => setRoutineName(e.target.value)}
-                className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
+                className="w-full bg-muted p-2 rounded-lg text-foreground"
                 placeholder="Enter routine name"
               />
             </div>
@@ -3262,7 +3347,7 @@ const WorkoutLog = () => {
               </button>
               <button
                 onClick={() => setShowSaveRoutineModal(false)}
-                className="flex-1 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-white py-2 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500"
+                className="flex-1 bg-muted text-foreground py-2 rounded-lg hover:bg-accent hover:text-accent-foreground"
               >
                 Cancel
               </button>
@@ -3274,9 +3359,9 @@ const WorkoutLog = () => {
       {/* Rest Timer Modal */}
       {showRestTimer && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-sm">
+          <div className="bg-card rounded-lg p-6 w-full max-w-sm">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+              <h3 className="text-lg font-semibold text-foreground">
                 Rest Timer - {currentExercise?.name}
               </h3>
               <button
@@ -3295,7 +3380,7 @@ const WorkoutLog = () => {
                 type="number"
                 value={restTime === '' ? '' : restTime}
                 onChange={handleRestTimerChange}
-                className="w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white"
+                className="w-full p-2 border border-border rounded-lg bg-muted text-foreground"
                 disabled={isResting}
               />
               {!isResting && (
@@ -3377,7 +3462,7 @@ const WorkoutLog = () => {
       {timerRunningInBackground && (
         <div 
           onClick={reopenRestTimer}
-          className="fixed bottom-36 right-4 sm:bottom-20 bg-blue-600 text-white p-3 rounded-full shadow-xl cursor-pointer flex items-center justify-center z-[1000] hover:bg-blue-700 min-w-[70px] min-h-[70px] border-2 border-white dark:border-gray-800 animate-pulse"
+          className="fixed bottom-36 right-4 sm:bottom-20 gradient-primary text-primary-foreground p-3 rounded-full shadow-xl cursor-pointer flex items-center justify-center z-[1000] hover:shadow-glow min-w-[70px] min-h-[70px] border-2 border-border animate-pulse"
           style={{
             boxShadow: '0 0 15px rgba(59, 130, 246, 0.5)'
           }}
@@ -3391,7 +3476,7 @@ const WorkoutLog = () => {
       {/* Set Type Modal */}
       {showSetTypeModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full p-3 sm:p-6 max-h-[95vh] overflow-y-auto">
+          <div className="bg-card rounded-lg max-w-md w-full p-3 sm:p-6 max-h-[95vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-3">
               <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
                 Set Type
@@ -3411,7 +3496,7 @@ const WorkoutLog = () => {
               <select
                 value={selectedSetType}
                 onChange={(e) => setSelectedSetType(e.target.value)}
-                className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white text-sm"
+                className="w-full bg-muted p-2 rounded-lg text-foreground text-sm"
               >
                 <option value="drop">Drop Set</option>
                 <option value="warmup">Warm-up Set</option>
@@ -3445,7 +3530,7 @@ const WorkoutLog = () => {
                           setOriginalWeight(e.target.value);
                           setDropSetWeight(e.target.value);
                         }}
-                        className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white text-sm"
+                        className="w-full bg-muted p-2 rounded-lg text-foreground text-sm"
                         placeholder="Weight"
                       />
                     </div>
@@ -3458,7 +3543,7 @@ const WorkoutLog = () => {
                         type="number"
                         value={dropSetReps}
                         onChange={(e) => setDropSetReps(e.target.value)}
-                        className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white text-sm"
+                        className="w-full bg-muted p-2 rounded-lg text-foreground text-sm"
                         placeholder="Reps"
                       />
                     </div>
@@ -3473,7 +3558,7 @@ const WorkoutLog = () => {
                         type="number"
                         value={dropSetPercentage}
                         onChange={(e) => setDropSetPercentage(parseInt(e.target.value))}
-                        className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white text-sm"
+                        className="w-full bg-muted p-2 rounded-lg text-foreground text-sm"
                         min="5"
                         max="50"
                       />
@@ -3487,7 +3572,7 @@ const WorkoutLog = () => {
                         type="number"
                         value={dropSetCount}
                         onChange={(e) => setDropSetCount(parseInt(e.target.value))}
-                        className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white text-sm"
+                        className="w-full bg-muted p-2 rounded-lg text-foreground text-sm"
                         min="2"
                         max="5"
                       />
@@ -3499,7 +3584,7 @@ const WorkoutLog = () => {
                   </p>
                   
                   {originalWeight && (
-                    <div className="mt-3 p-2 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                    <div className="mt-3 p-2 bg-muted rounded-lg">
                       <h4 className="font-medium text-xs sm:text-sm mb-1">Drop Set Preview:</h4>
                       <div className="grid grid-cols-2 gap-1 text-xs">
                         <div className="font-medium">
@@ -3560,7 +3645,7 @@ const WorkoutLog = () => {
                       type="number"
                       value={originalWeight || ""}
                       onChange={(e) => setOriginalWeight(e.target.value)}
-                      className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white text-sm"
+                      className="w-full bg-muted p-2 rounded-lg text-foreground text-sm"
                       placeholder="Weight"
                     />
                   </div>
@@ -3573,7 +3658,7 @@ const WorkoutLog = () => {
                       type="number"
                       value={dropSetReps}
                       onChange={(e) => setDropSetReps(e.target.value)}
-                      className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white text-sm"
+                      className="w-full bg-muted p-2 rounded-lg text-foreground text-sm"
                       placeholder="Reps"
                     />
                   </div>
@@ -3607,7 +3692,7 @@ const WorkoutLog = () => {
                 </div>
                 
                 {supersetExerciseId !== null && !setTypeExercise?.is_cardio && !workoutExercises[supersetExerciseId]?.is_cardio && (
-                  <div className="bg-white dark:bg-gray-800 rounded-lg p-2 mb-2">
+                  <div className="bg-card rounded-lg p-2 mb-2">
                     <h4 className="font-medium text-xs sm:text-sm mb-2 text-purple-700 dark:text-purple-400">
                       {setTypeExercise?.name} (Primary)
                     </h4>
@@ -3621,7 +3706,7 @@ const WorkoutLog = () => {
                           type="number"
                           value={originalWeight || ""}
                           onChange={(e) => setOriginalWeight(e.target.value)}
-                          className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white text-sm"
+                          className="w-full bg-muted p-2 rounded-lg text-foreground text-sm"
                           placeholder="Weight"
                         />
                       </div>
@@ -3634,7 +3719,7 @@ const WorkoutLog = () => {
                           type="number"
                           value={dropSetReps}
                           onChange={(e) => setDropSetReps(e.target.value)}
-                          className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white text-sm"
+                          className="w-full bg-muted p-2 rounded-lg text-foreground text-sm"
                           placeholder="Reps"
                         />
                       </div>
@@ -3653,7 +3738,7 @@ const WorkoutLog = () => {
                           type="number"
                           value={supersetWeight}
                           onChange={(e) => setSupersetWeight(e.target.value)}
-                          className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white text-sm"
+                          className="w-full bg-muted p-2 rounded-lg text-foreground text-sm"
                           placeholder="Weight"
                         />
                       </div>
@@ -3666,7 +3751,7 @@ const WorkoutLog = () => {
                           type="number"
                           value={supersetReps}
                           onChange={(e) => setSupersetReps(e.target.value)}
-                          className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white text-sm"
+                          className="w-full bg-muted p-2 rounded-lg text-foreground text-sm"
                           placeholder="Reps"
                         />
                       </div>
@@ -3675,7 +3760,7 @@ const WorkoutLog = () => {
                 )}
                 
                 {supersetExerciseId !== null && (
-                  <div className="text-xs text-gray-600 dark:text-gray-400 mt-1 bg-gray-100 dark:bg-gray-700 p-2 rounded-lg">
+                  <div className="text-xs text-muted-foreground mt-1 bg-muted p-2 rounded-lg">
                     <div className="font-medium mb-1">Superset Tip:</div>
                     For best results, pair opposing or non-competing muscle groups 
                     (e.g., push/pull, upper/lower body).
@@ -3700,7 +3785,7 @@ const WorkoutLog = () => {
                       type="number"
                       value={originalWeight || ""}
                       onChange={(e) => setOriginalWeight(e.target.value)}
-                      className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white text-sm"
+                      className="w-full bg-muted p-2 rounded-lg text-foreground text-sm"
                       placeholder="Weight"
                     />
                   </div>
@@ -3713,7 +3798,7 @@ const WorkoutLog = () => {
                       type="number"
                       value={dropSetReps}
                       onChange={(e) => setDropSetReps(e.target.value)}
-                      className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white text-sm"
+                      className="w-full bg-muted p-2 rounded-lg text-foreground text-sm"
                       placeholder="Min. reps"
                     />
                   </div>
@@ -3746,7 +3831,7 @@ const WorkoutLog = () => {
                       type="number"
                       value={originalWeight || ""}
                       onChange={(e) => setOriginalWeight(e.target.value)}
-                      className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white text-sm"
+                      className="w-full bg-muted p-2 rounded-lg text-foreground text-sm"
                       placeholder="Weight"
                     />
                   </div>
@@ -3759,7 +3844,7 @@ const WorkoutLog = () => {
                       type="number"
                       value={dropSetReps}
                       onChange={(e) => setDropSetReps(e.target.value)}
-                      className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white text-sm"
+                      className="w-full bg-muted p-2 rounded-lg text-foreground text-sm"
                       placeholder="Reps"
                     />
                   </div>
@@ -3811,7 +3896,7 @@ const WorkoutLog = () => {
                       type="number"
                       value={originalWeight || ""}
                       onChange={(e) => setOriginalWeight(e.target.value)}
-                      className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white text-sm"
+                      className="w-full bg-muted p-2 rounded-lg text-foreground text-sm"
                       placeholder="Weight"
                     />
                   </div>
@@ -3824,7 +3909,7 @@ const WorkoutLog = () => {
                       type="number"
                       value={dropSetReps}
                       onChange={(e) => setDropSetReps(e.target.value)}
-                      className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white text-sm"
+                      className="w-full bg-muted p-2 rounded-lg text-foreground text-sm"
                       placeholder="Reps"
                     />
                   </div>
@@ -3839,7 +3924,7 @@ const WorkoutLog = () => {
                       type="number"
                       value={dropSetPercentage}
                       onChange={(e) => setDropSetPercentage(parseInt(e.target.value))}
-                      className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white text-sm"
+                      className="w-full bg-muted p-2 rounded-lg text-foreground text-sm"
                       min="5"
                       max="30"
                     />
@@ -3853,7 +3938,7 @@ const WorkoutLog = () => {
                       type="number"
                       value={dropSetCount}
                       onChange={(e) => setDropSetCount(parseInt(e.target.value))}
-                      className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white text-sm"
+                      className="w-full bg-muted p-2 rounded-lg text-foreground text-sm"
                       min="2"
                       max="5"
                     />
@@ -3874,7 +3959,7 @@ const WorkoutLog = () => {
                 </div>
                 
                 {originalWeight && dropSetReps && (
-                  <div className="mt-3 p-2 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                  <div className="mt-3 p-2 bg-muted rounded-lg">
                     <h4 className="font-medium text-xs sm:text-sm mb-1">Pyramid Preview:</h4>
                     <div className="grid grid-cols-3 gap-1 text-xs">
                       {Array.from({ length: dropSetCount }).map((_, i) => {
@@ -3936,7 +4021,7 @@ const WorkoutLog = () => {
                           type="number"
                           value={originalWeight || ""}
                           onChange={(e) => setOriginalWeight(e.target.value)}
-                          className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
+                          className="w-full bg-muted p-2 rounded-lg text-foreground"
                           placeholder="Weight"
                         />
                       </div>
@@ -3948,14 +4033,14 @@ const WorkoutLog = () => {
                           type="number"
                           value={dropSetReps}
                           onChange={(e) => setDropSetReps(e.target.value)}
-                          className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
+                          className="w-full bg-muted p-2 rounded-lg text-foreground"
                           placeholder="Reps"
                         />
                       </div>
                     </div>
                   )}
                   
-                  <div className="border-t border-gray-200 dark:border-gray-700 pt-3 mb-3">
+                  <div className="border-t border-border pt-3 mb-3">
                     <button
                       onClick={() => setShowSupersetExerciseSelector(true)}
                       className="bg-indigo-500 hover:bg-indigo-600 text-white py-2 px-4 rounded-lg flex items-center justify-center"
@@ -3979,7 +4064,7 @@ const WorkoutLog = () => {
                                 type="number"
                                 value={supersetWeight}
                                 onChange={(e) => setSupersetWeight(e.target.value)}
-                                className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
+                                className="w-full bg-muted p-2 rounded-lg text-foreground"
                                 placeholder="Weight"
                               />
                             </div>
@@ -3991,7 +4076,7 @@ const WorkoutLog = () => {
                                 type="number"
                                 value={supersetReps}
                                 onChange={(e) => setSupersetReps(e.target.value)}
-                                className="w-full bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-gray-900 dark:text-white"
+                                className="w-full bg-muted p-2 rounded-lg text-foreground"
                                 placeholder="Enter reps"
                               />
                             </div>
@@ -4009,7 +4094,7 @@ const WorkoutLog = () => {
             {/* Add the footer buttons after all set type sections */}
             <div className="flex justify-between space-x-3 mt-4">
               <button
-                className="flex-1 bg-gray-300 hover:bg-gray-400 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-800 dark:text-white py-2 rounded-lg text-sm"
+                className="flex-1 bg-muted hover:bg-accent hover:text-accent-foreground text-foreground py-2 rounded-lg text-sm"
                 onClick={closeSetTypeModal}
               >
                 Cancel
@@ -4028,9 +4113,9 @@ const WorkoutLog = () => {
       {/* Exercise History Modal */}
       {showExerciseHistoryModal && selectedExerciseForHistory && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-4xl w-full p-6 max-h-[90vh] overflow-y-auto">
+          <div className="bg-card rounded-lg max-w-4xl w-full p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+              <h2 className="text-xl font-bold text-foreground">
                 Exercise History: {selectedExerciseForHistory.name}
               </h2>
               <button
@@ -4177,12 +4262,12 @@ const WorkoutLog = () => {
               </div>
             )}
             
-            <div className="mb-4 bg-gray-100 dark:bg-gray-700 p-4 rounded-lg">
+            <div className="mb-4 bg-muted p-4 rounded-lg">
               <div className="flex justify-between items-center mb-3">
                 <h3 className="font-semibold text-gray-800 dark:text-gray-200">Recent Performance</h3>
                 <div className="text-sm">
                   <select 
-                    className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-sm"
+                    className="bg-card border border-border rounded px-2 py-1 text-sm"
                         onChange={(e) => {
                       const sortedHistory = [...workoutHistory].sort((a, b) => {
                         if (e.target.value === "date-desc") {
@@ -4218,7 +4303,7 @@ const WorkoutLog = () => {
               </div>
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-gray-200 dark:border-gray-600">
+                  <tr className="border-b border-border">
                     <th className="text-left py-2">Date</th>
                     <th className="text-left py-2">Workout</th>
                     <th className="text-center py-2">Sets</th>
@@ -4254,7 +4339,7 @@ const WorkoutLog = () => {
                       }, exercise.sets[0] || {});
                       
                       return (
-                        <tr key={idx} className="border-b border-gray-200 dark:border-gray-600">
+                        <tr key={idx} className="border-b border-border">
                           <td className="py-2">{formatDateTimeForDisplay(workout.start_time)}</td>
                           <td className="py-2">{workout.name}</td>
                           <td className="py-2 text-center">{exercise.sets.length}</td>
@@ -4303,9 +4388,9 @@ const WorkoutLog = () => {
       {/* Exercise Charts Modal */}
       {showExerciseChartsModal && selectedExerciseForHistory && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-4xl w-full p-6">
+          <div className="bg-card rounded-lg max-w-4xl w-full p-6">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+              <h2 className="text-xl font-bold text-foreground">
                 Progress Charts: {selectedExerciseForHistory.name}
               </h2>
               <button
@@ -4316,7 +4401,7 @@ const WorkoutLog = () => {
               </button>
             </div>
             
-            <div className="mb-4 p-4 bg-gray-100 dark:bg-gray-700 rounded-lg">
+            <div className="mb-4 p-4 bg-muted rounded-lg">
               {(() => {
                 // Filter workouts for this exercise
                 const relevantWorkouts = workoutHistory
@@ -4359,7 +4444,7 @@ const WorkoutLog = () => {
                     <>
                       <div className="mb-6">
                         <h3 className="font-semibold mb-3 text-gray-800 dark:text-gray-200">Weight Progression</h3>
-                        <div className="h-64 bg-white dark:bg-gray-900 rounded border border-gray-300 dark:border-gray-600 flex flex-col p-4">
+                        <div className="h-64 bg-card rounded border border-border flex flex-col p-4">
                           <div className="flex-1 relative">
                             {/* Simple bar chart */}
                             <div className="absolute inset-0 flex items-end">
@@ -4375,7 +4460,7 @@ const WorkoutLog = () => {
                                     style={{ height: `${height}%` }}
                                     title={`${formatDateForDisplay(relevantWorkouts[i].start_time)}: ${weight} ${weightUnit}`}
                                   >
-                                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
+                                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 opacity-0 group-hover:opacity-100 transition-opacity bg-foreground text-background text-xs px-2 py-1 rounded whitespace-nowrap">
                                       {weight} {weightUnit}
                                     </div>
                                   </div>
@@ -4390,7 +4475,7 @@ const WorkoutLog = () => {
                         </div>
                       </div>
                       
-                      <div className="bg-white dark:bg-gray-900 p-4 rounded">
+                      <div className="bg-card p-4 rounded">
                         <div className="grid grid-cols-3 gap-4">
                           <div className="text-center">
                             <p className="text-sm text-gray-500 dark:text-gray-400">Starting Weight</p>
@@ -4432,7 +4517,7 @@ const WorkoutLog = () => {
                     <>
                       <div className="mb-6">
                         <h3 className="font-semibold mb-3 text-gray-800 dark:text-gray-200">Distance Progression</h3>
-                        <div className="h-64 bg-white dark:bg-gray-900 rounded border border-gray-300 dark:border-gray-600 flex flex-col p-4">
+                        <div className="h-64 bg-card rounded border border-border flex flex-col p-4">
                           <div className="flex-1 relative">
                             {/* Simple bar chart */}
                             <div className="absolute inset-0 flex items-end">
@@ -4444,11 +4529,11 @@ const WorkoutLog = () => {
                                 return (
                                   <div 
                                     key={i}
-                                    className="mx-0.5 flex-1 bg-green-500 hover:bg-green-400 transition-all relative group"
+                                    className="mx-0.5 flex-1 bg-primary hover:bg-primary/80 transition-all relative group"
                                     style={{ height: `${height}%` }}
                                     title={`${formatDateForDisplay(relevantWorkouts[i].start_time)}: ${distance.toFixed(1)} km`}
                                   >
-                                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
+                                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 opacity-0 group-hover:opacity-100 transition-opacity bg-foreground text-background text-xs px-2 py-1 rounded whitespace-nowrap">
                                       {distance.toFixed(1)} km
                                     </div>
                                   </div>
@@ -4463,7 +4548,7 @@ const WorkoutLog = () => {
                         </div>
                       </div>
                       
-                      <div className="bg-white dark:bg-gray-900 p-4 rounded">
+                      <div className="bg-card p-4 rounded">
                         <div className="grid grid-cols-3 gap-4">
                           <div className="text-center">
                             <p className="text-sm text-gray-500 dark:text-gray-400">Starting Distance</p>
@@ -4494,7 +4579,7 @@ const WorkoutLog = () => {
                   setShowExerciseChartsModal(false);
                   // We close the modal but we don't navigate away
                 }}
-                className="bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg inline-flex items-center"
+                className="bg-primary hover:bg-primary/90 text-white py-2 px-4 rounded-lg inline-flex items-center"
               >
                 <FaChartBar className="mr-2" />
                 Close
@@ -4509,7 +4594,7 @@ const WorkoutLog = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+              <h2 className="text-xl font-bold text-foreground">
                 Personal Records: {selectedExerciseForHistory.name}
               </h2>
               <button
@@ -4601,7 +4686,7 @@ const WorkoutLog = () => {
                           <h3 className="font-bold text-gray-800 dark:text-gray-200 flex items-center">
                             <FaTrophy className="text-yellow-500 mr-2" /> Max Weight
                           </h3>
-                          <div className="mt-2 bg-white dark:bg-gray-700 p-3 rounded border border-yellow-200 dark:border-yellow-800">
+                          <div className="mt-2 bg-card p-3 rounded border border-accent/20">
                             {bestWeightSet.weight ? (
                               <>
                                 <p className="text-2xl font-bold text-gray-800 dark:text-white">
@@ -4620,7 +4705,7 @@ const WorkoutLog = () => {
                           <h3 className="font-bold text-gray-800 dark:text-gray-200 flex items-center">
                             <FaTrophy className="text-yellow-500 mr-2" /> Max Reps
                           </h3>
-                          <div className="mt-2 bg-white dark:bg-gray-700 p-3 rounded border border-yellow-200 dark:border-yellow-800">
+                          <div className="mt-2 bg-card p-3 rounded border border-accent/20">
                             {bestRepsSet.reps ? (
                               <>
                                 <p className="text-2xl font-bold text-gray-800 dark:text-white">
@@ -4637,7 +4722,7 @@ const WorkoutLog = () => {
                         </div>
                         
                         {progressHistory.length >= 2 && (
-                          <div className="mt-4 pt-4 border-t border-yellow-200 dark:border-yellow-800">
+                          <div className="mt-4 pt-4 border-t border-accent/20">
                             <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-2">Progress Timeline</h3>
                             <div className="h-24 relative mt-4">
                               {/* Timeline line */}
@@ -4792,7 +4877,7 @@ const WorkoutLog = () => {
                           <h3 className="font-bold text-gray-800 dark:text-gray-200 flex items-center">
                             <FaTrophy className="text-yellow-500 mr-2" /> Max Distance
                           </h3>
-                          <div className="mt-2 bg-white dark:bg-gray-700 p-3 rounded border border-yellow-200 dark:border-yellow-800">
+                          <div className="mt-2 bg-card p-3 rounded border border-accent/20">
                             {bestDistance.distance ? (
                               <>
                                 <p className="text-2xl font-bold text-gray-800 dark:text-white">
@@ -4811,7 +4896,7 @@ const WorkoutLog = () => {
                           <h3 className="font-bold text-gray-800 dark:text-gray-200 flex items-center">
                             <FaTrophy className="text-yellow-500 mr-2" /> Best Pace
                           </h3>
-                          <div className="mt-2 bg-white dark:bg-gray-700 p-3 rounded border border-yellow-200 dark:border-yellow-800">
+                          <div className="mt-2 bg-card p-3 rounded border border-accent/20">
                             {bestPace.pace && bestPace.pace !== Infinity ? (
                               <>
                                 <p className="text-2xl font-bold text-gray-800 dark:text-white">
@@ -4828,7 +4913,7 @@ const WorkoutLog = () => {
                         </div>
                         
                         {progressHistory.length >= 2 && (
-                          <div className="mt-4 pt-4 border-t border-yellow-200 dark:border-yellow-800">
+                          <div className="mt-4 pt-4 border-t border-accent/20">
                             <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-2">Distance Progress</h3>
                             <div className="h-24 relative mt-4">
                               {/* Timeline line */}
@@ -5022,7 +5107,7 @@ const WorkoutLog = () => {
                             "--";
                           
                           return (
-                            <tr key={idx} className="border-b border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700">
+                            <tr key={idx} className="border-b border-border hover:bg-accent hover:text-accent-foreground">
                               <td className="py-2 px-2 whitespace-nowrap">{formatDateForDisplay(workout.start_time)}</td>
                               <td className="py-2 px-2 truncate max-w-[80px]">{workout.name || "Unnamed"}</td>
                               <td className="py-2 px-2 text-center whitespace-nowrap">{duration}</td>
@@ -5125,7 +5210,7 @@ const WorkoutLog = () => {
             <div className="flex space-x-2 justify-end mt-auto">
               <button
                 onClick={handleCloseReorderModal}
-                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300"
+                className="px-4 py-2 border border-border rounded-lg text-card-foreground"
               >
                 Cancel
               </button>
@@ -5143,9 +5228,9 @@ const WorkoutLog = () => {
       {/* Load Confirmation Modal */}
       {showLoadConfirmation && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
+          <div className="bg-card rounded-lg shadow-xl max-w-md w-full p-6">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+              <h2 className="text-xl font-bold text-foreground">
                 Load {workoutToLoad?.name || "Workout"}
               </h2>
               <button
@@ -5192,7 +5277,7 @@ const WorkoutLog = () => {
               
               <button
                 onClick={closeLoadConfirmation}
-                className="w-full border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+                className="w-full border border-border text-card-foreground py-2 rounded-lg hover:bg-accent hover:text-accent-foreground"
               >
                 Cancel
               </button>

@@ -169,7 +169,7 @@ const MobileBottomNav = () => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
             transition={{ duration: 0.2 }}
-            className="fixed z-50 bg-white dark:bg-gray-800 rounded-lg shadow-xl navbar-dropdown"
+            className="fixed z-50 bg-card rounded-lg shadow-xl navbar-dropdown"
             style={{
               bottom: '70px',
               left: '0',
@@ -186,8 +186,8 @@ const MobileBottomNav = () => {
                   to={dropdownItem.path}
                   className={`dropdown-item flex items-center p-3 ${
                     location.pathname === dropdownItem.path 
-                      ? 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300' 
-                      : 'text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 border-b border-gray-100 dark:border-gray-700'
+                      ? 'bg-primary/10 text-primary' 
+                      : 'text-card-foreground hover:bg-primary/10 hover:text-primary border-b border-border'
                   }`}
                   onClick={() => {
                     setShowWorkoutsDropdown(false);
@@ -197,7 +197,7 @@ const MobileBottomNav = () => {
                     }
                   }}
                 >
-                  <span className="mr-3 text-lg text-blue-500 dark:text-blue-400">{dropdownItem.icon}</span>
+                  <span className="mr-3 text-lg text-primary">{dropdownItem.icon}</span>
                   <span className="text-sm font-medium">{dropdownItem.label}</span>
                 </Link>
               ))}
@@ -214,7 +214,7 @@ const MobileBottomNav = () => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
             transition={{ duration: 0.2 }}
-            className="fixed z-50 bg-white dark:bg-gray-800 rounded-lg shadow-xl navbar-dropdown"
+            className="fixed z-50 bg-card rounded-lg shadow-xl navbar-dropdown"
             style={{
               bottom: '70px',
               left: '0',
@@ -231,8 +231,8 @@ const MobileBottomNav = () => {
                   to={dropdownItem.path}
                   className={`dropdown-item flex items-center p-3 ${
                     location.pathname === dropdownItem.path 
-                      ? 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300' 
-                      : 'text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 border-b border-gray-100 dark:border-gray-700'
+                      ? 'bg-primary/10 text-primary' 
+                      : 'text-card-foreground hover:bg-primary/10 hover:text-primary border-b border-border'
                   }`}
                   onClick={() => {
                     setShowToolsDropdown(false);
@@ -242,7 +242,7 @@ const MobileBottomNav = () => {
                     }
                   }}
                 >
-                  <span className="mr-3 text-lg text-blue-500 dark:text-blue-400">{dropdownItem.icon}</span>
+                  <span className="mr-3 text-lg text-primary">{dropdownItem.icon}</span>
                   <span className="text-sm font-medium">{dropdownItem.label}</span>
                 </Link>
               ))}
@@ -252,7 +252,7 @@ const MobileBottomNav = () => {
       </AnimatePresence>
       
       {/* Main bottom nav bar - full width */}
-      <div className="fixed bottom-0 left-0 right-0 h-16 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 z-40 w-full overflow-hidden">
+      <div className="fixed bottom-0 left-0 right-0 h-16 bg-background border-t border-border z-40 w-full overflow-hidden">
         <div className="h-full flex items-center w-full">
           <div className="flex justify-between items-center w-full h-full">
             {navItems.map((item, index) => {
@@ -285,18 +285,18 @@ const MobileBottomNav = () => {
                     }}
                   >
                     <div className="relative flex flex-col items-center">
-                      <div className={`rounded-full p-1 transition-colors ${isActive ? 'text-blue-600 dark:text-blue-300' : 'text-gray-600 dark:text-gray-400'}`}>
+                      <div className={`rounded-full p-1 transition-colors ${isActive ? 'text-primary' : 'text-muted-foreground'}`}>
                         {item.icon}
                         
                         {isActive && (
                           <motion.div
                             layoutId="bottomNavIndicator"
-                            className="absolute -bottom-1 w-4 h-0.5 bg-blue-600 dark:bg-blue-300 rounded-full"
+                            className="absolute -bottom-1 w-4 h-0.5 bg-primary rounded-full"
                             transition={{ type: 'spring', stiffness: 500, damping: 30 }}
                           />
                         )}
                       </div>
-                      <span className={`text-xs mt-1 flex items-center ${isActive ? 'text-blue-600 dark:text-blue-300 font-medium' : 'text-gray-600 dark:text-gray-400'}`}>
+                      <span className={`text-xs mt-1 flex items-center ${isActive ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
                         {item.label}
                         {item.hasDropdown && (
                           <FaChevronUp 
