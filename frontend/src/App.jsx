@@ -50,6 +50,8 @@ import TestSearch from "./pages/TestSearch";
 import MealTest from "./pages/MealTest";
 import LandingPage from "./pages/LandingPage";
 import Contact from "./pages/Contact";
+import SplashScreen from "./components/SplashScreen";
+import SplashScreenPage from "./components/SplashScreenPage";
 
 // Admin pages
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -157,6 +159,7 @@ function App() {
                     <Route path="/verify-email" element={<VerifyEmail />} />
                     <Route path="/reset-password" element={<ResetPassword />} />
                     <Route path="/faq" element={<Faq />} />
+                    <Route path="/splash-test" element={<SplashScreenPage />} />
 
                     {/* Protected Routes (require authentication) */}
                     <Route path="/workout-generator" element={<AuthRoute><WorkoutGenerator /></AuthRoute>} />

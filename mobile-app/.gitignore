@@ -42,3 +42,9 @@ yarn-error.*
 
 # screenshots (large image files)
 screenshots/
+
+# resized screenshots (App Store ready)
+screenshots-resized/
+
+# app previews (large video files)
+app-previews/

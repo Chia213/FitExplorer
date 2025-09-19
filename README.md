@@ -4,7 +4,9 @@
 
 ## Overview
 
-FitExplorer is a comprehensive fitness tracking and workout management application designed to help users achieve their fitness goals through AI-powered tools, personalized recommendations, and interactive progress tracking. A website built from passion of training.
+FitExplorer is a comprehensive fitness tracking and workout management application designed to help users achieve their fitness goals through AI-powered tools, personalized recommendations, and interactive progress tracking. Built with passion for training and now available as a Progressive Web App (PWA) with mobile-optimized design.
+
+**🚀 Now Available on App Store!** - Submit your fitness journey with our mobile-optimized experience.
 
 ## 🌟 Key Features
 
@@ -36,23 +38,42 @@ FitExplorer is a comprehensive fitness tracking and workout management applicati
 - Workout frequency monitoring
 - Body measurement tracking
 
-### 5. User Experience
-- Dark/Light mode support
-- Mobile-responsive design
-- Interactive UI with animations (Framer Motion)
+### 5. Fitness Calculators
+- BMI Calculator with health category assessment
+- Body Fat Percentage calculator (Navy method)
+- TDEE (Total Daily Energy Expenditure) calculator
+- One Rep Max (1RM) calculator for strength tracking
+- Mobile-optimized interface with dark/light mode support
+
+### 6. Muscle Guide & Exercise Library
+- Comprehensive anatomical muscle guide
+- 500+ exercises with detailed instructions
+- Visual muscle group targeting
+- Exercise form guidance and tips
+- Interactive muscle selection interface
+
+### 7. User Experience
+- Dark/Light mode support with theme persistence
+- Mobile-first responsive design
+- Progressive Web App (PWA) capabilities
+- Interactive UI with smooth animations (Framer Motion)
 - Secure authentication with email/password and Google OAuth
+- Mobile-optimized splash screen and navigation
 
 ## 🛠 Tech Stack
 
 ### Frontend
-- React 18
-- React Router v6
-- Tailwind CSS
-- Vite
-- Framer Motion
+- React 18 with modern hooks and context
+- React Router v6 for navigation
+- Tailwind CSS with custom design system
+- Vite for fast development and building
+- Framer Motion for smooth animations
 - Recharts for data visualization
-- React Icons
+- React Icons for consistent iconography
 - Google OAuth integration
+- PWA capabilities with service workers
+- Mobile-optimized responsive design
+- Custom CSS for mobile-specific styling
 
 ### Backend
 - FastAPI
@@ -64,8 +85,14 @@ FitExplorer is a comprehensive fitness tracking and workout management applicati
 
 ### Prerequisites
 - Node.js (v16+)
-- Python (v3.9+)
+- Python (v3.12+)
 - PostgreSQL
+- Modern web browser with PWA support
+
+### Mobile Access
+- **Progressive Web App**: Access via mobile browser
+- **App Store**: Available for iOS devices
+- **Responsive Design**: Optimized for all screen sizes
 
 ### Frontend Setup
 
@@ -129,6 +156,31 @@ alembic upgrade head
 uvicorn app.main:app --reload
 ```
 
+## 📱 Mobile Features
+
+### App Store Ready
+- **Screenshots**: Professional mobile screenshots for App Store
+- **App Previews**: Video demonstrations of key features
+- **Mobile Optimization**: Touch-friendly interface and navigation
+- **Splash Screen**: Custom branded loading experience
+
+### PWA Capabilities
+- **Installable**: Add to home screen on mobile devices
+- **Offline Support**: Core features work without internet
+- **Push Notifications**: Workout reminders and motivation
+- **Responsive Design**: Seamless experience across all devices
+
+## 🎯 Recent Updates
+
+- ✅ **Mobile-First Design**: Complete mobile optimization
+- ✅ **Fitness Calculators**: BMI, Body Fat, TDEE, 1RM calculators
+- ✅ **Muscle Guide**: Interactive anatomical exercise library
+- ✅ **Dark/Light Mode**: Enhanced theme system with persistence
+- ✅ **App Store Submission**: Ready for iOS App Store
+- ✅ **PWA Implementation**: Progressive Web App capabilities
+- ✅ **Mobile Navigation**: Touch-optimized bottom navigation
+- ✅ **Splash Screen**: Professional branded loading experience
+
 ## 📝 License
 
 Distributed under the MIT License. See `LICENSE` for more information.
@@ -140,6 +192,6 @@ Distributed under the MIT License. See `LICENSE` for more information.
 
 ---
 
-**Happy Fitness Tracking! 💪🏼**
+**Your Fitness Adventure Awaits! 💪🏼**
 
-Last updated: 2024-03-27
+Last updated: 2025-01-19

@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FitExplorer Splash Screen - Minimal</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .splash-container {
+            width: 1242px;
+            height: 2688px;
+            background: linear-gradient(135deg, 
+                hsl(222, 20%, 6%) 0%, 
+                hsl(225, 15%, 8%) 50%, 
+                hsl(217, 100%, 8%) 100%);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        /* Subtle background pattern */
+        .splash-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                radial-gradient(circle at 20% 20%, hsl(217, 100%, 60% / 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, hsl(142, 76%, 36% / 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 60%, hsl(217, 100%, 60% / 0.05) 0%, transparent 50%);
+            animation: backgroundShift 8s ease-in-out infinite;
+        }
+
+        @keyframes backgroundShift {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+
+        /* Main content */
+        .splash-content {
+            position: relative;
+            z-index: 10;
+            max-width: 90%;
+        }
+
+
+        .app-name {
+            font-size: 84px;
+            font-weight: 900;
+            background: linear-gradient(135deg, 
+                hsl(0, 0%, 98%) 0%, 
+                hsl(217, 100%, 60%) 50%, 
+                hsl(142, 76%, 36%) 100%);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin: 100px 0 30px 0;
+            letter-spacing: -3px;
+            text-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+            animation: nameGlow 3s ease-in-out infinite;
+        }
+
+        @keyframes nameGlow {
+            0%, 100% { 
+                filter: drop-shadow(0 0 20px hsl(217, 100%, 60% / 0.3));
+            }
+            50% { 
+                filter: drop-shadow(0 0 30px hsl(217, 100%, 60% / 0.5));
+            }
+        }
+
+        .app-tagline {
+            font-size: 36px;
+            color: hsl(0, 0%, 75%);
+            font-weight: 400;
+            margin-bottom: 100px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            opacity: 0.9;
+        }
+
+        .loading-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 30px;
+        }
+
+        .loading-text {
+            font-size: 24px;
+            color: hsl(0, 0%, 60%);
+            font-weight: 500;
+            letter-spacing: 1px;
+        }
+
+        .loading-bar {
+            width: 200px;
+            height: 4px;
+            background: hsl(0, 0%, 20%);
+            border-radius: 2px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .loading-progress {
+            height: 100%;
+            background: linear-gradient(90deg, 
+                hsl(217, 100%, 60%) 0%, 
+                hsl(142, 76%, 36%) 100%);
+            border-radius: 2px;
+            animation: loadingProgress 2s ease-in-out infinite;
+        }
+
+        @keyframes loadingProgress {
+            0% { width: 0%; }
+            50% { width: 70%; }
+            100% { width: 100%; }
+        }
+
+        .version-info {
+            position: absolute;
+            bottom: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 20px;
+            color: hsl(0, 0%, 40%);
+            font-weight: 300;
+            letter-spacing: 1px;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 1300px) {
+            .splash-container {
+                width: 100%;
+                height: 100vh;
+                max-width: 1242px;
+                max-height: 2688px;
+            }
+        }
+
+        /* Print styles for saving as image */
+        @media print {
+            body {
+                background: white;
+            }
+            .splash-container {
+                width: 1242px;
+                height: 2688px;
+                background: linear-gradient(135deg, 
+                    hsl(222, 20%, 6%) 0%, 
+                    hsl(225, 15%, 8%) 50%, 
+                    hsl(217, 100%, 8%) 100%);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="splash-container">
+        <!-- Main content -->
+        <div class="splash-content">
+            <!-- App Name -->
+            <h1 class="app-name">Welcome to FitExplorer</h1>
+
+            <!-- Tagline -->
+            <p class="app-tagline">Your Fitness Adventure Awaits</p>
+
+            <!-- Loading Indicator -->
+            <div class="loading-container">
+                <div class="loading-text">Loading...</div>
+                <div class="loading-bar">
+                    <div class="loading-progress"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Version Info -->
+        <div class="version-info">v1.0.0</div>
+    </div>
+
+    <script>
+        console.log(`
+        🎨 MINIMAL SPLASH SCREEN GENERATOR INSTRUCTIONS:
+        
+        1. Open this HTML file in your browser
+        2. Right-click on the splash screen area
+        3. Select "Inspect Element" or press F12
+        4. In the Elements tab, right-click on the .splash-container div
+        5. Select "Capture node screenshot" (Chrome) or "Screenshot" (Firefox)
+        6. Save the image as 'splash.png' in your screenshots folder
+        7. Run your resize scripts to prepare for App Store
+        
+        This minimal version focuses on:
+        ✅ Clean, professional design
+        ✅ Your app's color scheme
+        ✅ Clear branding
+        ✅ Fast loading appearance
+        ✅ Modern, sleek look
+        `);
+    </script>
+</body>
+</html>
