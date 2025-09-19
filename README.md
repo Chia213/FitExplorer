@@ -188,10 +188,9 @@ Distributed under the MIT License. See `LICENSE` for more information.
 ## 📧 Contact
 
 - Chia Ranchber: fitexplorer.fitnessapp@gmail.com
-- Ivan Lee: ivan98lee@gmail.com
 
 ---
 
 **Your Fitness Adventure Awaits! 💪🏼**
 
-Last updated: 2025-01-19
+Last updated: 2025-09-19
