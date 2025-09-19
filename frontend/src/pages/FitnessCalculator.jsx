@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTheme } from "../hooks/useTheme";
 import { FaCalculator, FaWeight, FaRuler, FaHeart, FaFire, FaDumbbell } from "react-icons/fa";
+import "../styles/fitness-calculator-mobile.css";
 
 const FitnessCalculator = () => {
   const { theme } = useTheme();
@@ -277,25 +278,25 @@ const FitnessCalculator = () => {
               BMI is a measure of body fat based on height and weight that applies to adult men and women.
             </p>
             
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="form-mobile">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                <div>
+                <div className="form-group-mobile">
                   <label className="block text-sm font-medium mb-1 text-foreground">Weight</label>
-                  <div className="flex">
+                  <div className="input-with-unit-mobile">
                     <input
                       type="number"
                       name="weight"
                       value={formData.weight}
                       onChange={handleInputChange}
                       placeholder="Enter weight"
-                      className="flex-grow p-2 border border-border rounded-l bg-background text-foreground placeholder-muted-foreground"
+                      className="flex-grow p-2 border-0 rounded-l bg-background text-foreground placeholder-muted-foreground"
                       required
                     />
                     <select
                       name="weightUnit"
                       value={formData.weightUnit}
                       onChange={handleInputChange}
-                      className="p-2 border border-l-0 border-border rounded-r bg-background text-foreground"
+                      className="p-2 border-0 rounded-r bg-muted text-foreground"
                     >
                       <option value="kg">kg</option>
                       <option value="lbs">lbs</option>
@@ -303,23 +304,23 @@ const FitnessCalculator = () => {
                   </div>
                 </div>
                 
-                <div>
+                <div className="form-group-mobile">
                   <label className="block text-sm font-medium mb-1 text-foreground">Height</label>
-                  <div className="flex">
+                  <div className="input-with-unit-mobile">
                     <input
                       type="number"
                       name="height"
                       value={formData.height}
                       onChange={handleInputChange}
                       placeholder="Enter height"
-                      className="flex-grow p-2 border border-border rounded-l bg-background text-foreground placeholder-muted-foreground"
+                      className="flex-grow p-2 border-0 rounded-l bg-background text-foreground placeholder-muted-foreground"
                       required
                     />
                     <select
                       name="heightUnit"
                       value={formData.heightUnit}
                       onChange={handleInputChange}
-                      className="p-2 border border-l-0 border-border rounded-r bg-background text-foreground"
+                      className="p-2 border-0 rounded-r bg-muted text-foreground"
                     >
                       <option value="cm">cm</option>
                       <option value="ft">ft</option>
@@ -330,31 +331,33 @@ const FitnessCalculator = () => {
               
               <button
                 type="submit"
-                className="w-full py-2 px-4 gradient-primary text-primary-foreground rounded shadow-glow hover:shadow-glow transition"
+                className="btn-calculate-mobile"
               >
                 Calculate BMI
               </button>
             </form>
             
             {results.bmi && (
-              <div className="mt-6 p-4 bg-primary/10 rounded-lg">
-                <div className="text-center">
-                  <h3 className="text-lg font-semibold mb-2">Your BMI Result</h3>
-                  <div className="text-4xl font-bold text-primary">
+              <div className="results-mobile">
+                <div className="results-header-mobile">
+                  <h3 className="results-title-mobile">Your BMI Result</h3>
+                  <div className="results-value-mobile">
                     {results.bmi.value}
                   </div>
-                  <div className={`mt-2 text-lg font-medium ${
+                  <div className={`results-category-mobile ${
                     results.bmi.category === "Healthy" 
                       ? "text-accent" 
+                      : results.bmi.category === "Underweight" || results.bmi.category === "Overweight"
+                      ? "text-warning"
                       : "text-destructive"
                   }`}>
                     {results.bmi.category}
                   </div>
                 </div>
                 
-                <div className="mt-4 text-sm text-muted-foreground">
-                  <div className="mb-2">BMI Categories:</div>
-                  <ul className="space-y-1">
+                <div className="bmi-categories-mobile">
+                  <div className="title">BMI Categories:</div>
+                  <ul>
                     <li>Under 18.5: Underweight</li>
                     <li>18.5 - 24.9: Healthy</li>
                     <li>25 - 29.9: Overweight</li>
@@ -374,37 +377,35 @@ const FitnessCalculator = () => {
               Estimate your body fat percentage using the U.S. Navy method, which requires circumference measurements.
             </p>
             
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="form-mobile">
               <div className="grid grid-cols-1 gap-4">
-                <div>
+                <div className="form-group-mobile">
                   <label className="block text-sm font-medium mb-1 text-foreground">Gender</label>
-                  <div className="flex space-x-4">
-                    <label className="flex items-center">
+                  <div className="radio-group-mobile">
+                    <label className="radio-option-mobile">
                       <input
                         type="radio"
                         name="gender"
                         value="male"
                         checked={formData.gender === "male"}
                         onChange={handleInputChange}
-                        className="mr-2"
                       />
                       Male
                     </label>
-                    <label className="flex items-center">
+                    <label className="radio-option-mobile">
                       <input
                         type="radio"
                         name="gender"
                         value="female"
                         checked={formData.gender === "female"}
                         onChange={handleInputChange}
-                        className="mr-2"
                       />
                       Female
                     </label>
                   </div>
                 </div>
                 
-                <div>
+                <div className="form-group-mobile">
                   <label className="block text-sm font-medium mb-1 text-foreground">Height (cm)</label>
                   <input
                     type="number"
@@ -417,7 +418,7 @@ const FitnessCalculator = () => {
                   />
                 </div>
                 
-                <div>
+                <div className="form-group-mobile">
                   <label className="block text-sm font-medium mb-1 text-foreground">Age</label>
                   <input
                     type="number"
@@ -430,7 +431,7 @@ const FitnessCalculator = () => {
                   />
                 </div>
                 
-                <div>
+                <div className="form-group-mobile">
                   <label className="block text-sm font-medium mb-1 text-foreground">Neck Circumference (cm)</label>
                   <input
                     type="number"
@@ -441,9 +442,12 @@ const FitnessCalculator = () => {
                     className="w-full p-2 border border-border rounded bg-background text-foreground placeholder-muted-foreground"
                     required
                   />
+                  <div className="helper-text-mobile">
+                    Measure around the narrowest part of your neck, just below the Adam's apple
+                  </div>
                 </div>
                 
-                <div>
+                <div className="form-group-mobile">
                   <label className="block text-sm font-medium mb-1 text-foreground">Waist Circumference (cm)</label>
                   <input
                     type="number"
@@ -454,10 +458,13 @@ const FitnessCalculator = () => {
                     className="w-full p-2 border border-border rounded bg-background text-foreground placeholder-muted-foreground"
                     required
                   />
+                  <div className="helper-text-mobile">
+                    Measure around your waist at the level of your navel, after exhaling
+                  </div>
                 </div>
                 
                 {formData.gender === "female" && (
-                  <div>
+                  <div className="form-group-mobile">
                     <label className="block text-sm font-medium mb-1 text-foreground">Hip Circumference (cm)</label>
                     <input
                       type="number"
@@ -468,34 +475,43 @@ const FitnessCalculator = () => {
                       className="w-full p-2 border border-border rounded bg-background text-foreground placeholder-muted-foreground"
                       required
                     />
+                    <div className="helper-text-mobile">
+                      Measure around the widest part of your hips
+                    </div>
                   </div>
                 )}
               </div>
               
               <button
                 type="submit"
-                className="w-full py-2 px-4 gradient-primary text-primary-foreground rounded shadow-glow hover:shadow-glow transition"
+                className="btn-calculate-mobile"
               >
                 Calculate Body Fat
               </button>
             </form>
             
             {results.bodyFat && (
-              <div className="mt-6 p-4 bg-primary/10 rounded-lg">
-                <div className="text-center">
-                  <h3 className="text-lg font-semibold mb-2">Your Body Fat Percentage</h3>
-                  <div className="text-4xl font-bold text-primary">
+              <div className="results-mobile">
+                <div className="results-header-mobile">
+                  <h3 className="results-title-mobile">Your Body Fat Percentage</h3>
+                  <div className="results-value-mobile">
                     {results.bodyFat.value}%
                   </div>
-                  <div className="mt-2 text-lg font-medium">
+                  <div className={`results-category-mobile ${
+                    results.bodyFat.category === "Athletic" || results.bodyFat.category === "Fitness"
+                      ? "text-accent" 
+                      : results.bodyFat.category === "Average"
+                      ? "text-warning"
+                      : "text-destructive"
+                  }`}>
                     Category: {results.bodyFat.category}
                   </div>
                 </div>
                 
-                <div className="mt-4 text-sm text-muted-foreground">
-                  <div className="mb-2">Body Fat Categories ({formData.gender === "male" ? "Men" : "Women"}):</div>
+                <div className="bodyfat-categories-mobile">
+                  <div className="title">Body Fat Categories ({formData.gender === "male" ? "Men" : "Women"}):</div>
                   {formData.gender === "male" ? (
-                    <ul className="space-y-1">
+                    <ul>
                       <li>2-5%: Essential fat</li>
                       <li>6-13%: Athletic</li>
                       <li>14-17%: Fitness</li>
@@ -503,7 +519,7 @@ const FitnessCalculator = () => {
                       <li>25%+: Obese</li>
                     </ul>
                   ) : (
-                    <ul className="space-y-1">
+                    <ul>
                       <li>10-15%: Essential fat</li>
                       <li>16-20%: Athletic</li>
                       <li>21-24%: Fitness</li>
@@ -525,25 +541,25 @@ const FitnessCalculator = () => {
               TDEE is an estimation of how many calories you burn per day when exercise is taken into account.
             </p>
             
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="form-mobile">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                <div>
+                <div className="form-group-mobile">
                   <label className="block text-sm font-medium mb-1 text-foreground">Weight</label>
-                  <div className="flex">
+                  <div className="input-with-unit-mobile">
                     <input
                       type="number"
                       name="weight"
                       value={formData.weight}
                       onChange={handleInputChange}
                       placeholder="Enter weight"
-                      className="flex-grow p-2 border border-border rounded-l bg-background text-foreground placeholder-muted-foreground"
+                      className="flex-grow p-2 border-0 rounded-l bg-background text-foreground placeholder-muted-foreground"
                       required
                     />
                     <select
                       name="weightUnit"
                       value={formData.weightUnit}
                       onChange={handleInputChange}
-                      className="p-2 border border-l-0 border-border rounded-r bg-background text-foreground"
+                      className="p-2 border-0 rounded-r bg-muted text-foreground"
                     >
                       <option value="kg">kg</option>
                       <option value="lbs">lbs</option>
@@ -551,23 +567,23 @@ const FitnessCalculator = () => {
                   </div>
                 </div>
                 
-                <div>
+                <div className="form-group-mobile">
                   <label className="block text-sm font-medium mb-1 text-foreground">Height</label>
-                  <div className="flex">
+                  <div className="input-with-unit-mobile">
                     <input
                       type="number"
                       name="height"
                       value={formData.height}
                       onChange={handleInputChange}
                       placeholder="Enter height"
-                      className="flex-grow p-2 border border-border rounded-l bg-background text-foreground placeholder-muted-foreground"
+                      className="flex-grow p-2 border-0 rounded-l bg-background text-foreground placeholder-muted-foreground"
                       required
                     />
                     <select
                       name="heightUnit"
                       value={formData.heightUnit}
                       onChange={handleInputChange}
-                      className="p-2 border border-l-0 border-border rounded-r bg-background text-foreground"
+                      className="p-2 border-0 rounded-r bg-muted text-foreground"
                     >
                       <option value="cm">cm</option>
                       <option value="ft">ft</option>
@@ -575,7 +591,7 @@ const FitnessCalculator = () => {
                   </div>
                 </div>
                 
-                <div>
+                <div className="form-group-mobile">
                   <label className="block text-sm font-medium mb-1 text-foreground">Age</label>
                   <input
                     type="number"
@@ -588,35 +604,33 @@ const FitnessCalculator = () => {
                   />
                 </div>
                 
-                <div>
+                <div className="form-group-mobile">
                   <label className="block text-sm font-medium mb-1 text-foreground">Gender</label>
-                  <div className="flex space-x-4">
-                    <label className="flex items-center">
+                  <div className="radio-group-mobile">
+                    <label className="radio-option-mobile">
                       <input
                         type="radio"
                         name="gender"
                         value="male"
                         checked={formData.gender === "male"}
                         onChange={handleInputChange}
-                        className="mr-2"
                       />
                       Male
                     </label>
-                    <label className="flex items-center">
+                    <label className="radio-option-mobile">
                       <input
                         type="radio"
                         name="gender"
                         value="female"
                         checked={formData.gender === "female"}
                         onChange={handleInputChange}
-                        className="mr-2"
                       />
                       Female
                     </label>
                   </div>
                 </div>
                 
-                <div>
+                <div className="form-group-mobile">
                   <label className="block text-sm font-medium mb-1 text-foreground">Activity Level</label>
                   <select
                     name="activityLevel"
@@ -632,7 +646,7 @@ const FitnessCalculator = () => {
                   </select>
                 </div>
                 
-                <div>
+                <div className="form-group-mobile">
                   <label className="block text-sm font-medium mb-1 text-foreground">Goal</label>
                   <select
                     name="goal"
@@ -649,50 +663,50 @@ const FitnessCalculator = () => {
               
               <button
                 type="submit"
-                className="w-full py-2 px-4 gradient-primary text-primary-foreground rounded shadow-glow hover:shadow-glow transition"
+                className="btn-calculate-mobile"
               >
                 Calculate TDEE
               </button>
             </form>
             
             {results.tdee && (
-              <div className="mt-6 p-4 bg-primary/10 rounded-lg">
-                <div className="text-center">
-                  <h3 className="text-lg font-semibold mb-4">Your Daily Calorie Needs</h3>
-                  
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="p-3 bg-card rounded shadow-sm">
-                      <div className="text-sm text-muted-foreground">BMR</div>
-                      <div className="text-xl font-bold">{results.tdee.bmr} kcal</div>
-                      <div className="text-xs mt-1">Calories at complete rest</div>
-                    </div>
-                    
-                    <div className="p-3 bg-card rounded shadow-sm">
-                      <div className="text-sm text-muted-foreground">Maintenance</div>
-                      <div className="text-xl font-bold">{results.tdee.maintenance} kcal</div>
-                      <div className="text-xs mt-1">Calories to maintain weight</div>
-                    </div>
-                    
-                    <div className="p-3 bg-card rounded shadow-sm">
-                      <div className="text-sm text-muted-foreground">
-                        {formData.goal === "lose" ? "Weight Loss" : formData.goal === "gain" ? "Weight Gain" : "Maintenance"}
-                      </div>
-                      <div className="text-xl font-bold text-primary">
-                        {results.tdee.goal} kcal
-                      </div>
-                      <div className="text-xs mt-1">Recommended daily intake</div>
-                    </div>
+              <div className="results-mobile">
+                <div className="results-header-mobile">
+                  <h3 className="results-title-mobile">Your Daily Calorie Needs</h3>
+                </div>
+                
+                <div className="tdee-grid-mobile">
+                  <div className="tdee-card-mobile">
+                    <div className="label">BMR</div>
+                    <div className="value">{results.tdee.bmr} kcal</div>
+                    <div className="description">Calories at complete rest</div>
                   </div>
                   
-                  <div className="mt-4 text-sm text-left">
-                    <p>These calculations provide an estimate based on the Harris-Benedict equation. Individual needs may vary.</p>
-                    {formData.goal === "lose" && (
-                      <p className="mt-2">For weight loss, we've created a moderate 500 calorie deficit. This should result in about 1 pound of weight loss per week.</p>
-                    )}
-                    {formData.goal === "gain" && (
-                      <p className="mt-2">For weight gain, we've added a 500 calorie surplus. This should result in about 1 pound of weight gain per week.</p>
-                    )}
+                  <div className="tdee-card-mobile">
+                    <div className="label">Maintenance</div>
+                    <div className="value">{results.tdee.maintenance} kcal</div>
+                    <div className="description">Calories to maintain weight</div>
                   </div>
+                  
+                  <div className="tdee-card-mobile">
+                    <div className="label">
+                      {formData.goal === "lose" ? "Weight Loss" : formData.goal === "gain" ? "Weight Gain" : "Maintenance"}
+                    </div>
+                    <div className="value" style={{color: 'var(--primary)'}}>
+                      {results.tdee.goal} kcal
+                    </div>
+                    <div className="description">Recommended daily intake</div>
+                  </div>
+                </div>
+                
+                <div className="mt-4 text-sm text-left">
+                  <p>These calculations provide an estimate based on the Harris-Benedict equation. Individual needs may vary.</p>
+                  {formData.goal === "lose" && (
+                    <p className="mt-2">For weight loss, we've created a moderate 500 calorie deficit. This should result in about 1 pound of weight loss per week.</p>
+                  )}
+                  {formData.goal === "gain" && (
+                    <p className="mt-2">For weight gain, we've added a 500 calorie surplus. This should result in about 1 pound of weight gain per week.</p>
+                  )}
                 </div>
               </div>
             )}
@@ -707,9 +721,9 @@ const FitnessCalculator = () => {
               Calculate your one-rep max and see how much weight you should lift for different rep ranges.
             </p>
             
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="form-mobile">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                <div>
+                <div className="form-group-mobile">
                   <label className="block text-sm font-medium mb-1 text-foreground">Exercise</label>
                   <select
                     name="exercise"
@@ -725,23 +739,23 @@ const FitnessCalculator = () => {
                   </select>
                 </div>
                 
-                <div>
+                <div className="form-group-mobile">
                   <label className="block text-sm font-medium mb-1 text-foreground">Weight Lifted</label>
-                  <div className="flex">
+                  <div className="input-with-unit-mobile">
                     <input
                       type="number"
                       name="liftWeight"
                       value={formData.liftWeight}
                       onChange={handleInputChange}
                       placeholder="Enter weight"
-                      className="flex-grow p-2 border border-border rounded-l bg-background text-foreground placeholder-muted-foreground"
+                      className="flex-grow p-2 border-0 rounded-l bg-background text-foreground placeholder-muted-foreground"
                       required
                     />
                     <select
                       name="weightUnit"
                       value={formData.weightUnit}
                       onChange={handleInputChange}
-                      className="p-2 border border-l-0 border-border rounded-r bg-background text-foreground"
+                      className="p-2 border-0 rounded-r bg-muted text-foreground"
                     >
                       <option value="kg">kg</option>
                       <option value="lbs">lbs</option>
@@ -749,7 +763,7 @@ const FitnessCalculator = () => {
                   </div>
                 </div>
                 
-                <div>
+                <div className="form-group-mobile">
                   <label className="block text-sm font-medium mb-1 text-foreground">Reps Performed</label>
                   <input
                     type="number"
@@ -762,7 +776,7 @@ const FitnessCalculator = () => {
                     className="w-full p-2 border border-border rounded bg-background text-foreground placeholder-muted-foreground"
                     required
                   />
-                  <div className="text-xs text-muted-foreground mt-1">
+                  <div className="helper-text-mobile">
                     Enter between 1-12 reps for accurate calculations
                   </div>
                 </div>
@@ -770,32 +784,32 @@ const FitnessCalculator = () => {
               
               <button
                 type="submit"
-                className="w-full py-2 px-4 gradient-primary text-primary-foreground rounded shadow-glow hover:shadow-glow transition"
+                className="btn-calculate-mobile"
               >
                 Calculate 1RM
               </button>
             </form>
             
             {results.oneRepMax && (
-              <div className="mt-6 p-4 bg-primary/10 rounded-lg">
-                <div className="text-center mb-4">
-                  <h3 className="text-lg font-semibold mb-2">Your One-Rep Max ({formData.exercise})</h3>
-                  <div className="text-4xl font-bold text-primary">
+              <div className="results-mobile">
+                <div className="results-header-mobile">
+                  <h3 className="results-title-mobile">Your One-Rep Max ({formData.exercise})</h3>
+                  <div className="results-value-mobile">
                     {results.oneRepMax.max} {formData.weightUnit}
                   </div>
                 </div>
                 
-                <h4 className="font-medium mb-2">Estimated max weight at different rep ranges:</h4>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                <h4 className="font-medium mb-2 text-center">Estimated max weight at different rep ranges:</h4>
+                <div className="onerm-grid-mobile">
                   {Object.entries(results.oneRepMax.percentages).map(([reps, weight]) => (
-                    <div key={reps} className="p-2 bg-white dark:bg-gray-800 rounded shadow-sm text-center">
-                      <div className="text-sm text-muted-foreground">{reps}</div>
-                      <div className="font-bold">{weight} {formData.weightUnit}</div>
+                    <div key={reps} className="onerm-card-mobile">
+                      <div className="reps">{reps}</div>
+                      <div className="weight">{weight} {formData.weightUnit}</div>
                     </div>
                   ))}
                 </div>
                 
-                <p className="mt-4 text-sm text-muted-foreground">
+                <p className="mt-4 text-sm text-muted-foreground text-center">
                   These calculations are estimates based on the Brzycki formula. Actual performance may vary based on individual factors.
                 </p>
               </div>
@@ -809,20 +823,20 @@ const FitnessCalculator = () => {
   };
 
   return (
-    <div className="min-h-screen p-6 bg-background text-foreground">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold mb-6 flex items-center">
+    <div className="min-h-screen fitness-calculator-mobile bg-background text-foreground">
+      <div className="fitness-calculator-container-mobile">
+        <h1 className="fitness-calculator-title-mobile flex items-center justify-center">
           <FaCalculator className="mr-3 text-primary" /> Fitness Calculators
         </h1>
         
-        <div className="flex overflow-x-auto pb-2 mb-6">
+        <div className="calculator-tabs-mobile">
           {calculators.map((calc) => (
             <button
               key={calc.id}
               onClick={() => setActiveCalculator(calc.id)}
-              className={`flex items-center py-2 px-4 mr-2 rounded-lg whitespace-nowrap transition ${
+              className={`calculator-tab-mobile flex items-center ${
                 activeCalculator === calc.id
-                  ? "gradient-primary text-primary-foreground"
+                  ? "active"
                   : "bg-card hover:bg-accent hover:text-accent-foreground"
               }`}
             >
@@ -832,7 +846,7 @@ const FitnessCalculator = () => {
           ))}
         </div>
         
-        <div className="bg-card rounded-lg shadow-sm p-6">
+        <div className="fitness-calculator-card-mobile">
           {renderCalculator()}
         </div>
       </div>
