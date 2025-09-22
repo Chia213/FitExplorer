@@ -231,17 +231,17 @@ function AdminDashboard() {
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
-        <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+    <div className="p-3 sm:p-6 max-w-7xl mx-auto">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 sm:mb-6">
+        <h1 className="text-2xl sm:text-3xl font-bold">Admin Dashboard</h1>
 
-        <div className="flex flex-col sm:flex-row gap-3 mt-4 md:mt-0">
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mt-4 md:mt-0 w-full sm:w-auto">
           {/* Time range selector */}
-          <div className="relative inline-block">
+          <div className="relative inline-block w-full sm:w-auto">
             <select
               value={timeRange}
               onChange={(e) => setTimeRange(e.target.value)}
-              className="block appearance-none bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-md py-2 px-4 pr-8 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="block appearance-none bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-md py-2 px-4 pr-8 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full sm:w-auto text-sm sm:text-base"
             >
               <option value="week">Last 7 days</option>
               <option value="month">Last 30 days</option>
@@ -256,7 +256,7 @@ function AdminDashboard() {
           <button
             onClick={handleRefresh}
             disabled={refreshing}
-            className="flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md transition-colors disabled:bg-blue-300 disabled:cursor-not-allowed"
+            className="flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md transition-colors disabled:bg-blue-300 disabled:cursor-not-allowed w-full sm:w-auto text-sm sm:text-base"
           >
             {refreshing ? (
               <>
@@ -291,20 +291,20 @@ function AdminDashboard() {
       )}
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
         {/* Total Users Card */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-5 border-l-4 border-blue-500">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-5 border-l-4 border-blue-500">
           <div className="flex justify-between items-start">
-            <div>
-              <p className="text-gray-500 dark:text-gray-400 text-sm uppercase">
+            <div className="flex-1 min-w-0">
+              <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm uppercase truncate">
                 Total Users
               </p>
-              <h3 className="text-3xl font-bold mt-1">
+              <h3 className="text-2xl sm:text-3xl font-bold mt-1">
                 {stats.totalUsers}
               </h3>
             </div>
-            <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-full">
-              <FaUsers className="text-blue-500 text-xl" />
+            <div className="p-2 sm:p-3 bg-blue-100 dark:bg-blue-900/30 rounded-full flex-shrink-0 ml-2">
+              <FaUsers className="text-blue-500 text-lg sm:text-xl" />
             </div>
           </div>
           <div className="mt-4 flex items-center">
@@ -325,18 +325,18 @@ function AdminDashboard() {
         </div>
 
         {/* Active Users Card */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-5 border-l-4 border-green-500">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-5 border-l-4 border-green-500">
           <div className="flex justify-between items-start">
-            <div>
-              <p className="text-gray-500 dark:text-gray-400 text-sm uppercase">
+            <div className="flex-1 min-w-0">
+              <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm uppercase truncate">
                 Active Users
               </p>
-              <h3 className="text-3xl font-bold mt-1">
+              <h3 className="text-2xl sm:text-3xl font-bold mt-1">
                 {userStats?.active_users_last_month || 0}
               </h3>
             </div>
-            <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-full">
-              <FaUser className="text-green-500 text-xl" />
+            <div className="p-2 sm:p-3 bg-green-100 dark:bg-green-900/30 rounded-full flex-shrink-0 ml-2">
+              <FaUser className="text-green-500 text-lg sm:text-xl" />
             </div>
           </div>
           <div className="mt-4 flex items-center">
@@ -350,18 +350,18 @@ function AdminDashboard() {
         </div>
 
         {/* Total Workouts Card */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-5 border-l-4 border-purple-500">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-5 border-l-4 border-purple-500">
           <div className="flex justify-between items-start">
-            <div>
-              <p className="text-gray-500 dark:text-gray-400 text-sm uppercase">
+            <div className="flex-1 min-w-0">
+              <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm uppercase truncate">
                 Total Workouts
               </p>
-              <h3 className="text-3xl font-bold mt-1">
+              <h3 className="text-2xl sm:text-3xl font-bold mt-1">
                 {workoutStats?.total_workouts || 0}
               </h3>
             </div>
-            <div className="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-full">
-              <FaDumbbell className="text-purple-500 text-xl" />
+            <div className="p-2 sm:p-3 bg-purple-100 dark:bg-purple-900/30 rounded-full flex-shrink-0 ml-2">
+              <FaDumbbell className="text-purple-500 text-lg sm:text-xl" />
             </div>
           </div>
           <div className="mt-4 flex items-center">
@@ -382,18 +382,18 @@ function AdminDashboard() {
         </div>
 
         {/* Avg Duration Card */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-5 border-l-4 border-yellow-500">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-5 border-l-4 border-yellow-500">
           <div className="flex justify-between items-start">
-            <div>
-              <p className="text-gray-500 dark:text-gray-400 text-sm uppercase">
+            <div className="flex-1 min-w-0">
+              <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm uppercase truncate">
                 Avg Workout Duration
               </p>
-              <h3 className="text-3xl font-bold mt-1">
+              <h3 className="text-2xl sm:text-3xl font-bold mt-1">
                 {workoutStats?.avg_workout_duration || 0} min
               </h3>
             </div>
-            <div className="p-3 bg-yellow-100 dark:bg-yellow-900/30 rounded-full">
-              <FaClock className="text-yellow-500 text-xl" />
+            <div className="p-2 sm:p-3 bg-yellow-100 dark:bg-yellow-900/30 rounded-full flex-shrink-0 ml-2">
+              <FaClock className="text-yellow-500 text-lg sm:text-xl" />
             </div>
           </div>
           <div className="mt-4 flex items-center">
@@ -415,16 +415,17 @@ function AdminDashboard() {
       </div>
 
       {/* Detailed Statistics Sections */}
-      <div className="grid grid-cols-1 gap-6 mb-8">
+      <div className="grid grid-cols-1 gap-4 sm:gap-6 mb-6 sm:mb-8">
         {/* User Stats Detailed Section */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
           <div
-            className="p-4 flex justify-between items-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
+            className="p-3 sm:p-4 flex justify-between items-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
             onClick={() => toggleSection("users")}
           >
-            <h2 className="text-xl font-semibold flex items-center gap-2">
-              <FaUsers className="text-blue-500" />
-              User Statistics
+            <h2 className="text-lg sm:text-xl font-semibold flex items-center gap-2">
+              <FaUsers className="text-blue-500 text-lg sm:text-xl" />
+              <span className="hidden sm:inline">User Statistics</span>
+              <span className="sm:hidden">Users</span>
             </h2>
             <div className="flex items-center gap-2">
               <button
@@ -432,17 +433,18 @@ function AdminDashboard() {
                   e.stopPropagation();
                   navigate("/admin/users");
                 }}
-                className="text-sm bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded transition-colors"
+                className="text-xs sm:text-sm bg-blue-500 hover:bg-blue-600 text-white px-2 sm:px-3 py-1 rounded transition-colors"
               >
-                View All
+                <span className="hidden sm:inline">View All</span>
+                <span className="sm:hidden">All</span>
               </button>
-              {isSectionVisible("users") ? <FaChevronUp /> : <FaChevronDown />}
+              {isSectionVisible("users") ? <FaChevronUp className="text-sm" /> : <FaChevronDown className="text-sm" />}
             </div>
           </div>
 
           {isSectionVisible("users") && (
-            <div className="p-5 border-t border-gray-200 dark:border-gray-700">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="p-3 sm:p-5 border-t border-gray-200 dark:border-gray-700">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                 <div>
                   <h3 className="text-lg font-medium mb-4">User Growth</h3>
                   <div className="space-y-4">
@@ -839,88 +841,88 @@ function AdminDashboard() {
       </div>
 
       {/* Quick Access Section */}
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
-        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-          <FaList className="text-blue-500" />
+      <div className="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-lg shadow-md">
+        <h2 className="text-lg sm:text-xl font-semibold mb-4 flex items-center gap-2">
+          <FaList className="text-blue-500 text-lg sm:text-xl" />
           Quick Access
         </h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
           <button
             onClick={() => navigate("/admin/users")}
-            className="p-4 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-800/30 rounded-lg transition-colors flex flex-col items-center gap-2"
+            className="p-3 sm:p-4 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-800/30 rounded-lg transition-colors flex flex-col items-center gap-2"
           >
-            <FaUsers className="text-2xl text-blue-500" />
-            <span>Manage Users</span>
+            <FaUsers className="text-xl sm:text-2xl text-blue-500" />
+            <span className="text-sm sm:text-base text-center">Manage Users</span>
           </button>
 
           <button
             onClick={() => navigate("/admin/workouts")}
-            className="p-4 bg-purple-50 dark:bg-purple-900/30 hover:bg-purple-100 dark:hover:bg-purple-800/30 rounded-lg transition-colors flex flex-col items-center gap-2"
+            className="p-3 sm:p-4 bg-purple-50 dark:bg-purple-900/30 hover:bg-purple-100 dark:hover:bg-purple-800/30 rounded-lg transition-colors flex flex-col items-center gap-2"
           >
-            <FaDumbbell className="text-2xl text-purple-500" />
-            <span>Workout Analytics</span>
+            <FaDumbbell className="text-xl sm:text-2xl text-purple-500" />
+            <span className="text-sm sm:text-base text-center">Workout Analytics</span>
           </button>
 
           <button
             onClick={() => navigate("/admin/exercises")}
-            className="p-4 bg-primary/10 dark:bg-primary/20 hover:bg-primary/20 dark:hover:bg-primary/30 rounded-lg transition-colors flex flex-col items-center gap-2"
+            className="p-3 sm:p-4 bg-primary/10 dark:bg-primary/20 hover:bg-primary/20 dark:hover:bg-primary/30 rounded-lg transition-colors flex flex-col items-center gap-2"
           >
-            <FaChartBar className="text-2xl text-primary" />
-            <span>Exercise Analytics</span>
+            <FaChartBar className="text-xl sm:text-2xl text-primary" />
+            <span className="text-sm sm:text-base text-center">Exercise Analytics</span>
           </button>
 
           <button
             onClick={() => navigate("/admin/settings")}
-            className="p-4 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors flex flex-col items-center gap-2"
+            className="p-3 sm:p-4 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors flex flex-col items-center gap-2"
           >
-            <FaUser className="text-2xl text-gray-500" />
-            <span>Admin Settings</span>
+            <FaUser className="text-xl sm:text-2xl text-gray-500" />
+            <span className="text-sm sm:text-base text-center">Admin Settings</span>
           </button>
         </div>
       </div>
 
       {/* System Status Section */}
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md mt-6">
-        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-          <FaChartBar className="text-indigo-500" />
+      <div className="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-lg shadow-md mt-4 sm:mt-6">
+        <h2 className="text-lg sm:text-xl font-semibold mb-4 flex items-center gap-2">
+          <FaChartBar className="text-indigo-500 text-lg sm:text-xl" />
           System Status
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-indigo-50 dark:bg-indigo-900/30 p-4 rounded-lg">
-            <h3 className="font-medium text-indigo-800 dark:text-indigo-200 mb-2">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
+          <div className="bg-indigo-50 dark:bg-indigo-900/30 p-3 sm:p-4 rounded-lg">
+            <h3 className="font-medium text-indigo-800 dark:text-indigo-200 mb-2 text-sm sm:text-base">
               API Health
             </h3>
             <div className="flex items-center">
-              <div className="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
-              <span>All systems operational</span>
+              <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-green-500 mr-2"></div>
+              <span className="text-sm sm:text-base">All systems operational</span>
             </div>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-2">
               Current response time: {Math.floor(Math.random() * 100) + 20}ms
             </p>
           </div>
 
-          <div className="bg-indigo-50 dark:bg-indigo-900/30 p-4 rounded-lg">
-            <h3 className="font-medium text-indigo-800 dark:text-indigo-200 mb-2">
+          <div className="bg-indigo-50 dark:bg-indigo-900/30 p-3 sm:p-4 rounded-lg">
+            <h3 className="font-medium text-indigo-800 dark:text-indigo-200 mb-2 text-sm sm:text-base">
               Database Status
             </h3>
             <div className="flex items-center">
-              <div className="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
-              <span>Connected</span>
+              <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-green-500 mr-2"></div>
+              <span className="text-sm sm:text-base">Connected</span>
             </div>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-2">
               Last backup: {formatDateForDisplay(new Date())}
             </p>
           </div>
 
-          <div className="bg-indigo-50 dark:bg-indigo-900/30 p-4 rounded-lg">
-            <h3 className="font-medium text-indigo-800 dark:text-indigo-200 mb-2">
+          <div className="bg-indigo-50 dark:bg-indigo-900/30 p-3 sm:p-4 rounded-lg">
+            <h3 className="font-medium text-indigo-800 dark:text-indigo-200 mb-2 text-sm sm:text-base">
               Server Load
             </h3>
             <div className="flex items-center">
-              <div className="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
-              <span>Normal</span>
+              <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-green-500 mr-2"></div>
+              <span className="text-sm sm:text-base">Normal</span>
             </div>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-2">
               Memory usage: {Math.floor(Math.random() * 30) + 40}%
             </p>
           </div>
@@ -928,31 +930,31 @@ function AdminDashboard() {
       </div>
 
       {/* Users Table */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden mt-6">
-        <h2 className="text-xl font-semibold p-4 border-b border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden mt-4 sm:mt-6">
+        <h2 className="text-lg sm:text-xl font-semibold p-3 sm:p-4 border-b border-gray-200 dark:border-gray-700">
           User Management
         </h2>
         
         {loading ? (
-          <div className="p-4 text-center">Loading users...</div>
+          <div className="p-3 sm:p-4 text-center text-sm sm:text-base">Loading users...</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
               <thead className="bg-gray-50 dark:bg-gray-700">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Username
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider hidden sm:table-cell">
                     Email
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider hidden md:table-cell">
                     Joined
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
@@ -960,13 +962,16 @@ function AdminDashboard() {
               <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                 {users.map(user => (
                   <tr key={user.id}>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {user.username}
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-sm sm:text-base">
+                      <div className="font-medium">{user.username}</div>
+                      <div className="text-gray-500 dark:text-gray-400 sm:hidden text-xs truncate max-w-[150px]">
+                        {user.email}
+                      </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-sm sm:text-base hidden sm:table-cell">
                       {user.email}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                       {user.is_verified !== undefined && (
                         <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                           user.is_verified === true || 
@@ -990,16 +995,18 @@ function AdminDashboard() {
                         </span>
                       )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500 dark:text-gray-400 hidden md:table-cell">
                       {formatDateForDisplay(user.created_at)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <button className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 mr-3">
-                        Edit
-                      </button>
-                      <button className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300">
-                        Delete
-                      </button>
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium">
+                      <div className="flex flex-col sm:flex-row gap-1 sm:gap-3">
+                        <button className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 text-xs sm:text-sm">
+                          Edit
+                        </button>
+                        <button className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 text-xs sm:text-sm">
+                          Delete
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
