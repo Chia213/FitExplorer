@@ -75,20 +75,8 @@ os.makedirs(UPLOAD_DIRECTORY, exist_ok=True)
 
 app = FastAPI()
 
-# Configure CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        "https://fitexplorer.se",
-        "https://www.fitexplorer.se", 
-        "https://fitexplorerse.vercel.app",
-        "http://localhost:5173",  # Local dev
-    ],
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-    allow_headers=["*"],
-    expose_headers=["Content-Type", "Authorization"]
-)
+# CORS is handled by nginx reverse proxy
+# No need for FastAPI CORS middleware
 
 # CORS is handled by the CORSMiddleware above
 
