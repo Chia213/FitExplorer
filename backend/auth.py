@@ -811,12 +811,50 @@ async def verify_apple_token(
         print(f"=== APPLE AUTHORIZATION DEBUG ===")
         print(f"Full Apple authorization object: {authorization}")
         
-        # Extract email from Apple's response (if available)
-        # Apple may not provide email if user chose to hide it
-        email = authorization.get('user', {}).get('email')
-        name = authorization.get('user', {}).get('name', {})
+        # Extract email from JWT token (this is where Apple puts the real email)
+        email = None
+        name = {}
         
-        print(f"Apple user object: {authorization.get('user', {})}")
+        try:
+            # Decode the JWT token to get the real email
+            import jwt
+            import base64
+            
+            # Get the JWT token
+            id_token = authorization.get('id_token')
+            if id_token:
+                # Decode JWT without verification for now (in production, verify the signature)
+                # Split the JWT into parts
+                parts = id_token.split('.')
+                if len(parts) >= 2:
+                    # Decode the payload (middle part)
+                    payload = parts[1]
+                    # Add padding if needed
+                    payload += '=' * (4 - len(payload) % 4)
+                    decoded_payload = base64.b64decode(payload)
+                    import json
+                    jwt_data = json.loads(decoded_payload)
+                    
+                    print(f"JWT payload: {jwt_data}")
+                    
+                    # Extract email from JWT
+                    email = jwt_data.get('email')
+                    print(f"Email from JWT: {email}")
+                    
+                    # Extract name if available
+                    if 'name' in jwt_data:
+                        name = jwt_data.get('name', {})
+                        print(f"Name from JWT: {name}")
+                    
+        except Exception as e:
+            print(f"Error decoding JWT: {e}")
+        
+        # Fallback: try to get email from user object (usually empty)
+        if not email:
+            email = authorization.get('user', {}).get('email')
+            name = authorization.get('user', {}).get('name', {})
+            print(f"Fallback - Apple user object: {authorization.get('user', {})}")
+        
         print(f"Raw extracted email: {email}")
         print(f"Raw extracted name: {name}")
         
@@ -828,7 +866,7 @@ async def verify_apple_token(
         else:
             display_name = "Apple User"
         
-        # Handle email based on user's choice
+        # Handle email based on what we found
         if not email or email == "":
             # User chose "Hide My Email" - Apple didn't provide real email
             apple_user_id = authorization.get('user', {}).get('id', 'unknown')
