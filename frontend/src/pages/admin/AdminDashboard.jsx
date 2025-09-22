@@ -17,6 +17,14 @@ import {
   FaCog,
   FaUserCheck,
   FaUserTimes,
+  FaGoogle,
+  FaApple,
+  FaCheckCircle,
+  FaTimesCircle,
+  FaCheck,
+  FaTimes,
+  FaEdit,
+  FaTrash,
 } from "react-icons/fa";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import Card from "../../components/Card";
@@ -931,9 +939,17 @@ function AdminDashboard() {
 
       {/* Users Table */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden mt-4 sm:mt-6">
-        <h2 className="text-lg sm:text-xl font-semibold p-3 sm:p-4 border-b border-gray-200 dark:border-gray-700">
-          User Management
-        </h2>
+        <div className="flex justify-between items-center p-3 sm:p-4 border-b border-gray-200 dark:border-gray-700">
+          <h2 className="text-lg sm:text-xl font-semibold">
+            User Management
+          </h2>
+          <button
+            onClick={() => navigate("/admin/users")}
+            className="text-sm bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded transition-colors"
+          >
+            View All Users
+          </button>
+        </div>
         
         {loading ? (
           <div className="p-3 sm:p-4 text-center text-sm sm:text-base">Loading users...</div>
@@ -942,76 +958,152 @@ function AdminDashboard() {
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
               <thead className="bg-gray-50 dark:bg-gray-700">
                 <tr>
-                  <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Username
+                  <th className="px-2 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    User
                   </th>
-                  <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider hidden sm:table-cell">
+                  <th className="px-2 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider hidden sm:table-cell">
                     Email
                   </th>
-                  <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  <th className="px-2 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider hidden md:table-cell">
+                  <th className="px-2 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider hidden md:table-cell">
                     Joined
                   </th>
-                  <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  <th className="px-2 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
               </thead>
               <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                {users.map(user => (
-                  <tr key={user.id}>
-                    <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-sm sm:text-base">
-                      <div className="font-medium">{user.username}</div>
-                      <div className="text-gray-500 dark:text-gray-400 sm:hidden text-xs truncate max-w-[150px]">
-                        {user.email}
-                      </div>
-                    </td>
-                    <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-sm sm:text-base hidden sm:table-cell">
-                      {user.email}
-                    </td>
-                    <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
-                      {user.is_verified !== undefined && (
-                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          user.is_verified === true || 
-                          String(user.is_verified).toLowerCase() === 'true' || 
-                          user.is_verified === 1 || 
-                          String(user.is_verified) === '1' 
-                            ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
-                            : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                        }`}>
-                          {user.is_verified === true || 
-                           String(user.is_verified).toLowerCase() === 'true' || 
-                           user.is_verified === 1 || 
-                           String(user.is_verified) === '1' 
-                            ? 'Verified' 
-                            : 'Unverified'}
-                        </span>
-                      )}
-                      {user.is_verified === undefined && (
-                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200">
-                          Unknown
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500 dark:text-gray-400 hidden md:table-cell">
-                      {formatDateForDisplay(user.created_at)}
-                    </td>
-                    <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium">
-                      <div className="flex flex-col sm:flex-row gap-1 sm:gap-3">
-                        <button className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 text-xs sm:text-sm">
-                          Edit
-                        </button>
-                        <button className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 text-xs sm:text-sm">
-                          Delete
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                {users.slice(0, 5).map(user => {
+                  // Determine user type and verification status
+                  const isGoogleUser = user.oauth_provider === "google" || user.email?.includes('@gmail.com');
+                  const isAppleUser = user.oauth_provider === "apple" || user.signup_method?.includes('apple');
+                  const isVerified = user.is_verified || isGoogleUser || isAppleUser || user.is_admin;
+                  
+                  return (
+                    <tr key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                      <td className="px-2 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-sm sm:text-base">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 h-8 w-8 sm:h-10 sm:w-10 bg-gray-200 dark:bg-gray-600 rounded-full flex items-center justify-center">
+                            <FaUser className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm" />
+                          </div>
+                          <div className="ml-2 sm:ml-4">
+                            <div className="font-medium text-gray-900 dark:text-white">
+                              {user.username}
+                            </div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400 sm:hidden">
+                              {user.email}
+                            </div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">
+                              ID: {user.id}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-2 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-sm sm:text-base hidden sm:table-cell">
+                        <div className="text-gray-900 dark:text-white">
+                          {user.email}
+                        </div>
+                      </td>
+                      <td className="px-2 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                        <div className="flex flex-col space-y-1">
+                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                            isGoogleUser
+                              ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                              : isAppleUser
+                              ? "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
+                              : isVerified
+                              ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                              : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                          }`}>
+                            {isGoogleUser ? (
+                              <>
+                                <FaGoogle className="mr-1" />
+                                <span className="hidden sm:inline">Google</span>
+                                <span className="sm:hidden">G</span>
+                              </>
+                            ) : isAppleUser ? (
+                              <>
+                                <FaApple className="mr-1" />
+                                <span className="hidden sm:inline">Apple</span>
+                                <span className="sm:hidden">A</span>
+                              </>
+                            ) : isVerified ? (
+                              <>
+                                <FaCheckCircle className="mr-1" />
+                                <span className="hidden sm:inline">Verified</span>
+                                <span className="sm:hidden">V</span>
+                              </>
+                            ) : (
+                              <>
+                                <FaTimesCircle className="mr-1" />
+                                <span className="hidden sm:inline">Unverified</span>
+                                <span className="sm:hidden">U</span>
+                              </>
+                            )}
+                          </span>
+                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                            user.is_admin
+                              ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                              : "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
+                          }`}>
+                            {user.is_admin ? (
+                              <>
+                                <FaCheck className="mr-1" />
+                                <span className="hidden sm:inline">Admin</span>
+                                <span className="sm:hidden">A</span>
+                              </>
+                            ) : (
+                              <>
+                                <FaTimes className="mr-1" />
+                                <span className="hidden sm:inline">User</span>
+                                <span className="sm:hidden">U</span>
+                              </>
+                            )}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-2 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500 dark:text-gray-400 hidden md:table-cell">
+                        {formatDateForDisplay(user.created_at)}
+                      </td>
+                      <td className="px-2 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium">
+                        <div className="flex flex-col sm:flex-row gap-1 sm:gap-2">
+                          <button 
+                            onClick={() => navigate(`/admin/users?edit=${user.id}`)}
+                            className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 text-xs sm:text-sm flex items-center p-1 rounded hover:bg-indigo-50 dark:hover:bg-indigo-900/20"
+                            title="Edit user"
+                          >
+                            <FaEdit className="mr-1" />
+                            <span className="hidden sm:inline">Edit</span>
+                          </button>
+                          <button 
+                            onClick={() => navigate(`/admin/users?delete=${user.id}`)}
+                            className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 text-xs sm:text-sm flex items-center p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20"
+                            title="Delete user"
+                          >
+                            <FaTrash className="mr-1" />
+                            <span className="hidden sm:inline">Delete</span>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
+          </div>
+        )}
+        
+        {users.length > 5 && (
+          <div className="p-3 sm:p-4 border-t border-gray-200 dark:border-gray-700 text-center">
+            <button
+              onClick={() => navigate("/admin/users")}
+              className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 text-sm"
+            >
+              View all {users.length} users →
+            </button>
           </div>
         )}
       </div>

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   FaUser,
   FaArrowLeft,
@@ -69,6 +69,7 @@ function AdminUsers() {
   const [showPassword, setShowPassword] = useState(false);
 
   const navigate = useNavigate();
+  const location = useLocation();
   const { theme } = useTheme || { theme: "light" }; // Fallback if hook isn't available
 
   // Fetch users data
@@ -114,13 +115,19 @@ function AdminUsers() {
         const emailDomain = user.email ? user.email.split('@')[1]?.toLowerCase() : '';
         const isGoogleUser = emailDomain === 'gmail.com' || emailDomain === 'googlemail.com';
         
+        // Check for Apple users - look for Apple OAuth provider or signup method
+        const isAppleUser = user.oauth_provider === 'apple' || 
+                           user.signup_method?.includes('apple') ||
+                           user.email?.includes('@privaterelay.appleid.com') ||
+                           user.hashed_password === 'apple_oauth';
+        
         // Create normalized user object
         return {
           ...user,
-          // Add OAuth provider field if it's a Gmail account
-          oauth_provider: isGoogleUser ? "google" : null,
+          // Add OAuth provider field
+          oauth_provider: isGoogleUser ? "google" : (isAppleUser ? "apple" : user.oauth_provider),
           // Add is_verified field (defaults to false if not present in the original data)
-          is_verified: user.is_admin || isGoogleUser || Boolean(user.is_verified)
+          is_verified: user.is_admin || isGoogleUser || isAppleUser || Boolean(user.is_verified)
         };
       });
       
@@ -147,6 +154,31 @@ function AdminUsers() {
   useEffect(() => {
     fetchUsers();
   }, [fetchUsers]);
+
+  // Handle URL parameters for edit/delete
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const editUserId = searchParams.get('edit');
+    const deleteUserId = searchParams.get('delete');
+
+    if (editUserId && users.length > 0) {
+      const userToEdit = users.find(user => user.id === parseInt(editUserId));
+      if (userToEdit) {
+        handleEditUser(userToEdit);
+        // Clean up URL parameter
+        navigate('/admin/users', { replace: true });
+      }
+    }
+
+    if (deleteUserId && users.length > 0) {
+      const userToDelete = users.find(user => user.id === parseInt(deleteUserId));
+      if (userToDelete) {
+        handleDeleteClick(userToDelete);
+        // Clean up URL parameter
+        navigate('/admin/users', { replace: true });
+      }
+    }
+  }, [location.search, users, navigate]);
 
   // Auto-hide notification after 3 seconds
   useEffect(() => {
@@ -747,6 +779,11 @@ function AdminUsers() {
           <span className="sm:hidden">Google</span>
         </span>
         <span className="flex items-center">
+          <span className="inline-block w-3 h-3 mr-1 bg-gray-100 dark:bg-gray-900 rounded-full"></span>
+          <span className="hidden sm:inline">Apple User (Verified): Authenticated via Apple OAuth</span>
+          <span className="sm:hidden">Apple</span>
+        </span>
+        <span className="flex items-center">
           <span className="inline-block w-3 h-3 mr-1 bg-green-100 dark:bg-green-900 rounded-full"></span>
           <span className="hidden sm:inline">Admin-Created: Users created by admins are automatically verified</span>
           <span className="sm:hidden">Admin</span>
@@ -853,7 +890,7 @@ function AdminUsers() {
                 {/* User column with sort */}
                 <th
                   scope="col"
-                  className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer"
+                  className="px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer"
                   onClick={() => handleSort("username")}
                 >
                   <div className="flex items-center">
@@ -870,7 +907,7 @@ function AdminUsers() {
                 {/* Email column with sort - hidden on mobile */}
                 <th
                   scope="col"
-                  className="hidden sm:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer"
+                  className="hidden sm:table-cell px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer"
                   onClick={() => handleSort("email")}
                 >
                   <div className="flex items-center">
@@ -887,7 +924,7 @@ function AdminUsers() {
                 {/* Join Date column with sort - hidden on mobile */}
                 <th
                   scope="col"
-                  className="hidden md:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer"
+                  className="hidden md:table-cell px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer"
                   onClick={() => handleSort("created_at")}
                 >
                   <div className="flex items-center">
@@ -904,7 +941,7 @@ function AdminUsers() {
                 {/* Workouts column with sort - hidden on mobile */}
                 <th
                   scope="col"
-                  className="hidden lg:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer"
+                  className="hidden lg:table-cell px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer"
                   onClick={() => handleSort("workout_count")}
                 >
                   <div className="flex items-center">
@@ -920,14 +957,14 @@ function AdminUsers() {
 
                 <th
                   scope="col"
-                  className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                  className="px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
                 >
                   Status
                 </th>
 
                 <th
                   scope="col"
-                  className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                  className="px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
                 >
                   Actions
                 </th>
@@ -939,7 +976,7 @@ function AdminUsers() {
                   key={user.id}
                   className="hover:bg-gray-50 dark:hover:bg-gray-700"
                 >
-                  <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
+                  <td className="px-2 sm:px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <div className="flex-shrink-0 h-8 w-8 sm:h-10 sm:w-10 bg-gray-200 dark:bg-gray-600 rounded-full flex items-center justify-center">
                         <FaUser className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm" />
@@ -955,28 +992,36 @@ function AdminUsers() {
                         <div className="text-xs text-gray-500 dark:text-gray-400 sm:hidden">
                           {user.email}
                         </div>
+                        {/* Show join date on mobile */}
+                        <div className="text-xs text-gray-500 dark:text-gray-400 sm:hidden">
+                          Joined: {formatDate(user.created_at)}
+                        </div>
+                        {/* Show workouts on mobile */}
+                        <div className="text-xs text-gray-500 dark:text-gray-400 sm:hidden">
+                          Workouts: {user.workout_count || 0}
+                        </div>
                       </div>
                     </div>
                   </td>
                   {/* Email column - hidden on mobile */}
-                  <td className="hidden sm:table-cell px-3 sm:px-6 py-4 whitespace-nowrap">
+                  <td className="hidden sm:table-cell px-2 sm:px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900 dark:text-white">
                       {user.email}
                     </div>
                   </td>
                   {/* Join Date column - hidden on mobile */}
-                  <td className="hidden md:table-cell px-3 sm:px-6 py-4 whitespace-nowrap">
+                  <td className="hidden md:table-cell px-2 sm:px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900 dark:text-white">
                       {formatDate(user.created_at)}
                     </div>
                   </td>
                   {/* Workouts column - hidden on mobile */}
-                  <td className="hidden lg:table-cell px-3 sm:px-6 py-4 whitespace-nowrap">
+                  <td className="hidden lg:table-cell px-2 sm:px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900 dark:text-white">
-                      {user.workout_count}
+                      {user.workout_count || 0}
                     </div>
                   </td>
-                  <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
+                  <td className="px-2 sm:px-6 py-4 whitespace-nowrap">
                     <div className="flex flex-col space-y-1">
                       <span
                         className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
@@ -1035,43 +1080,47 @@ function AdminUsers() {
                       </span>
                     </div>
                   </td>
-                  <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center space-x-1 sm:space-x-3">
+                  <td className="px-2 sm:px-6 py-4 whitespace-nowrap">
+                    <div className="flex flex-col sm:flex-row gap-1 sm:gap-2">
                       <button
                         onClick={() => handleEditUser(user)}
-                        className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 p-1"
+                        className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 p-1 flex items-center"
                         title="Edit user"
                       >
-                        <FaEdit className="text-sm sm:text-base" />
+                        <FaEdit className="text-sm" />
+                        <span className="hidden sm:inline ml-1">Edit</span>
                       </button>
 
                       <button
                         onClick={() => handleResetPassword(user)}
-                        className="text-yellow-600 hover:text-yellow-900 dark:text-yellow-400 dark:hover:text-yellow-300 p-1"
+                        className="text-yellow-600 hover:text-yellow-900 dark:text-yellow-400 dark:hover:text-yellow-300 p-1 flex items-center"
                         title="Reset password"
                       >
-                        <FaKey className="text-sm sm:text-base" />
+                        <FaKey className="text-sm" />
+                        <span className="hidden sm:inline ml-1">Reset</span>
                       </button>
 
                       {user.is_admin ? (
                         <button
                           onClick={() => toggleAdminStatus(user.id, false)}
-                          className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 p-1"
+                          className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 p-1 flex items-center"
                           title="Remove admin privileges"
                         >
-                          <FaRegStar className="text-sm sm:text-base" />
+                          <FaRegStar className="text-sm" />
+                          <span className="hidden sm:inline ml-1">Remove Admin</span>
                         </button>
                       ) : (
                         <button
                           onClick={() => toggleAdminStatus(user.id, true)}
-                          className="text-primary hover:text-primary/80 dark:text-primary dark:hover:text-primary/80 p-1"
+                          className="text-primary hover:text-primary/80 dark:text-primary dark:hover:text-primary/80 p-1 flex items-center"
                           title="Make admin"
                         >
-                          <FaStar className="text-sm sm:text-base" />
+                          <FaStar className="text-sm" />
+                          <span className="hidden sm:inline ml-1">Make Admin</span>
                         </button>
                       )}
 
-                      {user.oauth_provider !== "google" && (
+                      {user.oauth_provider !== "google" && user.oauth_provider !== "apple" && (
                         user.is_verified ? (
                           <button
                             onClick={() => toggleVerificationStatus(user.id, false)}
@@ -1095,10 +1144,11 @@ function AdminUsers() {
 
                       <button
                         onClick={() => handleDeleteClick(user)}
-                        className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 p-1"
+                        className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 p-1 flex items-center"
                         title="Delete user"
                       >
-                        <FaTrash className="text-sm sm:text-base" />
+                        <FaTrash className="text-sm" />
+                        <span className="hidden sm:inline ml-1">Delete</span>
                       </button>
                     </div>
                   </td>
