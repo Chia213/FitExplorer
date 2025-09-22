@@ -78,12 +78,7 @@ app = FastAPI()
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://fitexplorer.se",
-        "https://www.fitexplorer.se", 
-        "https://fitexplorerse.vercel.app",
-        "http://localhost:5173",  # Local dev
-    ],
+    allow_origins=["*"],  # Allow all origins for now
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
