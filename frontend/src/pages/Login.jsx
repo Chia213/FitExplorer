@@ -48,8 +48,11 @@ function Login() {
             clientId: 'com.fitexplorer.webapp', // Your Service ID from Apple Developer Console
             scope: 'name email',
             redirectURI: window.location.origin,
-            usePopup: true
+            usePopup: true,
+            state: 'apple_signin',
+            nonce: 'apple_nonce_' + Date.now()
           });
+          console.log('Apple Sign-In configured to request: name and email');
           console.log('Apple Sign-In initialized successfully');
         } catch (error) {
           console.error('Apple Sign-In initialization failed:', error);

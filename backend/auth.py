@@ -807,10 +807,18 @@ async def verify_apple_token(
         # In production, you should verify the Apple JWT token properly
         # This is a simplified implementation for Apple's requirements
         
+        # Debug: Print the full authorization object
+        print(f"=== APPLE AUTHORIZATION DEBUG ===")
+        print(f"Full Apple authorization object: {authorization}")
+        
         # Extract email from Apple's response (if available)
         # Apple may not provide email if user chose to hide it
         email = authorization.get('user', {}).get('email')
         name = authorization.get('user', {}).get('name', {})
+        
+        print(f"Apple user object: {authorization.get('user', {})}")
+        print(f"Raw extracted email: {email}")
+        print(f"Raw extracted name: {name}")
         
         # Create a display name
         if name and name.get('firstName') and name.get('lastName'):
@@ -820,13 +828,21 @@ async def verify_apple_token(
         else:
             display_name = "Apple User"
         
-        # If no email provided by Apple, create a placeholder
-        if not email:
-            # Generate a unique email for Apple users who hide their email
+        # Handle email based on user's choice
+        if not email or email == "":
+            # User chose "Hide My Email" - Apple didn't provide real email
             apple_user_id = authorization.get('user', {}).get('id', 'unknown')
             email = f"apple_user_{apple_user_id}@privaterelay.appleid.com"
+            print(f"🔒 USER CHOSE 'HIDE MY EMAIL' - Using placeholder: {email}")
+            print(f"📧 This means the user's real email is hidden from the app")
+        else:
+            # User chose "Share My Email" - Apple provided real email
+            print(f"✅ USER CHOSE 'SHARE MY EMAIL' - Real email: {email}")
+            print(f"📧 This is the user's actual email address")
         
+        print(f"=== FINAL RESULT ===")
         print(f"Apple Sign-In - Email: {email}, Name: {display_name}")
+        print(f"==========================================")
         
         # Check if user already exists
         user = db.query(User).filter(User.email == email).first()
