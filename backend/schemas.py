@@ -246,6 +246,13 @@ class GoogleTokenVerifyRequest(BaseModel):
 class GoogleAuthResponse(Token):
     pass
 
+class AppleTokenVerifyRequest(BaseModel):
+    authorization: dict
+    source: Optional[str] = None  # To identify where the request is coming from (e.g., 'mobile')
+
+class AppleAuthResponse(Token):
+    pass
+
 
 class SavedWorkoutProgramCreate(BaseModel):
     program_data: dict

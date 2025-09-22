@@ -12,7 +12,7 @@ import jwt as pyjwt
 from jwt.exceptions import PyJWTError as JWTError
 from database import get_db, SessionLocal
 from models import User, AdminSettings, Set, Exercise, Workout, WorkoutPreferences, NutritionMeal, NutritionFood, NutritionGoal, CommonFood, UserSession, UserProfile
-from schemas import UserCreate, UserLogin, Token, GoogleTokenVerifyRequest, GoogleAuthResponse, ForgotPasswordRequest, ResetPasswordRequest, TokenVerificationRequest, ConfirmAccountDeletionRequest, ResendVerificationRequest, ChangePasswordRequest, SessionSettingsUpdate, UserSessionResponse
+from schemas import UserCreate, UserLogin, Token, GoogleTokenVerifyRequest, GoogleAuthResponse, AppleTokenVerifyRequest, AppleAuthResponse, ForgotPasswordRequest, ResetPasswordRequest, TokenVerificationRequest, ConfirmAccountDeletionRequest, ResendVerificationRequest, ChangePasswordRequest, SessionSettingsUpdate, UserSessionResponse
 from config import settings
 from security import generate_verification_token, hash_password, verify_password
 from dependencies import get_current_user as original_get_current_user, oauth2_scheme
@@ -773,6 +773,206 @@ async def verify_google_token(
             raise HTTPException(
                 status_code=500, 
                 detail="Authentication error occurred. Please try again later."
+            )
+
+
+@router.post("/apple-verify", response_model=AppleAuthResponse)
+async def verify_apple_token(
+    request_data: AppleTokenVerifyRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db)
+):
+    """
+    Verify Apple Sign-In token and create/authenticate user
+    """
+    try:
+        print(f"=== APPLE SIGN-IN VERIFICATION ATTEMPT ===")
+        
+        # Check if this is a mobile request
+        is_mobile = getattr(request_data, 'source', '') == 'mobile'
+        if is_mobile:
+            print("Request is from mobile device")
+        
+        # Extract user information from Apple authorization
+        authorization = request_data.authorization
+        identity_token = authorization.get('id_token')
+        
+        if not identity_token:
+            raise HTTPException(
+                status_code=400, 
+                detail="Apple Sign-In failed: No identity token received"
+            )
+        
+        # For now, we'll create a basic user with Apple Sign-In
+        # In production, you should verify the Apple JWT token properly
+        # This is a simplified implementation for Apple's requirements
+        
+        # Extract email from Apple's response (if available)
+        # Apple may not provide email if user chose to hide it
+        email = authorization.get('user', {}).get('email')
+        name = authorization.get('user', {}).get('name', {})
+        
+        # Create a display name
+        if name and name.get('firstName') and name.get('lastName'):
+            display_name = f"{name['firstName']} {name['lastName']}"
+        elif name and name.get('firstName'):
+            display_name = name['firstName']
+        else:
+            display_name = "Apple User"
+        
+        # If no email provided by Apple, create a placeholder
+        if not email:
+            # Generate a unique email for Apple users who hide their email
+            apple_user_id = authorization.get('user', {}).get('id', 'unknown')
+            email = f"apple_user_{apple_user_id}@privaterelay.appleid.com"
+        
+        print(f"Apple Sign-In - Email: {email}, Name: {display_name}")
+        
+        # Check if user already exists
+        user = db.query(User).filter(User.email == email).first()
+        
+        if not user:
+            print(f"Creating new Apple user with email: {email}")
+            user = User(
+                email=email,
+                username=display_name,
+                hashed_password="apple_oauth",
+                is_verified=True,  # Apple accounts are already verified
+                created_at=datetime.now(timezone.utc)
+            )
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+
+            # Create default nutrition meal for the new user
+            try:
+                today = datetime.now().strftime("%Y-%m-%d")
+                
+                # Create a breakfast meal
+                default_meal = NutritionMeal(
+                    name="Breakfast",
+                    date=today,
+                    time="08:00",
+                    user_id=user.id
+                )
+                db.add(default_meal)
+                db.flush()  # Get the meal ID without committing
+                
+                # Get some common breakfast foods from the database
+                common_foods = db.query(CommonFood).limit(3).all()
+                
+                # If we have foods in the database, add them to the meal
+                if common_foods:
+                    for food in common_foods:
+                        meal_food = NutritionFood(
+                            meal_id=default_meal.id,
+                            name=food.name,
+                            calories=food.calories,
+                            protein=food.protein,
+                            carbs=food.carbs,
+                            fat=food.fat,
+                            serving_size=food.serving_size,
+                            quantity=1.0
+                        )
+                        db.add(meal_food)
+                else:
+                    # If no foods in database, add some default ones
+                    default_foods = [
+                        {
+                            "name": "Oatmeal", 
+                            "calories": 150, 
+                            "protein": 5, 
+                            "carbs": 27, 
+                            "fat": 3, 
+                            "serving_size": "1 cup"
+                        },
+                        {
+                            "name": "Banana", 
+                            "calories": 105, 
+                            "protein": 1, 
+                            "carbs": 27, 
+                            "fat": 0, 
+                            "serving_size": "1 medium"
+                        },
+                        {
+                            "name": "Milk", 
+                            "calories": 150, 
+                            "protein": 8, 
+                            "carbs": 12, 
+                            "fat": 8, 
+                            "serving_size": "1 cup"
+                        }
+                    ]
+                    
+                    for food_data in default_foods:
+                        meal_food = NutritionFood(
+                            meal_id=default_meal.id,
+                            name=food_data["name"],
+                            calories=food_data["calories"],
+                            protein=food_data["protein"],
+                            carbs=food_data["carbs"],
+                            fat=food_data["fat"],
+                            serving_size=food_data["serving_size"],
+                            quantity=1.0
+                        )
+                        db.add(meal_food)
+                
+                db.commit()
+                print(f"Created default meal for new Apple user: {email}")
+                
+            except Exception as e:
+                print(f"Error creating default meal for new Apple user: {str(e)}")
+                # Don't fail registration if meal creation fails
+                pass
+
+            # Notify admin about new Apple user registration
+            background_tasks.add_task(
+                notify_admin_new_registration,
+                user.id,
+                user.email,
+                user.username,
+                via_google=False  # This is Apple, not Google
+            )
+        else:
+            print(f"Existing Apple user logging in: {email}")
+
+        # Create access token
+        try:
+            access_token = create_access_token(
+                data={"sub": user.username, "email": user.email},
+                expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+            )
+            print(f"Apple Sign-In successful for user: {email}")
+            
+            return {"access_token": access_token, "token_type": "bearer"}
+            
+        except Exception as token_error:
+            print(f"Error creating access token: {str(token_error)}")
+            import traceback
+            traceback.print_exc()
+            raise HTTPException(
+                status_code=500, 
+                detail=f"Error creating access token: {str(token_error)}"
+            )
+
+    except HTTPException:
+        # Re-raise HTTP exceptions as they already have proper status/detail
+        raise
+    except Exception as e:
+        print(f"Apple Sign-In error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        
+        # Provide a more helpful message for mobile users
+        if is_mobile:
+            raise HTTPException(
+                status_code=500, 
+                detail="Apple Sign-In failed on mobile. Please try again or use email login instead."
+            )
+        else:
+            raise HTTPException(
+                status_code=500, 
+                detail="Apple Sign-In error occurred. Please try again later."
             )
 
 

@@ -39,6 +39,40 @@ function Login() {
     window.dispatchEvent(new Event("auth-change"));
   }, []);
 
+  // Initialize Apple Sign-In
+  useEffect(() => {
+    const initializeAppleSignIn = () => {
+      if (window.AppleID && window.AppleID.auth) {
+        try {
+          window.AppleID.auth.init({
+            clientId: 'com.fitexplorer.webapp', // Your Service ID from Apple Developer Console
+            scope: 'name email',
+            redirectURI: window.location.origin,
+            usePopup: true
+          });
+          console.log('Apple Sign-In initialized successfully');
+        } catch (error) {
+          console.error('Apple Sign-In initialization failed:', error);
+        }
+      } else {
+        console.log('Apple Sign-In SDK not loaded yet, retrying...');
+        // Retry after a short delay
+        setTimeout(initializeAppleSignIn, 1000);
+      }
+    };
+
+    // Wait for Apple SDK to load
+    const checkAppleSDK = () => {
+      if (document.readyState === 'complete') {
+        initializeAppleSignIn();
+      } else {
+        window.addEventListener('load', initializeAppleSignIn);
+      }
+    };
+
+    checkAppleSDK();
+  }, []);
+
   // Detect if we're in a mobile WebView (like Expo Go)
   useEffect(() => {
     const isMobileWebView = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) && 
@@ -231,6 +265,62 @@ function Login() {
 
   const togglePasswordVisibility = () => {
     setShowPassword((prev) => !prev);
+  };
+
+  const handleAppleLogin = async () => {
+    try {
+      setError("Processing Apple Sign-In...");
+      
+      // Check if Apple Sign-In is available and initialized
+      if (!window.AppleID || !window.AppleID.auth) {
+        setError("Apple Sign-In is not available. Please use Google Sign-In or create an account.");
+        return;
+      }
+
+      // Use Apple's real Sign-In with popup
+      const response = await window.AppleID.auth.signIn();
+      
+      if (response && response.authorization) {
+        const { authorization } = response;
+        
+        // Send Apple authorization to backend
+        const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+        
+        const backendResponse = await fetch(`${API_URL}/auth/apple-verify`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            authorization: authorization,
+            source: 'mobile'
+          }),
+          signal: AbortSignal.timeout(15000)
+        });
+
+        const data = await backendResponse.json();
+
+        if (backendResponse.ok && data.access_token) {
+          console.log("Apple Sign-In successful");
+          localStorage.setItem("access_token", data.access_token);
+          localStorage.setItem("token", data.access_token);
+          localStorage.setItem("justLoggedIn", "true");
+          
+          // Clear any previous errors
+          setError(null);
+          
+          // Navigate to home
+          navigate("/");
+        } else {
+          setError(`Apple Sign-In failed: ${data.detail || 'Please try again'}`);
+        }
+      } else {
+        setError("Apple Sign-In was cancelled or failed");
+      }
+    } catch (error) {
+      console.error("Apple Sign-In error:", error);
+      setError(`Apple Sign-In error: ${error.message}`);
+    }
   };
 
   const handleGoogleLogin = async (credentialResponse) => {
@@ -472,8 +562,22 @@ function Login() {
             </span>
           </div>
 
-          {/* Fixed Google Login Button */}
+          {/* Sign in with Apple Button */}
           <div className="mt-4 sm:mt-6 flex justify-center">
+            <button
+              type="button"
+              onClick={handleAppleLogin}
+              className="bg-black hover:bg-gray-800 text-white font-semibold py-2.5 sm:py-3 px-6 sm:px-8 rounded-lg flex items-center gap-3 transition-colors text-sm sm:text-base w-full max-w-[280px] justify-center"
+            >
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.96-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.03-3.11z"/>
+              </svg>
+              Sign in with Apple
+            </button>
+          </div>
+
+          {/* Fixed Google Login Button */}
+          <div className="mt-3 sm:mt-4 flex justify-center">
             <GoogleLogin
               onSuccess={handleGoogleLogin}
               onError={() => {
