@@ -312,6 +312,10 @@ function Login() {
           // Clear any previous errors
           setError(null);
           
+          // Force auth state refresh before navigation
+          window.dispatchEvent(new Event('storage'));
+          window.dispatchEvent(new Event('auth-change'));
+          
           // Navigate to home
           navigate("/");
         } else {
