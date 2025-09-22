@@ -930,8 +930,7 @@ async def verify_apple_token(
                 notify_admin_new_registration,
                 user.id,
                 user.email,
-                user.username,
-                via_google=False  # This is Apple, not Google
+                user.username
             )
         else:
             print(f"Existing Apple user logging in: {email}")
