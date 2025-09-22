@@ -571,3 +571,31 @@ def toggle_user_verification(
         "is_verified": user.is_verified,
         "message": f"User verification status updated to {user.is_verified}"
     }
+
+
+@router.post("/users/{user_id}/reset-password", response_model=dict)
+def admin_reset_user_password(
+    user_id: int,
+    password_data: dict = Body(...),
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_admin_user)
+):
+    """Reset a user's password (admin only)"""
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    new_password = password_data.get("password")
+    if not new_password or len(new_password) < 8:
+        raise HTTPException(status_code=400, detail="Password must be at least 8 characters long")
+    
+    # Update password
+    user.hashed_password = pwd_context.hash(new_password)
+    db.commit()
+    
+    return {
+        "id": user.id,
+        "username": user.username,
+        "email": user.email,
+        "message": f"Password reset successfully for {user.username}"
+    }

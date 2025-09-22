@@ -200,6 +200,42 @@ export const useUser = () => {
     }
   }, [authUser, fetchUserData]);
 
+  // Global refresh mechanism for cross-device synchronization
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && authUser) {
+        // Refresh user data when tab becomes visible (user switched back to this tab)
+        fetchUserData();
+      }
+    };
+
+    const handleFocus = () => {
+      if (authUser) {
+        // Refresh user data when window regains focus
+        fetchUserData();
+      }
+    };
+
+    // Listen for storage events (like logout from other tabs)
+    const handleStorageChange = (e) => {
+      if (e.key === "token" || e.key === "access_token" || e.key === null) {
+        if (authUser) {
+          fetchUserData();
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, [authUser, fetchUserData]);
+
   // Function to check if a feature is unlocked
   const hasFeature = useCallback((featureKey) => {
     // Admin users have all features

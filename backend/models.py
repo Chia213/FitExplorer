@@ -30,6 +30,10 @@ class User(Base):
     last_login = Column(DateTime(timezone=True), nullable=True)
     allow_multiple_sessions = Column(Boolean, default=False)
     
+    # OAuth and signup tracking
+    oauth_provider = Column(String, nullable=True)  # 'google', 'apple', or null for email signup
+    signup_method = Column(String, default='email')  # 'email', 'google', 'apple'
+    
     # Add new profile fields
     height = Column(Float, nullable=True)
     weight = Column(Float, nullable=True)

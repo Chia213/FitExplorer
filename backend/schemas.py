@@ -149,6 +149,8 @@ class User(UserBase):
     created_at: datetime
     last_login: Optional[datetime] = None
     profile: Optional[UserProfile] = None
+    oauth_provider: Optional[str] = None
+    signup_method: Optional[str] = "email"
 
     class Config:
         from_attributes = True

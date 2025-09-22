@@ -217,6 +217,43 @@ function Profile() {
     }, 100);
   }, [preferences.enableAnimations, preferences.animationStyle, preferences.animationSpeed]);
 
+  // Effect to update profile picture when user data changes (for cross-device sync)
+  useEffect(() => {
+    if (user && user.profile_picture) {
+      // Force refresh profile picture with cache busting when user data changes
+      setProfilePicture(
+        `${backendURL}/${user.profile_picture}?t=${new Date().getTime()}`
+      );
+    } else if (user && !user.profile_picture) {
+      setProfilePicture(null);
+    }
+  }, [user?.profile_picture]);
+
+  // Effect to refresh user data when component becomes visible (for cross-device sync)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && user) {
+        // Refresh user data when tab becomes visible (user switched back to this tab)
+        fetchUserData();
+      }
+    };
+
+    const handleFocus = () => {
+      if (user) {
+        // Refresh user data when window regains focus
+        fetchUserData();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [user, fetchUserData]);
+
   // Function to fetch user data - extracted for reuse
   const fetchUserData = useCallback(async () => {
     const token = localStorage.getItem("token");
@@ -281,6 +318,8 @@ function Profile() {
         setProfilePicture(
           `${backendURL}/${userData.profile_picture}?t=${new Date().getTime()}`
         );
+      } else {
+        setProfilePicture(null);
       }
 
       // Set user preferences

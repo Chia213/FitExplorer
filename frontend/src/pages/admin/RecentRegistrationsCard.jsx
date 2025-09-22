@@ -95,17 +95,17 @@ function RecentRegistrationsCard() {
           No recent registrations
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {recentUsers.map((user) => (
             <div
               key={user.id}
-              className="flex items-center space-x-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700"
+              className="flex items-center space-x-3 p-2 sm:p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700"
             >
-              <div className="flex-shrink-0 h-10 w-10 bg-gray-200 dark:bg-gray-600 rounded-full flex items-center justify-center">
-                <FaUser className="text-gray-500 dark:text-gray-400" />
+              <div className="flex-shrink-0 h-8 w-8 sm:h-10 sm:w-10 bg-gray-200 dark:bg-gray-600 rounded-full flex items-center justify-center">
+                <FaUser className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                <p className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white truncate">
                   {user.username}
                 </p>
                 <div className="flex items-center text-xs text-gray-500 dark:text-gray-400">
@@ -128,13 +128,15 @@ function RecentRegistrationsCard() {
                 >
                   {user.is_verified ? (
                     <>
-                      <FaCheck className="inline mr-1" size={10} />
-                      Verified
+                      <FaCheck className="inline mr-1" size={8} />
+                      <span className="hidden sm:inline">Verified</span>
+                      <span className="sm:hidden">✓</span>
                     </>
                   ) : (
                     <>
-                      <FaTimes className="inline mr-1" size={10} />
-                      Unverified
+                      <FaTimes className="inline mr-1" size={8} />
+                      <span className="hidden sm:inline">Unverified</span>
+                      <span className="sm:hidden">✗</span>
                     </>
                   )}
                 </span>

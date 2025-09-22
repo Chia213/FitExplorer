@@ -91,28 +91,28 @@ function AdminWorkouts() {
   const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <div className="flex justify-between items-center mb-6">
+    <div className="p-4 sm:p-6 max-w-7xl mx-auto">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
         <button
           onClick={() => navigate("/admin")}
           className="flex items-center gap-2 text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
         >
           <FaArrowLeft /> Back to Dashboard
         </button>
-        <h1 className="text-3xl font-bold">Workout Analytics</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold">Workout Analytics</h1>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6">
         <Card
           title="Total Workouts"
           icon={<FaChartArea className="text-blue-500" />}
           elevated
         >
-          <div className="text-center py-6">
-            <p className="text-5xl font-bold text-blue-600 dark:text-blue-400">
+          <div className="text-center py-4 sm:py-6">
+            <p className="text-3xl sm:text-5xl font-bold text-blue-600 dark:text-blue-400">
               {workoutStats?.total_workouts || 0}
             </p>
-            <p className="mt-2 text-gray-600 dark:text-gray-400">
+            <p className="mt-2 text-sm sm:text-base text-gray-600 dark:text-gray-400">
               All-time workout logs
             </p>
           </div>
@@ -123,11 +123,11 @@ function AdminWorkouts() {
           icon={<FaCalendar className="text-green-500" />}
           elevated
         >
-          <div className="text-center py-6">
-            <p className="text-5xl font-bold text-green-600 dark:text-green-400">
+          <div className="text-center py-4 sm:py-6">
+            <p className="text-3xl sm:text-5xl font-bold text-green-600 dark:text-green-400">
               {workoutStats?.workouts_last_month || 0}
             </p>
-            <p className="mt-2 text-gray-600 dark:text-gray-400">
+            <p className="mt-2 text-sm sm:text-base text-gray-600 dark:text-gray-400">
               Workouts in the last 30 days
             </p>
           </div>
@@ -138,28 +138,28 @@ function AdminWorkouts() {
           icon={<FaClock className="text-purple-500" />}
           elevated
         >
-          <div className="text-center py-6">
-            <p className="text-5xl font-bold text-purple-600 dark:text-purple-400">
+          <div className="text-center py-4 sm:py-6">
+            <p className="text-3xl sm:text-5xl font-bold text-purple-600 dark:text-purple-400">
               {workoutStats?.avg_workout_duration || 0}
             </p>
-            <p className="mt-2 text-gray-600 dark:text-gray-400">
+            <p className="mt-2 text-sm sm:text-base text-gray-600 dark:text-gray-400">
               Minutes per workout
             </p>
           </div>
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6">
         <Card title="Workouts by Day of Week" elevated>
-          <div className="h-64 flex items-end justify-between px-4 pt-4">
+          <div className="h-48 sm:h-64 flex items-end justify-between px-2 sm:px-4 pt-4">
             {workoutDistribution.byDay.map((count, index) => {
               const maxValue = getMaxValue(workoutDistribution.byDay);
               const percentage = maxValue > 0 ? (count / maxValue) * 100 : 0;
 
               return (
-                <div key={index} className="flex flex-col items-center">
+                <div key={index} className="flex flex-col items-center flex-1">
                   <div
-                    className="w-10 bg-blue-500 dark:bg-blue-600 rounded-t-md flex items-end"
+                    className="w-6 sm:w-10 bg-blue-500 dark:bg-blue-600 rounded-t-md flex items-end"
                     style={{ height: `${percentage}%` }}
                   >
                     <span className="w-full text-center text-xs text-white font-bold pb-1">
@@ -176,7 +176,7 @@ function AdminWorkouts() {
         </Card>
 
         <Card title="Workout Time Distribution" elevated>
-          <div className="h-64 flex items-end justify-between px-2 pt-4">
+          <div className="h-48 sm:h-64 flex items-end justify-between px-1 sm:px-2 pt-4">
             {workoutDistribution.byHour.map((count, index) => {
               // We're going to group by 3-hour blocks to make it fit
               if (index % 3 !== 0) return null;
@@ -208,9 +208,9 @@ function AdminWorkouts() {
               };
 
               return (
-                <div key={index} className="flex flex-col items-center">
+                <div key={index} className="flex flex-col items-center flex-1">
                   <div
-                    className="w-12 bg-green-500 dark:bg-green-600 rounded-t-md flex items-end"
+                    className="w-6 sm:w-12 bg-green-500 dark:bg-green-600 rounded-t-md flex items-end"
                     style={{ height: `${percentage}%` }}
                   >
                     <span className="w-full text-center text-xs text-white font-bold pb-1">

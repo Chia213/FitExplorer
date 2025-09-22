@@ -366,12 +366,18 @@ async def google_callback(code: str, request: Request, background_tasks: Backgro
         existing_user = db.query(User).filter(
             User.email == user_info["email"]).first()
         if not existing_user:
+            # Determine platform from user agent
+            user_agent = request.headers.get("user-agent", "").lower()
+            platform = "mobile" if "mobile" in user_agent else "desktop"
+            
             new_user = User(
                 email=user_info["email"],
                 username=user_info["name"],
                 hashed_password="google_oauth",
                 is_verified=True,  # Google accounts are already verified
-                created_at=datetime.now(timezone.utc)
+                created_at=datetime.now(timezone.utc),
+                oauth_provider="google",
+                signup_method=f"google_{platform}"
             )
             db.add(new_user)
             db.commit()
@@ -618,12 +624,17 @@ async def verify_google_token(
         user = db.query(User).filter(User.email == email).first()
         if not user:
             print(f"Creating new user with email: {email}")
+            # Determine platform from mobile detection
+            platform = "mobile" if is_mobile else "desktop"
+            
             user = User(
                 email=email,
                 username=name,
                 hashed_password="google_oauth",
                 is_verified=True,  # Google accounts are already verified
-                created_at=datetime.now(timezone.utc)
+                created_at=datetime.now(timezone.utc),
+                oauth_provider="google",
+                signup_method=f"google_{platform}"
             )
             db.add(user)
             db.commit()
@@ -887,12 +898,17 @@ async def verify_apple_token(
         
         if not user:
             print(f"Creating new Apple user with email: {email}")
+            # Determine platform from mobile detection
+            platform = "mobile" if is_mobile else "desktop"
+            
             user = User(
                 email=email,
                 username=display_name,
                 hashed_password="apple_oauth",
                 is_verified=True,  # Apple accounts are already verified
-                created_at=datetime.now(timezone.utc)
+                created_at=datetime.now(timezone.utc),
+                oauth_provider="apple",
+                signup_method=f"apple_{platform}"
             )
             db.add(user)
             db.commit()

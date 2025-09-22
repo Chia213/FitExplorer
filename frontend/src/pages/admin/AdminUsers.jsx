@@ -10,6 +10,7 @@ import {
   FaSearch,
   FaTimesCircle,
   FaGoogle,
+  FaApple,
   FaSort,
   FaFilter,
   FaSortAmountDown,
@@ -612,6 +613,16 @@ function AdminUsers() {
     if (filterVerified !== "all") {
       if (filterVerified === "google") {
         result = result.filter((user) => user.oauth_provider === "google");
+      } else if (filterVerified === "apple") {
+        result = result.filter((user) => user.oauth_provider === "apple");
+      } else if (filterVerified === "google_mobile") {
+        result = result.filter((user) => user.signup_method === "google_mobile");
+      } else if (filterVerified === "google_desktop") {
+        result = result.filter((user) => user.signup_method === "google_desktop");
+      } else if (filterVerified === "apple_mobile") {
+        result = result.filter((user) => user.signup_method === "apple_mobile");
+      } else if (filterVerified === "apple_desktop") {
+        result = result.filter((user) => user.signup_method === "apple_desktop");
       } else if (filterVerified === "verified") {
         result = result.filter(
           (user) => user.is_verified === true && !user.oauth_provider
@@ -619,6 +630,18 @@ function AdminUsers() {
       } else if (filterVerified === "unverified") {
         result = result.filter(
           (user) => user.is_verified === false && !user.oauth_provider
+        );
+      } else if (filterVerified === "oauth") {
+        result = result.filter(
+          (user) => user.oauth_provider === "google" || user.oauth_provider === "apple"
+        );
+      } else if (filterVerified === "mobile") {
+        result = result.filter(
+          (user) => user.signup_method?.includes('mobile')
+        );
+      } else if (filterVerified === "desktop") {
+        result = result.filter(
+          (user) => user.signup_method?.includes('desktop')
         );
       }
     }
@@ -667,9 +690,9 @@ function AdminUsers() {
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-4 sm:p-6 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
         <div>
           <button
             onClick={() => navigate("/admin")}
@@ -677,57 +700,62 @@ function AdminUsers() {
           >
             <FaArrowLeft /> Back to Dashboard
           </button>
-          <h1 className="text-3xl font-bold">User Management</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold">User Management</h1>
         </div>
 
-        <div className="flex flex-wrap gap-2 mt-4 sm:mt-0">
+        <div className="flex flex-wrap gap-2 w-full sm:w-auto">
           <button
             onClick={handleCreateUser}
-            className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white px-3 py-2 rounded-md"
+            className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white px-3 py-2 rounded-md text-sm sm:text-base"
           >
-            <FaUserPlus /> New User
+            <FaUserPlus /> <span className="hidden sm:inline">New User</span>
           </button>
 
           <button
             onClick={handleExportUsers}
-            className="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-md"
+            className="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-md text-sm sm:text-base"
           >
-            <FaFileExport /> Export
+            <FaFileExport /> <span className="hidden sm:inline">Export</span>
           </button>
 
           <button
             onClick={fetchUsers}
             disabled={refreshing}
-            className="flex items-center gap-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 px-3 py-2 rounded-md disabled:opacity-50"
+            className="flex items-center gap-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 px-3 py-2 rounded-md disabled:opacity-50 text-sm sm:text-base"
           >
             <FaSync className={refreshing ? "animate-spin" : ""} />
-            {refreshing ? "Refreshing..." : "Refresh"}
+            <span className="hidden sm:inline">{refreshing ? "Refreshing..." : "Refresh"}</span>
           </button>
         </div>
       </div>
 
       {/* User Status Legend */}
-      <div className="flex flex-wrap gap-2 mt-2 ml-2 text-xs text-gray-500 dark:text-gray-400">
+      <div className="flex flex-wrap gap-2 mt-2 text-xs text-gray-500 dark:text-gray-400">
         <span className="flex items-center">
           <span className="inline-block w-3 h-3 mr-1 bg-green-100 dark:bg-green-900 rounded-full"></span>
-          Email Verified: User has confirmed their email
+          <span className="hidden sm:inline">Email Verified: User has confirmed their email</span>
+          <span className="sm:hidden">Verified</span>
         </span>
         <span className="flex items-center">
           <span className="inline-block w-3 h-3 mr-1 bg-red-100 dark:bg-red-900 rounded-full"></span>
-          Not Verified: User has not confirmed their email
+          <span className="hidden sm:inline">Not Verified: User has not confirmed their email</span>
+          <span className="sm:hidden">Unverified</span>
         </span>
         <span className="flex items-center">
           <span className="inline-block w-3 h-3 mr-1 bg-blue-100 dark:bg-blue-900 rounded-full"></span>
-          Google User (Verified): Authenticated via Google OAuth
+          <span className="hidden sm:inline">Google User (Verified): Authenticated via Google OAuth</span>
+          <span className="sm:hidden">Google</span>
         </span>
         <span className="flex items-center">
           <span className="inline-block w-3 h-3 mr-1 bg-green-100 dark:bg-green-900 rounded-full"></span>
-          Admin-Created: Users created by admins are automatically verified
+          <span className="hidden sm:inline">Admin-Created: Users created by admins are automatically verified</span>
+          <span className="sm:hidden">Admin</span>
         </span>
         <span className="flex items-center">
           <FaCheckCircle className="mr-1 text-green-600" />
           <FaTimesCircle className="mr-1 text-red-600" />
-          Verification toggle buttons (demo only - changes lost on refresh)
+          <span className="hidden sm:inline">Verification toggle buttons (demo only - changes lost on refresh)</span>
+          <span className="sm:hidden">Toggle</span>
         </span>
       </div>
 
@@ -770,14 +798,14 @@ function AdminUsers() {
 
       {/* Search and Filters */}
       <div className="mb-6 bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="relative col-span-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="relative sm:col-span-2 lg:col-span-2">
             <input
               type="text"
               placeholder="Search users by name or email..."
               value={searchQuery}
               onChange={handleSearch}
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
             />
           </div>
 
@@ -785,12 +813,20 @@ function AdminUsers() {
             <select
               value={filterVerified}
               onChange={(e) => setFilterVerified(e.target.value)}
-              className="w-full py-2 px-3 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full py-2 px-3 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
             >
               <option value="all">All Users</option>
-              <option value="verified">Verified</option>
-              <option value="unverified">Unverified</option>
+              <option value="verified">Email Verified</option>
+              <option value="unverified">Email Unverified</option>
               <option value="google">Google Users</option>
+              <option value="apple">Apple Users</option>
+              <option value="oauth">All OAuth Users</option>
+              <option value="mobile">Mobile Signups</option>
+              <option value="desktop">Desktop Signups</option>
+              <option value="google_mobile">Google Mobile</option>
+              <option value="google_desktop">Google Desktop</option>
+              <option value="apple_mobile">Apple Mobile</option>
+              <option value="apple_desktop">Apple Desktop</option>
             </select>
           </div>
 
@@ -798,7 +834,7 @@ function AdminUsers() {
             <select
               value={filterAdmin}
               onChange={(e) => setFilterAdmin(e.target.value)}
-              className="w-full py-2 px-3 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full py-2 px-3 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
             >
               <option value="all">All Roles</option>
               <option value="admin">Admins</option>
@@ -817,7 +853,7 @@ function AdminUsers() {
                 {/* User column with sort */}
                 <th
                   scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer"
+                  className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer"
                   onClick={() => handleSort("username")}
                 >
                   <div className="flex items-center">
@@ -831,10 +867,10 @@ function AdminUsers() {
                   </div>
                 </th>
 
-                {/* Email column with sort */}
+                {/* Email column with sort - hidden on mobile */}
                 <th
                   scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer"
+                  className="hidden sm:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer"
                   onClick={() => handleSort("email")}
                 >
                   <div className="flex items-center">
@@ -848,10 +884,10 @@ function AdminUsers() {
                   </div>
                 </th>
 
-                {/* Join Date column with sort */}
+                {/* Join Date column with sort - hidden on mobile */}
                 <th
                   scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer"
+                  className="hidden md:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer"
                   onClick={() => handleSort("created_at")}
                 >
                   <div className="flex items-center">
@@ -865,10 +901,10 @@ function AdminUsers() {
                   </div>
                 </th>
 
-                {/* Workouts column with sort */}
+                {/* Workouts column with sort - hidden on mobile */}
                 <th
                   scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer"
+                  className="hidden lg:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer"
                   onClick={() => handleSort("workout_count")}
                 >
                   <div className="flex items-center">
@@ -884,21 +920,14 @@ function AdminUsers() {
 
                 <th
                   scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                  className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
                 >
-                  Verified
+                  Status
                 </th>
 
                 <th
                   scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-                >
-                  Admin
-                </th>
-
-                <th
-                  scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                  className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
                 >
                   Actions
                 </th>
@@ -910,113 +939,135 @@ function AdminUsers() {
                   key={user.id}
                   className="hover:bg-gray-50 dark:hover:bg-gray-700"
                 >
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
-                      <div className="flex-shrink-0 h-10 w-10 bg-gray-200 dark:bg-gray-600 rounded-full flex items-center justify-center">
-                        <FaUser className="text-gray-500 dark:text-gray-400" />
+                      <div className="flex-shrink-0 h-8 w-8 sm:h-10 sm:w-10 bg-gray-200 dark:bg-gray-600 rounded-full flex items-center justify-center">
+                        <FaUser className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm" />
                       </div>
-                      <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900 dark:text-white">
+                      <div className="ml-2 sm:ml-4">
+                        <div className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white">
                           {user.username}
                         </div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400">
+                        <div className="text-xs text-gray-500 dark:text-gray-400">
                           ID: {user.id}
+                        </div>
+                        {/* Show email on mobile */}
+                        <div className="text-xs text-gray-500 dark:text-gray-400 sm:hidden">
+                          {user.email}
                         </div>
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  {/* Email column - hidden on mobile */}
+                  <td className="hidden sm:table-cell px-3 sm:px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900 dark:text-white">
                       {user.email}
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  {/* Join Date column - hidden on mobile */}
+                  <td className="hidden md:table-cell px-3 sm:px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900 dark:text-white">
                       {formatDate(user.created_at)}
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  {/* Workouts column - hidden on mobile */}
+                  <td className="hidden lg:table-cell px-3 sm:px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900 dark:text-white">
                       {user.workout_count}
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span
-                      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        user.oauth_provider === "google"
-                          ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
-                          : user.is_verified
-                          ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                          : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
-                      }`}
-                    >
-                      {user.oauth_provider === "google" ? (
-                        <>
-                          <FaGoogle className="mr-1" />
-                          Google User (Verified)
-                        </>
-                      ) : user.is_verified ? (
-                        <>
-                          <FaCheckCircle className="mr-1" />
-                          Email Verified
-                        </>
-                      ) : (
-                        <>
-                          <FaTimesCircle className="mr-1" />
-                          Not Verified
-                        </>
-                      )}
-                    </span>
+                  <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
+                    <div className="flex flex-col space-y-1">
+                      <span
+                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                          user.oauth_provider === "google"
+                            ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                            : user.oauth_provider === "apple"
+                            ? "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
+                            : user.is_verified
+                            ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                            : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                        }`}
+                      >
+                        {user.oauth_provider === "google" ? (
+                          <>
+                            <FaGoogle className="mr-1" />
+                            <span className="hidden sm:inline">
+                              Google {user.signup_method?.includes('mobile') ? '(Mobile)' : '(Desktop)'}
+                            </span>
+                            <span className="sm:hidden">Google</span>
+                          </>
+                        ) : user.oauth_provider === "apple" ? (
+                          <>
+                            <FaApple className="mr-1" />
+                            <span className="hidden sm:inline">
+                              Apple {user.signup_method?.includes('mobile') ? '(Mobile)' : '(Desktop)'}
+                            </span>
+                            <span className="sm:hidden">Apple</span>
+                          </>
+                        ) : user.is_verified ? (
+                          <>
+                            <FaCheckCircle className="mr-1" />
+                            <span className="hidden sm:inline">Email Verified</span>
+                            <span className="sm:hidden">Verified</span>
+                          </>
+                        ) : (
+                          <>
+                            <FaTimesCircle className="mr-1" />
+                            <span className="hidden sm:inline">Not Verified</span>
+                            <span className="sm:hidden">Unverified</span>
+                          </>
+                        )}
+                      </span>
+                      <span
+                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                          user.is_admin
+                            ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                            : "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
+                        }`}
+                      >
+                        {user.is_admin ? (
+                          <FaCheck className="mr-1" />
+                        ) : (
+                          <FaTimes className="mr-1" />
+                        )}
+                        {user.is_admin ? "Admin" : "User"}
+                      </span>
+                    </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span
-                      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        user.is_admin
-                          ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                          : "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
-                      }`}
-                    >
-                      {user.is_admin ? (
-                        <FaCheck className="mr-1" />
-                      ) : (
-                        <FaTimes className="mr-1" />
-                      )}
-                      {user.is_admin ? "Yes" : "No"}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center space-x-3">
+                  <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center space-x-1 sm:space-x-3">
                       <button
                         onClick={() => handleEditUser(user)}
-                        className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+                        className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 p-1"
                         title="Edit user"
                       >
-                        <FaEdit />
+                        <FaEdit className="text-sm sm:text-base" />
                       </button>
 
                       <button
                         onClick={() => handleResetPassword(user)}
-                        className="text-yellow-600 hover:text-yellow-900 dark:text-yellow-400 dark:hover:text-yellow-300"
+                        className="text-yellow-600 hover:text-yellow-900 dark:text-yellow-400 dark:hover:text-yellow-300 p-1"
                         title="Reset password"
                       >
-                        <FaKey />
+                        <FaKey className="text-sm sm:text-base" />
                       </button>
 
                       {user.is_admin ? (
                         <button
                           onClick={() => toggleAdminStatus(user.id, false)}
-                          className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                          className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 p-1"
                           title="Remove admin privileges"
                         >
-                          <FaRegStar />
+                          <FaRegStar className="text-sm sm:text-base" />
                         </button>
                       ) : (
                         <button
                           onClick={() => toggleAdminStatus(user.id, true)}
-                          className="text-primary hover:text-primary/80 dark:text-primary dark:hover:text-primary/80"
+                          className="text-primary hover:text-primary/80 dark:text-primary dark:hover:text-primary/80 p-1"
                           title="Make admin"
                         >
-                          <FaStar />
+                          <FaStar className="text-sm sm:text-base" />
                         </button>
                       )}
 
@@ -1024,30 +1075,30 @@ function AdminUsers() {
                         user.is_verified ? (
                           <button
                             onClick={() => toggleVerificationStatus(user.id, false)}
-                            className="text-primary hover:text-primary/80 dark:text-primary dark:hover:text-primary/80 flex items-center border border-primary/30 rounded-md px-2 py-1"
+                            className="text-primary hover:text-primary/80 dark:text-primary dark:hover:text-primary/80 flex items-center border border-primary/30 rounded-md px-1 py-0.5 sm:px-2 sm:py-1"
                             title="Mark as unverified"
                           >
-                            <FaCheckCircle className="mr-1" />
-                            <span className="text-xs">Verified</span>
+                            <FaCheckCircle className="mr-1 text-xs" />
+                            <span className="text-xs hidden sm:inline">Verified</span>
                           </button>
                         ) : (
                           <button
                             onClick={() => toggleVerificationStatus(user.id, true)}
-                            className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 flex items-center border border-red-300 rounded-md px-2 py-1"
+                            className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 flex items-center border border-red-300 rounded-md px-1 py-0.5 sm:px-2 sm:py-1"
                             title="Mark as verified"
                           >
-                            <FaTimesCircle className="mr-1" />
-                            <span className="text-xs">Verify</span>
+                            <FaTimesCircle className="mr-1 text-xs" />
+                            <span className="text-xs hidden sm:inline">Verify</span>
                           </button>
                         )
                       )}
 
                       <button
                         onClick={() => handleDeleteClick(user)}
-                        className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                        className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 p-1"
                         title="Delete user"
                       >
-                        <FaTrash />
+                        <FaTrash className="text-sm sm:text-base" />
                       </button>
                     </div>
                   </td>

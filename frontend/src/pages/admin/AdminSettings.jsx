@@ -110,16 +110,16 @@ function AdminSettings() {
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold flex items-center gap-2">
+    <div className="p-4 sm:p-6 max-w-7xl mx-auto">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+        <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
           <FaCog className="text-gray-500" />
           Admin Settings
         </h1>
         <button
           onClick={handleSaveSettings}
           disabled={savingSettings}
-          className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md transition-colors flex items-center gap-2 disabled:bg-blue-300 disabled:cursor-not-allowed"
+          className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md transition-colors flex items-center gap-2 disabled:bg-blue-300 disabled:cursor-not-allowed w-full sm:w-auto"
         >
           {savingSettings ? (
             <>
@@ -147,19 +147,19 @@ function AdminSettings() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* User Management Settings */}
         <div className="space-y-4">
           <h3 className="text-lg font-medium">User Management</h3>
           <div className="space-y-2">
-            <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <div>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg gap-3">
+              <div className="flex-1">
                 <p className="font-medium">Auto-verify New Users</p>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   Automatically verify email for new registrations
                 </p>
               </div>
-              <label className="relative inline-flex items-center cursor-pointer">
+              <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
                 <input
                   type="checkbox"
                   className="sr-only peer"
@@ -169,14 +169,14 @@ function AdminSettings() {
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
               </label>
             </div>
-            <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <div>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg gap-3">
+              <div className="flex-1">
                 <p className="font-medium">Require Email Verification</p>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   Users must verify email before accessing features
                 </p>
               </div>
-              <label className="relative inline-flex items-center cursor-pointer">
+              <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
                 <input
                   type="checkbox"
                   className="sr-only peer"
@@ -193,14 +193,14 @@ function AdminSettings() {
         <div className="space-y-4">
           <h3 className="text-lg font-medium">Security</h3>
           <div className="space-y-2">
-            <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <div>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg gap-3">
+              <div className="flex-1">
                 <p className="font-medium">Two-Factor Authentication</p>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   Require 2FA for admin accounts
                 </p>
               </div>
-              <label className="relative inline-flex items-center cursor-pointer">
+              <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
                 <input
                   type="checkbox"
                   className="sr-only peer"
@@ -210,15 +210,15 @@ function AdminSettings() {
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
               </label>
             </div>
-            <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <div>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg gap-3">
+              <div className="flex-1">
                 <p className="font-medium">Session Timeout</p>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   Automatically log out inactive admins
                 </p>
               </div>
               <select
-                className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md px-3 py-1"
+                className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md px-3 py-1 flex-shrink-0"
                 value={adminSettings.session_timeout}
                 onChange={(e) => handleSettingChange('session_timeout', parseInt(e.target.value))}
               >
@@ -235,15 +235,15 @@ function AdminSettings() {
         <div className="space-y-4">
           <h3 className="text-lg font-medium">Backup & Maintenance</h3>
           <div className="space-y-2">
-            <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <div>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg gap-3">
+              <div className="flex-1">
                 <p className="font-medium">Automatic Backups</p>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   Schedule regular database backups
                 </p>
               </div>
               <select
-                className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md px-3 py-1"
+                className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md px-3 py-1 flex-shrink-0"
                 value={adminSettings.backup_frequency}
                 onChange={(e) => handleSettingChange('backup_frequency', e.target.value)}
               >
@@ -252,15 +252,15 @@ function AdminSettings() {
                 <option value="monthly">Monthly</option>
               </select>
             </div>
-            <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <div>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg gap-3">
+              <div className="flex-1">
                 <p className="font-medium">Data Retention</p>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   Keep workout history for
                 </p>
               </div>
               <select
-                className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md px-3 py-1"
+                className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md px-3 py-1 flex-shrink-0"
                 value={adminSettings.data_retention_months}
                 onChange={(e) => handleSettingChange('data_retention_months', parseInt(e.target.value))}
               >
@@ -277,14 +277,14 @@ function AdminSettings() {
         <div className="space-y-4">
           <h3 className="text-lg font-medium">Notifications</h3>
           <div className="space-y-2">
-            <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <div>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg gap-3">
+              <div className="flex-1">
                 <p className="font-medium">New User Alerts</p>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   Get notified of new registrations
                 </p>
               </div>
-              <label className="relative inline-flex items-center cursor-pointer">
+              <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
                 <input
                   type="checkbox"
                   className="sr-only peer"
@@ -294,14 +294,14 @@ function AdminSettings() {
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
               </label>
             </div>
-            <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <div>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg gap-3">
+              <div className="flex-1">
                 <p className="font-medium">System Alerts</p>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   Receive system status notifications
                 </p>
               </div>
-              <label className="relative inline-flex items-center cursor-pointer">
+              <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
                 <input
                   type="checkbox"
                   className="sr-only peer"
