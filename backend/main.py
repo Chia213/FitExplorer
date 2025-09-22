@@ -90,30 +90,7 @@ app.add_middleware(
     expose_headers=["Content-Type", "Authorization"]
 )
 
-# Add explicit CORS headers to prevent duplicates
-@app.middleware("http")
-async def add_cors_headers(request, call_next):
-    response = await call_next(request)
-    
-    # Get the origin from the request
-    origin = request.headers.get("origin")
-    
-    # Only add CORS headers if origin is in our allowed list
-    allowed_origins = [
-        "https://fitexplorer.se",
-        "https://www.fitexplorer.se", 
-        "https://fitexplorerse.vercel.app",
-        "http://localhost:5173"
-    ]
-    
-    if origin in allowed_origins:
-        response.headers["Access-Control-Allow-Origin"] = origin
-        response.headers["Access-Control-Allow-Credentials"] = "true"
-        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
-        response.headers["Access-Control-Allow-Headers"] = "*"
-        response.headers["Access-Control-Expose-Headers"] = "Content-Type, Authorization"
-    
-    return response
+# CORS is handled by the CORSMiddleware above
 
 
 
