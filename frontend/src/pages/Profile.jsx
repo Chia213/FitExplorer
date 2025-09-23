@@ -126,7 +126,7 @@ function Profile() {
     });
     
     // Check if global animation state exists as fallback
-    const globalAnimations = window.FitExplorerAnimations;
+    const globalAnimations = window.FitExplorerAnimations || null;
     let animationsEnabled = preferences.enableAnimations;
     let animationStyle = preferences.animationStyle || 'subtle';
     let animationSpeed = preferences.animationSpeed || 'medium';
@@ -149,7 +149,7 @@ function Profile() {
   // Apply animations directly when component mounts or preferences change
   useEffect(() => {
     // Check if global animation state exists and use as fallback
-    const globalAnimations = window.FitExplorerAnimations;
+    const globalAnimations = window.FitExplorerAnimations || null;
     
     let animationsEnabled = preferences.enableAnimations;
     let animationStyle = preferences.animationStyle || 'subtle';
