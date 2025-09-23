@@ -18,7 +18,7 @@ import { useTheme } from "../hooks/useTheme";
 //   notifyBioUpdated,
 //   notifyWorkoutGoalUpdated
 // } from '../utils/notificationsHelpers';
-import { useNotifications } from "../contexts/NotificationContext";
+// import { useNotifications } from "../contexts/NotificationContext"; // Temporarily disabled
 // import AchievementsSection from '../components/AchievementsSection'; // Temporarily disabled to fix circular dependency
 import {
   FaEdit,
@@ -122,7 +122,8 @@ function Profile() {
 
   const navigate = useNavigate();
   const { theme, premiumTheme, premiumThemes, isAdmin, changePremiumTheme } = useTheme();
-  const { allNotificationsEnabled } = useNotifications();
+  // const { allNotificationsEnabled } = useNotifications(); // Temporarily disabled
+  const allNotificationsEnabled = true; // Temporary fallback
 
   // Add a function to get animation classes based on user preferences
   const getAnimationClasses = () => {
