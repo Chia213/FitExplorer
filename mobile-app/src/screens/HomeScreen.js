@@ -108,6 +108,10 @@ const HomeScreen = ({ navigation }) => {
     navigation.navigate('ProgressScreen');
   };
 
+  const handleViewProfile = () => {
+    navigation.navigate('ProfileScreen');
+  };
+
   const handleSyncData = async () => {
     try {
       // Sync unsynced workouts with server
@@ -174,9 +178,9 @@ const HomeScreen = ({ navigation }) => {
           <Text style={styles.actionText}>View Progress</Text>
         </TouchableOpacity>
         
-        <TouchableOpacity style={styles.actionButton} onPress={handleSyncData}>
-          <Ionicons name="sync-outline" size={24} color="#007AFF" />
-          <Text style={styles.actionText}>Sync Data</Text>
+        <TouchableOpacity style={styles.actionButton} onPress={handleViewProfile}>
+          <Ionicons name="person-outline" size={24} color="#007AFF" />
+          <Text style={styles.actionText}>Profile</Text>
         </TouchableOpacity>
       </View>
 

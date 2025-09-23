@@ -11,6 +11,7 @@ import HomeScreen from './src/screens/HomeScreen';
 import WorkoutScreen from './src/screens/WorkoutScreen';
 import ProgressScreen from './src/screens/ProgressScreen';
 import CreateWorkoutScreen from './src/screens/CreateWorkoutScreen';
+import ProfileScreen from './src/screens/ProfileScreen';
 
 // Import services
 import NotificationService from './src/services/NotificationService';
@@ -125,6 +126,11 @@ export default function App() {
           name="CreateWorkoutScreen" 
           component={CreateWorkoutScreen}
           options={{ title: 'Create Workout' }}
+        />
+        <Stack.Screen 
+          name="ProfileScreen" 
+          component={ProfileScreen}
+          options={{ title: 'Profile' }}
         />
       </Stack.Navigator>
     </NavigationContainer>

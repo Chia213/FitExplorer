@@ -38,6 +38,7 @@ import Signup from "./pages/Signup";
 import Profile from "./pages/Profile";
 import ProfileMinimal from "./pages/ProfileMinimal";
 import ProfileDebug from "./pages/ProfileDebug";
+import ProfileSimple from "./pages/ProfileSimple";
 import SavedPrograms from "./pages/SavedPrograms";
 import ProgramTracker from "./pages/ProgramTracker";
 import ChangePassword from "./pages/ChangePassword";
@@ -175,7 +176,7 @@ function App() {
                     <Route path="/progress-tracker" element={<AuthRoute><ProgressTracker /></AuthRoute>} />
                     <Route path="/add-exercise" element={<AuthRoute><AddExercise /></AuthRoute>} />
                     <Route path="/confirm-deletion" element={<AuthRoute><ConfirmDeletion /></AuthRoute>} />
-                    <Route path="/profile" element={<AuthRoute><ProfileDebug /></AuthRoute>} />
+                    <Route path="/profile" element={<AuthRoute><ProfileSimple /></AuthRoute>} />
                     <Route path="/saved-programs" element={<AuthRoute><SavedPrograms /></AuthRoute>} />
                     <Route path="/program-tracker" element={<AuthRoute><ProgramTracker /></AuthRoute>} />
                     <Route path="/change-password" element={<AuthRoute><ChangePassword /></AuthRoute>} />
