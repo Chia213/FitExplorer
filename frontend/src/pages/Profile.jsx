@@ -366,8 +366,6 @@ function Profile() {
         // Set card color from backend preferences
         if (userData.preferences.use_custom_card_color) {
           setCardColor(userData.preferences.card_color || "#f0f4ff");
-        } else if (premiumTheme && premiumThemes[premiumTheme]) {
-          setCardColor(premiumThemes[premiumTheme].primary);
         } else {
           setCardColor(userData.preferences.card_color || "#f0f4ff");
         }
@@ -514,7 +512,7 @@ function Profile() {
     } finally {
       setLoading(false);
     }
-  }, [navigate, premiumTheme, premiumThemes]);
+  }, [navigate]);
 
   // Initial data loading
   useEffect(() => {
