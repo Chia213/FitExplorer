@@ -18,7 +18,7 @@ import {
   notifyWorkoutGoalUpdated
 } from '../utils/notificationsHelpers';
 import { useNotifications } from "../contexts/NotificationContext";
-import AchievementsSection from '../components/AchievementsSection';
+// import AchievementsSection from '../components/AchievementsSection'; // Temporarily disabled to fix circular dependency
 import {
   FaEdit,
   FaTrash,
@@ -1985,15 +1985,15 @@ function Profile() {
           </div>
         </div>
 
-        {/* Achievements Section */}
-        <div className="mt-8" id="achievements">
+        {/* Achievements Section - Temporarily disabled to fix circular dependency */}
+        {/* <div className="mt-8" id="achievements">
           <ErrorBoundary>
             <AchievementsSection 
               backendURL={backendURL} 
               key={`achievements-${user?.id}-${lastUpdated}`} 
             />
           </ErrorBoundary>
-        </div>
+        </div> */}
 
         {/* Account Actions */}
         <div className="mt-4 sm:mt-6 md:mt-8 bg-card rounded-2xl shadow-lg p-3 sm:p-4 md:p-6">
