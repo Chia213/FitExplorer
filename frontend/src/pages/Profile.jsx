@@ -1,22 +1,23 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "../hooks/useTheme";
-import { 
-  notifyProfileUpdated, 
-  notifyUsernameChanged, 
-  notifyPersonalInfoUpdated,
-  notifyProfilePictureUpdated,
-  notifyCardColorUpdated,
-  notifyWeightGoalUpdated,
-  notifyWorkoutFrequencyGoalUpdated,
-  notifyHeightUpdated,
-  notifyWeightUpdated,
-  notifyAgeUpdated,
-  notifyGenderUpdated,
-  notifyFitnessGoalsUpdated,
-  notifyBioUpdated,
-  notifyWorkoutGoalUpdated
-} from '../utils/notificationsHelpers';
+// Temporarily disabled to fix circular dependency
+// import { 
+//   notifyProfileUpdated, 
+//   notifyUsernameChanged, 
+//   notifyPersonalInfoUpdated,
+//   notifyProfilePictureUpdated,
+//   notifyCardColorUpdated,
+//   notifyWeightGoalUpdated,
+//   notifyWorkoutFrequencyGoalUpdated,
+//   notifyHeightUpdated,
+//   notifyWeightUpdated,
+//   notifyAgeUpdated,
+//   notifyGenderUpdated,
+//   notifyFitnessGoalsUpdated,
+//   notifyBioUpdated,
+//   notifyWorkoutGoalUpdated
+// } from '../utils/notificationsHelpers';
 import { useNotifications } from "../contexts/NotificationContext";
 // import AchievementsSection from '../components/AchievementsSection'; // Temporarily disabled to fix circular dependency
 import {
@@ -721,7 +722,7 @@ function Profile() {
         // If username was changed, create a notification
         if (updatedData.username && updatedData.username !== user.username) {
             try {
-                await notifyUsernameChanged(updatedData.username);
+                // await notifyUsernameChanged(updatedData.username); // Temporarily disabled
             } catch (notificationError) {
                 // Don't fail the whole update if notification fails
             }
@@ -782,7 +783,7 @@ function Profile() {
         
         // Only send notification if notifications are enabled
         if (allNotificationsEnabled) {
-          await notifyProfilePictureUpdated();
+          // await notifyProfilePictureUpdated(); // Temporarily disabled
         }
       } else {
         setError(result.detail || "Failed to upload profile picture");
@@ -811,7 +812,7 @@ function Profile() {
         
         // Only send notification if notifications are enabled
         if (allNotificationsEnabled) {
-          await notifyProfilePictureUpdated();
+          // await notifyProfilePictureUpdated(); // Temporarily disabled
         }
       } else {
         const errorData = await response.json();
@@ -1103,39 +1104,39 @@ function Profile() {
       if (allNotificationsEnabled) {
         // Check which fields were updated and send specific notifications
         if (mappedData.height !== originalHeight && mappedData.height !== null) {
-          await notifyHeightUpdated(mappedData.height);
+          // await notifyHeightUpdated(mappedData.height); // Temporarily disabled
           notificationSent = true;
         }
         
         if (mappedData.weight !== originalWeight && mappedData.weight !== null) {
-          await notifyWeightUpdated(mappedData.weight);
+          // await notifyWeightUpdated(mappedData.weight); // Temporarily disabled
           notificationSent = true;
         }
         
         if (mappedData.age !== originalAge && mappedData.age !== null) {
-          await notifyAgeUpdated(mappedData.age);
+          // await notifyAgeUpdated(mappedData.age); // Temporarily disabled
           notificationSent = true;
         }
         
         if (mappedData.gender !== originalGender && mappedData.gender) {
-          await notifyGenderUpdated();
+          // await notifyGenderUpdated(); // Temporarily disabled
           notificationSent = true;
         }
         
         if (mappedData.fitness_goals !== originalFitnessGoals && mappedData.fitness_goals) {
           // Use the new specific notification for workout goals
-          await notifyWorkoutGoalUpdated(mappedData.fitness_goals);
+          // await notifyWorkoutGoalUpdated(mappedData.fitness_goals); // Temporarily disabled
           notificationSent = true;
         }
         
         if (mappedData.bio !== originalBio && mappedData.bio) {
-          await notifyBioUpdated();
+          // await notifyBioUpdated(); // Temporarily disabled
           notificationSent = true;
         }
         
         // If no specific field notifications were sent but something changed, send generic update
         if (!notificationSent && profileChanged) {
-          await notifyPersonalInfoUpdated();
+          // await notifyPersonalInfoUpdated(); // Temporarily disabled
         }
       }
 
