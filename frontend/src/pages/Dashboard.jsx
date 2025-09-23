@@ -148,18 +148,19 @@ const Dashboard = () => {
       if (!isAuthenticated) return;
       
       try {
-        const token = localStorage.getItem('access_token');
+        const token = localStorage.getItem('token') || localStorage.getItem('access_token');
         const headers = {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         };
 
-        // Fetch recent workouts
-        const workoutsResponse = await fetch(`${API_URL}/workouts/recent?limit=3`, { headers });
-        const recentWorkouts = workoutsResponse.ok ? await workoutsResponse.json() : [];
+        // Fetch recent workouts from the correct endpoint
+        const workoutsResponse = await fetch(`${API_URL}/workouts`, { headers });
+        const allWorkouts = workoutsResponse.ok ? await workoutsResponse.json() : [];
+        const recentWorkouts = allWorkouts.slice(0, 3); // Get the first 3 workouts
 
-        // Fetch user stats (you might need to create this endpoint)
-        const statsResponse = await fetch(`${API_URL}/users/stats`, { headers });
+        // Fetch user stats from the correct endpoint
+        const statsResponse = await fetch(`${API_URL}/workout-stats`, { headers });
         const userStats = statsResponse.ok ? await statsResponse.json() : {};
 
         setDashboardData({
