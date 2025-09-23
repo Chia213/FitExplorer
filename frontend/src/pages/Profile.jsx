@@ -843,7 +843,6 @@ function Profile() {
     setIsSaving(true);
     try {
       const token = localStorage.getItem("token");
-      
       // Prepare requests for both endpoints
       const settingsRequestBody = {
         use_custom_card_color: preferences.useCustomCardColor,
