@@ -1,109 +1,150 @@
-import React from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Alert, StatusBar } from 'react-native';
-import * as WebBrowser from 'expo-web-browser';
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, View, Text, TouchableOpacity, Alert, StatusBar, ActivityIndicator } from 'react-native';
+import { NavigationContainer } from '@react-navigation/native';
+import { createStackNavigator } from '@react-navigation/stack';
+import * as SplashScreen from 'expo-splash-screen';
+import * as Font from 'expo-font';
+import { Ionicons } from '@expo/vector-icons';
 
-const APP_URL = 'https://fitexplorer.se'; // Your deployed app URL
+// Import screens
+import HomeScreen from './src/screens/HomeScreen';
+import WorkoutScreen from './src/screens/WorkoutScreen';
+import ProgressScreen from './src/screens/ProgressScreen';
+import CreateWorkoutScreen from './src/screens/CreateWorkoutScreen';
+
+// Import services
+import NotificationService from './src/services/NotificationService';
+import HealthKitService from './src/services/HealthKitService';
+import OfflineStorageService from './src/services/OfflineStorageService';
+
+const Stack = createStackNavigator();
+
+// Keep the splash screen visible while we fetch resources
+SplashScreen.preventAutoHideAsync();
 
 export default function App() {
-  const openApp = async () => {
+  const [isReady, setIsReady] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  useEffect(() => {
+    async function prepare() {
+      try {
+        // Pre-load fonts
+        await Font.loadAsync({
+          ...Ionicons.font,
+        });
+
+        // Initialize native services
+        await initializeNativeServices();
+        
+        setIsReady(true);
+      } catch (e) {
+        console.warn('Error during app initialization:', e);
+        setIsReady(true);
+      }
+    }
+
+    prepare();
+  }, []);
+
+  const initializeNativeServices = async () => {
     try {
-      await WebBrowser.openBrowserAsync(APP_URL, {
-        presentationStyle: WebBrowser.WebBrowserPresentationStyle.FULL_SCREEN,
-        controlsColor: '#007AFF',
-        showTitle: false,
-        enableBarCollapsing: false,
-        showInRecents: true,
-      });
+      // Initialize notification service
+      await NotificationService.registerForPushNotifications();
+      
+      // Initialize HealthKit service
+      await HealthKitService.requestPermissions();
+      
+      // Initialize offline storage
+      await OfflineStorageService.initializeDatabase();
+      
+      setIsInitialized(true);
     } catch (error) {
-      Alert.alert('Error', 'Unable to open FitExplorer. Please check your internet connection.');
+      console.error('Error initializing native services:', error);
     }
   };
 
-  return (
-    <View style={styles.container}>
-      <StatusBar style="dark" />
-      
-      <View style={styles.content}>
-        <View style={styles.logoContainer}>
-          <Text style={styles.logo}>💪</Text>
-          <Text style={styles.appName}>FitExplorer</Text>
-          <Text style={styles.tagline}>Your Fitness Journey Starts Here</Text>
-        </View>
-        
-        <View style={styles.features}>
-          <Text style={styles.feature}>🏋️‍♀️ AI Workout Generator</Text>
-          <Text style={styles.feature}>📊 Progress Tracking</Text>
-          <Text style={styles.feature}>🥗 Nutrition Tracking</Text>
-          <Text style={styles.feature}>📈 Personal Records</Text>
-        </View>
-        
-        <TouchableOpacity style={styles.button} onPress={openApp}>
-          <Text style={styles.buttonText}>Open FitExplorer</Text>
-        </TouchableOpacity>
-        
-        <Text style={styles.note}>
-          Tap the button above to access the full FitExplorer experience in your browser.
-        </Text>
+  const onLayoutRootView = async () => {
+    if (isReady) {
+      await SplashScreen.hideAsync();
+    }
+  };
+
+  if (!isReady) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#007AFF" />
+        <Text style={styles.loadingText}>Loading FitExplorer...</Text>
       </View>
-    </View>
+    );
+  }
+
+  return (
+    <NavigationContainer onReady={onLayoutRootView}>
+      <StatusBar style="dark" />
+      <Stack.Navigator
+        initialRouteName="Home"
+        screenOptions={{
+          headerStyle: {
+            backgroundColor: '#fff',
+            shadowColor: 'transparent',
+            elevation: 0,
+          },
+          headerTintColor: '#1a1a1a',
+          headerTitleStyle: {
+            fontWeight: 'bold',
+          },
+        }}
+      >
+        <Stack.Screen 
+          name="Home" 
+          component={HomeScreen}
+          options={{
+            title: 'FitExplorer',
+            headerRight: () => (
+              <TouchableOpacity 
+                style={styles.headerButton}
+                onPress={() => Alert.alert('Settings', 'Settings coming soon!')}
+              >
+                <Ionicons name="settings-outline" size={24} color="#007AFF" />
+              </TouchableOpacity>
+            ),
+          }}
+        />
+        <Stack.Screen 
+          name="WorkoutScreen" 
+          component={WorkoutScreen}
+          options={{ title: 'Workout' }}
+        />
+        <Stack.Screen 
+          name="ProgressScreen" 
+          component={ProgressScreen}
+          options={{ title: 'Progress' }}
+        />
+        <Stack.Screen 
+          name="CreateWorkoutScreen" 
+          component={CreateWorkoutScreen}
+          options={{ title: 'Create Workout' }}
+        />
+      </Stack.Navigator>
+    </NavigationContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#ffffff',
-  },
-  content: {
+  loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    backgroundColor: '#ffffff',
   },
-  logoContainer: {
-    alignItems: 'center',
-    marginBottom: 40,
-  },
-  logo: {
-    fontSize: 80,
-    marginBottom: 10,
-  },
-  appName: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#1a1a1a',
-    marginBottom: 8,
-  },
-  tagline: {
+  loadingText: {
+    marginTop: 16,
     fontSize: 16,
     color: '#666',
-    textAlign: 'center',
   },
-  features: {
-    marginBottom: 40,
-    alignItems: 'center',
-  },
-  feature: {
-    fontSize: 18,
-    color: '#333',
-    marginBottom: 8,
-  },
-  button: {
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 40,
-    paddingVertical: 16,
-    borderRadius: 25,
-    marginBottom: 20,
-  },
-  buttonText: {
-    color: '#ffffff',
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  note: {
-    fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
-    lineHeight: 20,
+  headerButton: {
+    padding: 8,
+    marginRight: 8,
   },
 });
