@@ -843,31 +843,54 @@ function Profile() {
     setIsSaving(true);
     try {
       const token = localStorage.getItem("token");
-      const requestBody = {
+      
+      // Prepare requests for both endpoints
+      const settingsRequestBody = {
         use_custom_card_color: preferences.useCustomCardColor,
         card_color: preferences.cardColor,
         use_custom_name_border_color: preferences.useCustomNameBorderColor,
         name_border_color: preferences.nameBorderColor,
-        clear_premium_theme: preferences.useCustomCardColor
+        clear_premium_theme: preferences.useCustomCardColor,
+        goal_weight: preferences.goalWeight
       };
-      console.log("Saving preferences to backend:", requestBody);
       
-      const response = await fetch(`${backendURL}/user/settings`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(requestBody),
-      });
+      const frequencyRequestBody = {
+        workout_frequency_goal: preferences.workoutFrequencyGoal
+      };
+      
+      console.log("Saving preferences to backend:", settingsRequestBody);
+      console.log("Saving workout frequency:", frequencyRequestBody);
+      
+      // Make both API calls in parallel
+      const [settingsResponse, frequencyResponse] = await Promise.all([
+        fetch(`${backendURL}/user/settings`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(settingsRequestBody),
+        }),
+        fetch(`${backendURL}/user/workout-frequency`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(frequencyRequestBody),
+        })
+      ]);
 
-      if (response.ok) {
+      // Check if both requests were successful
+      if (settingsResponse.ok && frequencyResponse.ok) {
         setSuccessMessage("Changes saved successfully!");
         // Cache preferences to localStorage as fallback
         localStorage.setItem('cachedUserPreferences', JSON.stringify({
           cardColor: preferences.cardColor,
           useCustomCardColor: preferences.useCustomCardColor,
-          nameBorderColor: preferences.nameBorderColor
+          nameBorderColor: preferences.nameBorderColor,
+          goalWeight: preferences.goalWeight,
+          workoutFrequencyGoal: preferences.workoutFrequencyGoal
         }));
         // If using custom color, we need to clear the premium theme locally
         if (preferences.useCustomCardColor && premiumTheme !== 'default') {
@@ -875,8 +898,12 @@ function Profile() {
         }
         setTimeout(() => setSuccessMessage(""), 3000);
       } else {
-        const data = await response.json();
-        setError(data.detail || "Failed to save changes");
+        // Handle errors from either request
+        const settingsError = settingsResponse.ok ? null : await settingsResponse.json();
+        const frequencyError = frequencyResponse.ok ? null : await frequencyResponse.json();
+        
+        const errorMessage = settingsError?.detail || frequencyError?.detail || "Failed to save changes";
+        setError(errorMessage);
       }
     } catch (err) {
       console.error("Error saving preferences:", err);
