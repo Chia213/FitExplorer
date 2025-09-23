@@ -174,7 +174,6 @@ function App() {
                     <Route path="/add-exercise" element={<AuthRoute><AddExercise /></AuthRoute>} />
                     <Route path="/confirm-deletion" element={<AuthRoute><ConfirmDeletion /></AuthRoute>} />
                     <Route path="/profile" element={<AuthRoute><Profile /></AuthRoute>} />
-                    <Route path="/profile-test" element={<AuthRoute><ProfileTest /></AuthRoute>} />
                     <Route path="/saved-programs" element={<AuthRoute><SavedPrograms /></AuthRoute>} />
                     <Route path="/program-tracker" element={<AuthRoute><ProgramTracker /></AuthRoute>} />
                     <Route path="/change-password" element={<AuthRoute><ChangePassword /></AuthRoute>} />
