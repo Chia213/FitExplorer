@@ -1,25 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "../hooks/useTheme";
-// Temporarily disabled to fix circular dependency
-// import { 
-//   notifyProfileUpdated, 
-//   notifyUsernameChanged, 
-//   notifyPersonalInfoUpdated,
-//   notifyProfilePictureUpdated,
-//   notifyCardColorUpdated,
-//   notifyWeightGoalUpdated,
-//   notifyWorkoutFrequencyGoalUpdated,
-//   notifyHeightUpdated,
-//   notifyWeightUpdated,
-//   notifyAgeUpdated,
-//   notifyGenderUpdated,
-//   notifyFitnessGoalsUpdated,
-//   notifyBioUpdated,
-//   notifyWorkoutGoalUpdated
-// } from '../utils/notificationsHelpers';
-// import { useNotifications } from "../contexts/NotificationContext"; // Temporarily disabled
-// import AchievementsSection from '../components/AchievementsSection'; // Temporarily disabled to fix circular dependency
 import {
   FaEdit,
   FaTrash,
@@ -127,15 +108,9 @@ function Profile() {
   const navigate = useNavigate();
   
   console.log("🔍 Profile: About to call useTheme hook");
-  try {
-    const { theme, premiumTheme, premiumThemes, isAdmin, changePremiumTheme } = useTheme();
-    console.log("🔍 Profile: useTheme hook successful", { theme, premiumTheme, isAdmin });
-  } catch (themeError) {
-    console.error("🔍 Profile: useTheme hook failed", themeError);
-    throw themeError;
-  }
-  
   const { theme, premiumTheme, premiumThemes, isAdmin, changePremiumTheme } = useTheme();
+  console.log("🔍 Profile: useTheme hook successful", { theme, premiumTheme, isAdmin });
+  
   // const { allNotificationsEnabled } = useNotifications(); // Temporarily disabled
   const allNotificationsEnabled = true; // Temporary fallback
   

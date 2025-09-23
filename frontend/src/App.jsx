@@ -174,7 +174,7 @@ function App() {
                     <Route path="/progress-tracker" element={<AuthRoute><ProgressTracker /></AuthRoute>} />
                     <Route path="/add-exercise" element={<AuthRoute><AddExercise /></AuthRoute>} />
                     <Route path="/confirm-deletion" element={<AuthRoute><ConfirmDeletion /></AuthRoute>} />
-                    <Route path="/profile" element={<AuthRoute><ProfileMinimal /></AuthRoute>} />
+                    <Route path="/profile" element={<AuthRoute><Profile /></AuthRoute>} />
                     <Route path="/saved-programs" element={<AuthRoute><SavedPrograms /></AuthRoute>} />
                     <Route path="/program-tracker" element={<AuthRoute><ProgramTracker /></AuthRoute>} />
                     <Route path="/change-password" element={<AuthRoute><ChangePassword /></AuthRoute>} />
