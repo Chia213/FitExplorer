@@ -82,9 +82,13 @@ function ErrorBoundary({ children, fallback }) {
 }
 
 function Profile() {
+  console.log("🔍 Profile: Component starting to render");
+  
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  console.log("🔍 Profile: State initialized", { user: !!user, loading, error });
   const [cardColor, setCardColor] = useState(null); // Initialize as null to prevent default color flash
   const [isEditing, setIsEditing] = useState(false);
   const [editedUsername, setEditedUsername] = useState("");
@@ -121,9 +125,21 @@ function Profile() {
   const [lastUpdated, setLastUpdated] = useState(Date.now()); // Track last update time for achievements
 
   const navigate = useNavigate();
+  
+  console.log("🔍 Profile: About to call useTheme hook");
+  try {
+    const { theme, premiumTheme, premiumThemes, isAdmin, changePremiumTheme } = useTheme();
+    console.log("🔍 Profile: useTheme hook successful", { theme, premiumTheme, isAdmin });
+  } catch (themeError) {
+    console.error("🔍 Profile: useTheme hook failed", themeError);
+    throw themeError;
+  }
+  
   const { theme, premiumTheme, premiumThemes, isAdmin, changePremiumTheme } = useTheme();
   // const { allNotificationsEnabled } = useNotifications(); // Temporarily disabled
   const allNotificationsEnabled = true; // Temporary fallback
+  
+  console.log("🔍 Profile: Hooks initialized successfully");
 
   // Add a function to get animation classes based on user preferences
   const getAnimationClasses = () => {
@@ -258,31 +274,40 @@ function Profile() {
 
   // Function to fetch user data - extracted for reuse
   const fetchUserData = useCallback(async () => {
+    console.log("🔍 Profile: fetchUserData called");
+    
     const token = localStorage.getItem("token");
+    console.log("🔍 Profile: Token found:", !!token);
+    
     if (!token) {
+      console.log("🔍 Profile: No token, redirecting to login");
       navigate("/login");
       return;
     }
 
     try {
+      console.log("🔍 Profile: Starting API calls");
       setLoading(true);
       setError(null); // Clear any previous errors
       
       // First, check if backend is reachable
       try {
+        console.log("🔍 Profile: Checking backend health at", `${backendURL}/`);
         const healthCheck = await fetch(`${backendURL}/`, { 
           method: "GET",
           headers: { "Content-Type": "application/json" }
         });
+        console.log("🔍 Profile: Health check response:", healthCheck.status);
         if (!healthCheck.ok) {
           throw new Error("Backend server is not responding");
         }
       } catch (healthErr) {
-        console.warn("Backend health check failed:", healthErr);
+        console.warn("🔍 Profile: Backend health check failed:", healthErr);
         // Continue anyway, the main request might still work
       }
       
       // Fetch profile data first (most important)
+      console.log("🔍 Profile: Fetching user profile from", `${backendURL}/user-profile`);
       const profileRes = await fetch(`${backendURL}/user-profile`, {
         headers: { 
           "Authorization": `Bearer ${token}`,
@@ -290,9 +315,13 @@ function Profile() {
         },
       });
 
+      console.log("🔍 Profile: Profile API response status:", profileRes.status);
+
       // Handle profile response
       if (!profileRes.ok) {
+        console.log("🔍 Profile: Profile API failed with status:", profileRes.status);
         if (profileRes.status === 401) {
+          console.log("🔍 Profile: 401 Unauthorized, clearing token and redirecting");
           localStorage.removeItem("token");
           navigate("/login");
           return;
@@ -302,6 +331,7 @@ function Profile() {
       }
 
       const userData = await profileRes.json();
+      console.log("🔍 Profile: User data received:", userData);
       setUser(userData);
       setEditedUsername(userData.username);
 
@@ -510,8 +540,10 @@ function Profile() {
         console.warn("Failed to fetch last saved routine:", routineRes.status);
       }
     } catch (err) {
+      console.error("🔍 Profile: Error in fetchUserData:", err);
       setError(err.message || "Failed to load user data. Please try again.");
     } finally {
+      console.log("🔍 Profile: fetchUserData completed, setting loading to false");
       setLoading(false);
     }
   }, [navigate]);
@@ -1242,15 +1274,20 @@ function Profile() {
     };
   }, []);
 
+  console.log("🔍 Profile: About to render, current state:", { loading, error, user: !!user });
+
   if (loading) {
+    console.log("🔍 Profile: Rendering loading state");
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        <p className="ml-4">Loading profile...</p>
       </div>
     );
   }
 
   if (error) {
+    console.log("🔍 Profile: Rendering error state:", error);
     return (
       <div className="min-h-screen">
         <div className="max-w-7xl mx-auto pt-8">
@@ -1284,6 +1321,8 @@ function Profile() {
     );
   }
 
+  console.log("🔍 Profile: Rendering main profile content");
+  
   return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
