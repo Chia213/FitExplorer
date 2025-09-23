@@ -24,7 +24,7 @@ import {
   FaExternalLinkAlt,
 } from "react-icons/fa";
 import { toast } from "react-hot-toast";
-import "../styles/profile-card-animations.css";
+// import "../styles/profile-card-animations.css"; // Temporarily disabled
 
 const backendURL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
@@ -39,28 +39,29 @@ const ALLOWED_EMAIL_DOMAINS = new Set([
   "hotmail.se",
 ]);
 
-function ErrorBoundary({ children, fallback }) {
-  const [hasError, setHasError] = useState(false);
-  
-  useEffect(() => {
-    const errorHandler = (error) => {
-      console.error("Caught error:", error);
-      setHasError(true);
-    };
-    
-    window.addEventListener('error', errorHandler);
-    
-    return () => {
-      window.removeEventListener('error', errorHandler);
-    };
-  }, []);
-  
-  if (hasError) {
-    return fallback || <div className="text-destructive p-4 rounded bg-destructive/10 my-4">Something went wrong loading this component.</div>;
-  }
-  
-  return children;
-}
+// Temporarily disabled ErrorBoundary to isolate the issue
+// function ErrorBoundary({ children, fallback }) {
+//   const [hasError, setHasError] = useState(false);
+//   
+//   useEffect(() => {
+//     const errorHandler = (error) => {
+//       console.error("Caught error:", error);
+//       setHasError(true);
+//     };
+//     
+//     window.addEventListener('error', errorHandler);
+//     
+//     return () => {
+//       window.removeEventListener('error', errorHandler);
+//     };
+//   }, []);
+//   
+//   if (hasError) {
+//     return fallback || <div className="text-destructive p-4 rounded bg-destructive/10 my-4">Something went wrong loading this component.</div>;
+//   }
+//   
+//   return children;
+// }
 
 function Profile() {
   console.log("🔍 Profile: Component starting to render");
@@ -116,99 +117,74 @@ function Profile() {
   
   console.log("🔍 Profile: Hooks initialized successfully");
 
-  // Add a function to get animation classes based on user preferences
+  // Temporarily disabled animation function to isolate the issue
   const getAnimationClasses = () => {
-    // Direct debugging of preferences
-    console.log("Current animation preferences:", {
-      enabled: preferences.enableAnimations,
-      style: preferences.animationStyle,
-      speed: preferences.animationSpeed
-    });
-    
-    // Check if global animation state exists as fallback
-    const globalAnimations = window.FitExplorerAnimations || null;
-    let animationsEnabled = preferences.enableAnimations;
-    let animationStyle = preferences.animationStyle || 'subtle';
-    let animationSpeed = preferences.animationSpeed || 'medium';
-    
-    // If preferences aren't set but global state exists, use it instead
-    if (!animationsEnabled && globalAnimations && globalAnimations.enabled) {
-      console.log("Using global animation state as fallback:", globalAnimations);
-      animationsEnabled = globalAnimations.enabled;
-      animationStyle = globalAnimations.style;
-      animationSpeed = globalAnimations.speed;
-    }
-    
-    if (animationsEnabled) {
-      // Apply animation classes directly for maximum compatibility
-      return `profile-animation ${animationStyle} ${animationSpeed}`;
-    }
-    return '';
+    return ''; // Return empty string to disable animations
   };
   
-  // Apply animations directly when component mounts or preferences change
-  useEffect(() => {
-    // Check if global animation state exists and use as fallback
-    const globalAnimations = window.FitExplorerAnimations || null;
+  // Temporarily disabled animation useEffect to isolate the issue
+  // useEffect(() => {
+  //   // Check if global animation state exists and use as fallback
+  //   const globalAnimations = window.FitExplorerAnimations || null;
     
-    let animationsEnabled = preferences.enableAnimations;
-    let animationStyle = preferences.animationStyle || 'subtle';
-    let animationSpeed = preferences.animationSpeed || 'medium';
-    
-    // If preferences aren't set but global state exists, use it instead
-    if (!animationsEnabled && globalAnimations && globalAnimations.enabled) {
-      console.log("Using global animation state as fallback:", globalAnimations);
-      animationsEnabled = globalAnimations.enabled;
-      animationStyle = globalAnimations.style;
-      animationSpeed = globalAnimations.speed;
-      
-      // Update local state with global settings
-      setPreferences(prev => ({
-        ...prev,
-        enableAnimations: globalAnimations.enabled,
-        animationStyle: globalAnimations.style,
-        animationSpeed: globalAnimations.speed
-      }));
-    }
-    
-    console.log("Applying animations directly from useEffect - preferences:", {
-      enabled: animationsEnabled,
-      style: animationStyle,
-      speed: animationSpeed
-    });
-    
-    // Small delay to ensure the DOM is ready
-    setTimeout(() => {
-      const profileCard = document.querySelector('.profile-header-card');
-      if (profileCard) {
-        // Clear existing animation classes
-        profileCard.classList.remove('profile-animation');
-        ['subtle', 'bounce', 'pulse', 'wave', 'glide', 'sparkle', 'pop', 'swing', 'ripple',
-         'float', 'rotate', 'spin', 'shake', 'wobble'].forEach(style => 
-          profileCard.classList.remove(style));
-        ['slow', 'medium', 'fast'].forEach(speed => 
-          profileCard.classList.remove(speed));
-        
-        // Apply new animation classes if enabled
-        if (animationsEnabled) {
-          profileCard.classList.add('profile-animation');
-          profileCard.classList.add(animationStyle);
-          profileCard.classList.add(animationSpeed);
-          
-          // Set animation duration
-          profileCard.style.setProperty('--animation-duration', 
-            animationSpeed === "slow" ? "4s" : 
-            animationSpeed === "fast" ? "1.5s" : "2.5s"
-          );
-          
-          console.log("Animation classes applied:", 
-            `profile-animation ${animationStyle} ${animationSpeed}`);
-        } else {
-          console.log("Animations disabled, classes removed");
-        }
-      }
-    }, 100);
-  }, [preferences.enableAnimations, preferences.animationStyle, preferences.animationSpeed]);
+  //   let animationsEnabled = preferences.enableAnimations;
+  //   let animationStyle = preferences.animationStyle || 'subtle';
+  //   let animationSpeed = preferences.animationSpeed || 'medium';
+  //   
+  //   // If preferences aren't set but global state exists, use it instead
+  //   if (!animationsEnabled && globalAnimations && globalAnimations.enabled) {
+  //     console.log("Using global animation state as fallback:", globalAnimations);
+  //     animationsEnabled = globalAnimations.enabled;
+  //     animationStyle = globalAnimations.style;
+  //     animationSpeed = globalAnimations.speed;
+  //     
+  //     // Update local state with global settings
+  //     setPreferences(prev => ({
+  //       ...prev,
+  //       enableAnimations: globalAnimations.enabled,
+  //       animationStyle: globalAnimations.style,
+  //       animationSpeed: globalAnimations.speed
+  //     }));
+  //   }
+  //   
+  //   console.log("Applying animations directly from useEffect - preferences:", {
+  //     enabled: animationsEnabled,
+  //     style: animationStyle,
+  //     speed: animationSpeed
+  //   });
+  //   
+  //   // Small delay to ensure the DOM is ready
+  //   setTimeout(() => {
+  //     const profileCard = document.querySelector('.profile-header-card');
+  //     if (profileCard) {
+  //       // Clear existing animation classes
+  //       profileCard.classList.remove('profile-animation');
+  //       ['subtle', 'bounce', 'pulse', 'wave', 'glide', 'sparkle', 'pop', 'swing', 'ripple',
+  //        'float', 'rotate', 'spin', 'shake', 'wobble'].forEach(style => 
+  //         profileCard.classList.remove(style));
+  //       ['slow', 'medium', 'fast'].forEach(speed => 
+  //         profileCard.classList.remove(speed));
+  //       
+  //       // Apply new animation classes if enabled
+  //       if (animationsEnabled) {
+  //         profileCard.classList.add('profile-animation');
+  //         profileCard.classList.add(animationStyle);
+  //         profileCard.classList.add(animationSpeed);
+  //         
+  //         // Set animation duration
+  //         profileCard.style.setProperty('--animation-duration', 
+  //           animationSpeed === "slow" ? "4s" : 
+  //           animationSpeed === "fast" ? "1.5s" : "2.5s"
+  //         );
+  //         
+  //         console.log("Animation classes applied:", 
+  //           `profile-animation ${animationStyle} ${animationSpeed}`);
+  //       } else {
+  //         console.log("Animations disabled, classes removed");
+  //       }
+  //     }
+  //   }, 100);
+  // }, [preferences.enableAnimations, preferences.animationStyle, preferences.animationSpeed]);
 
   // Effect to update profile picture when user data changes (for cross-device sync)
   useEffect(() => {
